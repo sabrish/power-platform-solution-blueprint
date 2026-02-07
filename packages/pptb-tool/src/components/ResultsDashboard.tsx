@@ -370,7 +370,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
           <div style={{ marginTop: tokens.spacingVerticalL }}>
             {selectedTab === 'entities' && (
               <div style={{ display: 'flex', width: '100%', height: '600px' }}>
-                <EntityList entities={result.entities.map((bp) => bp.entity)} />
+                <EntityList blueprints={result.entities} />
               </div>
             )}
 

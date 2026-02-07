@@ -12,10 +12,11 @@ import {
   SelectTabEvent,
 } from '@fluentui/react-components';
 import { Database24Regular } from '@fluentui/react-icons';
-import type { DetailedEntityMetadata } from '@ppsb/core';
+import type { DetailedEntityMetadata, EntityBlueprint } from '@ppsb/core';
 import { FieldsTable } from './FieldsTable';
 import { RelationshipsView } from './RelationshipsView';
 import { AlternateKeysView } from './AlternateKeysView';
+import { ExecutionPipelineView } from './ExecutionPipelineView';
 
 const useStyles = makeStyles({
   container: {
@@ -71,12 +72,16 @@ const useStyles = makeStyles({
 });
 
 export interface SchemaViewProps {
-  schema: DetailedEntityMetadata;
+  schema?: DetailedEntityMetadata;
+  blueprint?: EntityBlueprint;
 }
 
-export function SchemaView({ schema }: SchemaViewProps) {
+export function SchemaView({ schema: schemaProp, blueprint }: SchemaViewProps) {
   const styles = useStyles();
   const [selectedTab, setSelectedTab] = useState<string>('fields');
+
+  // Use schema from blueprint if available, otherwise use direct schema prop
+  const schema = blueprint?.entity || schemaProp!;
 
   const displayName = schema.DisplayName?.UserLocalizedLabel?.Label || schema.LogicalName;
   const description = schema.Description?.UserLocalizedLabel?.Label;
@@ -86,6 +91,12 @@ export function SchemaView({ schema }: SchemaViewProps) {
   const manyToOneCount = schema.ManyToOneRelationships?.length || 0;
   const manyToManyCount = schema.ManyToManyRelationships?.length || 0;
   const keysCount = schema.Keys?.length || 0;
+
+  // Count automation (plugins, flows, business rules)
+  const pluginCount = blueprint?.plugins.length || 0;
+  const flowCount = blueprint?.flows.length || 0;
+  const businessRuleCount = blueprint?.businessRules.length || 0;
+  const totalAutomation = pluginCount + flowCount + businessRuleCount;
 
   return (
     <div className={styles.container}>
@@ -184,6 +195,11 @@ export function SchemaView({ schema }: SchemaViewProps) {
           <Tab value="keys">
             Keys ({keysCount + 1})
           </Tab>
+          {blueprint && totalAutomation > 0 && (
+            <Tab value="execution-pipeline">
+              Execution Pipeline ({totalAutomation})
+            </Tab>
+          )}
         </TabList>
 
         <div className={styles.tabContent}>
@@ -205,6 +221,10 @@ export function SchemaView({ schema }: SchemaViewProps) {
               keys={schema.Keys || []}
               primaryIdAttribute={schema.PrimaryIdAttribute}
             />
+          )}
+
+          {selectedTab === 'execution-pipeline' && blueprint && (
+            <ExecutionPipelineView blueprint={blueprint} />
           )}
         </div>
       </Card>

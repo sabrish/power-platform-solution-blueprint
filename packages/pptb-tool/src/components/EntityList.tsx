@@ -6,7 +6,7 @@ import {
   tokens,
 } from '@fluentui/react-components';
 import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import type { DetailedEntityMetadata } from '@ppsb/core';
+import type { EntityBlueprint } from '@ppsb/core';
 import { SchemaView } from './SchemaView';
 
 const useStyles = makeStyles({
@@ -167,22 +167,23 @@ const useStyles = makeStyles({
 });
 
 export interface EntityListProps {
-  entities: DetailedEntityMetadata[];
+  blueprints: EntityBlueprint[];
 }
 
-export function EntityList({ entities }: EntityListProps) {
+export function EntityList({ blueprints }: EntityListProps) {
   const styles = useStyles();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEntityId, setExpandedEntityId] = useState<string | null>(null);
 
-  // Filter and sort entities
-  const filteredEntities = useMemo(() => {
+  // Filter and sort blueprints
+  const filteredBlueprints = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
-    let filtered = entities;
+    let filtered = blueprints;
 
     if (query) {
-      filtered = entities.filter((entity) => {
+      filtered = blueprints.filter((blueprint) => {
+        const entity = blueprint.entity;
         const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || '';
         const logicalName = entity.LogicalName || '';
         return (
@@ -194,20 +195,20 @@ export function EntityList({ entities }: EntityListProps) {
 
     // Sort alphabetically by display name
     return filtered.sort((a, b) => {
-      const nameA = a.DisplayName?.UserLocalizedLabel?.Label || a.LogicalName;
-      const nameB = b.DisplayName?.UserLocalizedLabel?.Label || b.LogicalName;
+      const nameA = a.entity.DisplayName?.UserLocalizedLabel?.Label || a.entity.LogicalName;
+      const nameB = b.entity.DisplayName?.UserLocalizedLabel?.Label || b.entity.LogicalName;
       return nameA.localeCompare(nameB);
     });
-  }, [entities, searchQuery]);
+  }, [blueprints, searchQuery]);
 
   const toggleExpand = (entityId: string) => {
     setExpandedEntityId(expandedEntityId === entityId ? null : entityId);
   };
 
-  const renderEntityDetails = (entity: DetailedEntityMetadata) => {
+  const renderEntityDetails = (blueprint: EntityBlueprint) => {
     return (
       <div className={styles.expandedDetails}>
-        <SchemaView schema={entity} />
+        <SchemaView blueprint={blueprint} />
       </div>
     );
   };
@@ -223,13 +224,13 @@ export function EntityList({ entities }: EntityListProps) {
         />
         <Text className={styles.countBadge}>
           {searchQuery
-            ? `Showing ${filteredEntities.length} of ${entities.length} entities`
-            : `${entities.length} ${entities.length === 1 ? 'entity' : 'entities'} found`}
+            ? `Showing ${filteredBlueprints.length} of ${blueprints.length} entities`
+            : `${blueprints.length} ${blueprints.length === 1 ? 'entity' : 'entities'} found`}
         </Text>
       </div>
 
       <div className={styles.listContainer}>
-        {filteredEntities.length === 0 ? (
+        {filteredBlueprints.length === 0 ? (
           <div className={styles.emptyState}>
             <Database24Regular />
             <Text>
@@ -239,7 +240,8 @@ export function EntityList({ entities }: EntityListProps) {
             </Text>
           </div>
         ) : (
-          filteredEntities.map((entity) => {
+          filteredBlueprints.map((blueprint) => {
+            const entity = blueprint.entity;
             const isExpanded = expandedEntityId === entity.MetadataId;
             const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName || 'Unknown Entity';
             const description = entity.Description?.UserLocalizedLabel?.Label;
@@ -278,7 +280,7 @@ export function EntityList({ entities }: EntityListProps) {
                     </div>
                   </div>
                 </div>
-                {isExpanded && renderEntityDetails(entity)}
+                {isExpanded && renderEntityDetails(blueprint)}
               </div>
             );
           })

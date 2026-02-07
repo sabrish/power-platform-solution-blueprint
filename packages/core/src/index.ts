@@ -21,6 +21,9 @@ export type {
   WebResource,
   JavaScriptAnalysis,
   ExternalCall,
+  ExecutionPipeline,
+  ExecutionStep,
+  PerformanceRisk,
   EntityBlueprint,
   BlueprintSummary,
   BlueprintMetadata,
@@ -51,6 +54,10 @@ export { BusinessRuleDiscovery } from './discovery/BusinessRuleDiscovery.js';
 // Generators
 export { BlueprintGenerator } from './generators/BlueprintGenerator.js';
 export type { ScopeSelection as BlueprintScope } from './generators/BlueprintGenerator.js';
+
+// Analyzers
+export { ExecutionOrderCalculator } from './analyzers/ExecutionOrderCalculator.js';
+export { PerformanceAnalyzer } from './analyzers/PerformanceAnalyzer.js';
 
 // Utils
 export { filterSystemFields, isSystemField } from './utils/fieldFilters.js';

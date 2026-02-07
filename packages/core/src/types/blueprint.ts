@@ -365,6 +365,51 @@ export const WEB_RESOURCE_TYPE_NAMES = {
 } as const;
 
 /**
+ * Execution pipeline for an entity event
+ */
+export interface ExecutionPipeline {
+  event: string;
+  clientSide: ExecutionStep[];
+  serverSideSync: {
+    preValidation: ExecutionStep[];
+    preOperation: ExecutionStep[];
+    mainOperation: ExecutionStep[];
+    postOperation: ExecutionStep[];
+  };
+  serverSideAsync: ExecutionStep[];
+  totalSteps: number;
+  hasExternalCalls: boolean;
+  performanceRisks: PerformanceRisk[];
+}
+
+/**
+ * Single step in execution pipeline
+ */
+export interface ExecutionStep {
+  order: number;
+  type: 'Plugin' | 'Flow' | 'BusinessRule' | 'JavaScript';
+  name: string;
+  id: string;
+  stage?: number;
+  rank?: number;
+  mode: 'Sync' | 'Async' | 'Client';
+  hasExternalCall: boolean;
+  externalEndpoints?: string[];
+  description?: string;
+  duration?: string;
+}
+
+/**
+ * Performance risk detected in pipeline
+ */
+export interface PerformanceRisk {
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  step: ExecutionStep;
+  reason: string;
+  recommendation: string;
+}
+
+/**
  * Complete blueprint for a single entity
  */
 export interface EntityBlueprint {
@@ -372,6 +417,8 @@ export interface EntityBlueprint {
   plugins: PluginStep[];
   flows: Flow[];
   businessRules: BusinessRule[];
+  executionPipelines?: Map<string, ExecutionPipeline>;
+  performanceRisks?: PerformanceRisk[];
 }
 
 /**
