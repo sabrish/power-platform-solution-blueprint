@@ -202,7 +202,6 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
   };
 
   const totalSyncSteps =
-    pipeline.clientSide.length +
     pipeline.serverSideSync.preValidation.length +
     pipeline.serverSideSync.preOperation.length +
     pipeline.serverSideSync.mainOperation.length +
