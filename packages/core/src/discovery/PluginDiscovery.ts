@@ -14,7 +14,6 @@ interface RawPluginStep {
   description: string | null;
   asyncautodelete: boolean;
   configuration: string | null;
-  customconfiguration: string | null;
   sdkmessageid?: {
     name: string;
   };
@@ -82,7 +81,6 @@ export class PluginDiscovery {
           'description',
           'asyncautodelete',
           'configuration',
-          'customconfiguration',
         ],
         filter,
         expand:
@@ -120,8 +118,8 @@ export class PluginDiscovery {
           filteringAttributes: this.parseFilteringAttributes(raw.filteringattributes),
           description: raw.description,
           asyncAutoDelete: raw.asyncautodelete,
-          configuration: raw.configuration,
-          customConfiguration: raw.customconfiguration,
+          configuration: null, // Secure config requires separate lookup
+          customConfiguration: raw.configuration, // Unsecure configuration
           preImage: images.preImage,
           postImage: images.postImage,
           impersonatingUserId: raw.impersonatinguserid?.systemuserid || null,

@@ -275,22 +275,17 @@ export function PluginDetailView({ plugin, onClose }: PluginDetailViewProps) {
       )}
 
       {/* Configuration */}
-      {(plugin.configuration || plugin.customConfiguration) && (
+      {plugin.customConfiguration && (
         <Card>
           <Title3>Configuration</Title3>
           <div className={styles.section}>
-            {plugin.configuration && (
-              <div className={styles.infoRow}>
-                <Text className={styles.label}>Secure Configuration:</Text>
-                <Text className={styles.value}>***</Text>
-              </div>
-            )}
-            {plugin.customConfiguration && (
-              <div className={styles.infoRow}>
-                <Text className={styles.label}>Unsecure Configuration:</Text>
-                <Text className={styles.value}>{plugin.customConfiguration}</Text>
-              </div>
-            )}
+            <div className={styles.infoRow}>
+              <Text className={styles.label}>Unsecure Configuration:</Text>
+              <Text className={styles.value}>{plugin.customConfiguration}</Text>
+            </div>
+            <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: tokens.spacingVerticalS }}>
+              Note: Secure configuration is not accessible via API
+            </Text>
           </div>
         </Card>
       )}
