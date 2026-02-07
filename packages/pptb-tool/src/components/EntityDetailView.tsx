@@ -20,8 +20,6 @@ import {
 } from '@fluentui/react-components';
 import {
   Database24Regular,
-  Checkmark24Filled,
-  Dismiss24Filled,
   ArrowSort24Regular,
 } from '@fluentui/react-icons';
 import type { DetailedEntityMetadata, AttributeMetadata } from '@ppsb/core';
@@ -211,27 +209,14 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
         </Button>
       ),
       renderCell: (item) => (
-        <Text weight="semibold">
-          {item.DisplayName?.UserLocalizedLabel?.Label || item.LogicalName}
-        </Text>
-      ),
-    }),
-    createTableColumn<AttributeMetadata>({
-      columnId: 'logicalName',
-      compare: (a, b) => a.LogicalName.localeCompare(b.LogicalName),
-      renderHeaderCell: () => (
-        <Button
-          appearance="transparent"
-          icon={<ArrowSort24Regular />}
-          onClick={() => handleSort('LogicalName')}
-        >
-          Logical Name
-        </Button>
-      ),
-      renderCell: (item) => (
-        <Text style={{ color: tokens.colorNeutralForeground3 }}>
-          {item.LogicalName}
-        </Text>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <Text weight="semibold">
+            {item.DisplayName?.UserLocalizedLabel?.Label || item.LogicalName}
+          </Text>
+          <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>
+            {item.LogicalName}
+          </Text>
+        </div>
       ),
     }),
     createTableColumn<AttributeMetadata>({
@@ -254,36 +239,39 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
       ),
     }),
     createTableColumn<AttributeMetadata>({
+      columnId: 'description',
+      renderHeaderCell: () => 'Description',
+      renderCell: (item) => {
+        const desc = item.Description?.UserLocalizedLabel?.Label;
+        return desc ? (
+          <Text style={{ fontSize: tokens.fontSizeBase200 }}>
+            {desc.length > 100 ? `${desc.substring(0, 100)}...` : desc}
+          </Text>
+        ) : (
+          <Text style={{ color: tokens.colorNeutralForeground4 }}>—</Text>
+        );
+      },
+    }),
+    createTableColumn<AttributeMetadata>({
       columnId: 'required',
       renderHeaderCell: () => 'Required',
       renderCell: (item) => getRequiredLevelBadge(item.RequiredLevel?.Value || 'None'),
     }),
     createTableColumn<AttributeMetadata>({
-      columnId: 'primaryId',
+      columnId: 'operations',
       renderHeaderCell: () => (
-        <div style={{ textAlign: 'center' }}>Primary ID</div>
+        <div style={{ textAlign: 'center' }}>Operations</div>
       ),
       renderCell: (item) => (
-        <div className={styles.iconCell}>
-          {item.IsPrimaryId ? (
-            <Checkmark24Filled primaryFill={tokens.colorPaletteGreenForeground1} />
-          ) : (
-            <Dismiss24Filled primaryFill={tokens.colorNeutralForeground4} />
+        <div style={{ display: 'flex', gap: tokens.spacingHorizontalXXS, justifyContent: 'center' }}>
+          {item.IsValidForCreate && (
+            <Badge size="small" appearance="tint" color="success">C</Badge>
           )}
-        </div>
-      ),
-    }),
-    createTableColumn<AttributeMetadata>({
-      columnId: 'primaryName',
-      renderHeaderCell: () => (
-        <div style={{ textAlign: 'center' }}>Primary Name</div>
-      ),
-      renderCell: (item) => (
-        <div className={styles.iconCell}>
-          {item.IsPrimaryName ? (
-            <Checkmark24Filled primaryFill={tokens.colorPaletteGreenForeground1} />
-          ) : (
-            <Dismiss24Filled primaryFill={tokens.colorNeutralForeground4} />
+          {item.IsValidForUpdate && (
+            <Badge size="small" appearance="tint" color="warning">U</Badge>
+          )}
+          {item.IsValidForRead && (
+            <Badge size="small" appearance="tint" color="informative">R</Badge>
           )}
         </div>
       ),

@@ -40,15 +40,20 @@ const useStyles = makeStyles({
   },
   entityCard: {
     cursor: 'pointer',
-    padding: tokens.spacingVerticalM,
-    marginBottom: tokens.spacingVerticalXS,
-    transition: 'background-color 0.2s ease',
+    padding: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalM,
+    transition: 'all 0.2s ease',
+    borderLeft: `4px solid transparent`,
     ':hover': {
       backgroundColor: tokens.colorNeutralBackground1Hover,
+      borderLeftColor: tokens.colorBrandForeground1,
+      transform: 'translateX(4px)',
+      boxShadow: tokens.shadow8,
     },
   },
   entityCardSelected: {
     backgroundColor: tokens.colorBrandBackground2,
+    borderLeftColor: tokens.colorBrandForeground1,
     ':hover': {
       backgroundColor: tokens.colorBrandBackground2Hover,
     },
@@ -71,16 +76,19 @@ const useStyles = makeStyles({
   },
   entityName: {
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase400,
+    fontSize: tokens.fontSizeBase500,
+    color: tokens.colorNeutralForeground1,
   },
   entityLogicalName: {
     color: tokens.colorNeutralForeground3,
-    fontSize: tokens.fontSizeBase200,
+    fontSize: tokens.fontSizeBase300,
+    fontFamily: 'Consolas, Monaco, monospace',
   },
   entityDescription: {
     color: tokens.colorNeutralForeground2,
-    fontSize: tokens.fontSizeBase200,
-    marginTop: tokens.spacingVerticalXXS,
+    fontSize: tokens.fontSizeBase300,
+    marginTop: tokens.spacingVerticalS,
+    lineHeight: '1.5',
   },
   entityStats: {
     display: 'flex',
