@@ -14,11 +14,11 @@ export class SchemaDiscovery {
   /**
    * Get detailed schema for a specific entity
    * @param logicalName Entity logical name
-   * @returns Detailed entity metadata with attributes
+   * @returns Detailed entity metadata with attributes, relationships, and keys
    */
   async getEntitySchema(logicalName: string): Promise<DetailedEntityMetadata> {
     try {
-      // Use filter syntax instead of direct query to get consistent array response
+      // Fetch comprehensive entity metadata with all expansions
       const result = await this.client.queryMetadata<DetailedEntityMetadata>(
         'EntityDefinitions',
         {
@@ -31,9 +31,27 @@ export class SchemaDiscovery {
             'PrimaryIdAttribute',
             'PrimaryNameAttribute',
             'Description',
+            'OwnershipType',
+            'IsAuditEnabled',
+            'ChangeTrackingEnabled',
+            'IsActivity',
+            'IsActivityParty',
+            'IsCustomEntity',
+            'IsCustomizable',
+            'IsManaged',
+            'ObjectTypeCode',
           ],
           filter: `LogicalName eq '${logicalName}'`,
-          expand: 'Attributes($select=LogicalName,SchemaName,MetadataId,DisplayName,AttributeType,IsPrimaryId,IsPrimaryName,IsValidForCreate,IsValidForUpdate,IsValidForRead,IsValidForAdvancedFind,IsAuditEnabled,RequiredLevel,Description),Keys($select=LogicalName,DisplayName,KeyAttributes)',
+          expand: [
+            // Attributes with comprehensive properties
+            'Attributes($select=LogicalName,SchemaName,MetadataId,DisplayName,AttributeType,IsPrimaryId,IsPrimaryName,IsValidForCreate,IsValidForUpdate,IsValidForRead,IsValidForAdvancedFind,IsAuditEnabled,IsSecured,RequiredLevel,Description,IsCustomAttribute,IsManaged,MaxLength,Precision,MinValue,MaxValue,Format,DateTimeBehavior,Targets,OptionSet)',
+            // Relationships
+            'ManyToOneRelationships($select=SchemaName,MetadataId,ReferencingEntity,ReferencedEntity,ReferencingAttribute,ReferencedAttribute,CascadeConfiguration,IsCustomRelationship,IsManaged)',
+            'OneToManyRelationships($select=SchemaName,MetadataId,ReferencingEntity,ReferencedEntity,ReferencingAttribute,ReferencedAttribute,CascadeConfiguration,IsCustomRelationship,IsManaged)',
+            'ManyToManyRelationships($select=SchemaName,MetadataId,Entity1LogicalName,Entity2LogicalName,IntersectEntityName,Entity1IntersectAttribute,Entity2IntersectAttribute,IsCustomRelationship,IsManaged)',
+            // Alternate Keys
+            'Keys($select=LogicalName,DisplayName,KeyAttributes,EntityKeyIndexStatus)',
+          ].join(','),
         }
       );
 
@@ -41,11 +59,34 @@ export class SchemaDiscovery {
         throw new Error(`Entity '${logicalName}' not found`);
       }
 
-      return result.value[0];
+      const entity = result.value[0];
+
+      // Compute ownership type name
+      entity.OwnershipTypeName = this.getOwnershipTypeName(entity.OwnershipType);
+
+      return entity;
     } catch (error) {
       throw new Error(
         `Failed to retrieve schema for ${logicalName}: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+    }
+  }
+
+  /**
+   * Get human-readable ownership type name
+   */
+  private getOwnershipTypeName(ownershipType?: number): string {
+    switch (ownershipType) {
+      case 1:
+        return 'User or Team Owned';
+      case 2:
+        return 'Team Owned';
+      case 4:
+        return 'Organization Owned';
+      case 8:
+        return 'Business Owned';
+      default:
+        return 'Unknown';
     }
   }
 }

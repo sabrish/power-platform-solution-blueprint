@@ -35,7 +35,7 @@ export interface GeneratorOptions {
 }
 
 /**
- * Detailed entity metadata with all fields
+ * Detailed entity metadata with all fields, relationships, and keys
  */
 export interface DetailedEntityMetadata {
   LogicalName: string;
@@ -59,12 +59,24 @@ export interface DetailedEntityMetadata {
       Label: string;
     };
   };
+  OwnershipType?: number;
+  OwnershipTypeName?: string;
+  IsAuditEnabled?: {
+    Value: boolean;
+  };
+  ChangeTrackingEnabled?: boolean;
+  IsActivity?: boolean;
+  IsActivityParty?: boolean;
+  ObjectTypeCode?: number;
   Attributes?: AttributeMetadata[];
   Keys?: EntityKey[];
+  ManyToOneRelationships?: ManyToOneRelationship[];
+  OneToManyRelationships?: OneToManyRelationship[];
+  ManyToManyRelationships?: ManyToManyRelationship[];
 }
 
 /**
- * Attribute metadata
+ * Attribute metadata with type-specific properties
  */
 export interface AttributeMetadata {
   LogicalName: string;
@@ -87,6 +99,7 @@ export interface AttributeMetadata {
   IsAuditEnabled?: {
     Value: boolean;
   };
+  IsSecured?: boolean;
   RequiredLevel: {
     Value: string;
   };
@@ -95,10 +108,38 @@ export interface AttributeMetadata {
       Label: string;
     };
   };
+  IsCustomAttribute?: boolean;
+  IsManaged?: boolean;
+  // Type-specific properties
+  MaxLength?: number;
+  Precision?: number;
+  MinValue?: number | { Value: number };
+  MaxValue?: number | { Value: number };
+  Format?: string;
+  DateTimeBehavior?: {
+    Value: string;
+  };
+  Targets?: string[];
+  OptionSet?: {
+    Options: OptionMetadata[];
+  };
 }
 
 /**
- * Entity key metadata
+ * Option metadata for picklist/state/status attributes
+ */
+export interface OptionMetadata {
+  Value: number;
+  Label: {
+    UserLocalizedLabel?: {
+      Label: string;
+    };
+  };
+  Color?: string;
+}
+
+/**
+ * Entity key metadata (alternate keys)
  */
 export interface EntityKey {
   LogicalName: string;
@@ -108,6 +149,64 @@ export interface EntityKey {
     };
   };
   KeyAttributes: string[];
+  EntityKeyIndexStatus?: string;
+}
+
+/**
+ * One-to-Many relationship (this entity is parent)
+ */
+export interface OneToManyRelationship {
+  SchemaName: string;
+  MetadataId?: string;
+  ReferencingEntity: string;
+  ReferencedEntity: string;
+  ReferencingAttribute: string;
+  ReferencedAttribute: string;
+  CascadeConfiguration?: CascadeConfiguration;
+  IsCustomRelationship?: boolean;
+  IsManaged?: boolean;
+}
+
+/**
+ * Many-to-One relationship (this entity is child)
+ */
+export interface ManyToOneRelationship {
+  SchemaName: string;
+  MetadataId?: string;
+  ReferencingEntity: string;
+  ReferencedEntity: string;
+  ReferencingAttribute: string;
+  ReferencedAttribute: string;
+  CascadeConfiguration?: CascadeConfiguration;
+  IsCustomRelationship?: boolean;
+  IsManaged?: boolean;
+}
+
+/**
+ * Many-to-Many relationship
+ */
+export interface ManyToManyRelationship {
+  SchemaName: string;
+  MetadataId?: string;
+  Entity1LogicalName: string;
+  Entity2LogicalName: string;
+  IntersectEntityName: string;
+  Entity1IntersectAttribute: string;
+  Entity2IntersectAttribute: string;
+  IsCustomRelationship?: boolean;
+  IsManaged?: boolean;
+}
+
+/**
+ * Cascade configuration for relationships
+ */
+export interface CascadeConfiguration {
+  Assign?: string;
+  Delete?: string;
+  Merge?: string;
+  Reparent?: string;
+  Share?: string;
+  Unshare?: string;
 }
 
 /**

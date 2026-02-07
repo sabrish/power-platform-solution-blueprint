@@ -2,22 +2,12 @@ import { useState, useMemo } from 'react';
 import {
   SearchBox,
   Text,
-  Badge,
-  Card,
-  Title3,
-  DataGrid,
-  DataGridHeader,
-  DataGridRow,
-  DataGridHeaderCell,
-  DataGridBody,
-  DataGridCell,
-  TableColumnDefinition,
-  createTableColumn,
   makeStyles,
   tokens,
 } from '@fluentui/react-components';
 import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import type { DetailedEntityMetadata, AttributeMetadata } from '@ppsb/core';
+import type { DetailedEntityMetadata } from '@ppsb/core';
+import { SchemaView } from './SchemaView';
 
 const useStyles = makeStyles({
   container: {
@@ -214,172 +204,10 @@ export function EntityList({ entities }: EntityListProps) {
     setExpandedEntityId(expandedEntityId === entityId ? null : entityId);
   };
 
-  const getRequiredLevelBadge = (requiredLevel: string) => {
-    switch (requiredLevel) {
-      case 'ApplicationRequired':
-      case 'SystemRequired':
-        return <Badge appearance="filled" color="danger" size="small">Required</Badge>;
-      case 'Recommended':
-        return <Badge appearance="filled" color="warning" size="small">Recommended</Badge>;
-      default:
-        return <Badge appearance="outline" color="subtle" size="small">Optional</Badge>;
-    }
-  };
-
   const renderEntityDetails = (entity: DetailedEntityMetadata) => {
-    const attributes = entity.Attributes || [];
-
-    const columns: TableColumnDefinition<AttributeMetadata>[] = [
-      createTableColumn<AttributeMetadata>({
-        columnId: 'displayName',
-        renderHeaderCell: () => 'Attribute',
-        renderCell: (item) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', wordBreak: 'break-word' }}>
-            <Text weight="semibold" className={styles.wrapText}>
-              {item.DisplayName?.UserLocalizedLabel?.Label || item.LogicalName}
-            </Text>
-            <Text className={`${styles.codeText} ${styles.wrapText}`} style={{ color: tokens.colorNeutralForeground3 }}>
-              {item.LogicalName}
-            </Text>
-          </div>
-        ),
-      }),
-      createTableColumn<AttributeMetadata>({
-        columnId: 'type',
-        renderHeaderCell: () => 'Type',
-        renderCell: (item) => <Text className={styles.wrapText}>{item.AttributeType}</Text>,
-      }),
-      createTableColumn<AttributeMetadata>({
-        columnId: 'description',
-        renderHeaderCell: () => 'Description',
-        renderCell: (item) => {
-          const desc = item.Description?.UserLocalizedLabel?.Label;
-          return desc ? (
-            <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200 }}>
-              {desc}
-            </Text>
-          ) : (
-            <Text style={{ color: tokens.colorNeutralForeground4 }}>—</Text>
-          );
-        },
-      }),
-      createTableColumn<AttributeMetadata>({
-        columnId: 'required',
-        renderHeaderCell: () => 'Required',
-        renderCell: (item) => getRequiredLevelBadge(item.RequiredLevel?.Value || 'None'),
-      }),
-      createTableColumn<AttributeMetadata>({
-        columnId: 'audit',
-        renderHeaderCell: () => <div style={{ textAlign: 'center' }}>Audit</div>,
-        renderCell: (item) => {
-          const isAudited = item.IsAuditEnabled?.Value === true;
-          return (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              {isAudited ? (
-                <Badge appearance="filled" color="success" size="small">On</Badge>
-              ) : (
-                <Badge appearance="outline" color="subtle" size="small">Off</Badge>
-              )}
-            </div>
-          );
-        },
-      }),
-      createTableColumn<AttributeMetadata>({
-        columnId: 'searchable',
-        renderHeaderCell: () => <div style={{ textAlign: 'center' }}>Searchable</div>,
-        renderCell: (item) => {
-          const isSearchable = item.IsValidForAdvancedFind?.Value === true;
-          return (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              {isSearchable ? (
-                <Badge appearance="filled" color="brand" size="small">Yes</Badge>
-              ) : (
-                <Badge appearance="outline" color="subtle" size="small">No</Badge>
-              )}
-            </div>
-          );
-        },
-      }),
-    ];
-
     return (
       <div className={styles.expandedDetails}>
-        <Card>
-          <Title3>{entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName}</Title3>
-
-          <div className={styles.detailsGrid}>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Schema Name</Text>
-              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.SchemaName}</Text>
-            </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Logical Name</Text>
-              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.LogicalName}</Text>
-            </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Entity Set Name</Text>
-              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.EntitySetName || 'N/A'}</Text>
-            </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Primary ID</Text>
-              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.PrimaryIdAttribute || 'N/A'}</Text>
-            </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Primary Name</Text>
-              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.PrimaryNameAttribute || 'N/A'}</Text>
-            </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Attributes</Text>
-              <Text className={styles.detailValue}>{attributes.length}</Text>
-            </div>
-          </div>
-
-          <div className={styles.badges}>
-            {entity.IsCustomEntity && (
-              <Badge appearance="filled" color="brand">Custom Entity</Badge>
-            )}
-            {entity.IsManaged && (
-              <Badge appearance="filled" color="warning">Managed</Badge>
-            )}
-            {entity.IsCustomizable?.Value === false && (
-              <Badge appearance="outline" color="subtle">Not Customizable</Badge>
-            )}
-          </div>
-
-          {attributes.length > 0 && (
-            <>
-              <Title3 style={{ marginTop: tokens.spacingVerticalL }}>
-                Attributes ({attributes.length})
-              </Title3>
-              <div className={styles.tableContainer}>
-                <DataGrid
-                  items={attributes}
-                  columns={columns}
-                  sortable
-                  focusMode="composite"
-                  size="small"
-                >
-                  <DataGridHeader>
-                    <DataGridRow>
-                      {({ renderHeaderCell }) => (
-                        <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                      )}
-                    </DataGridRow>
-                  </DataGridHeader>
-                  <DataGridBody<AttributeMetadata>>
-                    {({ item, rowId }) => (
-                      <DataGridRow<AttributeMetadata> key={rowId}>
-                        {({ renderCell }) => (
-                          <DataGridCell>{renderCell(item)}</DataGridCell>
-                        )}
-                      </DataGridRow>
-                    )}
-                  </DataGridBody>
-                </DataGrid>
-              </div>
-            </>
-          )}
-        </Card>
+        <SchemaView schema={entity} />
       </div>
     );
   };
