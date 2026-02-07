@@ -82,6 +82,7 @@ export class SolutionComponentDiscovery {
             case ComponentType.Plugin:
               if (!inventory.pluginIds.includes(objectId)) {
                 inventory.pluginIds.push(objectId);
+                console.log(`🔌 Found plugin: ${objectId}`);
               }
               break;
             case ComponentType.Workflow:
@@ -123,6 +124,8 @@ export class SolutionComponentDiscovery {
         customPages: inventory.customPageIds.length,
         connectionRefs: inventory.connectionReferenceIds.length,
       });
+
+      console.log(`🔌 PLUGINS: Found ${inventory.pluginIds.length} plugin(s):`, inventory.pluginIds);
 
       return inventory;
     } catch (error) {

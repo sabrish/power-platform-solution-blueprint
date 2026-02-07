@@ -349,32 +349,42 @@ export class BlueprintGenerator {
    * Process plugins - fetch detailed plugin metadata
    */
   private async processPlugins(pluginIds: string[]): Promise<PluginStep[]> {
+    console.log(`🔌 processPlugins called with ${pluginIds.length} plugin IDs:`, pluginIds);
+
     if (pluginIds.length === 0) {
+      console.log('🔌 No plugins to process, returning empty array');
       return [];
     }
 
-    // Report progress
-    this.reportProgress({
-      phase: 'plugins',
-      entityName: '',
-      current: 0,
-      total: pluginIds.length,
-      message: `Documenting ${pluginIds.length} plugin${pluginIds.length > 1 ? 's' : ''}...`,
-    });
+    try {
+      // Report progress
+      this.reportProgress({
+        phase: 'plugins',
+        entityName: '',
+        current: 0,
+        total: pluginIds.length,
+        message: `Documenting ${pluginIds.length} plugin${pluginIds.length > 1 ? 's' : ''}...`,
+      });
 
-    const pluginDiscovery = new PluginDiscovery(this.client);
-    const plugins = await pluginDiscovery.getPluginsByIds(pluginIds);
+      const pluginDiscovery = new PluginDiscovery(this.client);
+      const plugins = await pluginDiscovery.getPluginsByIds(pluginIds);
 
-    // Report completion
-    this.reportProgress({
-      phase: 'plugins',
-      entityName: '',
-      current: plugins.length,
-      total: plugins.length,
-      message: 'Plugins documented',
-    });
+      console.log(`🔌 Successfully retrieved ${plugins.length} plugin(s)`);
 
-    return plugins;
+      // Report completion
+      this.reportProgress({
+        phase: 'plugins',
+        entityName: '',
+        current: plugins.length,
+        total: plugins.length,
+        message: 'Plugins documented',
+      });
+
+      return plugins;
+    } catch (error) {
+      console.error('🔌 ERROR processing plugins:', error);
+      throw error;
+    }
   }
 
   /**
