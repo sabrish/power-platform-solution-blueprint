@@ -56,7 +56,8 @@ export class SolutionComponentDiscovery {
 
       // Group by component type (deduplicates across solutions)
       for (const component of result.value) {
-        const objectId = component.objectid.toLowerCase();
+        // Normalize GUID: remove braces and lowercase for consistent comparison
+        const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
 
           switch (component.componenttype) {
             case ComponentType.Entity:

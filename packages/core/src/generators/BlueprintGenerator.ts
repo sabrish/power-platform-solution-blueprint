@@ -231,12 +231,27 @@ export class BlueprintGenerator {
 
       // Filter attributes to only those in the solution
       if (detailedEntity.Attributes && attributeIds.length > 0) {
+        const originalCount = detailedEntity.Attributes.length;
+
         detailedEntity.Attributes = detailedEntity.Attributes.filter((attr) => {
-          // For attributes, we need to check if their MetadataId is in attributeIds
-          // The MetadataId from attribute metadata should match the objectid from solution components
-          const attrMetadataId = attr.MetadataId?.toLowerCase();
-          return attrMetadataId && attributeIds.includes(attrMetadataId);
+          if (!attr.MetadataId) return false;
+
+          // Normalize GUIDs: remove braces and lowercase for comparison
+          const normalizedAttrId = this.normalizeGuid(attr.MetadataId);
+
+          // Check if this attribute's ID exists in the solution attribute IDs
+          return attributeIds.some(solutionAttrId =>
+            this.normalizeGuid(solutionAttrId) === normalizedAttrId
+          );
         });
+
+        // Debug logging for custom entities
+        if (entity.LogicalName.includes('_') && detailedEntity.Attributes.length === 0) {
+          console.warn(
+            `⚠️ ${entity.LogicalName}: Filtered from ${originalCount} to 0 attributes. ` +
+            `This might indicate a GUID format mismatch.`
+          );
+        }
       }
 
       // Filter system fields if requested
@@ -381,6 +396,13 @@ export class BlueprintGenerator {
     }
 
     return pluginsByEntity;
+  }
+
+  /**
+   * Normalize GUID for comparison (remove braces, lowercase)
+   */
+  private normalizeGuid(guid: string): string {
+    return guid.toLowerCase().replace(/[{}]/g, '');
   }
 
   /**
