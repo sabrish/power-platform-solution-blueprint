@@ -1,6 +1,7 @@
 /**
  * Blueprint generation types for PPSB
  */
+import type { PluginStep } from '../types.js';
 
 /**
  * Progress phases during blueprint generation
@@ -98,20 +99,6 @@ export interface EntityKey {
 }
 
 /**
- * Plugin step information
- */
-export interface PluginStep {
-  stepId: string;
-  name: string;
-  pluginTypeName: string;
-  stage: number;
-  mode: number;
-  rank: number;
-  message: string;
-  filteringAttributes?: string;
-}
-
-/**
  * Flow information
  */
 export interface Flow {
@@ -177,4 +164,9 @@ export interface BlueprintResult {
   metadata: BlueprintMetadata;
   entities: EntityBlueprint[];
   summary: BlueprintSummary;
+  plugins: PluginStep[];
+  pluginsByEntity: Map<string, PluginStep[]>;
 }
+
+// Re-export PluginStep from types.ts
+export type { PluginStep, ImageDefinition } from '../types.js';

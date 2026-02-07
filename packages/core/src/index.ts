@@ -1,5 +1,6 @@
 // Types
-export type { Publisher, Solution, EntityMetadata } from './types.js';
+export type { Publisher, Solution, EntityMetadata, PluginStep, ImageDefinition } from './types.js';
+export { STAGE_COLORS } from './types.js';
 export type {
   ProgressPhase,
   ProgressInfo,
@@ -7,7 +8,6 @@ export type {
   DetailedEntityMetadata,
   AttributeMetadata,
   EntityKey,
-  PluginStep,
   Flow,
   BusinessRule,
   EntityBlueprint,

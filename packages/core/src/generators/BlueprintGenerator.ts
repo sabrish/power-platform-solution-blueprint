@@ -2,8 +2,9 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import { EntityDiscovery } from '../discovery/EntityDiscovery.js';
 import { SolutionComponentDiscovery } from '../discovery/SolutionComponentDiscovery.js';
 import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
+import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
-import type { EntityMetadata } from '../types.js';
+import type { EntityMetadata, PluginStep } from '../types.js';
 import type { ComponentInventory, WorkflowInventory } from '../types/components.js';
 import type {
   GeneratorOptions,
@@ -78,11 +79,16 @@ export class BlueprintGenerator {
         warnings.push('No entities found in selected scope');
       }
 
-      // STEP 3-7: Process other components (stubbed for now)
-      // These will be implemented later
+      // STEP 3: Process Plugins
+      const plugins = await this.processPlugins(inventory.pluginIds);
+      const pluginsByEntity = this.groupPluginsByEntity(plugins);
+
       if (inventory.pluginIds.length === 0) {
         warnings.push('No plugins found');
       }
+
+      // STEP 4-7: Process other components (stubbed for now)
+      // These will be implemented later
       if (workflowInventory.flowIds.length === 0) {
         warnings.push('No flows found');
       }
@@ -130,6 +136,8 @@ export class BlueprintGenerator {
         },
         entities: entityBlueprints,
         summary,
+        plugins,
+        pluginsByEntity,
       };
     } catch (error) {
       throw new Error(
@@ -305,6 +313,63 @@ export class BlueprintGenerator {
     if (this.options.onProgress) {
       this.options.onProgress(progress);
     }
+  }
+
+  /**
+   * Process plugins - fetch detailed plugin metadata
+   */
+  private async processPlugins(pluginIds: string[]): Promise<PluginStep[]> {
+    if (pluginIds.length === 0) {
+      return [];
+    }
+
+    // Report progress
+    this.reportProgress({
+      phase: 'plugins',
+      entityName: '',
+      current: 0,
+      total: pluginIds.length,
+      message: `Documenting ${pluginIds.length} plugin${pluginIds.length > 1 ? 's' : ''}...`,
+    });
+
+    const pluginDiscovery = new PluginDiscovery(this.client);
+    const plugins = await pluginDiscovery.getPluginsByIds(pluginIds);
+
+    // Report completion
+    this.reportProgress({
+      phase: 'plugins',
+      entityName: '',
+      current: plugins.length,
+      total: plugins.length,
+      message: 'Plugins documented',
+    });
+
+    return plugins;
+  }
+
+  /**
+   * Group plugins by entity for entity-specific views
+   */
+  private groupPluginsByEntity(plugins: PluginStep[]): Map<string, PluginStep[]> {
+    const pluginsByEntity = new Map<string, PluginStep[]>();
+
+    for (const plugin of plugins) {
+      const entity = plugin.entity.toLowerCase();
+      if (!pluginsByEntity.has(entity)) {
+        pluginsByEntity.set(entity, []);
+      }
+      pluginsByEntity.get(entity)!.push(plugin);
+    }
+
+    // Sort plugins within each entity by stage and rank
+    for (const [, entityPlugins] of pluginsByEntity) {
+      entityPlugins.sort((a, b) => {
+        if (a.stage !== b.stage) return a.stage - b.stage;
+        return a.rank - b.rank;
+      });
+    }
+
+    return pluginsByEntity;
   }
 
   /**

@@ -23,8 +23,10 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult } from '@ppsb/core';
+import type { BlueprintResult, PluginStep } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
+import { PluginsList } from './PluginsList';
+import { PluginDetailView } from './PluginDetailView';
 
 const useStyles = makeStyles({
   container: {
@@ -126,6 +128,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const styles = useStyles();
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState<string>('entities');
+  const [selectedPlugin, setSelectedPlugin] = useState<PluginStep | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -389,10 +392,24 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
             )}
 
             {selectedTab === 'plugins' && hasResults('plugins') && (
-              <div className={styles.emptyState}>
-                <Text style={{ fontSize: '48px' }}>🔌</Text>
-                <Title3>Plugins</Title3>
-                <Text>Plugin browser coming soon...</Text>
+              <div style={{ display: 'flex', gap: tokens.spacingHorizontalL }}>
+                <div style={{ flex: selectedPlugin ? 1 : 'auto', minWidth: 0 }}>
+                  <PluginsList
+                    plugins={result.plugins}
+                    groupBy="message"
+                    onPluginClick={setSelectedPlugin}
+                  />
+                </div>
+                {selectedPlugin && (
+                  <div style={{ flex: 1, minWidth: '400px', maxWidth: '600px', overflowY: 'auto' }}>
+                    <Card>
+                      <PluginDetailView
+                        plugin={selectedPlugin}
+                        onClose={() => setSelectedPlugin(null)}
+                      />
+                    </Card>
+                  </div>
+                )}
               </div>
             )}
 
