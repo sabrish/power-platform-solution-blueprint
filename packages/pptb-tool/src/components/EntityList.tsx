@@ -6,7 +6,7 @@ import {
   tokens,
 } from '@fluentui/react-components';
 import { Database24Regular } from '@fluentui/react-icons';
-import type { EntityMetadata } from '@ppsb/core';
+import type { DetailedEntityMetadata } from '@ppsb/core';
 
 const useStyles = makeStyles({
   container: {
@@ -71,11 +71,25 @@ const useStyles = makeStyles({
   },
   entityName: {
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase300,
+    fontSize: tokens.fontSizeBase400,
   },
   entityLogicalName: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase200,
+  },
+  entityDescription: {
+    color: tokens.colorNeutralForeground2,
+    fontSize: tokens.fontSizeBase200,
+    marginTop: tokens.spacingVerticalXXS,
+  },
+  entityStats: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalS,
+    marginTop: tokens.spacingVerticalXXS,
+  },
+  statBadge: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
   },
   emptyState: {
     display: 'flex',
@@ -89,9 +103,9 @@ const useStyles = makeStyles({
 });
 
 export interface EntityListProps {
-  entities: EntityMetadata[];
-  onEntitySelect?: (entity: EntityMetadata) => void;
-  selectedEntity?: EntityMetadata | null;
+  entities: DetailedEntityMetadata[];
+  onEntitySelect?: (entity: DetailedEntityMetadata) => void;
+  selectedEntity?: DetailedEntityMetadata | null;
 }
 
 export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityListProps) {
@@ -123,7 +137,7 @@ export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityL
     });
   }, [entities, searchQuery]);
 
-  const handleEntityClick = (entity: EntityMetadata) => {
+  const handleEntityClick = (entity: DetailedEntityMetadata) => {
     if (onEntitySelect) {
       onEntitySelect(entity);
     }
@@ -159,6 +173,8 @@ export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityL
           filteredEntities.map((entity) => {
             const isSelected = selectedEntity?.MetadataId === entity.MetadataId;
             const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName || 'Unknown Entity';
+            const description = entity.Description?.UserLocalizedLabel?.Label;
+            const attributeCount = entity.Attributes?.length || 0;
 
             return (
               <div
@@ -176,8 +192,24 @@ export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityL
                   <div className={styles.entityInfo}>
                     <Text className={styles.entityName}>{displayName}</Text>
                     <Text className={styles.entityLogicalName}>
-                      {entity.LogicalName || 'N/A'}
+                      {entity.LogicalName}
                     </Text>
+                    {description && (
+                      <Text className={styles.entityDescription}>
+                        {description.length > 100 ? `${description.substring(0, 100)}...` : description}
+                      </Text>
+                    )}
+                    <div className={styles.entityStats}>
+                      <Text className={styles.statBadge}>
+                        📊 {attributeCount} {attributeCount === 1 ? 'attribute' : 'attributes'}
+                      </Text>
+                      {entity.IsCustomEntity && (
+                        <Text className={styles.statBadge}>✨ Custom</Text>
+                      )}
+                      {entity.IsManaged && (
+                        <Text className={styles.statBadge}>🔒 Managed</Text>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

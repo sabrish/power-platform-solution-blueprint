@@ -49,12 +49,17 @@ export interface DetailedEntityMetadata {
   EntitySetName: string;
   PrimaryIdAttribute: string;
   PrimaryNameAttribute: string;
+  IsCustomEntity?: boolean;
+  IsManaged?: boolean;
+  IsCustomizable?: {
+    Value: boolean;
+  };
   Description?: {
     UserLocalizedLabel?: {
       Label: string;
     };
   };
-  Attributes: AttributeMetadata[];
+  Attributes?: AttributeMetadata[];
   Keys?: EntityKey[];
 }
 
