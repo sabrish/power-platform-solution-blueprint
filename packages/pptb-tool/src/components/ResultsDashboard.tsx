@@ -385,7 +385,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                       <EntityDetailView entity={selectedEntity} />
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', height: '600px' }}>
+                    <div style={{ display: 'flex', width: '100%', height: '600px' }}>
                       <EntityList
                         entities={result.entities.map((bp) => bp.entity)}
                         onEntitySelect={setSelectedEntity}

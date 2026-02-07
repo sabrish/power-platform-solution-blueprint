@@ -258,23 +258,22 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
       renderCell: (item) => getRequiredLevelBadge(item.RequiredLevel?.Value || 'None'),
     }),
     createTableColumn<AttributeMetadata>({
-      columnId: 'operations',
+      columnId: 'audit',
       renderHeaderCell: () => (
-        <div style={{ textAlign: 'center' }}>Operations</div>
+        <div style={{ textAlign: 'center' }}>Audit</div>
       ),
-      renderCell: (item) => (
-        <div style={{ display: 'flex', gap: tokens.spacingHorizontalXXS, justifyContent: 'center' }}>
-          {item.IsValidForCreate && (
-            <Badge size="small" appearance="tint" color="success">C</Badge>
-          )}
-          {item.IsValidForUpdate && (
-            <Badge size="small" appearance="tint" color="warning">U</Badge>
-          )}
-          {item.IsValidForRead && (
-            <Badge size="small" appearance="tint" color="informative">R</Badge>
-          )}
-        </div>
-      ),
+      renderCell: (item) => {
+        const isAudited = item.IsAuditEnabled?.Value === true;
+        return (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {isAudited ? (
+              <Badge appearance="filled" color="success">Enabled</Badge>
+            ) : (
+              <Badge appearance="outline" color="subtle">Disabled</Badge>
+            )}
+          </div>
+        );
+      },
     }),
   ];
 

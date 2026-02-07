@@ -13,6 +13,7 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
+    width: '100%',
     gap: tokens.spacingVerticalM,
     minHeight: 0,
   },
@@ -40,8 +41,10 @@ const useStyles = makeStyles({
   },
   entityCard: {
     cursor: 'pointer',
-    padding: tokens.spacingVerticalL,
-    marginBottom: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalM,
+    paddingLeft: tokens.spacingHorizontalM,
+    paddingRight: tokens.spacingHorizontalM,
+    marginBottom: tokens.spacingVerticalS,
     transition: 'all 0.2s ease',
     borderLeft: `4px solid transparent`,
     ':hover': {
@@ -70,7 +73,7 @@ const useStyles = makeStyles({
   entityInfo: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
+    gap: '2px',
     flex: 1,
     minWidth: 0,
   },
@@ -86,14 +89,14 @@ const useStyles = makeStyles({
   },
   entityDescription: {
     color: tokens.colorNeutralForeground2,
-    fontSize: tokens.fontSizeBase300,
-    marginTop: tokens.spacingVerticalS,
-    lineHeight: '1.5',
+    fontSize: tokens.fontSizeBase200,
+    marginTop: '4px',
+    lineHeight: '1.4',
   },
   entityStats: {
     display: 'flex',
     gap: tokens.spacingHorizontalS,
-    marginTop: tokens.spacingVerticalXXS,
+    marginTop: '4px',
   },
   statBadge: {
     fontSize: tokens.fontSizeBase200,

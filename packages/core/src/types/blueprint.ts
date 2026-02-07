@@ -81,6 +81,9 @@ export interface AttributeMetadata {
   IsValidForCreate: boolean;
   IsValidForUpdate: boolean;
   IsValidForRead: boolean;
+  IsAuditEnabled?: {
+    Value: boolean;
+  };
   RequiredLevel: {
     Value: string;
   };
