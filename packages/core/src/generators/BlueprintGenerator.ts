@@ -138,6 +138,8 @@ export class BlueprintGenerator {
         summary,
         plugins,
         pluginsByEntity,
+        flows: [], // TODO: Implement flow discovery
+        flowsByEntity: new Map(), // TODO: Implement flow grouping
       };
     } catch (error) {
       throw new Error(

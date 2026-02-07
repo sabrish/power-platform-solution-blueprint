@@ -103,12 +103,56 @@ export interface EntityKey {
  * Flow information
  */
 export interface Flow {
-  flowId: string;
+  id: string;
   name: string;
-  type: string;
-  trigger: string;
-  state: string;
+  description: string | null;
+  state: 'Draft' | 'Active' | 'Suspended';
+  stateCode: number;
+  entity: string | null;
+  entityDisplayName: string | null;
+  scope: number;
+  scopeName: string;
+  owner: string;
+  ownerId: string;
+  modifiedBy: string;
+  modifiedOn: string;
+  createdOn: string;
+  definition: FlowDefinition;
+  hasExternalCalls: boolean;
 }
+
+/**
+ * Parsed flow definition from clientdata
+ */
+export interface FlowDefinition {
+  triggerType: 'Dataverse' | 'Manual' | 'Scheduled' | 'Other';
+  triggerEvent: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Manual' | 'Scheduled' | 'Unknown';
+  triggerConditions: string | null;
+  scopeType: 'User' | 'BusinessUnit' | 'Organization' | 'Unknown';
+  actionsCount: number;
+  externalCalls: ExternalCall[];
+  connectionReferences: string[];
+}
+
+/**
+ * External HTTP call detected in flow
+ */
+export interface ExternalCall {
+  url: string;
+  domain: string;
+  method: string | null;
+  actionName: string;
+  confidence: 'High' | 'Medium' | 'Low';
+}
+
+/**
+ * Flow state color coding
+ */
+export const FLOW_STATE_COLORS = {
+  'Active': '#107C10',
+  'Draft': '#FFB900',
+  'Suspended': '#D13438',
+} as const;
 
 /**
  * Business rule information
@@ -167,6 +211,8 @@ export interface BlueprintResult {
   summary: BlueprintSummary;
   plugins: PluginStep[];
   pluginsByEntity: Map<string, PluginStep[]>;
+  flows: Flow[];
+  flowsByEntity: Map<string, Flow[]>;
 }
 
 // Re-export PluginStep from types.ts
