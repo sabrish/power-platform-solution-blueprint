@@ -3,6 +3,11 @@ import type { Flow, BusinessRule, ExecutionPipeline, ExecutionStep } from '../ty
 
 /**
  * Calculates execution order for entity events
+ *
+ * TODO: Add support for JavaScript form scripts
+ * - Query systemform table for form definitions
+ * - Parse FormXml to extract web resource libraries and event handlers
+ * - Include OnLoad, OnSave, onChange handlers in client-side execution
  */
 export class ExecutionOrderCalculator {
   /**
@@ -245,9 +250,9 @@ export class ExecutionOrderCalculator {
   }
 
   /**
-   * Get all unique events for an entity from plugins and flows
+   * Get all unique events for an entity from plugins, flows, and business rules
    */
-  getEntityEvents(entity: string, plugins: PluginStep[], flows: Flow[]): string[] {
+  getEntityEvents(entity: string, plugins: PluginStep[], flows: Flow[], businessRules: BusinessRule[]): string[] {
     const events = new Set<string>();
 
     // Add plugin events
@@ -267,6 +272,14 @@ export class ExecutionOrderCalculator {
           events.add('Update');
         }
       });
+
+    // Business rules execute on client-side during form operations (create/update)
+    // They run on form load and field changes, so they apply to both Create and Update
+    const entityBusinessRules = businessRules.filter((br) => br.entity === entity);
+    if (entityBusinessRules.length > 0) {
+      events.add('Create');
+      events.add('Update');
+    }
 
     return Array.from(events).sort();
   }

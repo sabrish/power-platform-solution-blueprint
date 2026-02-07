@@ -58,7 +58,8 @@ export function ExecutionPipelineView({ blueprint }: ExecutionPipelineViewProps)
     return calculator.getEntityEvents(
       blueprint.entity.LogicalName,
       blueprint.plugins,
-      blueprint.flows
+      blueprint.flows,
+      blueprint.businessRules
     );
   }, [blueprint]);
 
