@@ -169,11 +169,101 @@ export const FLOW_STATE_COLORS = {
  * Business rule information
  */
 export interface BusinessRule {
-  ruleId: string;
+  id: string;
   name: string;
-  scope: string;
-  isManaged: boolean;
+  description: string | null;
+  state: 'Draft' | 'Active';
+  entity: string;
+  entityDisplayName: string | null;
+  scope: 'Entity' | 'AllForms' | 'SpecificForm';
+  scopeName: string;
+  formId: string | null;
+  formName: string | null;
+  definition: BusinessRuleDefinition;
+  owner: string;
+  modifiedOn: string;
+  createdOn: string;
 }
+
+/**
+ * Parsed business rule definition from XAML
+ */
+export interface BusinessRuleDefinition {
+  conditions: Condition[];
+  actions: Action[];
+  executionContext: 'Client' | 'Server' | 'Both';
+  conditionLogic: string;
+  parseError?: string;
+}
+
+/**
+ * Business rule condition
+ */
+export interface Condition {
+  field: string;
+  operator: string;
+  value: string;
+  logicOperator: 'AND' | 'OR';
+}
+
+/**
+ * Business rule action
+ */
+export interface Action {
+  type: 'ShowField' | 'HideField' | 'SetValue' | 'SetRequired' | 'LockField' | 'UnlockField' | 'ShowError';
+  field: string;
+  value?: string;
+  message?: string;
+}
+
+/**
+ * Web resource information
+ */
+export interface WebResource {
+  id: string;
+  name: string;
+  displayName: string;
+  type: number;
+  typeName: string;
+  content: string | null;
+  contentSize: number;
+  description: string | null;
+  analysis: JavaScriptAnalysis | null;
+  modifiedBy: string;
+  modifiedOn: string;
+  createdOn: string;
+  hasExternalCalls: boolean;
+  isDeprecated: boolean;
+}
+
+/**
+ * JavaScript analysis results
+ */
+export interface JavaScriptAnalysis {
+  externalCalls: ExternalCall[];
+  usesXrm: boolean;
+  usesDeprecatedXrmPage: boolean;
+  frameworks: string[];
+  linesOfCode: number;
+  complexity: 'Low' | 'Medium' | 'High';
+}
+
+/**
+ * Web resource type name mapping
+ */
+export const WEB_RESOURCE_TYPE_NAMES = {
+  1: 'HTML',
+  2: 'CSS',
+  3: 'JavaScript',
+  4: 'XML',
+  5: 'PNG',
+  6: 'JPG',
+  7: 'GIF',
+  9: 'XSL',
+  10: 'ICO',
+  11: 'SVG',
+  12: 'RESX',
+} as const;
 
 /**
  * Complete blueprint for a single entity
@@ -224,6 +314,10 @@ export interface BlueprintResult {
   pluginsByEntity: Map<string, PluginStep[]>;
   flows: Flow[];
   flowsByEntity: Map<string, Flow[]>;
+  businessRules: BusinessRule[];
+  businessRulesByEntity: Map<string, BusinessRule[]>;
+  webResources: WebResource[];
+  webResourcesByType: Map<string, WebResource[]>;
 }
 
 // Re-export PluginStep from types.ts

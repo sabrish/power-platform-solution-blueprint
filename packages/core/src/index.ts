@@ -10,11 +10,18 @@ export type {
   EntityKey,
   Flow,
   BusinessRule,
+  BusinessRuleDefinition,
+  Condition,
+  Action,
+  WebResource,
+  JavaScriptAnalysis,
+  ExternalCall,
   EntityBlueprint,
   BlueprintSummary,
   BlueprintMetadata,
   BlueprintResult,
 } from './types/blueprint.js';
+export { WEB_RESOURCE_TYPE_NAMES } from './types/blueprint.js';
 export type {
   ComponentInventory,
   WorkflowInventory,

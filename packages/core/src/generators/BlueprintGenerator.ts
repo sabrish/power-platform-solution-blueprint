@@ -4,6 +4,8 @@ import { SolutionComponentDiscovery } from '../discovery/SolutionComponentDiscov
 import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
 import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
 import { FlowDiscovery } from '../discovery/FlowDiscovery.js';
+import { BusinessRuleDiscovery } from '../discovery/BusinessRuleDiscovery.js';
+import { WebResourceDiscovery } from '../discovery/WebResourceDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import type { EntityMetadata, PluginStep } from '../types.js';
 import type { ComponentInventory, WorkflowInventory } from '../types/components.js';
@@ -13,6 +15,8 @@ import type {
   EntityBlueprint,
   ProgressInfo,
   Flow,
+  BusinessRule,
+  WebResource,
 } from '../types/blueprint.js';
 
 /**
@@ -93,17 +97,27 @@ export class BlueprintGenerator {
       const flows = await this.processFlows(workflowInventory.flowIds);
       const flowsByEntity = this.groupFlowsByEntity(flows);
 
-      // STEP 5-7: Process other components (stubbed for now)
-      // These will be implemented later
       if (workflowInventory.flowIds.length === 0) {
         warnings.push('No flows found');
       }
+
+      // STEP 5: Process Business Rules
+      const businessRules = await this.processBusinessRules(workflowInventory.businessRuleIds);
+      const businessRulesByEntity = this.groupBusinessRulesByEntity(businessRules);
+
       if (workflowInventory.businessRuleIds.length === 0) {
         warnings.push('No business rules found');
       }
+
+      // STEP 6: Process Web Resources
+      const webResources = await this.processWebResources(inventory.webResourceIds);
+      const webResourcesByType = this.groupWebResourcesByType(webResources);
+
       if (inventory.webResourceIds.length === 0) {
         warnings.push('No web resources found');
       }
+
+      // STEP 7: Other components (stubbed for now)
       if (inventory.canvasAppIds.length === 0) {
         warnings.push('No canvas apps found');
       }
@@ -146,6 +160,10 @@ export class BlueprintGenerator {
         pluginsByEntity,
         flows,
         flowsByEntity,
+        businessRules,
+        businessRulesByEntity,
+        webResources,
+        webResourcesByType,
       };
     } catch (error) {
       throw new Error(
@@ -487,6 +505,134 @@ export class BlueprintGenerator {
     }
 
     return pluginsByEntity;
+  }
+
+  /**
+   * Process business rules - fetch detailed business rule metadata
+   */
+  private async processBusinessRules(businessRuleIds: string[]): Promise<BusinessRule[]> {
+    console.log(`📋 processBusinessRules called with ${businessRuleIds.length} business rule IDs`);
+
+    if (businessRuleIds.length === 0) {
+      console.log('📋 No business rules to process, returning empty array');
+      return [];
+    }
+
+    try {
+      // Report progress
+      this.reportProgress({
+        phase: 'business-rules',
+        entityName: '',
+        current: 0,
+        total: businessRuleIds.length,
+        message: `Documenting ${businessRuleIds.length} business rule${businessRuleIds.length > 1 ? 's' : ''}...`,
+      });
+
+      const businessRuleDiscovery = new BusinessRuleDiscovery(this.client);
+      const businessRules = await businessRuleDiscovery.getBusinessRulesByIds(businessRuleIds);
+
+      console.log(`📋 Successfully retrieved ${businessRules.length} business rule(s)`);
+
+      // Report completion
+      this.reportProgress({
+        phase: 'business-rules',
+        entityName: '',
+        current: businessRules.length,
+        total: businessRules.length,
+        message: 'Business rules documented',
+      });
+
+      return businessRules;
+    } catch (error) {
+      console.error('📋 ERROR processing business rules:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process web resources - fetch and analyze web resource content
+   */
+  private async processWebResources(webResourceIds: string[]): Promise<WebResource[]> {
+    console.log(`📦 processWebResources called with ${webResourceIds.length} web resource IDs`);
+
+    if (webResourceIds.length === 0) {
+      console.log('📦 No web resources to process, returning empty array');
+      return [];
+    }
+
+    try {
+      // Report progress
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: webResourceIds.length,
+        message: `Analyzing ${webResourceIds.length} web resource${webResourceIds.length > 1 ? 's' : ''}...`,
+      });
+
+      const webResourceDiscovery = new WebResourceDiscovery(this.client);
+      const webResources = await webResourceDiscovery.getWebResourcesByIds(webResourceIds);
+
+      console.log(`📦 Successfully retrieved ${webResources.length} web resource(s)`);
+
+      // Report completion
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: webResources.length,
+        total: webResources.length,
+        message: 'Web resources analyzed',
+      });
+
+      return webResources;
+    } catch (error) {
+      console.error('📦 ERROR processing web resources:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Group business rules by entity
+   */
+  private groupBusinessRulesByEntity(businessRules: BusinessRule[]): Map<string, BusinessRule[]> {
+    const businessRulesByEntity = new Map<string, BusinessRule[]>();
+
+    for (const rule of businessRules) {
+      const entity = rule.entity.toLowerCase();
+      if (!businessRulesByEntity.has(entity)) {
+        businessRulesByEntity.set(entity, []);
+      }
+      businessRulesByEntity.get(entity)!.push(rule);
+    }
+
+    // Sort business rules within each entity by name
+    for (const [, entityRules] of businessRulesByEntity) {
+      entityRules.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return businessRulesByEntity;
+  }
+
+  /**
+   * Group web resources by type
+   */
+  private groupWebResourcesByType(webResources: WebResource[]): Map<string, WebResource[]> {
+    const webResourcesByType = new Map<string, WebResource[]>();
+
+    for (const resource of webResources) {
+      const type = resource.typeName;
+      if (!webResourcesByType.has(type)) {
+        webResourcesByType.set(type, []);
+      }
+      webResourcesByType.get(type)!.push(resource);
+    }
+
+    // Sort web resources within each type by name
+    for (const [, typeResources] of webResourcesByType) {
+      typeResources.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return webResourcesByType;
   }
 
   /**

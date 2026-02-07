@@ -28,6 +28,8 @@ import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
 import { EntityList } from './EntityList';
 import { FlowsList } from './FlowsList';
+import { BusinessRulesList } from './BusinessRulesList';
+import { WebResourcesList } from './WebResourcesList';
 
 const useStyles = makeStyles({
   container: {
@@ -381,19 +383,11 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
             )}
 
             {selectedTab === 'businessRules' && hasResults('businessRules') && (
-              <div className={styles.emptyState}>
-                <Text style={{ fontSize: '48px' }}>📋</Text>
-                <Title3>Business Rules</Title3>
-                <Text>Business rules browser coming soon...</Text>
-              </div>
+              <BusinessRulesList businessRules={result.businessRules} />
             )}
 
             {selectedTab === 'webResources' && hasResults('webResources') && (
-              <div className={styles.emptyState}>
-                <Text style={{ fontSize: '48px' }}>🌐</Text>
-                <Title3>Web Resources</Title3>
-                <Text>Web resources browser coming soon...</Text>
-              </div>
+              <WebResourcesList webResources={result.webResources} />
             )}
 
             {selectedTab === 'canvasApps' && hasResults('canvasApps') && (
