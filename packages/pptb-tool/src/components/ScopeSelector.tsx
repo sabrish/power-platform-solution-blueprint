@@ -132,7 +132,8 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   const [selectedPublisherIds, setSelectedPublisherIds] = useState<string[]>([]);
   const [publisherScopeMode, setPublisherScopeMode] = useState<PublisherScopeMode>('all-solutions');
   const [selectedSolutionIds, setSelectedSolutionIds] = useState<string[]>([]);
-  const [includeSystem, setIncludeSystem] = useState(false);
+  const [includeSystem, setIncludeSystem] = useState(true);
+  const [excludeSystemFields, setExcludeSystemFields] = useState(true);
 
   // Load data on mount
   useEffect(() => {
@@ -248,6 +249,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         publisherPrefixes: selectedPubs.map((p) => p.customizationprefix),
         mode: publisherScopeMode,
         includeSystem,
+        excludeSystemFields,
       };
 
       if (publisherScopeMode === 'specific-solutions') {
@@ -262,6 +264,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         solutionIds: selectedSolutionIds,
         solutionNames: selectedSols.map((s) => s.friendlyname),
         includeSystem,
+        excludeSystemFields,
       };
     }
 
@@ -483,18 +486,33 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         </RadioGroup>
       </div>
 
-      {/* Include System Entities Checkbox */}
+      {/* Options Checkboxes */}
       <div className={styles.checkboxContainer}>
-        <Tooltip
-          content="Include Microsoft-owned entities like Account, Contact, Opportunity, etc."
-          relationship="label"
-        >
-          <Checkbox
-            label="Include system-owned entities"
-            checked={includeSystem}
-            onChange={(_, data) => setIncludeSystem(data.checked === true)}
-          />
-        </Tooltip>
+        <div>
+          <Tooltip
+            content="Include Microsoft-owned entities like Account, Contact, Opportunity, etc. (only if they are in the selected solutions)"
+            relationship="description"
+          >
+            <Checkbox
+              label="Include system-owned entities"
+              checked={includeSystem}
+              onChange={(_, data) => setIncludeSystem(data.checked === true)}
+            />
+          </Tooltip>
+        </div>
+
+        <div style={{ marginTop: tokens.spacingVerticalM }}>
+          <Tooltip
+            content="Exclude common system fields like createdon, createdby, modifiedon, modifiedby, ownerid, statecode, etc."
+            relationship="description"
+          >
+            <Checkbox
+              label="Exclude system fields (createdon, modifiedby, etc.)"
+              checked={excludeSystemFields}
+              onChange={(_, data) => setExcludeSystemFields(data.checked === true)}
+            />
+          </Tooltip>
+        </div>
       </div>
 
       {/* Continue Button */}

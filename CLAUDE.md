@@ -156,8 +156,30 @@ The app includes a professional scope selection screen with two main options:
 
 ### Components Structure
 - `src/components/ScopeSelector.tsx` - Main scope selection component
+- `src/components/EntityList.tsx` - Searchable entity list with Fluent UI
+- `src/hooks/useEntityDiscovery.ts` - Custom hook for fetching entities based on scope
 - `src/types/scope.ts` - TypeScript types for scope selection (discriminated union)
-- `src/App.tsx` - Main app with conditional rendering (ScopeSelector → Confirmation)
+- `src/App.tsx` - Main app flow: ScopeSelector → Entity List
+
+### Entity Discovery (Current)
+After scope selection, the app fetches and displays entities:
+
+**Core Package (@ppsb/core):**
+- `EntityDiscovery` class with three methods:
+  - `getEntitiesByPublisher(publisherPrefixes)` - Gets entities by publisher prefix
+  - `getEntitiesBySolutions(solutionIds)` - Gets entities from solution components
+  - `getAllEntities(includeSystem)` - Gets all entities with optional system filter
+- Uses `queryMetadata()` for EntityDefinitions endpoint
+- Queries solution components to find entities in solutions
+
+**UI Package (@ppsb/pptb):**
+- `useEntityDiscovery` hook - Fetches entities based on selected scope
+- `EntityList` component:
+  - Searchable list (filters by LogicalName or DisplayName)
+  - Shows entity count and search results count
+  - Click to select entity (logged to console)
+  - Empty state handling
+  - Sorted alphabetically by DisplayName
 
 ## Important Notes
 

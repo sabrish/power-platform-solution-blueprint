@@ -21,6 +21,7 @@ export interface PublisherScope {
   solutionIds?: string[]; // Only when mode is 'specific-solutions'
   solutionNames?: string[];
   includeSystem: boolean;
+  excludeSystemFields: boolean;
 }
 
 /**
@@ -31,6 +32,7 @@ export interface SolutionScope {
   solutionIds: string[];
   solutionNames: string[];
   includeSystem: boolean;
+  excludeSystemFields: boolean;
 }
 
 /**

@@ -8,8 +8,13 @@ import {
   CardHeader,
   makeStyles,
   tokens,
+  MessageBar,
+  MessageBarBody,
+  MessageBarTitle,
 } from '@fluentui/react-components';
 import { ScopeSelector } from './components/ScopeSelector';
+import { ProcessingScreen } from './components/ProcessingScreen';
+import { useBlueprint } from './hooks/useBlueprint';
 import type { ScopeSelection } from './types/scope';
 
 const useStyles = makeStyles({
@@ -17,9 +22,12 @@ const useStyles = makeStyles({
     padding: tokens.spacingVerticalXXL,
     maxWidth: '1200px',
     margin: '0 auto',
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
   },
   header: {
-    marginBottom: tokens.spacingVerticalXXL,
+    marginBottom: tokens.spacingVerticalL,
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
@@ -30,11 +38,8 @@ const useStyles = makeStyles({
   confirmationCard: {
     marginBottom: tokens.spacingVerticalL,
   },
-  scopeInfo: {
-    padding: tokens.spacingVerticalL,
-  },
   scopeDetails: {
-    marginTop: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalM,
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
@@ -45,51 +50,90 @@ const useStyles = makeStyles({
   value: {
     color: tokens.colorNeutralForeground2,
   },
-  buttonContainer: {
+  readyCard: {
+    marginBottom: tokens.spacingVerticalL,
+    textAlign: 'center',
+    padding: tokens.spacingVerticalXXL,
+  },
+  buttonGroup: {
     display: 'flex',
+    justifyContent: 'center',
     gap: tokens.spacingHorizontalM,
+    marginTop: tokens.spacingVerticalL,
+  },
+  successCard: {
+    marginBottom: tokens.spacingVerticalL,
+  },
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: tokens.spacingHorizontalM,
+    marginTop: tokens.spacingVerticalM,
+  },
+  summaryItem: {
+    textAlign: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  summaryValue: {
+    fontSize: tokens.fontSizeHero900,
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorBrandForeground1,
+  },
+  summaryLabel: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+    marginTop: tokens.spacingVerticalXS,
+  },
+  errorContainer: {
+    marginBottom: tokens.spacingVerticalL,
   },
 });
 
 function App() {
   const styles = useStyles();
   const [selectedScope, setSelectedScope] = useState<ScopeSelection | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const { generate, result, progress, isGenerating, error, cancel } = useBlueprint(
+    selectedScope!
+  );
 
   const handleScopeSelected = (scope: ScopeSelection) => {
     setSelectedScope(scope);
+    setShowConfirmation(true);
   };
 
   const handleChangeSelection = () => {
     setSelectedScope(null);
+    setShowConfirmation(false);
   };
 
-  const renderScopeDetails = (scope: ScopeSelection) => {
+  const handleGenerate = async () => {
+    await generate();
+  };
+
+  const handleCancel = () => {
+    cancel();
+    setShowConfirmation(true);
+  };
+
+  const renderScopeSummary = (scope: ScopeSelection) => {
     if (scope.type === 'publisher') {
       return (
-        <>
+        <div className={styles.scopeDetails}>
           <div>
-            <Text className={styles.label}>Scope Type: </Text>
-            <Text className={styles.value}>By Publisher</Text>
-          </div>
-          <div>
-            <Text className={styles.label}>Publishers ({scope.publisherIds.length}): </Text>
-            <Text className={styles.value}>{scope.publisherNames.join(', ')}</Text>
-          </div>
-          <div>
-            <Text className={styles.label}>Prefixes: </Text>
-            <Text className={styles.value}>{scope.publisherPrefixes.join(', ')}</Text>
-          </div>
-          <div>
-            <Text className={styles.label}>Mode: </Text>
+            <Text className={styles.label}>Scope: </Text>
             <Text className={styles.value}>
               {scope.mode === 'all-solutions'
-                ? `All solutions from selected publisher${scope.publisherIds.length > 1 ? 's' : ''}`
-                : 'Specific solutions only'}
+                ? `All solutions from ${scope.publisherNames.join(', ')}`
+                : `Specific solutions from ${scope.publisherNames.join(', ')}`}
             </Text>
           </div>
           {scope.mode === 'specific-solutions' && scope.solutionNames && (
             <div>
-              <Text className={styles.label}>Solutions ({scope.solutionIds?.length || 0}): </Text>
+              <Text className={styles.label}>Solutions: </Text>
               <Text className={styles.value}>{scope.solutionNames.join(', ')}</Text>
             </div>
           )}
@@ -97,38 +141,96 @@ function App() {
             <Text className={styles.label}>Include System Entities: </Text>
             <Text className={styles.value}>{scope.includeSystem ? 'Yes' : 'No'}</Text>
           </div>
-        </>
+        </div>
       );
     }
 
     if (scope.type === 'solution') {
       return (
-        <>
+        <div className={styles.scopeDetails}>
           <div>
-            <Text className={styles.label}>Scope Type: </Text>
-            <Text className={styles.value}>By Solution</Text>
+            <Text className={styles.label}>Scope: </Text>
+            <Text className={styles.value}>Selected Solutions</Text>
           </div>
           <div>
-            <Text className={styles.label}>Solutions ({scope.solutionIds.length}): </Text>
+            <Text className={styles.label}>Solutions: </Text>
             <Text className={styles.value}>{scope.solutionNames.join(', ')}</Text>
           </div>
           <div>
             <Text className={styles.label}>Include System Entities: </Text>
             <Text className={styles.value}>{scope.includeSystem ? 'Yes' : 'No'}</Text>
           </div>
-        </>
+        </div>
       );
     }
 
     return null;
   };
 
-  // Show scope selector if no scope is selected
-  if (!selectedScope) {
+  // Show scope selector
+  if (!selectedScope || !showConfirmation) {
     return <ScopeSelector onScopeSelected={handleScopeSelected} />;
   }
 
-  // Show confirmation screen after scope selection
+  // Show processing screen
+  if (isGenerating && progress) {
+    return <ProcessingScreen progress={progress} onCancel={handleCancel} />;
+  }
+
+  // Show results
+  if (result) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <Title1>Blueprint Generated Successfully!</Title1>
+          <Subtitle1 className={styles.subtitle}>
+            Your Power Platform system blueprint is ready
+          </Subtitle1>
+        </div>
+
+        <Card className={styles.successCard}>
+          <CardHeader
+            header={<Text weight="semibold" size={500}>Summary</Text>}
+          />
+          <div className={styles.scopeDetails}>
+            <div className={styles.summaryGrid}>
+              <div className={styles.summaryItem}>
+                <div className={styles.summaryValue}>{result.summary.totalEntities}</div>
+                <div className={styles.summaryLabel}>Entities</div>
+              </div>
+              <div className={styles.summaryItem}>
+                <div className={styles.summaryValue}>{result.summary.totalAttributes}</div>
+                <div className={styles.summaryLabel}>Attributes</div>
+              </div>
+              <div className={styles.summaryItem}>
+                <div className={styles.summaryValue}>{result.summary.totalPlugins}</div>
+                <div className={styles.summaryLabel}>Plugins</div>
+              </div>
+              <div className={styles.summaryItem}>
+                <div className={styles.summaryValue}>{result.summary.totalFlows}</div>
+                <div className={styles.summaryLabel}>Flows</div>
+              </div>
+              <div className={styles.summaryItem}>
+                <div className={styles.summaryValue}>{result.summary.totalBusinessRules}</div>
+                <div className={styles.summaryLabel}>Business Rules</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <div className={styles.buttonGroup}>
+          <Button appearance="secondary" onClick={handleChangeSelection}>
+            Generate Another
+          </Button>
+          <Button appearance="primary" disabled>
+            View Results (Coming Soon)
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show confirmation screen
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -138,18 +240,48 @@ function App() {
         </Subtitle1>
       </div>
 
+      {error && (
+        <div className={styles.errorContainer}>
+          <MessageBar intent="error">
+            <MessageBarBody>
+              <MessageBarTitle>Generation Failed</MessageBarTitle>
+              {error.message}
+              <br />
+              <Button
+                appearance="secondary"
+                size="small"
+                onClick={handleGenerate}
+                style={{ marginTop: '8px' }}
+              >
+                Retry
+              </Button>
+            </MessageBarBody>
+          </MessageBar>
+        </div>
+      )}
+
       <Card className={styles.confirmationCard}>
         <CardHeader header={<Text weight="semibold">Selected Scope</Text>} />
-        <div className={styles.scopeInfo}>
-          <div className={styles.scopeDetails}>{renderScopeDetails(selectedScope)}</div>
-        </div>
+        {renderScopeSummary(selectedScope)}
       </Card>
 
-      <div className={styles.buttonContainer}>
+      <Card className={styles.readyCard}>
+        <Text size={500} weight="semibold">
+          Ready to generate blueprint
+        </Text>
+        <Text style={{ marginTop: tokens.spacingVerticalM }}>
+          This will process all entities in your selected scope and generate a complete system
+          blueprint.
+        </Text>
+      </Card>
+
+      <div className={styles.buttonGroup}>
         <Button appearance="secondary" onClick={handleChangeSelection}>
           Change Selection
         </Button>
-        <Button appearance="primary">Generate Blueprint</Button>
+        <Button appearance="primary" onClick={handleGenerate}>
+          Generate Blueprint
+        </Button>
       </div>
     </div>
   );

@@ -40,6 +40,24 @@ export class PptbDataverseClient implements IDataverseClient {
   }
 
   /**
+   * Query Dataverse metadata with OData options
+   */
+  async queryMetadata<T>(metadataPath: string, options?: QueryOptions): Promise<QueryResult<T>> {
+    try {
+      const queryString = this.buildQueryString(options);
+      const odataQuery = queryString ? `${metadataPath}?${queryString}` : metadataPath;
+
+      const response = await this.pptbApi.dataverse.queryData(odataQuery, 'primary');
+
+      return this.parseResponse<T>(response);
+    } catch (error) {
+      throw new Error(
+        `Failed to query metadata ${metadataPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
    * Build OData query string from options
    */
   private buildQueryString(options?: QueryOptions): string {

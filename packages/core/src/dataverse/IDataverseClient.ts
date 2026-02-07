@@ -28,4 +28,12 @@ export interface IDataverseClient {
    * @returns Query result with array of entities
    */
   query<T>(entitySet: string, options?: QueryOptions): Promise<QueryResult<T>>;
+
+  /**
+   * Query Dataverse metadata (e.g., EntityDefinitions)
+   * @param metadataPath The metadata path (e.g., 'EntityDefinitions')
+   * @param options Query options (select, filter, expand, orderBy)
+   * @returns Query result with array of metadata objects
+   */
+  queryMetadata<T>(metadataPath: string, options?: QueryOptions): Promise<QueryResult<T>>;
 }

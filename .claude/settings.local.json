@@ -10,7 +10,11 @@
       "Bash(pnpm --filter @ppsb/pptb build:*)",
       "WebFetch(domain:docs.powerplatformtoolbox.com)",
       "Bash(pnpm add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(pnpm --filter @ppsb/core build:*)",
+      "Bash(pnpm -r build:*)"
     ]
   }
 }
