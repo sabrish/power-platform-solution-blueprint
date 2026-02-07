@@ -54,6 +54,15 @@ export class SolutionComponentDiscovery {
         filter: solutionFilters,
       });
 
+      console.log(`🔍 Solution Components Discovery: Found ${result.value.length} total components`);
+
+      // Count components by type for debugging
+      const typeCounts = new Map<number, number>();
+      for (const comp of result.value) {
+        typeCounts.set(comp.componenttype, (typeCounts.get(comp.componenttype) || 0) + 1);
+      }
+      console.log('📊 Components by type:', Object.fromEntries(typeCounts));
+
       // Group by component type (deduplicates across solutions)
       for (const component of result.value) {
         // Normalize GUID: remove braces and lowercase for consistent comparison
@@ -102,6 +111,18 @@ export class SolutionComponentDiscovery {
               break;
           }
         }
+
+      // Log final inventory counts
+      console.log('✅ Discovery Results:', {
+        entities: inventory.entityIds.length,
+        attributes: inventory.attributeIds.length,
+        plugins: inventory.pluginIds.length,
+        workflows: inventory.workflowIds.length,
+        webResources: inventory.webResourceIds.length,
+        canvasApps: inventory.canvasAppIds.length,
+        customPages: inventory.customPageIds.length,
+        connectionRefs: inventory.connectionReferenceIds.length,
+      });
 
       return inventory;
     } catch (error) {
