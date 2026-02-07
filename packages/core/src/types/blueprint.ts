@@ -151,6 +151,10 @@ export interface BlueprintSummary {
   totalFlows: number;
   totalBusinessRules: number;
   totalAttributes: number;
+  totalWebResources: number;
+  totalCanvasApps: number;
+  totalCustomPages: number;
+  totalConnectionReferences: number;
 }
 
 /**

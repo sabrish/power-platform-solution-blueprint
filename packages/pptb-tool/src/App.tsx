@@ -14,6 +14,7 @@ import {
 } from '@fluentui/react-components';
 import { ScopeSelector } from './components/ScopeSelector';
 import { ProcessingScreen } from './components/ProcessingScreen';
+import { ResultsDashboard } from './components/ResultsDashboard';
 import { useBlueprint } from './hooks/useBlueprint';
 import type { ScopeSelection } from './types/scope';
 
@@ -178,55 +179,14 @@ function App() {
   }
 
   // Show results
-  if (result) {
+  if (result && selectedScope) {
     return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <Title1>Blueprint Generated Successfully!</Title1>
-          <Subtitle1 className={styles.subtitle}>
-            Your Power Platform system blueprint is ready
-          </Subtitle1>
-        </div>
-
-        <Card className={styles.successCard}>
-          <CardHeader
-            header={<Text weight="semibold" size={500}>Summary</Text>}
-          />
-          <div className={styles.scopeDetails}>
-            <div className={styles.summaryGrid}>
-              <div className={styles.summaryItem}>
-                <div className={styles.summaryValue}>{result.summary.totalEntities}</div>
-                <div className={styles.summaryLabel}>Entities</div>
-              </div>
-              <div className={styles.summaryItem}>
-                <div className={styles.summaryValue}>{result.summary.totalAttributes}</div>
-                <div className={styles.summaryLabel}>Attributes</div>
-              </div>
-              <div className={styles.summaryItem}>
-                <div className={styles.summaryValue}>{result.summary.totalPlugins}</div>
-                <div className={styles.summaryLabel}>Plugins</div>
-              </div>
-              <div className={styles.summaryItem}>
-                <div className={styles.summaryValue}>{result.summary.totalFlows}</div>
-                <div className={styles.summaryLabel}>Flows</div>
-              </div>
-              <div className={styles.summaryItem}>
-                <div className={styles.summaryValue}>{result.summary.totalBusinessRules}</div>
-                <div className={styles.summaryLabel}>Business Rules</div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <div className={styles.buttonGroup}>
-          <Button appearance="secondary" onClick={handleChangeSelection}>
-            Generate Another
-          </Button>
-          <Button appearance="primary" disabled>
-            View Results (Coming Soon)
-          </Button>
-        </div>
-      </div>
+      <ResultsDashboard
+        result={result}
+        scope={selectedScope}
+        onStartOver={handleChangeSelection}
+        onExport={() => alert('Export functionality coming soon!')}
+      />
     );
   }
 

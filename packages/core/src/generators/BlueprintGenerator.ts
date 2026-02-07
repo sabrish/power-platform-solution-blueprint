@@ -103,6 +103,10 @@ export class BlueprintGenerator {
         totalFlows: workflowInventory.flowIds.length,
         totalBusinessRules: workflowInventory.businessRuleIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
+        totalWebResources: inventory.webResourceIds.length,
+        totalCanvasApps: inventory.canvasAppIds.length,
+        totalCustomPages: inventory.customPageIds.length,
+        totalConnectionReferences: inventory.connectionReferenceIds.length,
       };
 
       // Complete
