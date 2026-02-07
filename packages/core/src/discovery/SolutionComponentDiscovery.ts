@@ -36,6 +36,7 @@ export class SolutionComponentDiscovery {
     try {
       const inventory: ComponentInventory = {
         entityIds: [],
+        attributeIds: [],
         pluginIds: [],
         workflowIds: [],
         webResourceIds: [],
@@ -59,6 +60,11 @@ export class SolutionComponentDiscovery {
             case ComponentType.Entity:
               if (!inventory.entityIds.includes(objectId)) {
                 inventory.entityIds.push(objectId);
+              }
+              break;
+            case ComponentType.Attribute:
+              if (!inventory.attributeIds.includes(objectId)) {
+                inventory.attributeIds.push(objectId);
               }
               break;
             case ComponentType.Plugin:

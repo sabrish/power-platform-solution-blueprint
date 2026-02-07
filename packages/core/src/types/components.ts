@@ -7,6 +7,7 @@
  */
 export interface ComponentInventory {
   entityIds: string[];
+  attributeIds: string[];
   pluginIds: string[];
   workflowIds: string[];
   webResourceIds: string[];
@@ -30,6 +31,7 @@ export interface WorkflowInventory {
  */
 export enum ComponentType {
   Entity = 1,
+  Attribute = 2,
   Plugin = 80,
   Workflow = 29,
   WebResource = 61,

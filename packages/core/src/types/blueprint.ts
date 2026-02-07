@@ -64,6 +64,7 @@ export interface DetailedEntityMetadata {
 export interface AttributeMetadata {
   LogicalName: string;
   SchemaName: string;
+  MetadataId?: string;
   DisplayName?: {
     UserLocalizedLabel?: {
       Label: string;

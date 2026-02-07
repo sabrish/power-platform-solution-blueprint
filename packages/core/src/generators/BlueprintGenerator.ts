@@ -74,7 +74,7 @@ export class BlueprintGenerator {
       });
 
       // STEP 2: Process Entities
-      const entityBlueprints = await this.processEntities(entities);
+      const entityBlueprints = await this.processEntities(entities, inventory.attributeIds);
       if (entities.length === 0) {
         warnings.push('No entities found in selected scope');
       }
@@ -175,9 +175,10 @@ export class BlueprintGenerator {
       const entities = await entityDiscovery.getEntitiesByPublisher(this.scope.publisherPrefixes);
 
       // For publisher-based, we don't have component inventory
-      // Return empty inventory
+      // Return empty inventory (no attribute filtering for publisher-based)
       const inventory: ComponentInventory = {
         entityIds: entities.map(e => e.MetadataId),
+        attributeIds: [],
         pluginIds: [],
         workflowIds: [],
         webResourceIds: [],
@@ -200,9 +201,9 @@ export class BlueprintGenerator {
   }
 
   /**
-   * Process all entities - fetch detailed schema
+   * Process all entities - fetch detailed schema and filter attributes by solution
    */
-  private async processEntities(entities: EntityMetadata[]): Promise<EntityBlueprint[]> {
+  private async processEntities(entities: EntityMetadata[], attributeIds: string[]): Promise<EntityBlueprint[]> {
     const blueprints: EntityBlueprint[] = [];
     const total = entities.length;
 
@@ -227,6 +228,16 @@ export class BlueprintGenerator {
 
       const schemaDiscovery = new SchemaDiscovery(this.client);
       const detailedEntity = await schemaDiscovery.getEntitySchema(entity.LogicalName);
+
+      // Filter attributes to only those in the solution
+      if (detailedEntity.Attributes && attributeIds.length > 0) {
+        detailedEntity.Attributes = detailedEntity.Attributes.filter((attr) => {
+          // For attributes, we need to check if their MetadataId is in attributeIds
+          // The MetadataId from attribute metadata should match the objectid from solution components
+          const attrMetadataId = attr.MetadataId?.toLowerCase();
+          return attrMetadataId && attributeIds.includes(attrMetadataId);
+        });
+      }
 
       // Filter system fields if requested
       if (this.scope.excludeSystemFields && detailedEntity.Attributes) {
