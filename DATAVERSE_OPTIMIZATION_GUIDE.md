@@ -324,6 +324,53 @@ console.timeEnd('Batched'); // e.g., 500ms (10x faster!)
 
 ---
 
+## CRITICAL: GUID Handling Rules
+
+**⚠️ ALWAYS follow these rules when working with GUIDs:**
+
+### Rule 1: GUIDs in OData Filters MUST Be Quoted
+```typescript
+// ✅ CORRECT - Single quotes around GUID
+const filter = `id eq '${guidValue}'`;
+const filter = pluginIds.map(id => `pluginid eq '${id}'`).join(' or ');
+
+// ❌ WRONG - No quotes (returns 0 results even when records exist!)
+const filter = `id eq ${guidValue}`;
+const filter = pluginIds.map(id => `pluginid eq ${id}`).join(' or ');
+```
+
+### Rule 2: GUIDs Must Be Normalized for Comparison
+```typescript
+// ✅ CORRECT - Remove braces and lowercase for comparison
+private normalizeGuid(guid: string): string {
+  return guid.toLowerCase().replace(/[{}]/g, '');
+}
+
+// Compare normalized GUIDs
+const normalizedId = this.normalizeGuid(attr.MetadataId);
+return solutionAttrIds.some(solutionId =>
+  this.normalizeGuid(solutionId) === normalizedId
+);
+```
+
+### Rule 3: Store Normalized GUIDs
+```typescript
+// ✅ CORRECT - Normalize when storing
+const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
+inventory.pluginIds.push(objectId);
+
+// ❌ WRONG - Store with inconsistent formatting
+inventory.pluginIds.push(component.objectid);
+```
+
+**Why This Matters:**
+- Dataverse returns GUIDs with braces: `{guid-here}`
+- OData queries need quotes: `'guid-here'`
+- Comparisons need normalization: `guid-here` (no braces, lowercase)
+- Missing any of these = silent failures and 0 results
+
+---
+
 ## Checklist for New Features
 
 Before adding any Dataverse query:
@@ -333,6 +380,8 @@ Before adding any Dataverse query:
 - [ ] Do I need all these fields? → Use selective $select
 - [ ] Is this a one-to-many? → Pre-fetch and group in memory
 - [ ] Can I use $expand for related data?
+- [ ] **Are GUIDs in filters wrapped in single quotes?** ← CRITICAL
+- [ ] **Are GUIDs normalized (no braces, lowercase) for comparison?** ← CRITICAL
 - [ ] Have I tested with large datasets (50+ items)?
 - [ ] Did I add comments explaining the optimization?
 

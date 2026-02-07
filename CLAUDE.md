@@ -193,6 +193,39 @@ After scope selection, the app fetches and displays entities:
 4. **Strategic $expand** - Fetch related data when always needed
 5. **Track query counts** - Aim for < 50 queries per blueprint generation
 
+### CRITICAL: GUID Handling Rules
+
+**⚠️ GUIDs cause silent failures if not handled correctly!**
+
+**Rule 1: OData filters MUST wrap GUIDs in single quotes**
+```typescript
+// ✅ CORRECT
+const filter = `id eq '${guidValue}'`;
+// ❌ WRONG - Returns 0 results!
+const filter = `id eq ${guidValue}`;
+```
+
+**Rule 2: Normalize GUIDs for comparison (remove braces, lowercase)**
+```typescript
+// ✅ CORRECT
+private normalizeGuid(guid: string): string {
+  return guid.toLowerCase().replace(/[{}]/g, '');
+}
+```
+
+**Rule 3: Store normalized GUIDs consistently**
+```typescript
+// ✅ CORRECT - Always normalize when storing
+const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
+inventory.pluginIds.push(objectId);
+```
+
+**Why This Matters:**
+- Dataverse returns GUIDs with braces: `{guid-here}`
+- OData queries need quotes: `'guid-here'`
+- Comparisons need normalization: `guid-here` (no braces, lowercase)
+- Missing any of these = silent failures and 0 results
+
 ### Implemented Optimizations
 
 ✅ **Solution Component Discovery** - Batched from N queries to 1 query
@@ -207,6 +240,8 @@ After scope selection, the app fetches and displays entities:
 - [ ] Am I querying in a loop? → Batch with OR filters
 - [ ] Do I need all fields? → Use $select
 - [ ] Is this one-to-many? → Pre-fetch and group
+- [ ] **Are GUIDs in filters wrapped in single quotes?** ← CRITICAL!
+- [ ] **Are GUIDs normalized for comparison (no braces, lowercase)?** ← CRITICAL!
 - [ ] Tested with 50+ items?
 
 **See DATAVERSE_OPTIMIZATION_GUIDE.md for detailed patterns and examples.**
