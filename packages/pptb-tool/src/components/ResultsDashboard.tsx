@@ -27,6 +27,9 @@ import type { BlueprintResult, PluginStep } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
 import { PluginDetailView } from './PluginDetailView';
+import { EntityList } from './EntityList';
+import { EntityDetailView } from './EntityDetailView';
+import type { DetailedEntityMetadata } from '@ppsb/core';
 
 const useStyles = makeStyles({
   container: {
@@ -129,6 +132,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState<string>('entities');
   const [selectedPlugin, setSelectedPlugin] = useState<PluginStep | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<DetailedEntityMetadata | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -369,18 +373,26 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
             {selectedTab === 'entities' && (
               <>
                 {result.summary.totalEntities > 0 ? (
-                  <div style={{ padding: tokens.spacingVerticalL }}>
-                    <Text>Entity list coming soon...</Text>
-                    <div style={{ marginTop: tokens.spacingVerticalM }}>
-                      {result.entities.map((entity) => (
-                        <div key={entity.entity.LogicalName} style={{ marginBottom: tokens.spacingVerticalS }}>
-                          <Text weight="semibold">{entity.entity.LogicalName}</Text>
-                          <Text> - {entity.entity.DisplayName?.UserLocalizedLabel?.Label || 'No display name'}</Text>
-                          <Text> ({entity.entity.Attributes?.length || 0} fields)</Text>
-                        </div>
-                      ))}
+                  selectedEntity ? (
+                    <div>
+                      <Button
+                        appearance="secondary"
+                        onClick={() => setSelectedEntity(null)}
+                        style={{ marginBottom: tokens.spacingVerticalM }}
+                      >
+                        ← Back to Entity List
+                      </Button>
+                      <EntityDetailView entity={selectedEntity} />
                     </div>
-                  </div>
+                  ) : (
+                    <div style={{ display: 'flex', height: '600px' }}>
+                      <EntityList
+                        entities={result.entities.map((bp) => bp.entity)}
+                        onEntitySelect={setSelectedEntity}
+                        selectedEntity={selectedEntity}
+                      />
+                    </div>
+                  )
                 ) : (
                   <div className={styles.emptyState}>
                     <Text style={{ fontSize: '48px' }}>📊</Text>
