@@ -45,16 +45,18 @@ export class SolutionComponentDiscovery {
         connectionReferenceIds: [],
       };
 
-      // Query solution components for each solution
-      for (const solutionId of solutionIds) {
-        const result = await this.client.query<SolutionComponent>('solutioncomponents', {
-          select: ['objectid', 'componenttype'],
-          filter: `_solutionid_value eq ${solutionId}`,
-        });
+      // OPTIMIZED: Query all solution components in a single batch query using OR filters
+      // This reduces N queries (one per solution) to 1 query for all solutions
+      const solutionFilters = solutionIds.map(id => `_solutionid_value eq ${id}`).join(' or ');
 
-        // Group by component type
-        for (const component of result.value) {
-          const objectId = component.objectid.toLowerCase();
+      const result = await this.client.query<SolutionComponent>('solutioncomponents', {
+        select: ['objectid', 'componenttype'],
+        filter: solutionFilters,
+      });
+
+      // Group by component type (deduplicates across solutions)
+      for (const component of result.value) {
+        const objectId = component.objectid.toLowerCase();
 
           switch (component.componenttype) {
             case ComponentType.Entity:
@@ -99,7 +101,6 @@ export class SolutionComponentDiscovery {
               break;
           }
         }
-      }
 
       return inventory;
     } catch (error) {

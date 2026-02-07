@@ -181,6 +181,36 @@ After scope selection, the app fetches and displays entities:
   - Empty state handling
   - Sorted alphabetically by DisplayName
 
+## Performance & Optimization
+
+**CRITICAL:** See `DATAVERSE_OPTIMIZATION_GUIDE.md` for comprehensive performance patterns.
+
+### Key Performance Rules
+
+1. **NEVER query in loops** - Always batch queries with OR filters
+2. **Pre-fetch and group** - Fetch all related data once, group in memory
+3. **Use selective $select** - Only request fields you need
+4. **Strategic $expand** - Fetch related data when always needed
+5. **Track query counts** - Aim for < 50 queries per blueprint generation
+
+### Implemented Optimizations
+
+✅ **Solution Component Discovery** - Batched from N queries to 1 query
+✅ **Plugin Image Fetching** - Batched from N queries to 1 query
+✅ **Workflow Classification** - Single batch query with OR filters
+✅ **Entity Metadata** - In-memory filtering when API doesn't support server filters
+✅ **Attribute Filtering** - Only shows attributes actually in solution
+
+### Before Adding New Queries
+
+- [ ] Can this be combined with existing query?
+- [ ] Am I querying in a loop? → Batch with OR filters
+- [ ] Do I need all fields? → Use $select
+- [ ] Is this one-to-many? → Pre-fetch and group
+- [ ] Tested with 50+ items?
+
+**See DATAVERSE_OPTIMIZATION_GUIDE.md for detailed patterns and examples.**
+
 ## Important Notes
 
 - ✅ **Always use `window.toolboxAPI.dataverse.queryData()` for OData queries**
@@ -190,3 +220,4 @@ After scope selection, the app fetches and displays entities:
 - 📦 **Package Manager:** pnpm workspaces
 - 🔧 **Build Tool:** Vite + TypeScript (strict mode)
 - 🎯 **Default Scope:** "By Solution" is the recommended and default selection
+- ⚡ **Performance:** Follow DATAVERSE_OPTIMIZATION_GUIDE.md patterns

@@ -38,6 +38,7 @@ interface RawPluginStep {
  */
 interface RawPluginImage {
   sdkmessageprocessingstepimageid: string;
+  _sdkmessageprocessingstepid_value?: string;
   imagetype: number;
   name: string;
   attributes: string | null;
@@ -89,12 +90,18 @@ export class PluginDiscovery {
         orderBy: ['stage asc', 'rank asc'],
       });
 
+      // OPTIMIZED: Pre-fetch all plugin images in a single batch query
+      // This reduces N queries (one per plugin) to 1 query for all plugins
+      const allImages = await this.getPluginImagesForAllSteps(
+        result.value.map(r => r.sdkmessageprocessingstepid)
+      );
+
       // Process each plugin step
       const pluginSteps: PluginStep[] = [];
 
       for (const raw of result.value) {
-        // Query images for this plugin
-        const images = await this.getPluginImages(raw.sdkmessageprocessingstepid);
+        // Get images from pre-fetched data
+        const images = allImages.get(raw.sdkmessageprocessingstepid) || { preImage: null, postImage: null };
 
         // Build complete plugin step
         const pluginStep: PluginStep = {
@@ -133,27 +140,44 @@ export class PluginDiscovery {
   }
 
   /**
-   * Get plugin images (pre and post) for a plugin step
+   * Get plugin images (pre and post) for multiple plugin steps in a single batch query
+   * OPTIMIZED: Reduces N queries to 1 query
    */
-  private async getPluginImages(
-    pluginStepId: string
-  ): Promise<{ preImage: ImageDefinition | null; postImage: ImageDefinition | null }> {
+  private async getPluginImagesForAllSteps(
+    pluginStepIds: string[]
+  ): Promise<Map<string, { preImage: ImageDefinition | null; postImage: ImageDefinition | null }>> {
+    const imageMap = new Map<string, { preImage: ImageDefinition | null; postImage: ImageDefinition | null }>();
+
+    // Initialize map with null images for all steps
+    for (const stepId of pluginStepIds) {
+      imageMap.set(stepId, { preImage: null, postImage: null });
+    }
+
+    if (pluginStepIds.length === 0) {
+      return imageMap;
+    }
+
     try {
+      // Batch query all images with OR filter
+      const imageFilters = pluginStepIds.map(id => `_sdkmessageprocessingstepid_value eq ${id}`).join(' or ');
+
       const result = await this.client.query<RawPluginImage>('sdkmessageprocessingstepimages', {
         select: [
           'sdkmessageprocessingstepimageid',
+          '_sdkmessageprocessingstepid_value',
           'imagetype',
           'name',
           'attributes',
           'messagepropertyname',
         ],
-        filter: `_sdkmessageprocessingstepid_value eq ${pluginStepId}`,
+        filter: imageFilters,
       });
 
-      let preImage: ImageDefinition | null = null;
-      let postImage: ImageDefinition | null = null;
-
+      // Group images by plugin step ID
       for (const raw of result.value) {
+        const stepId = (raw as any)._sdkmessageprocessingstepid_value?.toLowerCase();
+        if (!stepId) continue;
+
         const imageType = raw.imagetype === 0 ? 'PreImage' : 'PostImage';
         const image: ImageDefinition = {
           id: raw.sdkmessageprocessingstepimageid,
@@ -163,18 +187,21 @@ export class PluginDiscovery {
           messagePropertyName: raw.messagepropertyname,
         };
 
-        if (imageType === 'PreImage') {
-          preImage = image;
-        } else {
-          postImage = image;
+        const stepImages = imageMap.get(stepId);
+        if (stepImages) {
+          if (imageType === 'PreImage') {
+            stepImages.preImage = image;
+          } else {
+            stepImages.postImage = image;
+          }
         }
       }
 
-      return { preImage, postImage };
+      return imageMap;
     } catch (error) {
-      // If images query fails, just return null images
-      console.warn(`Failed to retrieve images for plugin ${pluginStepId}:`, error);
-      return { preImage: null, postImage: null };
+      // If images query fails, return map with null images
+      console.warn('Failed to retrieve plugin images in batch:', error);
+      return imageMap;
     }
   }
 
