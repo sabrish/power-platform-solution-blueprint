@@ -9,11 +9,11 @@ interface BusinessRuleRecord {
   statecode: number;
   primaryentity: string | null;
   scope: number;
-  _formid_value: string | null;
   xaml: string | null;
   clientdata: string | null;
   modifiedon: string;
   createdon: string;
+  // Formatted values come automatically as OData annotations
   '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
   '_formid_value@OData.Community.Display.V1.FormattedValue'?: string;
   'primaryentity@OData.Community.Display.V1.FormattedValue'?: string;
@@ -45,6 +45,8 @@ export class BusinessRuleDiscovery {
       const filter = `(${filters.join(' or ')}) and category eq 2`;
 
       // Fetch workflow records with category=2 (Business Rules)
+      // Note: Don't select lookup fields directly (_formid_value, _ownerid_value)
+      // Formatted values come automatically as OData annotations
       const response = await this.client.query<BusinessRuleRecord>('workflows', {
         select: [
           'workflowid',
@@ -53,7 +55,6 @@ export class BusinessRuleDiscovery {
           'statecode',
           'primaryentity',
           'scope',
-          '_formid_value',
           'xaml',
           'clientdata',
           'modifiedon',
@@ -90,7 +91,6 @@ export class BusinessRuleDiscovery {
           'statecode',
           'primaryentity',
           'scope',
-          '_formid_value',
           'xaml',
           'clientdata',
           'modifiedon',
@@ -142,7 +142,7 @@ export class BusinessRuleDiscovery {
       entityDisplayName: record['primaryentity@OData.Community.Display.V1.FormattedValue'] || null,
       scope,
       scopeName,
-      formId: record._formid_value,
+      formId: null, // Cannot get formId without expansion
       formName: record['_formid_value@OData.Community.Display.V1.FormattedValue'] || null,
       definition,
       owner: record['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
