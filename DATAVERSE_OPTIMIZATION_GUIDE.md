@@ -328,16 +328,26 @@ console.timeEnd('Batched'); // e.g., 500ms (10x faster!)
 
 **⚠️ ALWAYS follow these rules when working with GUIDs:**
 
-### Rule 1: GUIDs in OData Filters MUST Be Quoted
+### Rule 1: GUIDs in OData Filters - No Quotes, No Braces
 ```typescript
-// ✅ CORRECT - Single quotes around GUID
-const filter = `id eq '${guidValue}'`;
-const filter = pluginIds.map(id => `pluginid eq '${id}'`).join(' or ');
+// ✅ CORRECT - Raw GUID without quotes or braces
+const cleanGuid = guidValue.replace(/[{}]/g, '');
+const filter = `id eq ${cleanGuid}`;
 
-// ❌ WRONG - No quotes (returns 0 results even when records exist!)
-const filter = `id eq ${guidValue}`;
-const filter = pluginIds.map(id => `pluginid eq ${id}`).join(' or ');
+// Example with multiple IDs
+const filter = pluginIds.map(id => {
+  const cleanGuid = id.replace(/[{}]/g, '');
+  return `pluginid eq ${cleanGuid}`;
+}).join(' or ');
+
+// ❌ WRONG - With quotes (incorrect OData syntax)
+const filter = `id eq '${guidValue}'`;
+
+// ❌ WRONG - With braces
+const filter = `id eq {${guidValue}}`;
 ```
+
+**Why:** Dataverse OData accepts raw GUIDs without quotes or braces in filters.
 
 ### Rule 2: GUIDs Must Be Normalized for Comparison
 ```typescript

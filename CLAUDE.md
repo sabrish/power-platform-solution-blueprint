@@ -6,7 +6,20 @@ This is a monorepo for **Power Platform Solution Blueprint (PPSB)**, a documenta
 
 **Tagline:** "Complete architectural blueprints for your Power Platform systems"
 
-## PPTB Desktop API Reference
+## Critical Documentation References
+
+**⚠️ ALWAYS CHECK THESE FIRST - DO NOT GUESS!**
+
+### Microsoft Dataverse Documentation
+- **[Solution Component Types](https://learn.microsoft.com/en-us/power-apps/developer/data-platform/reference/entities/solutioncomponent)** - Complete component type list
+- **[SDK Message Processing Step](https://learn.microsoft.com/en-us/power-apps/developer/data-platform/reference/entities/sdkmessageprocessingstep)** - Plugin step schema
+- **[SDK Message Processing Step Image](https://learn.microsoft.com/en-us/power-apps/developer/data-platform/reference/entities/sdkmessageprocessingstepimage)** - Plugin image schema
+- **[Workflow Table](https://learn.microsoft.com/en-us/power-apps/developer/data-platform/reference/entities/workflow)** - Workflow/flow schema
+- **[Web API Reference](https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/reference/)** - OData query reference
+
+**📚 Local Reference:** See `COMPONENT_TYPES_REFERENCE.md` for complete component type list
+
+### PPTB Desktop API Reference
 
 **IMPORTANT:** This project uses PPTB Desktop API. Official documentation: https://docs.powerplatformtoolbox.com/tool-development/api-reference
 
@@ -197,12 +210,17 @@ After scope selection, the app fetches and displays entities:
 
 **⚠️ GUIDs cause silent failures if not handled correctly!**
 
-**Rule 1: OData filters MUST wrap GUIDs in single quotes**
+**Rule 1: OData filters use raw GUIDs (no quotes, no braces)**
 ```typescript
-// ✅ CORRECT
+// ✅ CORRECT - Raw GUID without quotes or braces
+const cleanGuid = guidValue.replace(/[{}]/g, '');
+const filter = `id eq ${cleanGuid}`;
+
+// ❌ WRONG - With quotes
 const filter = `id eq '${guidValue}'`;
-// ❌ WRONG - Returns 0 results!
-const filter = `id eq ${guidValue}`;
+
+// ❌ WRONG - With braces
+const filter = `id eq {${guidValue}}`;
 ```
 
 **Rule 2: Normalize GUIDs for comparison (remove braces, lowercase)**
@@ -248,9 +266,13 @@ inventory.pluginIds.push(objectId);
 
 ## Important Notes
 
+- ⚠️ **CRITICAL: Check COMPONENT_TYPES_REFERENCE.md before implementing component discovery**
+- ⚠️ **NEVER guess component type values - use official Microsoft documentation**
 - ✅ **Always use `window.toolboxAPI.dataverse.queryData()` for OData queries**
 - ❌ **Never use `executeDataverseRequest()` - it doesn't exist**
-- 📚 **Check official docs:** https://docs.powerplatformtoolbox.com/tool-development/api-reference
+- 📚 **Check official docs first:**
+  - Microsoft Dataverse: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/
+  - PPTB Desktop: https://docs.powerplatformtoolbox.com/tool-development/api-reference
 - 🎨 **UI Framework:** Fluent UI React v9 (includes @fluentui/react-icons)
 - 📦 **Package Manager:** pnpm workspaces
 - 🔧 **Build Tool:** Vite + TypeScript (strict mode)
