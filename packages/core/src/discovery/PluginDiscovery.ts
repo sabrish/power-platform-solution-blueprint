@@ -65,9 +65,11 @@ export class PluginDiscovery {
     }
 
     try {
-      // Build filter for multiple IDs
-      const filterClauses = pluginIds.map((id) => `sdkmessageprocessingstepid eq ${id}`);
+      // Build filter for multiple IDs (GUIDs need single quotes in OData)
+      const filterClauses = pluginIds.map((id) => `sdkmessageprocessingstepid eq '${id}'`);
       const filter = filterClauses.join(' or ');
+
+      console.log('🔌 Plugin query filter:', filter);
 
       // Query plugin steps with expanded relationships
       const result = await this.client.query<RawPluginStep>('sdkmessageprocessingsteps', {
@@ -87,6 +89,8 @@ export class PluginDiscovery {
           'sdkmessageid($select=name),plugintypeid($select=typename,name,assemblyname,plugintypeid),sdkmessagefilterid($select=primaryobjecttypecode),impersonatinguserid($select=fullname,systemuserid)',
         orderBy: ['stage asc', 'rank asc'],
       });
+
+      console.log(`🔌 Plugin query returned ${result.value.length} results`);
 
       // OPTIMIZED: Pre-fetch all plugin images in a single batch query
       // This reduces N queries (one per plugin) to 1 query for all plugins
@@ -156,8 +160,8 @@ export class PluginDiscovery {
     }
 
     try {
-      // Batch query all images with OR filter
-      const imageFilters = pluginStepIds.map(id => `_sdkmessageprocessingstepid_value eq ${id}`).join(' or ');
+      // Batch query all images with OR filter (GUIDs need single quotes in OData)
+      const imageFilters = pluginStepIds.map(id => `_sdkmessageprocessingstepid_value eq '${id}'`).join(' or ');
 
       const result = await this.client.query<RawPluginImage>('sdkmessageprocessingstepimages', {
         select: [
