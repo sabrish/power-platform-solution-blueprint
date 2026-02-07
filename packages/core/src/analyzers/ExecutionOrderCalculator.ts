@@ -1,5 +1,5 @@
 import type { PluginStep } from '../types.js';
-import type { Flow, BusinessRule, ExecutionPipeline, ExecutionStep } from '../types/blueprint.js';
+import type { Flow, BusinessRule, ExecutionPipeline, ExecutionStep, FormDefinition } from '../types/blueprint.js';
 
 /**
  * Calculates execution order for entity events
@@ -17,6 +17,7 @@ export class ExecutionOrderCalculator {
    * @param plugins Plugin steps for this entity
    * @param flows Flows for this entity
    * @param businessRules Business rules for this entity
+   * @param forms Form definitions for this entity
    * @returns Complete execution pipeline
    */
   calculatePipeline(
@@ -24,7 +25,8 @@ export class ExecutionOrderCalculator {
     event: string,
     plugins: PluginStep[],
     flows: Flow[],
-    businessRules: BusinessRule[]
+    businessRules: BusinessRule[],
+    forms: FormDefinition[] = []
   ): ExecutionPipeline {
     // Filter relevant plugins for this event
     const relevantPlugins = plugins.filter(
@@ -46,11 +48,11 @@ export class ExecutionOrderCalculator {
     // All business rules are client-side
     const relevantBusinessRules = businessRules.filter((br) => br.entity === entity);
 
-    // Build client-side steps
-    const clientSide = this.buildClientSideSteps(relevantBusinessRules);
+    // Build client-side steps (AllForms and SpecificForm scoped business rules, and form scripts)
+    const clientSide = this.buildClientSideSteps(relevantBusinessRules, forms, event);
 
-    // Build server-side steps
-    const serverSideSync = this.buildServerSideSteps(relevantPlugins, relevantFlows);
+    // Build server-side steps (plugins, flows, and entity-scoped business rules)
+    const serverSideSync = this.buildServerSideSteps(relevantPlugins, relevantFlows, relevantBusinessRules);
 
     // Build async steps
     const serverSideAsync = this.buildAsyncSteps(relevantPlugins, relevantFlows);
@@ -78,28 +80,69 @@ export class ExecutionOrderCalculator {
   }
 
   /**
-   * Build client-side execution steps from business rules
+   * Build client-side execution steps from business rules and form event handlers
    */
-  private buildClientSideSteps(businessRules: BusinessRule[]): ExecutionStep[] {
-    return businessRules
-      .filter((br) => br.state === 'Active')
-      .map((br, index) => ({
-        order: index + 1,
-        type: 'BusinessRule' as const,
-        name: br.name,
-        id: br.id,
-        mode: 'Client' as const,
-        hasExternalCall: false, // Business rules don't make external calls
-        description: br.description || undefined,
-      }));
+  private buildClientSideSteps(businessRules: BusinessRule[], forms: FormDefinition[], event: string): ExecutionStep[] {
+    const steps: ExecutionStep[] = [];
+
+    // Add form-scoped business rules (AllForms and SpecificForm scope)
+    businessRules
+      .filter((br) => br.state === 'Active' && br.scope !== 'Entity') // Entity scope runs server-side
+      .forEach((br) => {
+        steps.push({
+          order: 0, // Will be set after all steps are collected
+          type: 'BusinessRule' as const,
+          name: br.name,
+          id: br.id,
+          mode: 'Client' as const,
+          hasExternalCall: false, // Business rules don't make external calls
+          description: br.description || undefined,
+        });
+      });
+
+    // Add JavaScript event handlers (OnLoad for Create/Update, OnSave for Create/Update)
+    forms.forEach((form) => {
+      form.eventHandlers
+        .filter((handler) => handler.enabled)
+        .forEach((handler) => {
+          // OnLoad executes for both Create and Update
+          // OnSave executes for both Create and Update
+          // OnChange executes for both Create and Update
+          const isRelevant =
+            (event === 'Create' || event === 'Update') &&
+            (handler.event === 'OnLoad' || handler.event === 'OnSave' || handler.event === 'OnChange');
+
+          if (isRelevant) {
+            const handlerName = handler.attribute
+              ? `${handler.functionName} (${handler.attribute})`
+              : handler.functionName;
+
+            steps.push({
+              order: 0, // Will be set after all steps are collected
+              type: 'JavaScript' as const,
+              name: handlerName,
+              id: `${form.id}-${handler.event}-${handler.functionName}`,
+              mode: 'Client' as const,
+              hasExternalCall: false, // Would need web resource analysis to determine
+              description: `${handler.event} handler - ${handler.libraryName}`,
+            });
+          }
+        });
+    });
+
+    // Set execution order (business rules first, then JavaScript handlers)
+    steps.forEach((step, i) => (step.order = i + 1));
+
+    return steps;
   }
 
   /**
-   * Build server-side synchronous steps from plugins and flows
+   * Build server-side synchronous steps from plugins, flows, and entity-scoped business rules
    */
   private buildServerSideSteps(
     plugins: PluginStep[],
-    flows: Flow[]
+    flows: Flow[],
+    businessRules: BusinessRule[]
   ): {
     preValidation: ExecutionStep[];
     preOperation: ExecutionStep[];
@@ -164,6 +207,21 @@ export class ExecutionOrderCalculator {
           hasExternalCall: flow.hasExternalCalls,
           externalEndpoints: flow.definition.externalCalls.map((c) => c.url),
           description: flow.description || undefined,
+        });
+      });
+
+    // Add entity-scoped business rules to postOperation (they run server-side)
+    businessRules
+      .filter((br) => br.state === 'Active' && br.scope === 'Entity')
+      .forEach((br) => {
+        postOperation.push({
+          order: 0, // Will be set after grouping
+          type: 'BusinessRule' as const,
+          name: br.name,
+          id: br.id,
+          mode: 'Sync' as const,
+          hasExternalCall: false,
+          description: br.description || undefined,
         });
       });
 
@@ -250,9 +308,15 @@ export class ExecutionOrderCalculator {
   }
 
   /**
-   * Get all unique events for an entity from plugins, flows, and business rules
+   * Get all unique events for an entity from plugins, flows, business rules, and forms
    */
-  getEntityEvents(entity: string, plugins: PluginStep[], flows: Flow[], businessRules: BusinessRule[]): string[] {
+  getEntityEvents(
+    entity: string,
+    plugins: PluginStep[],
+    flows: Flow[],
+    businessRules: BusinessRule[],
+    forms: FormDefinition[] = []
+  ): string[] {
     const events = new Set<string>();
 
     // Add plugin events
@@ -277,6 +341,13 @@ export class ExecutionOrderCalculator {
     // They run on form load and field changes, so they apply to both Create and Update
     const entityBusinessRules = businessRules.filter((br) => br.entity === entity);
     if (entityBusinessRules.length > 0) {
+      events.add('Create');
+      events.add('Update');
+    }
+
+    // Form event handlers (OnLoad, OnSave, OnChange) execute during Create and Update
+    const entityForms = forms.filter((f) => f.entity === entity);
+    if (entityForms.some((f) => f.eventHandlers.length > 0)) {
       events.add('Create');
       events.add('Update');
     }

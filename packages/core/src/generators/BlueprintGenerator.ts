@@ -5,6 +5,7 @@ import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
 import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
 import { FlowDiscovery } from '../discovery/FlowDiscovery.js';
 import { BusinessRuleDiscovery } from '../discovery/BusinessRuleDiscovery.js';
+import { FormDiscovery } from '../discovery/FormDiscovery.js';
 import { WebResourceDiscovery } from '../discovery/WebResourceDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import type { EntityMetadata, PluginStep } from '../types.js';
@@ -117,15 +118,20 @@ export class BlueprintGenerator {
         warnings.push('No web resources found');
       }
 
-      // STEP 7: Populate automation in entity blueprints
+      // STEP 7: Process Forms and JavaScript Event Handlers
+      const forms = await this.processForms(entities.map((e) => e.LogicalName));
+      const formsByEntity = this.groupFormsByEntity(forms);
+
+      // STEP 8: Populate automation in entity blueprints
       for (const blueprint of entityBlueprints) {
         const entityName = blueprint.entity.LogicalName;
         blueprint.plugins = pluginsByEntity.get(entityName) || [];
         blueprint.flows = flowsByEntity.get(entityName) || [];
         blueprint.businessRules = businessRulesByEntity.get(entityName) || [];
+        blueprint.forms = formsByEntity.get(entityName) || [];
       }
 
-      // STEP 8: Other components (stubbed for now)
+      // STEP 9: Other components (stubbed for now)
       if (inventory.canvasAppIds.length === 0) {
         warnings.push('No canvas apps found');
       }
@@ -302,6 +308,7 @@ export class BlueprintGenerator {
         plugins: [],
         flows: [],
         businessRules: [],
+        forms: [],
       });
 
       // Small delay to be respectful to API
@@ -619,6 +626,71 @@ export class BlueprintGenerator {
     }
 
     return businessRulesByEntity;
+  }
+
+  /**
+   * Process forms and JavaScript event handlers
+   */
+  private async processForms(entityNames: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
+    console.log(`📋 processForms called for ${entityNames.length} entities`);
+
+    if (entityNames.length === 0) {
+      console.log('📋 No entities to process forms for, returning empty array');
+      return [];
+    }
+
+    try {
+      // Report progress
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: entityNames.length,
+        message: `Discovering forms and JavaScript handlers...`,
+      });
+
+      const formDiscovery = new FormDiscovery(this.client);
+      const forms = await formDiscovery.getFormsForEntities(entityNames);
+
+      console.log(`📋 Successfully retrieved ${forms.length} form(s) with event handlers`);
+
+      // Report completion
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: forms.length,
+        total: forms.length,
+        message: 'Forms and JavaScript handlers discovered',
+      });
+
+      return forms;
+    } catch (error) {
+      console.error('❌ Error processing forms:', error);
+      // Don't fail the entire generation if forms fail
+      return [];
+    }
+  }
+
+  /**
+   * Group forms by entity
+   */
+  private groupFormsByEntity(forms: import('../types/blueprint.js').FormDefinition[]): Map<string, import('../types/blueprint.js').FormDefinition[]> {
+    const formsByEntity = new Map<string, import('../types/blueprint.js').FormDefinition[]>();
+
+    for (const form of forms) {
+      const entity = form.entity.toLowerCase();
+      if (!formsByEntity.has(entity)) {
+        formsByEntity.set(entity, []);
+      }
+      formsByEntity.get(entity)!.push(form);
+    }
+
+    // Sort forms within each entity by name
+    for (const [, entityForms] of formsByEntity) {
+      entityForms.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return formsByEntity;
   }
 
   /**

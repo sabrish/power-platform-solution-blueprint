@@ -316,6 +316,32 @@ export interface Action {
 }
 
 /**
+ * Form event handler information
+ */
+export interface FormEventHandler {
+  event: 'OnLoad' | 'OnSave' | 'OnChange' | 'TabStateChange' | 'OnReadyStateComplete' | 'OnRecordSelect';
+  libraryName: string;
+  functionName: string;
+  attribute?: string; // For OnChange events
+  enabled: boolean;
+  parameters?: string;
+}
+
+/**
+ * Form information with JavaScript handlers
+ */
+export interface FormDefinition {
+  id: string;
+  name: string;
+  type: number; // 2=Main, 7=Quick Create, 8=Quick View, etc.
+  typeName: string;
+  entity: string;
+  formXml: string;
+  libraries: string[]; // Web resource names
+  eventHandlers: FormEventHandler[];
+}
+
+/**
  * Web resource information
  */
 export interface WebResource {
@@ -417,6 +443,7 @@ export interface EntityBlueprint {
   plugins: PluginStep[];
   flows: Flow[];
   businessRules: BusinessRule[];
+  forms: FormDefinition[];
   executionPipelines?: Map<string, ExecutionPipeline>;
   performanceRisks?: PerformanceRisk[];
 }

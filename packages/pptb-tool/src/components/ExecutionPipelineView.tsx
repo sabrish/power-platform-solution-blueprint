@@ -59,7 +59,8 @@ export function ExecutionPipelineView({ blueprint }: ExecutionPipelineViewProps)
       blueprint.entity.LogicalName,
       blueprint.plugins,
       blueprint.flows,
-      blueprint.businessRules
+      blueprint.businessRules,
+      blueprint.forms
     );
   }, [blueprint]);
 
@@ -80,7 +81,8 @@ export function ExecutionPipelineView({ blueprint }: ExecutionPipelineViewProps)
       selectedEvent,
       blueprint.plugins,
       blueprint.flows,
-      blueprint.businessRules
+      blueprint.businessRules,
+      blueprint.forms
     );
 
     // Analyze performance risks

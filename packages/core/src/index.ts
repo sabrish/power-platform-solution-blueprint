@@ -18,6 +18,8 @@ export type {
   BusinessRuleDefinition,
   Condition,
   Action,
+  FormDefinition,
+  FormEventHandler,
   WebResource,
   JavaScriptAnalysis,
   ExternalCall,
@@ -50,6 +52,7 @@ export { SchemaDiscovery } from './discovery/SchemaDiscovery.js';
 export { PluginDiscovery } from './discovery/PluginDiscovery.js';
 export { FlowDiscovery } from './discovery/FlowDiscovery.js';
 export { BusinessRuleDiscovery } from './discovery/BusinessRuleDiscovery.js';
+export { FormDiscovery } from './discovery/FormDiscovery.js';
 
 // Generators
 export { BlueprintGenerator } from './generators/BlueprintGenerator.js';
