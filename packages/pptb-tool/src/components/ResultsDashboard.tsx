@@ -23,12 +23,14 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, PluginStep } from '@ppsb/core';
+import type { BlueprintResult, PluginStep, Flow } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
 import { PluginDetailView } from './PluginDetailView';
 import { EntityList } from './EntityList';
 import { EntityDetailView } from './EntityDetailView';
+import { FlowsList } from './FlowsList';
+import { FlowDetailView } from './FlowDetailView';
 import type { DetailedEntityMetadata } from '@ppsb/core';
 
 const useStyles = makeStyles({
@@ -133,6 +135,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [selectedTab, setSelectedTab] = useState<string>('entities');
   const [selectedPlugin, setSelectedPlugin] = useState<PluginStep | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<DetailedEntityMetadata | null>(null);
+  const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -426,10 +429,23 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
             )}
 
             {selectedTab === 'flows' && hasResults('flows') && (
-              <div className={styles.emptyState}>
-                <Text style={{ fontSize: '48px' }}>🌊</Text>
-                <Title3>Flows</Title3>
-                <Text>Flow browser coming soon...</Text>
+              <div style={{ display: 'flex', gap: tokens.spacingHorizontalL }}>
+                <div style={{ flex: selectedFlow ? 1 : 'auto', minWidth: 0 }}>
+                  <FlowsList
+                    flows={result.flows}
+                    onFlowClick={setSelectedFlow}
+                  />
+                </div>
+                {selectedFlow && (
+                  <div style={{ flex: 1, minWidth: '400px', maxWidth: '600px', overflowY: 'auto' }}>
+                    <Card>
+                      <FlowDetailView
+                        flow={selectedFlow}
+                        onClose={() => setSelectedFlow(null)}
+                      />
+                    </Card>
+                  </div>
+                )}
               </div>
             )}
 

@@ -3,6 +3,7 @@ import { EntityDiscovery } from '../discovery/EntityDiscovery.js';
 import { SolutionComponentDiscovery } from '../discovery/SolutionComponentDiscovery.js';
 import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
 import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
+import { FlowDiscovery } from '../discovery/FlowDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import type { EntityMetadata, PluginStep } from '../types.js';
 import type { ComponentInventory, WorkflowInventory } from '../types/components.js';
@@ -11,6 +12,7 @@ import type {
   BlueprintResult,
   EntityBlueprint,
   ProgressInfo,
+  Flow,
 } from '../types/blueprint.js';
 
 /**
@@ -87,7 +89,11 @@ export class BlueprintGenerator {
         warnings.push('No plugins found');
       }
 
-      // STEP 4-7: Process other components (stubbed for now)
+      // STEP 4: Process Flows
+      const flows = await this.processFlows(workflowInventory.flowIds);
+      const flowsByEntity = this.groupFlowsByEntity(flows);
+
+      // STEP 5-7: Process other components (stubbed for now)
       // These will be implemented later
       if (workflowInventory.flowIds.length === 0) {
         warnings.push('No flows found');
@@ -138,8 +144,8 @@ export class BlueprintGenerator {
         summary,
         plugins,
         pluginsByEntity,
-        flows: [], // TODO: Implement flow discovery
-        flowsByEntity: new Map(), // TODO: Implement flow grouping
+        flows,
+        flowsByEntity,
       };
     } catch (error) {
       throw new Error(
@@ -387,6 +393,75 @@ export class BlueprintGenerator {
       console.error('🔌 ERROR processing plugins:', error);
       throw error;
     }
+  }
+
+  /**
+   * Process flows - fetch detailed flow metadata
+   */
+  private async processFlows(flowIds: string[]): Promise<Flow[]> {
+    console.log(`🌊 processFlows called with ${flowIds.length} flow IDs:`, flowIds);
+
+    if (flowIds.length === 0) {
+      console.log('🌊 No flows to process, returning empty array');
+      return [];
+    }
+
+    try {
+      // Report progress
+      this.reportProgress({
+        phase: 'flows',
+        entityName: '',
+        current: 0,
+        total: flowIds.length,
+        message: `Documenting ${flowIds.length} flow${flowIds.length > 1 ? 's' : ''}...`,
+      });
+
+      const flowDiscovery = new FlowDiscovery(this.client);
+      const flows = await flowDiscovery.getFlowsByIds(flowIds);
+
+      console.log(`🌊 Successfully retrieved ${flows.length} flow(s)`);
+
+      // Report completion
+      this.reportProgress({
+        phase: 'flows',
+        entityName: '',
+        current: flows.length,
+        total: flows.length,
+        message: 'Flows documented',
+      });
+
+      return flows;
+    } catch (error) {
+      console.error('🌊 ERROR processing flows:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Group flows by entity for entity-specific views
+   */
+  private groupFlowsByEntity(flows: Flow[]): Map<string, Flow[]> {
+    const flowsByEntity = new Map<string, Flow[]>();
+
+    for (const flow of flows) {
+      if (!flow.entity) {
+        // Flows without an entity go in a special "global" bucket
+        continue;
+      }
+
+      const entity = flow.entity.toLowerCase();
+      if (!flowsByEntity.has(entity)) {
+        flowsByEntity.set(entity, []);
+      }
+      flowsByEntity.get(entity)!.push(flow);
+    }
+
+    // Sort flows within each entity by name
+    for (const [, entityFlows] of flowsByEntity) {
+      entityFlows.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return flowsByEntity;
   }
 
   /**
