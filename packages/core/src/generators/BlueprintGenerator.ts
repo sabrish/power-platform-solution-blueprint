@@ -229,8 +229,12 @@ export class BlueprintGenerator {
       const schemaDiscovery = new SchemaDiscovery(this.client);
       const detailedEntity = await schemaDiscovery.getEntitySchema(entity.LogicalName);
 
-      // Filter attributes to only those in the solution
-      if (detailedEntity.Attributes && attributeIds.length > 0) {
+      // For custom entities, all attributes are implicitly included
+      // Only filter attributes for system entities
+      const isCustomEntity = entity.IsCustomEntity;
+
+      if (detailedEntity.Attributes && !isCustomEntity && attributeIds.length > 0) {
+        // Only filter system entity attributes to those in solution
         const originalCount = detailedEntity.Attributes.length;
 
         detailedEntity.Attributes = detailedEntity.Attributes.filter((attr) => {
@@ -245,13 +249,13 @@ export class BlueprintGenerator {
           );
         });
 
-        // Debug logging for custom entities
-        if (entity.LogicalName.includes('_') && detailedEntity.Attributes.length === 0) {
-          console.warn(
-            `⚠️ ${entity.LogicalName}: Filtered from ${originalCount} to 0 attributes. ` +
-            `This might indicate a GUID format mismatch.`
-          );
-        }
+        console.log(
+          `📊 ${entity.LogicalName} (system): Filtered ${originalCount} → ${detailedEntity.Attributes.length} attributes`
+        );
+      } else if (isCustomEntity) {
+        console.log(
+          `📊 ${entity.LogicalName} (custom): Keeping all ${detailedEntity.Attributes?.length || 0} attributes`
+        );
       }
 
       // Filter system fields if requested
