@@ -51,7 +51,7 @@ const useStyles = makeStyles({
   },
   entityRow: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'start',
     gap: tokens.spacingHorizontalM,
     padding: tokens.spacingVerticalM,
     backgroundColor: tokens.colorNeutralBackground1,
@@ -100,9 +100,9 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground2,
     fontSize: tokens.fontSizeBase300,
     flex: 1,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+    hyphens: 'auto',
   },
   entityStats: {
     display: 'flex',

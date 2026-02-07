@@ -27,9 +27,9 @@ const useStyles = makeStyles({
   },
   pluginRow: {
     display: 'grid',
-    gridTemplateColumns: '24px 40px 1fr auto auto auto auto',
+    gridTemplateColumns: '24px 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
     gap: tokens.spacingHorizontalM,
-    alignItems: 'center',
+    alignItems: 'start',
     padding: tokens.spacingVerticalM,
     backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
@@ -58,11 +58,12 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: '2px',
     minWidth: 0,
+    wordBreak: 'break-word',
   },
-  truncate: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
+  wrapText: {
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+    hyphens: 'auto',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -263,15 +264,15 @@ export function PluginsList({
               </div>
               <Text className={styles.rank}>{plugin.rank}</Text>
               <div className={styles.nameColumn}>
-                <Text weight="semibold" className={styles.truncate} title={plugin.name}>
+                <Text weight="semibold" className={styles.wrapText}>
                   {plugin.name}
                 </Text>
-                <Text className={`${styles.truncate} ${styles.codeText}`} title={plugin.assemblyName}>
+                <Text className={`${styles.wrapText} ${styles.codeText}`}>
                   {plugin.assemblyName}
                 </Text>
               </div>
               {!entityLogicalName && (
-                <Text className={`${styles.truncate} ${styles.codeText}`} title={plugin.entity}>
+                <Text className={`${styles.wrapText} ${styles.codeText}`}>
                   {plugin.entity}
                 </Text>
               )}

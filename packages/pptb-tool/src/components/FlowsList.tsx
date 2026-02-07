@@ -27,9 +27,9 @@ const useStyles = makeStyles({
   },
   flowRow: {
     display: 'grid',
-    gridTemplateColumns: '24px 1fr auto auto auto auto',
+    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
     gap: tokens.spacingHorizontalM,
-    alignItems: 'center',
+    alignItems: 'start',
     padding: tokens.spacingVerticalM,
     backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
@@ -54,11 +54,12 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: '2px',
     minWidth: 0,
+    wordBreak: 'break-word',
   },
-  truncate: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
+  wrapText: {
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+    hyphens: 'auto',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -311,17 +312,17 @@ export function FlowsList({
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <div className={styles.nameColumn}>
-                <Text weight="semibold" className={styles.truncate} title={flow.name}>
+                <Text weight="semibold" className={styles.wrapText}>
                   {flow.name}
                 </Text>
                 {flow.description && (
-                  <Text className={`${styles.truncate} ${styles.codeText}`} title={flow.description}>
+                  <Text className={`${styles.wrapText} ${styles.codeText}`}>
                     {flow.description}
                   </Text>
                 )}
               </div>
               {!entityLogicalName && flow.entity && (
-                <Text className={`${styles.truncate} ${styles.codeText}`} title={flow.entity}>
+                <Text className={`${styles.wrapText} ${styles.codeText}`}>
                   {flow.entity}
                 </Text>
               )}
