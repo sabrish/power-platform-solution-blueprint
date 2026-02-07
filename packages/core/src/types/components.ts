@@ -28,11 +28,15 @@ export interface WorkflowInventory {
 
 /**
  * Solution component type codes
+ * Reference: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/reference/entities/solutioncomponent
  */
 export enum ComponentType {
   Entity = 1,
   Attribute = 2,
-  Plugin = 80,
+  PluginType = 90,
+  PluginAssembly = 91,
+  SdkMessageProcessingStep = 92,  // Plugin steps
+  SdkMessageProcessingStepImage = 93,  // Plugin step images
   Workflow = 29,
   WebResource = 61,
   CanvasApp = 300,

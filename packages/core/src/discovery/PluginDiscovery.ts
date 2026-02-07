@@ -65,11 +65,11 @@ export class PluginDiscovery {
     }
 
     try {
-      // Build filter for multiple IDs (GUIDs need braces and quotes in OData)
+      // Build filter for multiple IDs (use OData v4 guid literal syntax)
       const filterClauses = pluginIds.map((id) => {
-        // Add braces back if not present
-        const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
-        return `sdkmessageprocessingstepid eq '${guidWithBraces}'`;
+        // Remove braces if present for OData guid literal
+        const cleanGuid = id.replace(/[{}]/g, '');
+        return `sdkmessageprocessingstepid eq ${cleanGuid}`;
       });
       const filter = filterClauses.join(' or ');
 

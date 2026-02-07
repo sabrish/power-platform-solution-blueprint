@@ -82,7 +82,7 @@ export class SolutionComponentDiscovery {
                 inventory.attributeIds.push(objectId);
               }
               break;
-            case ComponentType.Plugin:
+            case ComponentType.SdkMessageProcessingStep:
               if (!inventory.pluginIds.includes(objectId)) {
                 inventory.pluginIds.push(objectId);
                 console.log(`🔌 Found plugin: ${objectId}`);
