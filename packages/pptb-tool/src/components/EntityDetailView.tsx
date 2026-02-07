@@ -98,6 +98,11 @@ const useStyles = makeStyles({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  wrapText: {
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+    hyphens: 'auto',
+  },
 });
 
 interface EntityDetailViewProps {
@@ -209,11 +214,11 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
         </Button>
       ),
       renderCell: (item) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <Text weight="semibold">
+        <div style={{ display: 'flex', flexDirection: 'column', wordBreak: 'break-word' }}>
+          <Text weight="semibold" className={styles.wrapText}>
             {item.DisplayName?.UserLocalizedLabel?.Label || item.LogicalName}
           </Text>
-          <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>
+          <Text className={styles.wrapText} style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>
             {item.LogicalName}
           </Text>
         </div>
@@ -232,9 +237,9 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
         </Button>
       ),
       renderCell: (item) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS, wordBreak: 'break-word' }}>
           <Text>{getTypeIcon(item.AttributeType)}</Text>
-          <Text>{item.AttributeType}</Text>
+          <Text className={styles.wrapText}>{item.AttributeType}</Text>
         </div>
       ),
     }),
@@ -244,8 +249,8 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
       renderCell: (item) => {
         const desc = item.Description?.UserLocalizedLabel?.Label;
         return desc ? (
-          <Text style={{ fontSize: tokens.fontSizeBase200 }}>
-            {desc.length > 100 ? `${desc.substring(0, 100)}...` : desc}
+          <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200 }}>
+            {desc}
           </Text>
         ) : (
           <Text style={{ color: tokens.colorNeutralForeground4 }}>—</Text>

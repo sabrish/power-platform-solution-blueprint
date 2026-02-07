@@ -149,6 +149,11 @@ const useStyles = makeStyles({
     fontFamily: 'Consolas, Monaco, monospace',
     fontSize: tokens.fontSizeBase200,
   },
+  wrapText: {
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+    hyphens: 'auto',
+  },
   tableContainer: {
     maxHeight: '400px',
     overflowY: 'auto',
@@ -229,11 +234,11 @@ export function EntityList({ entities }: EntityListProps) {
         columnId: 'displayName',
         renderHeaderCell: () => 'Attribute',
         renderCell: (item) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <Text weight="semibold">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', wordBreak: 'break-word' }}>
+            <Text weight="semibold" className={styles.wrapText}>
               {item.DisplayName?.UserLocalizedLabel?.Label || item.LogicalName}
             </Text>
-            <Text className={styles.codeText} style={{ color: tokens.colorNeutralForeground3 }}>
+            <Text className={`${styles.codeText} ${styles.wrapText}`} style={{ color: tokens.colorNeutralForeground3 }}>
               {item.LogicalName}
             </Text>
           </div>
@@ -242,7 +247,21 @@ export function EntityList({ entities }: EntityListProps) {
       createTableColumn<AttributeMetadata>({
         columnId: 'type',
         renderHeaderCell: () => 'Type',
-        renderCell: (item) => <Text>{item.AttributeType}</Text>,
+        renderCell: (item) => <Text className={styles.wrapText}>{item.AttributeType}</Text>,
+      }),
+      createTableColumn<AttributeMetadata>({
+        columnId: 'description',
+        renderHeaderCell: () => 'Description',
+        renderCell: (item) => {
+          const desc = item.Description?.UserLocalizedLabel?.Label;
+          return desc ? (
+            <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200 }}>
+              {desc}
+            </Text>
+          ) : (
+            <Text style={{ color: tokens.colorNeutralForeground4 }}>—</Text>
+          );
+        },
       }),
       createTableColumn<AttributeMetadata>({
         columnId: 'required',
