@@ -81,6 +81,9 @@ export interface AttributeMetadata {
   IsValidForCreate: boolean;
   IsValidForUpdate: boolean;
   IsValidForRead: boolean;
+  IsValidForAdvancedFind?: {
+    Value: boolean;
+  };
   IsAuditEnabled?: {
     Value: boolean;
   };

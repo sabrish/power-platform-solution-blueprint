@@ -275,6 +275,24 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
         );
       },
     }),
+    createTableColumn<AttributeMetadata>({
+      columnId: 'searchable',
+      renderHeaderCell: () => (
+        <div style={{ textAlign: 'center' }}>Searchable</div>
+      ),
+      renderCell: (item) => {
+        const isSearchable = item.IsValidForAdvancedFind?.Value === true;
+        return (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {isSearchable ? (
+              <Badge appearance="filled" color="brand">Yes</Badge>
+            ) : (
+              <Badge appearance="outline" color="subtle">No</Badge>
+            )}
+          </div>
+        );
+      },
+    }),
   ];
 
   return (

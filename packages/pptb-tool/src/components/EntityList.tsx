@@ -63,8 +63,9 @@ const useStyles = makeStyles({
   },
   entityItem: {
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: tokens.spacingHorizontalM,
+    width: '100%',
   },
   entityIcon: {
     color: tokens.colorBrandForeground1,
@@ -72,31 +73,36 @@ const useStyles = makeStyles({
   },
   entityInfo: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalM,
     flex: 1,
     minWidth: 0,
   },
   entityName: {
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase500,
+    fontSize: tokens.fontSizeBase400,
     color: tokens.colorNeutralForeground1,
+    flexShrink: 0,
   },
   entityLogicalName: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase300,
     fontFamily: 'Consolas, Monaco, monospace',
+    flexShrink: 0,
   },
   entityDescription: {
     color: tokens.colorNeutralForeground2,
-    fontSize: tokens.fontSizeBase200,
-    marginTop: '4px',
-    lineHeight: '1.4',
+    fontSize: tokens.fontSizeBase300,
+    flex: 1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   entityStats: {
     display: 'flex',
     gap: tokens.spacingHorizontalS,
-    marginTop: '4px',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   statBadge: {
     fontSize: tokens.fontSizeBase200,
@@ -207,18 +213,18 @@ export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityL
                     </Text>
                     {description && (
                       <Text className={styles.entityDescription}>
-                        {description.length > 100 ? `${description.substring(0, 100)}...` : description}
+                        {description}
                       </Text>
                     )}
                     <div className={styles.entityStats}>
                       <Text className={styles.statBadge}>
-                        📊 {attributeCount} {attributeCount === 1 ? 'attribute' : 'attributes'}
+                        {attributeCount} attr{attributeCount !== 1 ? 's' : ''}
                       </Text>
                       {entity.IsCustomEntity && (
-                        <Text className={styles.statBadge}>✨ Custom</Text>
+                        <Text className={styles.statBadge}>Custom</Text>
                       )}
                       {entity.IsManaged && (
-                        <Text className={styles.statBadge}>🔒 Managed</Text>
+                        <Text className={styles.statBadge}>Managed</Text>
                       )}
                     </div>
                   </div>

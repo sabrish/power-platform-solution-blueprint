@@ -4,10 +4,14 @@ import {
   Badge,
   makeStyles,
   tokens,
-  Accordion,
-  AccordionHeader,
-  AccordionItem,
-  AccordionPanel,
+  DataGrid,
+  DataGridHeader,
+  DataGridRow,
+  DataGridHeaderCell,
+  DataGridBody,
+  DataGridCell,
+  TableColumnDefinition,
+  createTableColumn,
 } from '@fluentui/react-components';
 import type { PluginStep } from '@ppsb/core';
 
@@ -26,45 +30,15 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalL,
     color: tokens.colorNeutralForeground3,
   },
-  groupHeader: {
-    fontSize: tokens.fontSizeBase400,
-    fontWeight: tokens.fontWeightSemibold,
-    marginBottom: tokens.spacingVerticalS,
-  },
-  pluginRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalM,
-    padding: tokens.spacingVerticalM,
-    cursor: 'pointer',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-    },
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  pluginName: {
-    flex: 1,
-    fontWeight: tokens.fontWeightSemibold,
+  tableContainer: {
+    maxHeight: '800px',
+    overflowY: 'auto',
   },
   badgeGroup: {
     display: 'flex',
     gap: tokens.spacingHorizontalS,
     alignItems: 'center',
-  },
-  rankBadge: {
-    width: '24px',
-    height: '24px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: tokens.fontSizeBase200,
-    fontWeight: tokens.fontWeightSemibold,
-    backgroundColor: tokens.colorBrandBackground,
-    color: tokens.colorNeutralForegroundOnBrand,
-  },
-  imageIndicator: {
-    fontSize: tokens.fontSizeBase200,
+    flexWrap: 'wrap',
   },
 });
 
@@ -80,7 +54,6 @@ export interface PluginsListProps {
 export function PluginsList({
   plugins,
   entityLogicalName,
-  groupBy = 'message',
   onPluginClick,
 }: PluginsListProps) {
   const styles = useStyles();
@@ -91,43 +64,19 @@ export function PluginsList({
     return plugins.filter((p) => p.entity.toLowerCase() === entityLogicalName.toLowerCase());
   }, [plugins, entityLogicalName]);
 
-  // Group plugins
-  const groupedPlugins = useMemo(() => {
-    const groups = new Map<string, PluginStep[]>();
-
-    for (const plugin of filteredPlugins) {
-      let groupKey: string;
-      switch (groupBy) {
-        case 'message':
-          groupKey = plugin.message;
-          break;
-        case 'stage':
-          groupKey = plugin.stageName;
-          break;
-        case 'assembly':
-          groupKey = plugin.assemblyName;
-          break;
-        case 'none':
-          groupKey = 'all';
-          break;
-      }
-
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, []);
-      }
-      groups.get(groupKey)!.push(plugin);
-    }
-
-    // Sort plugins within each group by stage and rank
-    for (const [, groupPlugins] of groups) {
-      groupPlugins.sort((a, b) => {
-        if (a.stage !== b.stage) return a.stage - b.stage;
-        return a.rank - b.rank;
-      });
-    }
-
-    return groups;
-  }, [filteredPlugins, groupBy]);
+  // Sort plugins by stage and rank
+  const sortedPlugins = useMemo(() => {
+    return [...filteredPlugins].sort((a, b) => {
+      // First by entity
+      if (a.entity !== b.entity) return a.entity.localeCompare(b.entity);
+      // Then by message
+      if (a.message !== b.message) return a.message.localeCompare(b.message);
+      // Then by stage
+      if (a.stage !== b.stage) return a.stage - b.stage;
+      // Then by rank
+      return a.rank - b.rank;
+    });
+  }, [filteredPlugins]);
 
   const getStageBadgeColor = (stage: number): string => {
     const stageColors: Record<number, string> = {
@@ -139,41 +88,93 @@ export function PluginsList({
     return stageColors[stage] || tokens.colorNeutralForeground3;
   };
 
-  const renderPlugin = (plugin: PluginStep) => (
-    <div
-      key={plugin.id}
-      className={styles.pluginRow}
-      onClick={() => onPluginClick?.(plugin)}
-    >
-      <div className={styles.rankBadge}>{plugin.rank}</div>
-      <div className={styles.pluginName}>
-        <Text weight="semibold">{plugin.name}</Text>
-      </div>
-      <div className={styles.badgeGroup}>
-        <Badge
-          appearance="filled"
-          style={{
-            backgroundColor: getStageBadgeColor(plugin.stage),
-            color: 'white',
-          }}
-        >
-          {plugin.stageName}
-        </Badge>
-        <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'}>
-          {plugin.modeName}
-        </Badge>
-        {groupBy !== 'message' && <Badge appearance="outline">{plugin.message}</Badge>}
-        {!entityLogicalName && <Badge appearance="outline" color="subtle">{plugin.entity}</Badge>}
-        {plugin.filteringAttributes.length > 0 && (
-          <Badge appearance="tint" color="warning" size="small">
-            {plugin.filteringAttributes.length} filter{plugin.filteringAttributes.length > 1 ? 's' : ''}
+  const columns: TableColumnDefinition<PluginStep>[] = useMemo(() => {
+    const cols: TableColumnDefinition<PluginStep>[] = [
+      createTableColumn<PluginStep>({
+        columnId: 'rank',
+        renderHeaderCell: () => 'Rank',
+        renderCell: (item) => (
+          <Text weight="semibold">{item.rank}</Text>
+        ),
+      }),
+      createTableColumn<PluginStep>({
+        columnId: 'name',
+        renderHeaderCell: () => 'Step Name',
+        renderCell: (item) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <Text weight="semibold">{item.name}</Text>
+            <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>
+              {item.assemblyName}
+            </Text>
+          </div>
+        ),
+      }),
+    ];
+
+    // Only show entity column if not filtering by entity
+    if (!entityLogicalName) {
+      cols.push(
+        createTableColumn<PluginStep>({
+          columnId: 'entity',
+          renderHeaderCell: () => 'Entity',
+          renderCell: (item) => (
+            <Text style={{ fontFamily: 'Consolas, Monaco, monospace' }}>{item.entity}</Text>
+          ),
+        })
+      );
+    }
+
+    cols.push(
+      createTableColumn<PluginStep>({
+        columnId: 'message',
+        renderHeaderCell: () => 'Message',
+        renderCell: (item) => (
+          <Badge appearance="outline">{item.message}</Badge>
+        ),
+      }),
+      createTableColumn<PluginStep>({
+        columnId: 'stage',
+        renderHeaderCell: () => 'Stage',
+        renderCell: (item) => (
+          <Badge
+            appearance="filled"
+            style={{
+              backgroundColor: getStageBadgeColor(item.stage),
+              color: 'white',
+            }}
+          >
+            {item.stageName}
           </Badge>
-        )}
-        {plugin.preImage && <Text className={styles.imageIndicator}>📷 Pre</Text>}
-        {plugin.postImage && <Text className={styles.imageIndicator}>📷 Post</Text>}
-      </div>
-    </div>
-  );
+        ),
+      }),
+      createTableColumn<PluginStep>({
+        columnId: 'mode',
+        renderHeaderCell: () => 'Mode',
+        renderCell: (item) => (
+          <Badge appearance={item.mode === 0 ? 'outline' : 'filled'} color={item.mode === 0 ? 'brand' : 'important'}>
+            {item.modeName}
+          </Badge>
+        ),
+      }),
+      createTableColumn<PluginStep>({
+        columnId: 'details',
+        renderHeaderCell: () => 'Details',
+        renderCell: (item) => (
+          <div className={styles.badgeGroup}>
+            {item.filteringAttributes.length > 0 && (
+              <Badge appearance="tint" color="warning" size="small">
+                {item.filteringAttributes.length} filter{item.filteringAttributes.length > 1 ? 's' : ''}
+              </Badge>
+            )}
+            {item.preImage && <Badge appearance="tint" size="small">Pre-Image</Badge>}
+            {item.postImage && <Badge appearance="tint" size="small">Post-Image</Badge>}
+          </div>
+        ),
+      })
+    );
+
+    return cols;
+  }, [entityLogicalName]);
 
   // Empty state
   if (filteredPlugins.length === 0) {
@@ -192,31 +193,36 @@ export function PluginsList({
     );
   }
 
-  // Render grouped plugins
-  if (groupBy === 'none') {
-    return (
-      <div className={styles.container}>
-        {filteredPlugins.map((plugin) => renderPlugin(plugin))}
-      </div>
-    );
-  }
-
+  // Render plugins table
   return (
-    <Accordion multiple collapsible>
-      {Array.from(groupedPlugins.entries()).map(([groupKey, groupPlugins]) => (
-        <AccordionItem key={groupKey} value={groupKey}>
-          <AccordionHeader>
-            <Text className={styles.groupHeader}>
-              {groupKey} ({groupPlugins.length} plugin{groupPlugins.length > 1 ? 's' : ''})
-            </Text>
-          </AccordionHeader>
-          <AccordionPanel>
-            <div className={styles.container}>
-              {groupPlugins.map((plugin) => renderPlugin(plugin))}
-            </div>
-          </AccordionPanel>
-        </AccordionItem>
-      ))}
-    </Accordion>
+    <div className={styles.tableContainer}>
+      <DataGrid
+        items={sortedPlugins}
+        columns={columns}
+        sortable
+        focusMode="composite"
+      >
+        <DataGridHeader>
+          <DataGridRow>
+            {({ renderHeaderCell }) => (
+              <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
+            )}
+          </DataGridRow>
+        </DataGridHeader>
+        <DataGridBody<PluginStep>>
+          {({ item, rowId }) => (
+            <DataGridRow<PluginStep>
+              key={rowId}
+              onClick={() => onPluginClick?.(item)}
+              style={{ cursor: onPluginClick ? 'pointer' : 'default' }}
+            >
+              {({ renderCell }) => (
+                <DataGridCell>{renderCell(item)}</DataGridCell>
+              )}
+            </DataGridRow>
+          )}
+        </DataGridBody>
+      </DataGrid>
+    </div>
   );
 }
