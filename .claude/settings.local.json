@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(timeout 5 tail:*)",
+      "Bash(pnpm --filter @ppsb/pptb build:*)",
+      "WebFetch(domain:docs.powerplatformtoolbox.com)",
+      "Bash(pnpm add:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

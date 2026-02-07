@@ -1,0 +1,27 @@
+{
+  "name": "power-platform-system-blueprint",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Complete architectural blueprints for your Power Platform systems",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @ppsb/pptb dev",
+    "clean": "pnpm -r clean",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "keywords": [
+    "power-platform",
+    "dataverse",
+    "blueprint",
+    "documentation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

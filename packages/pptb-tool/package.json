@@ -1,0 +1,29 @@
+{
+  "name": "@ppsb/pptb",
+  "displayName": "Power Platform Solution Blueprint (PPSB)",
+  "version": "0.1.0",
+  "description": "PPTB Desktop tool for Power Platform System Blueprint",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "clean": "rimraf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fluentui/react-components": "^9.47.0",
+    "@fluentui/react-icons": "^2.0.318",
+    "@ppsb/core": "workspace:*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.2.1",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  }
+}
