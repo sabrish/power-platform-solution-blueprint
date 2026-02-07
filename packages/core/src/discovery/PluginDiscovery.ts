@@ -65,8 +65,12 @@ export class PluginDiscovery {
     }
 
     try {
-      // Build filter for multiple IDs (GUIDs need single quotes in OData)
-      const filterClauses = pluginIds.map((id) => `sdkmessageprocessingstepid eq '${id}'`);
+      // Build filter for multiple IDs (GUIDs need braces and quotes in OData)
+      const filterClauses = pluginIds.map((id) => {
+        // Add braces back if not present
+        const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+        return `sdkmessageprocessingstepid eq '${guidWithBraces}'`;
+      });
       const filter = filterClauses.join(' or ');
 
       console.log('🔌 Plugin query filter:', filter);
@@ -160,8 +164,11 @@ export class PluginDiscovery {
     }
 
     try {
-      // Batch query all images with OR filter (GUIDs need single quotes in OData)
-      const imageFilters = pluginStepIds.map(id => `_sdkmessageprocessingstepid_value eq '${id}'`).join(' or ');
+      // Batch query all images with OR filter (GUIDs need braces and quotes in OData)
+      const imageFilters = pluginStepIds.map(id => {
+        const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+        return `_sdkmessageprocessingstepid_value eq '${guidWithBraces}'`;
+      }).join(' or ');
 
       const result = await this.client.query<RawPluginImage>('sdkmessageprocessingstepimages', {
         select: [

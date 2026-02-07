@@ -47,7 +47,10 @@ export class SolutionComponentDiscovery {
 
       // OPTIMIZED: Query all solution components in a single batch query using OR filters
       // This reduces N queries (one per solution) to 1 query for all solutions
-      const solutionFilters = solutionIds.map(id => `_solutionid_value eq '${id}'`).join(' or ');
+      const solutionFilters = solutionIds.map(id => {
+        const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+        return `_solutionid_value eq '${guidWithBraces}'`;
+      }).join(' or ');
 
       const result = await this.client.query<SolutionComponent>('solutioncomponents', {
         select: ['objectid', 'componenttype'],
@@ -159,8 +162,11 @@ export class SolutionComponentDiscovery {
       };
 
       // Query workflows to get their categories
-      // Build filter for workflow IDs (GUIDs need single quotes in OData)
-      const filters = workflowIds.map(id => `workflowid eq '${id}'`).join(' or ');
+      // Build filter for workflow IDs (GUIDs need braces and quotes in OData)
+      const filters = workflowIds.map(id => {
+        const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+        return `workflowid eq '${guidWithBraces}'`;
+      }).join(' or ');
 
       const result = await this.client.query<WorkflowRecord>('workflows', {
         select: ['workflowid', 'category'],
