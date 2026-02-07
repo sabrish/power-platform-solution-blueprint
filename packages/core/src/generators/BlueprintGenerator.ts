@@ -117,7 +117,15 @@ export class BlueprintGenerator {
         warnings.push('No web resources found');
       }
 
-      // STEP 7: Other components (stubbed for now)
+      // STEP 7: Populate automation in entity blueprints
+      for (const blueprint of entityBlueprints) {
+        const entityName = blueprint.entity.LogicalName;
+        blueprint.plugins = pluginsByEntity.get(entityName) || [];
+        blueprint.flows = flowsByEntity.get(entityName) || [];
+        blueprint.businessRules = businessRulesByEntity.get(entityName) || [];
+      }
+
+      // STEP 8: Other components (stubbed for now)
       if (inventory.canvasAppIds.length === 0) {
         warnings.push('No canvas apps found');
       }
