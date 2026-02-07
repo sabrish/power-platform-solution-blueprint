@@ -15,9 +15,9 @@ interface WorkflowRecord {
   modifiedon: string;
   createdon: string;
   clientdata: string | null;
-  'ownerid@OData.Community.Display.V1.FormattedValue': string;
-  'modifiedby@OData.Community.Display.V1.FormattedValue': string;
-  'primaryentity@OData.Community.Display.V1.FormattedValue': string | null;
+  '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
+  '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
+  'primaryentity@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
 /**
@@ -46,6 +46,8 @@ export class FlowDiscovery {
       const filter = `(${filters.join(' or ')}) and category eq 5`;
 
       // Fetch workflow records with category=5 (Modern flows)
+      // Note: We can't expand polymorphic lookups like ownerid directly
+      // Instead, we rely on formatted values which are automatically included
       const response = await this.client.query<WorkflowRecord>('workflows', {
         select: [
           'workflowid',
@@ -62,7 +64,6 @@ export class FlowDiscovery {
           'clientdata',
         ],
         filter,
-        expand: 'ownerid($select=fullname),modifiedby($select=fullname)',
       });
 
       const records = response.value;
@@ -100,7 +101,6 @@ export class FlowDiscovery {
           'clientdata',
         ],
         filter: `category eq 5 and primaryentity eq '${logicalName}'`,
-        expand: 'ownerid($select=fullname),modifiedby($select=fullname)',
       });
 
       const records = response.value;
@@ -147,9 +147,9 @@ export class FlowDiscovery {
       entityDisplayName: record['primaryentity@OData.Community.Display.V1.FormattedValue'] || null,
       scope: record.scope,
       scopeName,
-      owner: record['ownerid@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      owner: record['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       ownerId: record._ownerid_value,
-      modifiedBy: record['modifiedby@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      modifiedBy: record['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: record.modifiedon,
       createdOn: record.createdon,
       definition,
