@@ -23,15 +23,11 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, PluginStep, Flow } from '@ppsb/core';
+import type { BlueprintResult } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
-import { PluginDetailView } from './PluginDetailView';
 import { EntityList } from './EntityList';
-import { EntityDetailView } from './EntityDetailView';
 import { FlowsList } from './FlowsList';
-import { FlowDetailView } from './FlowDetailView';
-import type { DetailedEntityMetadata } from '@ppsb/core';
 
 const useStyles = makeStyles({
   container: {
@@ -133,9 +129,6 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const styles = useStyles();
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState<string>('entities');
-  const [selectedPlugin, setSelectedPlugin] = useState<PluginStep | null>(null);
-  const [selectedEntity, setSelectedEntity] = useState<DetailedEntityMetadata | null>(null);
-  const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -374,79 +367,17 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
           {/* Tab Content */}
           <div style={{ marginTop: tokens.spacingVerticalL }}>
             {selectedTab === 'entities' && (
-              <>
-                {result.summary.totalEntities > 0 ? (
-                  selectedEntity ? (
-                    <div>
-                      <Button
-                        appearance="secondary"
-                        onClick={() => setSelectedEntity(null)}
-                        style={{ marginBottom: tokens.spacingVerticalM }}
-                      >
-                        ← Back to Entity List
-                      </Button>
-                      <EntityDetailView entity={selectedEntity} />
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', width: '100%', height: '600px' }}>
-                      <EntityList
-                        entities={result.entities.map((bp) => bp.entity)}
-                        onEntitySelect={setSelectedEntity}
-                        selectedEntity={selectedEntity}
-                      />
-                    </div>
-                  )
-                ) : (
-                  <div className={styles.emptyState}>
-                    <Text style={{ fontSize: '48px' }}>📊</Text>
-                    <Title3>No Entities Found</Title3>
-                    <Text>No entities were found in the selected solution(s).</Text>
-                  </div>
-                )}
-              </>
+              <div style={{ display: 'flex', width: '100%', height: '600px' }}>
+                <EntityList entities={result.entities.map((bp) => bp.entity)} />
+              </div>
             )}
 
             {selectedTab === 'plugins' && hasResults('plugins') && (
-              <div style={{ display: 'flex', gap: tokens.spacingHorizontalL }}>
-                <div style={{ flex: selectedPlugin ? 1 : 'auto', minWidth: 0 }}>
-                  <PluginsList
-                    plugins={result.plugins}
-                    groupBy="message"
-                    onPluginClick={setSelectedPlugin}
-                  />
-                </div>
-                {selectedPlugin && (
-                  <div style={{ flex: 1, minWidth: '400px', maxWidth: '600px', overflowY: 'auto' }}>
-                    <Card>
-                      <PluginDetailView
-                        plugin={selectedPlugin}
-                        onClose={() => setSelectedPlugin(null)}
-                      />
-                    </Card>
-                  </div>
-                )}
-              </div>
+              <PluginsList plugins={result.plugins} />
             )}
 
             {selectedTab === 'flows' && hasResults('flows') && (
-              <div style={{ display: 'flex', gap: tokens.spacingHorizontalL }}>
-                <div style={{ flex: selectedFlow ? 1 : 'auto', minWidth: 0 }}>
-                  <FlowsList
-                    flows={result.flows}
-                    onFlowClick={setSelectedFlow}
-                  />
-                </div>
-                {selectedFlow && (
-                  <div style={{ flex: 1, minWidth: '400px', maxWidth: '600px', overflowY: 'auto' }}>
-                    <Card>
-                      <FlowDetailView
-                        flow={selectedFlow}
-                        onClose={() => setSelectedFlow(null)}
-                      />
-                    </Card>
-                  </div>
-                )}
-              </div>
+              <FlowsList flows={result.flows} />
             )}
 
             {selectedTab === 'businessRules' && hasResults('businessRules') && (

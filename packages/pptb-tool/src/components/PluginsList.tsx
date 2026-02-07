@@ -1,25 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Text,
   Badge,
   makeStyles,
   tokens,
-  DataGrid,
-  DataGridHeader,
-  DataGridRow,
-  DataGridHeaderCell,
-  DataGridBody,
-  DataGridCell,
-  TableColumnDefinition,
-  createTableColumn,
+  Card,
+  Title3,
 } from '@fluentui/react-components';
+import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '@ppsb/core';
 
 const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
+    gap: tokens.spacingVerticalS,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -30,9 +25,49 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalL,
     color: tokens.colorNeutralForeground3,
   },
-  tableContainer: {
-    maxHeight: '800px',
-    overflowY: 'auto',
+  pluginRow: {
+    display: 'grid',
+    gridTemplateColumns: '24px 40px 1fr auto auto auto auto',
+    gap: tokens.spacingHorizontalM,
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+      boxShadow: tokens.shadow4,
+    },
+  },
+  pluginRowExpanded: {
+    backgroundColor: tokens.colorBrandBackground2,
+  },
+  chevron: {
+    display: 'flex',
+    alignItems: 'center',
+    color: tokens.colorNeutralForeground3,
+  },
+  rank: {
+    fontWeight: tokens.fontWeightSemibold,
+    textAlign: 'center',
+  },
+  nameColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    minWidth: 0,
+  },
+  truncate: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  codeText: {
+    fontFamily: 'Consolas, Monaco, monospace',
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
   },
   badgeGroup: {
     display: 'flex',
@@ -40,23 +75,47 @@ const useStyles = makeStyles({
     alignItems: 'center',
     flexWrap: 'wrap',
   },
+  expandedDetails: {
+    backgroundColor: tokens.colorNeutralBackground2,
+    padding: tokens.spacingVerticalL,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderTop: 'none',
+    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
+    marginTop: '-4px',
+  },
+  detailsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: tokens.spacingHorizontalM,
+  },
+  detailItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXXS,
+  },
+  detailLabel: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  detailValue: {
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  section: {
+    marginTop: tokens.spacingVerticalM,
+  },
 });
-
-type GroupBy = 'message' | 'stage' | 'assembly' | 'none';
 
 export interface PluginsListProps {
   plugins: PluginStep[];
   entityLogicalName?: string;
-  groupBy?: GroupBy;
-  onPluginClick?: (plugin: PluginStep) => void;
 }
 
 export function PluginsList({
   plugins,
   entityLogicalName,
-  onPluginClick,
 }: PluginsListProps) {
   const styles = useStyles();
+  const [expandedPluginId, setExpandedPluginId] = useState<string | null>(null);
 
   // Filter plugins by entity if specified
   const filteredPlugins = useMemo(() => {
@@ -64,16 +123,12 @@ export function PluginsList({
     return plugins.filter((p) => p.entity.toLowerCase() === entityLogicalName.toLowerCase());
   }, [plugins, entityLogicalName]);
 
-  // Sort plugins by stage and rank
+  // Sort plugins by entity, message, stage, and rank
   const sortedPlugins = useMemo(() => {
     return [...filteredPlugins].sort((a, b) => {
-      // First by entity
       if (a.entity !== b.entity) return a.entity.localeCompare(b.entity);
-      // Then by message
       if (a.message !== b.message) return a.message.localeCompare(b.message);
-      // Then by stage
       if (a.stage !== b.stage) return a.stage - b.stage;
-      // Then by rank
       return a.rank - b.rank;
     });
   }, [filteredPlugins]);
@@ -88,93 +143,93 @@ export function PluginsList({
     return stageColors[stage] || tokens.colorNeutralForeground3;
   };
 
-  const columns: TableColumnDefinition<PluginStep>[] = useMemo(() => {
-    const cols: TableColumnDefinition<PluginStep>[] = [
-      createTableColumn<PluginStep>({
-        columnId: 'rank',
-        renderHeaderCell: () => 'Rank',
-        renderCell: (item) => (
-          <Text weight="semibold">{item.rank}</Text>
-        ),
-      }),
-      createTableColumn<PluginStep>({
-        columnId: 'name',
-        renderHeaderCell: () => 'Step Name',
-        renderCell: (item) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <Text weight="semibold">{item.name}</Text>
-            <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>
-              {item.assemblyName}
-            </Text>
+  const toggleExpand = (pluginId: string) => {
+    setExpandedPluginId(expandedPluginId === pluginId ? null : pluginId);
+  };
+
+  const renderPluginDetails = (plugin: PluginStep) => (
+    <div className={styles.expandedDetails}>
+      <Card>
+        <Title3>Plugin Step Details</Title3>
+
+        <div className={styles.detailsGrid}>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Step ID</Text>
+            <Text className={`${styles.detailValue} ${styles.codeText}`}>{plugin.id}</Text>
           </div>
-        ),
-      }),
-    ];
-
-    // Only show entity column if not filtering by entity
-    if (!entityLogicalName) {
-      cols.push(
-        createTableColumn<PluginStep>({
-          columnId: 'entity',
-          renderHeaderCell: () => 'Entity',
-          renderCell: (item) => (
-            <Text style={{ fontFamily: 'Consolas, Monaco, monospace' }}>{item.entity}</Text>
-          ),
-        })
-      );
-    }
-
-    cols.push(
-      createTableColumn<PluginStep>({
-        columnId: 'message',
-        renderHeaderCell: () => 'Message',
-        renderCell: (item) => (
-          <Badge appearance="outline">{item.message}</Badge>
-        ),
-      }),
-      createTableColumn<PluginStep>({
-        columnId: 'stage',
-        renderHeaderCell: () => 'Stage',
-        renderCell: (item) => (
-          <Badge
-            appearance="filled"
-            style={{
-              backgroundColor: getStageBadgeColor(item.stage),
-              color: 'white',
-            }}
-          >
-            {item.stageName}
-          </Badge>
-        ),
-      }),
-      createTableColumn<PluginStep>({
-        columnId: 'mode',
-        renderHeaderCell: () => 'Mode',
-        renderCell: (item) => (
-          <Badge appearance={item.mode === 0 ? 'outline' : 'filled'} color={item.mode === 0 ? 'brand' : 'important'}>
-            {item.modeName}
-          </Badge>
-        ),
-      }),
-      createTableColumn<PluginStep>({
-        columnId: 'details',
-        renderHeaderCell: () => 'Details',
-        renderCell: (item) => (
-          <div className={styles.badgeGroup}>
-            {item.filteringAttributes.length > 0 && (
-              <Badge appearance="tint" color="warning" size="small">
-                {item.filteringAttributes.length} filter{item.filteringAttributes.length > 1 ? 's' : ''}
-              </Badge>
-            )}
-            {item.preImage && <Badge appearance="tint" size="small">Pre-Image</Badge>}
-            {item.postImage && <Badge appearance="tint" size="small">Post-Image</Badge>}
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Plugin Type</Text>
+            <Text className={styles.detailValue}>{plugin.typeName}</Text>
           </div>
-        ),
-      })
-    );
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Assembly</Text>
+            <Text className={styles.detailValue}>{plugin.assemblyName}</Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Entity</Text>
+            <Text className={`${styles.detailValue} ${styles.codeText}`}>{plugin.entity}</Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Message</Text>
+            <Text className={styles.detailValue}>{plugin.message}</Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Execution Stage</Text>
+            <Text className={styles.detailValue}>{plugin.stageName} ({plugin.stage})</Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Execution Mode</Text>
+            <Text className={styles.detailValue}>{plugin.modeName}</Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Execution Order</Text>
+            <Text className={styles.detailValue}>{plugin.rank}</Text>
+          </div>
+        </div>
 
-    return cols;
-  }, [entityLogicalName]);
+        {plugin.filteringAttributes.length > 0 && (
+          <div className={styles.section}>
+            <Title3>Filtering Attributes ({plugin.filteringAttributes.length})</Title3>
+            <div className={styles.badgeGroup}>
+              {plugin.filteringAttributes.map((attr, idx) => (
+                <Badge key={idx} appearance="tint" color="warning">
+                  {attr}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(plugin.preImage || plugin.postImage) && (
+          <div className={styles.section}>
+            <Title3>Entity Images</Title3>
+            <div className={styles.detailsGrid}>
+              {plugin.preImage && (
+                <div className={styles.detailItem}>
+                  <Text className={styles.detailLabel}>Pre-Image</Text>
+                  <Text className={styles.detailValue}>{plugin.preImage.name}</Text>
+                  <Text className={styles.codeText}>Property: {plugin.preImage.messagePropertyName}</Text>
+                  <Text className={styles.codeText}>
+                    Attributes: {plugin.preImage.attributes?.join(', ') || 'All'}
+                  </Text>
+                </div>
+              )}
+              {plugin.postImage && (
+                <div className={styles.detailItem}>
+                  <Text className={styles.detailLabel}>Post-Image</Text>
+                  <Text className={styles.detailValue}>{plugin.postImage.name}</Text>
+                  <Text className={styles.codeText}>Property: {plugin.postImage.messagePropertyName}</Text>
+                  <Text className={styles.codeText}>
+                    Attributes: {plugin.postImage.attributes?.join(', ') || 'All'}
+                  </Text>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
 
   // Empty state
   if (filteredPlugins.length === 0) {
@@ -193,36 +248,51 @@ export function PluginsList({
     );
   }
 
-  // Render plugins table
   return (
-    <div className={styles.tableContainer}>
-      <DataGrid
-        items={sortedPlugins}
-        columns={columns}
-        sortable
-        focusMode="composite"
-      >
-        <DataGridHeader>
-          <DataGridRow>
-            {({ renderHeaderCell }) => (
-              <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-            )}
-          </DataGridRow>
-        </DataGridHeader>
-        <DataGridBody<PluginStep>>
-          {({ item, rowId }) => (
-            <DataGridRow<PluginStep>
-              key={rowId}
-              onClick={() => onPluginClick?.(item)}
-              style={{ cursor: onPluginClick ? 'pointer' : 'default' }}
+    <div className={styles.container}>
+      {sortedPlugins.map((plugin) => {
+        const isExpanded = expandedPluginId === plugin.id;
+        return (
+          <div key={plugin.id}>
+            <div
+              className={`${styles.pluginRow} ${isExpanded ? styles.pluginRowExpanded : ''}`}
+              onClick={() => toggleExpand(plugin.id)}
             >
-              {({ renderCell }) => (
-                <DataGridCell>{renderCell(item)}</DataGridCell>
+              <div className={styles.chevron}>
+                {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+              </div>
+              <Text className={styles.rank}>{plugin.rank}</Text>
+              <div className={styles.nameColumn}>
+                <Text weight="semibold" className={styles.truncate} title={plugin.name}>
+                  {plugin.name}
+                </Text>
+                <Text className={`${styles.truncate} ${styles.codeText}`} title={plugin.assemblyName}>
+                  {plugin.assemblyName}
+                </Text>
+              </div>
+              {!entityLogicalName && (
+                <Text className={`${styles.truncate} ${styles.codeText}`} title={plugin.entity}>
+                  {plugin.entity}
+                </Text>
               )}
-            </DataGridRow>
-          )}
-        </DataGridBody>
-      </DataGrid>
+              <Badge appearance="outline">{plugin.message}</Badge>
+              <Badge
+                appearance="filled"
+                style={{
+                  backgroundColor: getStageBadgeColor(plugin.stage),
+                  color: 'white',
+                }}
+              >
+                {plugin.stageName}
+              </Badge>
+              <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'}>
+                {plugin.modeName}
+              </Badge>
+            </div>
+            {isExpanded && renderPluginDetails(plugin)}
+          </div>
+        );
+      })}
     </div>
   );
 }

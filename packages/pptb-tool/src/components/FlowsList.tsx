@@ -1,25 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Text,
   Badge,
   makeStyles,
   tokens,
-  DataGrid,
-  DataGridHeader,
-  DataGridRow,
-  DataGridHeaderCell,
-  DataGridBody,
-  DataGridCell,
-  TableColumnDefinition,
-  createTableColumn,
+  Card,
+  Title3,
 } from '@fluentui/react-components';
+import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { Flow } from '@ppsb/core';
 
 const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
+    gap: tokens.spacingVerticalS,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -30,9 +25,45 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalL,
     color: tokens.colorNeutralForeground3,
   },
-  tableContainer: {
-    maxHeight: '800px',
-    overflowY: 'auto',
+  flowRow: {
+    display: 'grid',
+    gridTemplateColumns: '24px 1fr auto auto auto auto',
+    gap: tokens.spacingHorizontalM,
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+      boxShadow: tokens.shadow4,
+    },
+  },
+  flowRowExpanded: {
+    backgroundColor: tokens.colorBrandBackground2,
+  },
+  chevron: {
+    display: 'flex',
+    alignItems: 'center',
+    color: tokens.colorNeutralForeground3,
+  },
+  nameColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    minWidth: 0,
+  },
+  truncate: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  codeText: {
+    fontFamily: 'Consolas, Monaco, monospace',
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
   },
   badgeGroup: {
     display: 'flex',
@@ -40,20 +71,63 @@ const useStyles = makeStyles({
     alignItems: 'center',
     flexWrap: 'wrap',
   },
+  expandedDetails: {
+    backgroundColor: tokens.colorNeutralBackground2,
+    padding: tokens.spacingVerticalL,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderTop: 'none',
+    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
+    marginTop: '-4px',
+  },
+  detailsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: tokens.spacingHorizontalM,
+  },
+  detailItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXXS,
+  },
+  detailLabel: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  detailValue: {
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  section: {
+    marginTop: tokens.spacingVerticalM,
+  },
+  externalCallItem: {
+    padding: tokens.spacingVerticalS,
+    borderLeft: `3px solid ${tokens.colorBrandForeground1}`,
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderRadius: tokens.borderRadiusMedium,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXXS,
+    marginBottom: tokens.spacingVerticalS,
+  },
+  badges: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalS,
+    flexWrap: 'wrap',
+    marginTop: tokens.spacingVerticalM,
+  },
 });
 
 export interface FlowsListProps {
   flows: Flow[];
   entityLogicalName?: string;
-  onFlowClick?: (flow: Flow) => void;
 }
 
 export function FlowsList({
   flows,
   entityLogicalName,
-  onFlowClick,
 }: FlowsListProps) {
   const styles = useStyles();
+  const [expandedFlowId, setExpandedFlowId] = useState<string | null>(null);
 
   // Filter flows by entity if specified
   const filteredFlows = useMemo(() => {
@@ -64,17 +138,19 @@ export function FlowsList({
   // Sort flows by state (Active first), then by name
   const sortedFlows = useMemo(() => {
     return [...filteredFlows].sort((a, b) => {
-      // Active flows first
       if (a.state !== b.state) {
         if (a.state === 'Active') return -1;
         if (b.state === 'Active') return 1;
         if (a.state === 'Draft') return -1;
         if (b.state === 'Draft') return 1;
       }
-      // Then by name
       return a.name.localeCompare(b.name);
     });
   }, [filteredFlows]);
+
+  const toggleExpand = (flowId: string) => {
+    setExpandedFlowId(expandedFlowId === flowId ? null : flowId);
+  };
 
   const getStateBadgeProps = (state: Flow['state']) => {
     switch (state) {
@@ -89,125 +165,118 @@ export function FlowsList({
     }
   };
 
-  const getTriggerBadgeColor = (triggerType: Flow['definition']['triggerType']): 'brand' | 'success' | 'warning' | 'subtle' => {
-    switch (triggerType) {
-      case 'Dataverse':
-        return 'brand';
-      case 'Manual':
-        return 'success';
-      case 'Scheduled':
-        return 'warning';
-      default:
-        return 'subtle';
-    }
-  };
+  const renderFlowDetails = (flow: Flow) => (
+    <div className={styles.expandedDetails}>
+      <Card>
+        <Title3>Flow Details</Title3>
 
-  const columns: TableColumnDefinition<Flow>[] = useMemo(() => {
-    const cols: TableColumnDefinition<Flow>[] = [
-      createTableColumn<Flow>({
-        columnId: 'name',
-        renderHeaderCell: () => 'Flow Name',
-        renderCell: (item) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <Text weight="semibold">{item.name}</Text>
-            {item.description && (
-              <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>
-                {item.description.length > 80 ? `${item.description.substring(0, 80)}...` : item.description}
-              </Text>
-            )}
-          </div>
-        ),
-      }),
-    ];
-
-    // Only show entity column if not filtering by entity
-    if (!entityLogicalName) {
-      cols.push(
-        createTableColumn<Flow>({
-          columnId: 'entity',
-          renderHeaderCell: () => 'Entity',
-          renderCell: (item) => (
-            <Text style={{ fontFamily: 'Consolas, Monaco, monospace' }}>
-              {item.entity || '—'}
+        <div className={styles.detailsGrid}>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Entity</Text>
+            <Text className={styles.detailValue}>
+              {flow.entityDisplayName || flow.entity || 'None'}
             </Text>
-          ),
-        })
-      );
-    }
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Owner</Text>
+            <Text className={styles.detailValue}>{flow.owner}</Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Modified By</Text>
+            <Text className={styles.detailValue}>{flow.modifiedBy}</Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Modified On</Text>
+            <Text className={styles.detailValue}>
+              {new Date(flow.modifiedOn).toLocaleString()}
+            </Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Actions Count</Text>
+            <Text className={styles.detailValue}>{flow.definition.actionsCount}</Text>
+          </div>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Scope</Text>
+            <Text className={styles.detailValue}>{flow.scopeName}</Text>
+          </div>
+        </div>
 
-    cols.push(
-      createTableColumn<Flow>({
-        columnId: 'trigger',
-        renderHeaderCell: () => 'Trigger',
-        renderCell: (item) => (
-          <div className={styles.badgeGroup}>
-            <Badge appearance="tint" color={getTriggerBadgeColor(item.definition.triggerType)}>
-              {item.definition.triggerType}
+        <div className={styles.badges}>
+          <Badge appearance="tint" color="brand">
+            {flow.definition.triggerType}
+          </Badge>
+          {flow.definition.triggerEvent !== 'Unknown' && flow.definition.triggerEvent !== flow.definition.triggerType && (
+            <Badge appearance="outline">
+              {flow.definition.triggerEvent}
             </Badge>
-            {item.definition.triggerEvent !== 'Unknown' && item.definition.triggerEvent !== item.definition.triggerType && (
-              <Badge appearance="outline" size="small">
-                {item.definition.triggerEvent}
-              </Badge>
-            )}
-          </div>
-        ),
-      }),
-      createTableColumn<Flow>({
-        columnId: 'state',
-        renderHeaderCell: () => 'State',
-        renderCell: (item) => {
-          const props = getStateBadgeProps(item.state);
-          return <Badge {...props}>{item.state}</Badge>;
-        },
-      }),
-      createTableColumn<Flow>({
-        columnId: 'scope',
-        renderHeaderCell: () => 'Scope',
-        renderCell: (item) => (
-          <Badge appearance="outline">{item.scopeName}</Badge>
-        ),
-      }),
-      createTableColumn<Flow>({
-        columnId: 'details',
-        renderHeaderCell: () => 'Details',
-        renderCell: (item) => (
-          <div className={styles.badgeGroup}>
-            {item.definition.actionsCount > 0 && (
-              <Badge appearance="tint" size="small">
-                {item.definition.actionsCount} action{item.definition.actionsCount !== 1 ? 's' : ''}
-              </Badge>
-            )}
-            {item.hasExternalCalls && (
-              <Badge appearance="tint" color="important" size="small">
-                External calls
-              </Badge>
-            )}
-            {item.definition.connectionReferences.length > 0 && (
-              <Badge appearance="tint" size="small">
-                {item.definition.connectionReferences.length} connector{item.definition.connectionReferences.length !== 1 ? 's' : ''}
-              </Badge>
-            )}
-          </div>
-        ),
-      }),
-      createTableColumn<Flow>({
-        columnId: 'modified',
-        renderHeaderCell: () => 'Modified',
-        renderCell: (item) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <Text style={{ fontSize: tokens.fontSizeBase200 }}>
-              {new Date(item.modifiedOn).toLocaleDateString()}
-            </Text>
-            <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>
-              {item.modifiedBy}
-            </Text>
-          </div>
-        ),
-      })
-    );
+          )}
+          {flow.hasExternalCalls && (
+            <Badge appearance="tint" color="important">
+              External Calls
+            </Badge>
+          )}
+        </div>
 
-    return cols;
-  }, [entityLogicalName, styles.badgeGroup]);
+        {flow.definition.connectionReferences.length > 0 && (
+          <div className={styles.section}>
+            <Title3>Connectors ({flow.definition.connectionReferences.length})</Title3>
+            <div className={styles.badgeGroup}>
+              {flow.definition.connectionReferences.map((ref, idx) => (
+                <Badge key={idx} appearance="tint" size="small">
+                  {ref}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {flow.definition.externalCalls.length > 0 && (
+          <div className={styles.section}>
+            <Title3>External API Calls ({flow.definition.externalCalls.length})</Title3>
+            {flow.definition.externalCalls.map((call, idx) => (
+              <div key={idx} className={styles.externalCallItem}>
+                <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Text weight="semibold">{call.actionName}</Text>
+                  <Badge appearance="outline" size="small">
+                    {call.method || 'UNKNOWN'}
+                  </Badge>
+                  <Badge
+                    appearance="tint"
+                    color={call.confidence === 'High' ? 'success' : call.confidence === 'Medium' ? 'warning' : 'subtle'}
+                    size="small"
+                  >
+                    {call.confidence}
+                  </Badge>
+                </div>
+                <Text className={styles.codeText} style={{ wordBreak: 'break-all' }}>{call.url}</Text>
+                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                  Domain: {call.domain}
+                </Text>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className={styles.section}>
+          <Title3>Technical Details</Title3>
+          <div className={styles.detailsGrid}>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Flow ID</Text>
+              <Text className={styles.codeText}>{flow.id}</Text>
+            </div>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>State Code</Text>
+              <Text className={styles.detailValue}>{flow.stateCode}</Text>
+            </div>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Scope Value</Text>
+              <Text className={styles.detailValue}>{flow.scope}</Text>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
 
   // Empty state
   if (filteredFlows.length === 0) {
@@ -226,36 +295,48 @@ export function FlowsList({
     );
   }
 
-  // Render flows table
   return (
-    <div className={styles.tableContainer}>
-      <DataGrid
-        items={sortedFlows}
-        columns={columns}
-        sortable
-        focusMode="composite"
-      >
-        <DataGridHeader>
-          <DataGridRow>
-            {({ renderHeaderCell }) => (
-              <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-            )}
-          </DataGridRow>
-        </DataGridHeader>
-        <DataGridBody<Flow>>
-          {({ item, rowId }) => (
-            <DataGridRow<Flow>
-              key={rowId}
-              onClick={() => onFlowClick?.(item)}
-              style={{ cursor: onFlowClick ? 'pointer' : 'default' }}
+    <div className={styles.container}>
+      {sortedFlows.map((flow) => {
+        const isExpanded = expandedFlowId === flow.id;
+        const stateBadgeProps = getStateBadgeProps(flow.state);
+
+        return (
+          <div key={flow.id}>
+            <div
+              className={`${styles.flowRow} ${isExpanded ? styles.flowRowExpanded : ''}`}
+              onClick={() => toggleExpand(flow.id)}
             >
-              {({ renderCell }) => (
-                <DataGridCell>{renderCell(item)}</DataGridCell>
+              <div className={styles.chevron}>
+                {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+              </div>
+              <div className={styles.nameColumn}>
+                <Text weight="semibold" className={styles.truncate} title={flow.name}>
+                  {flow.name}
+                </Text>
+                {flow.description && (
+                  <Text className={`${styles.truncate} ${styles.codeText}`} title={flow.description}>
+                    {flow.description}
+                  </Text>
+                )}
+              </div>
+              {!entityLogicalName && flow.entity && (
+                <Text className={`${styles.truncate} ${styles.codeText}`} title={flow.entity}>
+                  {flow.entity}
+                </Text>
               )}
-            </DataGridRow>
-          )}
-        </DataGridBody>
-      </DataGrid>
+              <Badge appearance="tint" color="brand" size="small">
+                {flow.definition.triggerType}
+              </Badge>
+              <Badge {...stateBadgeProps}>{flow.state}</Badge>
+              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                {new Date(flow.modifiedOn).toLocaleDateString()}
+              </Text>
+            </div>
+            {isExpanded && renderFlowDetails(flow)}
+          </div>
+        );
+      })}
     </div>
   );
 }

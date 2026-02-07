@@ -33,7 +33,7 @@ export class SchemaDiscovery {
             'Description',
           ],
           filter: `LogicalName eq '${logicalName}'`,
-          expand: 'Attributes($select=LogicalName,SchemaName,MetadataId,DisplayName,AttributeType,IsPrimaryId,IsPrimaryName,IsValidForCreate,IsValidForUpdate,IsValidForRead,RequiredLevel,Description),Keys($select=LogicalName,DisplayName,KeyAttributes)',
+          expand: 'Attributes($select=LogicalName,SchemaName,MetadataId,DisplayName,AttributeType,IsPrimaryId,IsPrimaryName,IsValidForCreate,IsValidForUpdate,IsValidForRead,IsValidForAdvancedFind,IsAuditEnabled,RequiredLevel,Description),Keys($select=LogicalName,DisplayName,KeyAttributes)',
         }
       );
 

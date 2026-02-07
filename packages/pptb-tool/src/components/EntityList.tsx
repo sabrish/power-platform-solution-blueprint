@@ -2,11 +2,22 @@ import { useState, useMemo } from 'react';
 import {
   SearchBox,
   Text,
+  Badge,
+  Card,
+  Title3,
+  DataGrid,
+  DataGridHeader,
+  DataGridRow,
+  DataGridHeaderCell,
+  DataGridBody,
+  DataGridCell,
+  TableColumnDefinition,
+  createTableColumn,
   makeStyles,
   tokens,
 } from '@fluentui/react-components';
-import { Database24Regular } from '@fluentui/react-icons';
-import type { DetailedEntityMetadata } from '@ppsb/core';
+import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
+import type { DetailedEntityMetadata, AttributeMetadata } from '@ppsb/core';
 
 const useStyles = makeStyles({
   container: {
@@ -33,39 +44,34 @@ const useStyles = makeStyles({
   listContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalXS,
+    gap: tokens.spacingVerticalS,
     overflowY: 'auto',
     flex: 1,
     minHeight: 0,
-    paddingRight: tokens.spacingHorizontalS,
   },
-  entityCard: {
-    cursor: 'pointer',
-    padding: tokens.spacingVerticalM,
-    paddingLeft: tokens.spacingHorizontalM,
-    paddingRight: tokens.spacingHorizontalM,
-    marginBottom: tokens.spacingVerticalS,
-    transition: 'all 0.2s ease',
-    borderLeft: `4px solid transparent`,
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      borderLeftColor: tokens.colorBrandForeground1,
-      transform: 'translateX(4px)',
-      boxShadow: tokens.shadow8,
-    },
-  },
-  entityCardSelected: {
-    backgroundColor: tokens.colorBrandBackground2,
-    borderLeftColor: tokens.colorBrandForeground1,
-    ':hover': {
-      backgroundColor: tokens.colorBrandBackground2Hover,
-    },
-  },
-  entityItem: {
+  entityRow: {
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalM,
-    width: '100%',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+      boxShadow: tokens.shadow4,
+    },
+  },
+  entityRowExpanded: {
+    backgroundColor: tokens.colorBrandBackground2,
+  },
+  chevron: {
+    display: 'flex',
+    alignItems: 'center',
+    color: tokens.colorNeutralForeground3,
+    flexShrink: 0,
   },
   entityIcon: {
     color: tokens.colorBrandForeground1,
@@ -108,6 +114,52 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground3,
   },
+  attributeCount: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorBrandForeground1,
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  expandedDetails: {
+    backgroundColor: tokens.colorNeutralBackground2,
+    padding: tokens.spacingVerticalL,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderTop: 'none',
+    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
+    marginTop: '-4px',
+  },
+  detailsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: tokens.spacingHorizontalM,
+    marginBottom: tokens.spacingVerticalL,
+  },
+  detailItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXXS,
+  },
+  detailLabel: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  detailValue: {
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  codeText: {
+    fontFamily: 'Consolas, Monaco, monospace',
+    fontSize: tokens.fontSizeBase200,
+  },
+  tableContainer: {
+    maxHeight: '400px',
+    overflowY: 'auto',
+    marginTop: tokens.spacingVerticalM,
+  },
+  badges: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalS,
+    flexWrap: 'wrap',
+    marginTop: tokens.spacingVerticalM,
+  },
   emptyState: {
     display: 'flex',
     flexDirection: 'column',
@@ -121,13 +173,12 @@ const useStyles = makeStyles({
 
 export interface EntityListProps {
   entities: DetailedEntityMetadata[];
-  onEntitySelect?: (entity: DetailedEntityMetadata) => void;
-  selectedEntity?: DetailedEntityMetadata | null;
 }
 
-export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityListProps) {
+export function EntityList({ entities }: EntityListProps) {
   const styles = useStyles();
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedEntityId, setExpandedEntityId] = useState<string | null>(null);
 
   // Filter and sort entities
   const filteredEntities = useMemo(() => {
@@ -154,10 +205,164 @@ export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityL
     });
   }, [entities, searchQuery]);
 
-  const handleEntityClick = (entity: DetailedEntityMetadata) => {
-    if (onEntitySelect) {
-      onEntitySelect(entity);
+  const toggleExpand = (entityId: string) => {
+    setExpandedEntityId(expandedEntityId === entityId ? null : entityId);
+  };
+
+  const getRequiredLevelBadge = (requiredLevel: string) => {
+    switch (requiredLevel) {
+      case 'ApplicationRequired':
+      case 'SystemRequired':
+        return <Badge appearance="filled" color="danger" size="small">Required</Badge>;
+      case 'Recommended':
+        return <Badge appearance="filled" color="warning" size="small">Recommended</Badge>;
+      default:
+        return <Badge appearance="outline" color="subtle" size="small">Optional</Badge>;
     }
+  };
+
+  const renderEntityDetails = (entity: DetailedEntityMetadata) => {
+    const attributes = entity.Attributes || [];
+
+    const columns: TableColumnDefinition<AttributeMetadata>[] = [
+      createTableColumn<AttributeMetadata>({
+        columnId: 'displayName',
+        renderHeaderCell: () => 'Attribute',
+        renderCell: (item) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <Text weight="semibold">
+              {item.DisplayName?.UserLocalizedLabel?.Label || item.LogicalName}
+            </Text>
+            <Text className={styles.codeText} style={{ color: tokens.colorNeutralForeground3 }}>
+              {item.LogicalName}
+            </Text>
+          </div>
+        ),
+      }),
+      createTableColumn<AttributeMetadata>({
+        columnId: 'type',
+        renderHeaderCell: () => 'Type',
+        renderCell: (item) => <Text>{item.AttributeType}</Text>,
+      }),
+      createTableColumn<AttributeMetadata>({
+        columnId: 'required',
+        renderHeaderCell: () => 'Required',
+        renderCell: (item) => getRequiredLevelBadge(item.RequiredLevel?.Value || 'None'),
+      }),
+      createTableColumn<AttributeMetadata>({
+        columnId: 'audit',
+        renderHeaderCell: () => <div style={{ textAlign: 'center' }}>Audit</div>,
+        renderCell: (item) => {
+          const isAudited = item.IsAuditEnabled?.Value === true;
+          return (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              {isAudited ? (
+                <Badge appearance="filled" color="success" size="small">On</Badge>
+              ) : (
+                <Badge appearance="outline" color="subtle" size="small">Off</Badge>
+              )}
+            </div>
+          );
+        },
+      }),
+      createTableColumn<AttributeMetadata>({
+        columnId: 'searchable',
+        renderHeaderCell: () => <div style={{ textAlign: 'center' }}>Searchable</div>,
+        renderCell: (item) => {
+          const isSearchable = item.IsValidForAdvancedFind?.Value === true;
+          return (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              {isSearchable ? (
+                <Badge appearance="filled" color="brand" size="small">Yes</Badge>
+              ) : (
+                <Badge appearance="outline" color="subtle" size="small">No</Badge>
+              )}
+            </div>
+          );
+        },
+      }),
+    ];
+
+    return (
+      <div className={styles.expandedDetails}>
+        <Card>
+          <Title3>{entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName}</Title3>
+
+          <div className={styles.detailsGrid}>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Schema Name</Text>
+              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.SchemaName}</Text>
+            </div>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Logical Name</Text>
+              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.LogicalName}</Text>
+            </div>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Entity Set Name</Text>
+              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.EntitySetName || 'N/A'}</Text>
+            </div>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Primary ID</Text>
+              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.PrimaryIdAttribute || 'N/A'}</Text>
+            </div>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Primary Name</Text>
+              <Text className={`${styles.detailValue} ${styles.codeText}`}>{entity.PrimaryNameAttribute || 'N/A'}</Text>
+            </div>
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Attributes</Text>
+              <Text className={styles.detailValue}>{attributes.length}</Text>
+            </div>
+          </div>
+
+          <div className={styles.badges}>
+            {entity.IsCustomEntity && (
+              <Badge appearance="filled" color="brand">Custom Entity</Badge>
+            )}
+            {entity.IsManaged && (
+              <Badge appearance="filled" color="warning">Managed</Badge>
+            )}
+            {entity.IsCustomizable?.Value === false && (
+              <Badge appearance="outline" color="subtle">Not Customizable</Badge>
+            )}
+          </div>
+
+          {attributes.length > 0 && (
+            <>
+              <Title3 style={{ marginTop: tokens.spacingVerticalL }}>
+                Attributes ({attributes.length})
+              </Title3>
+              <div className={styles.tableContainer}>
+                <DataGrid
+                  items={attributes}
+                  columns={columns}
+                  sortable
+                  focusMode="composite"
+                  size="small"
+                >
+                  <DataGridHeader>
+                    <DataGridRow>
+                      {({ renderHeaderCell }) => (
+                        <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
+                      )}
+                    </DataGridRow>
+                  </DataGridHeader>
+                  <DataGridBody<AttributeMetadata>>
+                    {({ item, rowId }) => (
+                      <DataGridRow<AttributeMetadata> key={rowId}>
+                        {({ renderCell }) => (
+                          <DataGridCell>{renderCell(item)}</DataGridCell>
+                        )}
+                      </DataGridRow>
+                    )}
+                  </DataGridBody>
+                </DataGrid>
+              </div>
+            </>
+          )}
+        </Card>
+      </div>
+    );
   };
 
   return (
@@ -188,23 +393,20 @@ export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityL
           </div>
         ) : (
           filteredEntities.map((entity) => {
-            const isSelected = selectedEntity?.MetadataId === entity.MetadataId;
+            const isExpanded = expandedEntityId === entity.MetadataId;
             const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName || 'Unknown Entity';
             const description = entity.Description?.UserLocalizedLabel?.Label;
             const attributeCount = entity.Attributes?.length || 0;
 
             return (
-              <div
-                key={entity.MetadataId}
-                className={`${styles.entityCard} ${isSelected ? styles.entityCardSelected : ''}`}
-                onClick={() => handleEntityClick(entity)}
-                style={{
-                  backgroundColor: isSelected ? tokens.colorBrandBackground2 : tokens.colorNeutralBackground1,
-                  border: `1px solid ${tokens.colorNeutralStroke1}`,
-                  borderRadius: tokens.borderRadiusMedium,
-                }}
-              >
-                <div className={styles.entityItem}>
+              <div key={entity.MetadataId}>
+                <div
+                  className={`${styles.entityRow} ${isExpanded ? styles.entityRowExpanded : ''}`}
+                  onClick={() => toggleExpand(entity.MetadataId)}
+                >
+                  <div className={styles.chevron}>
+                    {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+                  </div>
                   <Database24Regular className={styles.entityIcon} />
                   <div className={styles.entityInfo}>
                     <Text className={styles.entityName}>{displayName}</Text>
@@ -217,7 +419,7 @@ export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityL
                       </Text>
                     )}
                     <div className={styles.entityStats}>
-                      <Text className={styles.statBadge}>
+                      <Text className={styles.attributeCount}>
                         {attributeCount} attr{attributeCount !== 1 ? 's' : ''}
                       </Text>
                       {entity.IsCustomEntity && (
@@ -229,6 +431,7 @@ export function EntityList({ entities, onEntitySelect, selectedEntity }: EntityL
                     </div>
                   </div>
                 </div>
+                {isExpanded && renderEntityDetails(entity)}
               </div>
             );
           })
