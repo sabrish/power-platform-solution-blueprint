@@ -149,10 +149,7 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 
 ### For PPTB Desktop Users
 
-1. Download PPSB from releases
-2. Extract to PPTB Desktop tools directory
-3. Restart PPTB Desktop
-4. Launch PPSB with an active Dataverse connection
+1. Available in the PPTB Marketplace
 
 ### For Development
 
@@ -217,9 +214,9 @@ The combination of AI tools accelerated development while maintaining high code 
 - Code reviews and optimization suggestions from both AI assistants
 - Documentation structure and content refined with AI input
 
-### Technology Partners
+### Technology
 
-- **PPTB Desktop** - Power Platform Toolbox (platform for PPSB deployment)
+- **PPTB Desktop** - [Power Platform Toolbox](https://www.powerplatformtoolbox.com/) (platform for PPSB deployment)
 - **Microsoft Dataverse** - Data platform and APIs
 - **Fluent UI** - Microsoft's design system and React components
 - **Mermaid** - Diagram rendering engine for ERD and pipeline visualizations
