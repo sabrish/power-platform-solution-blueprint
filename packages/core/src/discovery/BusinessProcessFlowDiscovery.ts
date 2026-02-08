@@ -16,14 +16,10 @@ interface RawBusinessProcessFlow {
   ismanaged: boolean;
   createdon: string;
   modifiedon: string;
+  _ownerid_value?: string;
+  '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
+  '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
   '_primaryentity_value@OData.Community.Display.V1.FormattedValue'?: string;
-  ownerid?: {
-    fullname: string;
-    ownerid: string;
-  };
-  modifiedby?: {
-    fullname: string;
-  };
 }
 
 /**
@@ -75,9 +71,9 @@ export class BusinessProcessFlowDiscovery {
             'ismanaged',
             'createdon',
             'modifiedon',
+            '_ownerid_value',
           ],
           filter,
-          expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
           orderBy: ['primaryentity asc', 'name asc'],
         });
 
@@ -114,9 +110,9 @@ export class BusinessProcessFlowDiscovery {
       uniqueName: raw.uniquename,
       xaml: raw.xaml,
       definition,
-      owner: raw.ownerid?.fullname || 'Unknown',
-      ownerId: raw.ownerid?.ownerid || '',
-      modifiedBy: raw.modifiedby?.fullname || 'Unknown',
+      owner: raw['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      ownerId: raw._ownerid_value || '',
+      modifiedBy: raw['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: raw.modifiedon,
       createdOn: raw.createdon,
     };

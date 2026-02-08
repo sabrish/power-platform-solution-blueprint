@@ -23,12 +23,9 @@ interface RawClassicWorkflow {
   createdon: string;
   modifiedon: string;
   '_primaryentity_value@OData.Community.Display.V1.FormattedValue'?: string;
-  ownerid?: {
-    fullname: string;
-  };
-  modifiedby?: {
-    fullname: string;
-  };
+  _ownerid_value?: string;
+  '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
+  '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
 /**
@@ -86,9 +83,9 @@ export class ClassicWorkflowDiscovery {
             'ismanaged',
             'createdon',
             'modifiedon',
+            '_ownerid_value',
           ],
           filter,
-          expand: 'ownerid($select=fullname),modifiedby($select=fullname)',
           orderBy: ['primaryentity asc', 'name asc'],
         });
 
@@ -129,8 +126,8 @@ export class ClassicWorkflowDiscovery {
       state: this.getStateName(raw.statecode),
       isManaged: raw.ismanaged,
       xaml: raw.xaml,
-      owner: raw.ownerid?.fullname || 'Unknown',
-      modifiedBy: raw.modifiedby?.fullname || 'Unknown',
+      owner: raw['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      modifiedBy: raw['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: raw.modifiedon,
       createdOn: raw.createdon,
     };

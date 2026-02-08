@@ -26,10 +26,8 @@ interface RawPluginStep {
   sdkmessagefilterid?: {
     primaryobjecttypecode: string;
   };
-  impersonatinguserid?: {
-    fullname: string;
-    systemuserid: string;
-  };
+  _impersonatinguserid_value?: string;
+  '_impersonatinguserid_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
 /**
@@ -97,10 +95,11 @@ export class PluginDiscovery {
             'description',
             'asyncautodelete',
             'configuration',
+            '_impersonatinguserid_value',
           ],
           filter,
           expand:
-            'sdkmessageid($select=name),plugintypeid($select=typename,name,assemblyname,plugintypeid),sdkmessagefilterid($select=primaryobjecttypecode),impersonatinguserid($select=fullname,systemuserid)',
+            'sdkmessageid($select=name),plugintypeid($select=typename,name,assemblyname,plugintypeid),sdkmessagefilterid($select=primaryobjecttypecode)',
           orderBy: ['stage asc', 'rank asc'],
         });
 
@@ -144,8 +143,8 @@ export class PluginDiscovery {
           customConfiguration: raw.configuration, // Unsecure configuration
           preImage: images.preImage,
           postImage: images.postImage,
-          impersonatingUserId: raw.impersonatinguserid?.systemuserid || null,
-          impersonatingUserName: raw.impersonatinguserid?.fullname || null,
+          impersonatingUserId: raw._impersonatinguserid_value || null,
+          impersonatingUserName: raw['_impersonatinguserid_value@OData.Community.Display.V1.FormattedValue'] || null,
         };
 
         pluginSteps.push(pluginStep);

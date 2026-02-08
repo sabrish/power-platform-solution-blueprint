@@ -14,8 +14,9 @@ interface RawConnectionReference {
   statuscode: number;
   createdon: string;
   modifiedon: string;
-  ownerid?: { fullname: string; ownerid: string };
-  modifiedby?: { fullname: string };
+  _ownerid_value?: string;
+  '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
+  '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
 export class ConnectionReferenceDiscovery {
@@ -44,9 +45,8 @@ export class ConnectionReferenceDiscovery {
         const result = await this.client.query<RawConnectionReference>('connectionreferences', {
           select: ['connectionreferenceid', 'connectionreferencelogicalname', 'connectionreferencedisplayname',
             'description', 'connectionid', 'connectorid', 'ismanaged', 'iscustomizable',
-            'statecode', 'statuscode', 'createdon', 'modifiedon'],
+            'statecode', 'statuscode', 'createdon', 'modifiedon', '_ownerid_value'],
           filter,
-          expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
           orderBy: ['connectionreferencelogicalname asc'],
         });
 
@@ -73,9 +73,9 @@ export class ConnectionReferenceDiscovery {
       isCustomizable: raw.iscustomizable?.Value ?? true,
       statecode: raw.statecode,
       statuscode: raw.statuscode,
-      owner: raw.ownerid?.fullname || 'Unknown',
-      ownerId: raw.ownerid?.ownerid || '',
-      modifiedBy: raw.modifiedby?.fullname || 'Unknown',
+      owner: raw['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      ownerId: raw._ownerid_value || '',
+      modifiedBy: raw['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: raw.modifiedon,
       createdOn: raw.createdon,
     };

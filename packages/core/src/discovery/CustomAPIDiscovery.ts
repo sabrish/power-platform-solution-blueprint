@@ -18,13 +18,9 @@ interface RawCustomAPI {
   executeprivilegename: string | null;
   createdon: string;
   modifiedon: string;
-  ownerid?: {
-    fullname: string;
-    ownerid: string;
-  };
-  modifiedby?: {
-    fullname: string;
-  };
+  _ownerid_value?: string;
+  '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
+  '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
 /**
@@ -92,9 +88,9 @@ export class CustomAPIDiscovery {
             'executeprivilegename',
             'createdon',
             'modifiedon',
+            '_ownerid_value',
           ],
           filter,
-          expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
           orderBy: ['uniquename asc'],
         });
 
@@ -204,9 +200,9 @@ export class CustomAPIDiscovery {
       executionPrivilege: this.getExecutionPrivilege(raw.executeprivilegename),
       requestParameters,
       responseProperties,
-      owner: raw.ownerid?.fullname || 'Unknown',
-      ownerId: raw.ownerid?.ownerid || '',
-      modifiedBy: raw.modifiedby?.fullname || 'Unknown',
+      owner: raw['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      ownerId: raw._ownerid_value || '',
+      modifiedBy: raw['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: raw.modifiedon,
       createdOn: raw.createdon,
     };

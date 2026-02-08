@@ -17,13 +17,9 @@ interface RawEnvironmentVariableDefinition {
   hint: string | null;
   createdon: string;
   modifiedon: string;
-  ownerid?: {
-    fullname: string;
-    ownerid: string;
-  };
-  modifiedby?: {
-    fullname: string;
-  };
+  _ownerid_value?: string;
+  '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
+  '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
 /**
@@ -36,13 +32,9 @@ interface RawEnvironmentVariableValue {
   _environmentvariabledefinitionid_value: string;
   createdon: string;
   modifiedon: string;
-  ownerid?: {
-    fullname: string;
-    ownerid: string;
-  };
-  modifiedby?: {
-    fullname: string;
-  };
+  _ownerid_value?: string;
+  '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
+  '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
 /**
@@ -97,9 +89,9 @@ export class EnvironmentVariableDiscovery {
               'hint',
               'createdon',
               'modifiedon',
+              '_ownerid_value',
             ],
             filter,
-            expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
             orderBy: ['schemaname asc'],
           }
         );
@@ -145,9 +137,9 @@ export class EnvironmentVariableDiscovery {
             '_environmentvariabledefinitionid_value',
             'createdon',
             'modifiedon',
+            '_ownerid_value',
           ],
           filter: `_environmentvariabledefinitionid_value eq ${definitionId.replace(/[{}]/g, '')}`,
-          expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
           orderBy: ['createdon desc'],
         }
       );
@@ -182,9 +174,9 @@ export class EnvironmentVariableDiscovery {
       isCustomizable: raw.iscustomizable?.Value ?? true,
       hint: raw.hint,
       values,
-      owner: raw.ownerid?.fullname || 'Unknown',
-      ownerId: raw.ownerid?.ownerid || '',
-      modifiedBy: raw.modifiedby?.fullname || 'Unknown',
+      owner: raw['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      ownerId: raw._ownerid_value || '',
+      modifiedBy: raw['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: raw.modifiedon,
       createdOn: raw.createdon,
     };
@@ -201,9 +193,9 @@ export class EnvironmentVariableDiscovery {
       definitionId: raw._environmentvariabledefinitionid_value,
       schemaName: raw.schemaname,
       value: raw.value,
-      owner: raw.ownerid?.fullname || 'Unknown',
-      ownerId: raw.ownerid?.ownerid || '',
-      modifiedBy: raw.modifiedby?.fullname || 'Unknown',
+      owner: raw['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      ownerId: raw._ownerid_value || '',
+      modifiedBy: raw['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: raw.modifiedon,
       createdOn: raw.createdon,
     };
