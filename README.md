@@ -92,15 +92,35 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 
 ## 📸 Screenshots
 
-> Screenshots will be added in a future update
+### Scope Selection
+Choose what to document - by publisher or solution with multi-select filtering.
 
-**Key Views You'll See:**
-- **Scope Selection**: Publisher and solution multi-select with filtering
-- **Generation Progress**: Real-time progress tracking with phase indicators
-- **ERD View**: Color-coded entity relationships with legend and quick links
-- **Entity Detail**: Complete schema, automation, and execution pipeline visualization
-- **Security Roles**: Interactive accordion with permission matrices
-- **Export Dialog**: Format selection and download management
+![Scope Selection](docs/screenshots/PPSB-1-What%20to%20document-selector.png)
+
+### Confirmation Screen
+Review your selection before generating the blueprint.
+
+![Generator Confirmation](docs/screenshots/PPSB-2-Generator-Confirmation.png)
+
+### Results Dashboard
+Interactive dashboard with ERD, entity details, automation analysis, and security roles.
+
+![Generated Dashboard](docs/screenshots/PPSB-3-Generated%20Dashboard.png)
+
+### Analysis View
+Comprehensive analysis including performance risks, workflow migration recommendations, and complexity scores.
+
+![Analysis View](docs/screenshots/PPSB-4-Analysis.png)
+
+### Export Options
+Choose your export format - Markdown, JSON, HTML, or ZIP bundle.
+
+![Export Options](docs/screenshots/PPSB-5-Export%20Options.png)
+
+### HTML Export
+Self-contained, interactive HTML documentation ready to share with stakeholders.
+
+![HTML Export](docs/screenshots/PPSB-6-Export%20html.png)
 
 ---
 
