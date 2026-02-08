@@ -47,9 +47,11 @@ interface RawPluginImage {
  */
 export class PluginDiscovery {
   private readonly client: IDataverseClient;
+  private onProgress?: (current: number, total: number) => void;
 
-  constructor(client: IDataverseClient) {
+  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
     this.client = client;
+    this.onProgress = onProgress;
   }
 
   /**
@@ -105,6 +107,11 @@ export class PluginDiscovery {
 
         allPluginSteps.push(...result.value);
         console.log(`🔌 Batch ${Math.floor(i / batchSize) + 1}: Retrieved ${result.value.length} plugins`);
+
+        // Report progress after each batch
+        if (this.onProgress) {
+          this.onProgress(allPluginSteps.length, pluginIds.length);
+        }
       }
 
       console.log(`🔌 Total plugins retrieved: ${allPluginSteps.length}`);

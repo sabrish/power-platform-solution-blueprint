@@ -42,9 +42,11 @@ interface RawEnvironmentVariableValue {
  */
 export class EnvironmentVariableDiscovery {
   private readonly client: IDataverseClient;
+  private onProgress?: (current: number, total: number) => void;
 
-  constructor(client: IDataverseClient) {
+  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
     this.client = client;
+    this.onProgress = onProgress;
   }
 
   /**
@@ -97,6 +99,11 @@ export class EnvironmentVariableDiscovery {
         );
 
         allResults.push(...result.value);
+
+        // Report progress after each batch
+        if (this.onProgress) {
+          this.onProgress(allResults.length, envVarIds.length);
+        }
       }
 
       console.log(`📋 Total Environment Variable definitions retrieved: ${allResults.length}`);

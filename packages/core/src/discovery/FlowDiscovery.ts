@@ -25,9 +25,11 @@ interface WorkflowRecord {
  */
 export class FlowDiscovery {
   private readonly client: IDataverseClient;
+  private onProgress?: (current: number, total: number) => void;
 
-  constructor(client: IDataverseClient) {
+  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
     this.client = client;
+    this.onProgress = onProgress;
   }
 
   /**
@@ -72,6 +74,11 @@ export class FlowDiscovery {
         });
 
         allResults.push(...response.value);
+
+        // Report progress after each batch
+        if (this.onProgress) {
+          this.onProgress(allResults.length, workflowIds.length);
+        }
       }
 
       console.log(`📋 Total Flows retrieved: ${allResults.length}`);

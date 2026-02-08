@@ -468,7 +468,15 @@ export class BlueprintGenerator {
         message: `Documenting ${pluginIds.length} plugin${pluginIds.length > 1 ? 's' : ''}...`,
       });
 
-      const pluginDiscovery = new PluginDiscovery(this.client);
+      const pluginDiscovery = new PluginDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'plugins',
+          entityName: '',
+          current,
+          total,
+          message: `Documenting plugins (${current}/${total})...`,
+        });
+      });
       const plugins = await pluginDiscovery.getPluginsByIds(pluginIds);
 
       console.log(`🔌 Successfully retrieved ${plugins.length} plugin(s)`);
@@ -510,7 +518,15 @@ export class BlueprintGenerator {
         message: `Documenting ${flowIds.length} flow${flowIds.length > 1 ? 's' : ''}...`,
       });
 
-      const flowDiscovery = new FlowDiscovery(this.client);
+      const flowDiscovery = new FlowDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'flows',
+          entityName: '',
+          current,
+          total,
+          message: `Documenting flows (${current}/${total})...`,
+        });
+      });
       const flows = await flowDiscovery.getFlowsByIds(flowIds);
 
       console.log(`🌊 Successfully retrieved ${flows.length} flow(s)`);
@@ -604,7 +620,15 @@ export class BlueprintGenerator {
         message: `Documenting ${businessRuleIds.length} business rule${businessRuleIds.length > 1 ? 's' : ''}...`,
       });
 
-      const businessRuleDiscovery = new BusinessRuleDiscovery(this.client);
+      const businessRuleDiscovery = new BusinessRuleDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'business-rules',
+          entityName: '',
+          current,
+          total,
+          message: `Documenting business rules (${current}/${total})...`,
+        });
+      });
       const businessRules = await businessRuleDiscovery.getBusinessRulesByIds(businessRuleIds);
 
       console.log(`📋 Successfully retrieved ${businessRules.length} business rule(s)`);
@@ -646,7 +670,15 @@ export class BlueprintGenerator {
         message: `Analyzing ${webResourceIds.length} web resource${webResourceIds.length > 1 ? 's' : ''}...`,
       });
 
-      const webResourceDiscovery = new WebResourceDiscovery(this.client);
+      const webResourceDiscovery = new WebResourceDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          message: `Analyzing web resources (${current}/${total})...`,
+        });
+      });
       const webResources = await webResourceDiscovery.getWebResourcesByIds(webResourceIds);
 
       console.log(`📦 Successfully retrieved ${webResources.length} web resource(s)`);
@@ -710,7 +742,15 @@ export class BlueprintGenerator {
         message: `⚠️ Documenting ${workflowIds.length} classic workflow(s) (migration recommended)...`,
       });
 
-      const classicWorkflowDiscovery = new ClassicWorkflowDiscovery(this.client);
+      const classicWorkflowDiscovery = new ClassicWorkflowDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          message: `⚠️ Documenting classic workflows (${current}/${total})...`,
+        });
+      });
       const workflows = await classicWorkflowDiscovery.getClassicWorkflowsByIds(workflowIds);
 
       // Analyze each workflow for migration
@@ -782,7 +822,15 @@ export class BlueprintGenerator {
       });
 
       const { BusinessProcessFlowDiscovery } = await import('../discovery/BusinessProcessFlowDiscovery.js');
-      const bpfDiscovery = new BusinessProcessFlowDiscovery(this.client);
+      const bpfDiscovery = new BusinessProcessFlowDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          message: `📊 Documenting Business Process Flows (${current}/${total})...`,
+        });
+      });
       const bpfs = await bpfDiscovery.getBusinessProcessFlowsByIds(workflowIds);
 
       console.log(`📊 Successfully retrieved ${bpfs.length} Business Process Flow(s)`);
@@ -847,7 +895,15 @@ export class BlueprintGenerator {
       });
 
       const { CustomAPIDiscovery } = await import('../discovery/CustomAPIDiscovery.js');
-      const customApiDiscovery = new CustomAPIDiscovery(this.client);
+      const customApiDiscovery = new CustomAPIDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          message: `🔧 Documenting Custom APIs (${current}/${total})...`,
+        });
+      });
       const customAPIs = await customApiDiscovery.getCustomAPIsByIds(customApiIds);
 
       console.log(`🔧 Successfully retrieved ${customAPIs.length} Custom API(s)`);
@@ -889,7 +945,15 @@ export class BlueprintGenerator {
       });
 
       const { EnvironmentVariableDiscovery } = await import('../discovery/EnvironmentVariableDiscovery.js');
-      const envVarDiscovery = new EnvironmentVariableDiscovery(this.client);
+      const envVarDiscovery = new EnvironmentVariableDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          message: `🌍 Documenting Environment Variables (${current}/${total})...`,
+        });
+      });
       const envVars = await envVarDiscovery.getEnvironmentVariablesByIds(envVarIds);
 
       console.log(`🌍 Successfully retrieved ${envVars.length} Environment Variable(s)`);
@@ -915,7 +979,15 @@ export class BlueprintGenerator {
       this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connRefIds.length,
         message: `🔗 Documenting ${connRefIds.length} Connection Reference(s)...` });
       const { ConnectionReferenceDiscovery } = await import('../discovery/ConnectionReferenceDiscovery.js');
-      const discovery = new ConnectionReferenceDiscovery(this.client);
+      const discovery = new ConnectionReferenceDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          message: `🔗 Documenting Connection References (${current}/${total})...`,
+        });
+      });
       const refs = await discovery.getConnectionReferencesByIds(connRefIds);
       return refs;
     } catch (error) {
@@ -945,7 +1017,15 @@ export class BlueprintGenerator {
       this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connectorIds.length,
         message: `🔌 Documenting ${connectorIds.length} Custom Connector(s)...` });
       const { CustomConnectorDiscovery } = await import('../discovery/CustomConnectorDiscovery.js');
-      const discovery = new CustomConnectorDiscovery(this.client);
+      const discovery = new CustomConnectorDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          message: `🔌 Documenting Custom Connectors (${current}/${total})...`,
+        });
+      });
       const connectors = await discovery.getConnectorsByIds(connectorIds);
       return connectors;
     } catch (error) {

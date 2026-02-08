@@ -21,9 +21,11 @@ interface RawConnectionReference {
 
 export class ConnectionReferenceDiscovery {
   private readonly client: IDataverseClient;
+  private onProgress?: (current: number, total: number) => void;
 
-  constructor(client: IDataverseClient) {
+  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
     this.client = client;
+    this.onProgress = onProgress;
   }
 
   async getConnectionReferencesByIds(ids: string[]): Promise<ConnectionReference[]> {
@@ -51,6 +53,11 @@ export class ConnectionReferenceDiscovery {
         });
 
         allResults.push(...result.value);
+
+        // Report progress after each batch
+        if (this.onProgress) {
+          this.onProgress(allResults.length, ids.length);
+        }
       }
 
       console.log(`📋 Total Connection References retrieved: ${allResults.length}`);

@@ -55,9 +55,11 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderHeaderCell: () => 'Unique Name',
       renderCell: (item) => (
         <TableCellLayout media={<Code20Regular />}>
-          <div style={{ fontWeight: 500, fontFamily: 'monospace' }}>{item.uniqueName}</div>
+          <div style={{ fontWeight: 500, fontFamily: 'monospace', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+            {item.uniqueName}
+          </div>
           {item.description && (
-            <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3 }}>
+            <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
               {item.description}
             </div>
           )}

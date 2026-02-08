@@ -23,7 +23,13 @@ interface RawConnector {
  * Discovery service for Custom Connectors
  */
 export class CustomConnectorDiscovery {
-  constructor(private client: IDataverseClient) {}
+  private readonly client: IDataverseClient;
+  private onProgress?: (current: number, total: number) => void;
+
+  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+    this.client = client;
+    this.onProgress = onProgress;
+  }
 
   /**
    * Get custom connectors by their IDs
@@ -58,6 +64,11 @@ export class CustomConnectorDiscovery {
         });
 
         allResults.push(...result.value);
+
+        // Report progress after each batch
+        if (this.onProgress) {
+          this.onProgress(allResults.length, connectorIds.length);
+        }
       }
 
       console.log(`📋 Total Custom Connectors retrieved: ${allResults.length}`);

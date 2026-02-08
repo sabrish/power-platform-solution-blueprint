@@ -33,9 +33,11 @@ interface RawClassicWorkflow {
  */
 export class ClassicWorkflowDiscovery {
   private readonly client: IDataverseClient;
+  private onProgress?: (current: number, total: number) => void;
 
-  constructor(client: IDataverseClient) {
+  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
     this.client = client;
+    this.onProgress = onProgress;
   }
 
   /**
@@ -90,6 +92,11 @@ export class ClassicWorkflowDiscovery {
         });
 
         allResults.push(...result.value);
+
+        // Report progress after each batch
+        if (this.onProgress) {
+          this.onProgress(allResults.length, workflowIds.length);
+        }
       }
 
       console.log(`📋 Total Classic Workflows retrieved: ${allResults.length}`);

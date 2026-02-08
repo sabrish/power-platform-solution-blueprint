@@ -50,8 +50,10 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderHeaderCell: () => 'Name',
       renderCell: (item) => (
         <TableCellLayout media={<Settings20Regular />}>
-          <div style={{ fontWeight: 500 }}>{item.displayName}</div>
-          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>
+          <div style={{ fontWeight: 500, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+            {item.displayName}
+          </div>
+          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
             {item.schemaName}
           </div>
         </TableCellLayout>
@@ -73,7 +75,7 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderHeaderCell: () => 'Current Value',
       renderCell: (item) => (
         <TableCellLayout>
-          <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '13px', wordWrap: 'break-word', overflowWrap: 'break-word', display: 'block' }}>
             {item.currentValue || <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>}
           </span>
         </TableCellLayout>
@@ -84,7 +86,7 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderHeaderCell: () => 'Default Value',
       renderCell: (item) => (
         <TableCellLayout>
-          <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '13px', wordWrap: 'break-word', overflowWrap: 'break-word', display: 'block' }}>
             {item.defaultValue || <span style={{ color: tokens.colorNeutralForeground3 }}>None</span>}
           </span>
         </TableCellLayout>
