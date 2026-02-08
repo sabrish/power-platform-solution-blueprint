@@ -23,13 +23,15 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
 import { EntityList } from './EntityList';
 import { FlowsList } from './FlowsList';
 import { BusinessRulesList } from './BusinessRulesList';
 import { WebResourcesList } from './WebResourcesList';
+import { ClassicWorkflowsList } from './ClassicWorkflowsList';
+import { ClassicWorkflowDetailView } from './ClassicWorkflowDetailView';
 
 const useStyles = makeStyles({
   container: {
@@ -131,6 +133,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const styles = useStyles();
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState<string>('entities');
+  const [selectedClassicWorkflow, setSelectedClassicWorkflow] = useState<ClassicWorkflow | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -166,6 +169,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalFlows > 0;
       case 'businessRules':
         return result.summary.totalBusinessRules > 0;
+      case 'classicWorkflows':
+        return result.summary.totalClassicWorkflows > 0;
       case 'webResources':
         return result.summary.totalWebResources > 0;
       case 'canvasApps':
@@ -188,6 +193,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalFlows;
       case 'businessRules':
         return result.summary.totalBusinessRules;
+      case 'classicWorkflows':
+        return result.summary.totalClassicWorkflows;
       case 'webResources':
         return result.summary.totalWebResources;
       case 'canvasApps':
@@ -205,6 +212,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
     { key: 'plugins', label: 'Plugins', icon: '🔌' },
     { key: 'flows', label: 'Flows', icon: '🌊' },
     { key: 'businessRules', label: 'Business Rules', icon: '📋' },
+    { key: 'classicWorkflows', label: 'Classic Workflows', icon: '⚠️' },
     { key: 'webResources', label: 'Web Resources', icon: '🌐' },
     { key: 'canvasApps', label: 'Canvas Apps', icon: '🎨' },
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
@@ -353,6 +361,10 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
               <Tab value="businessRules">{`Business Rules (${result.summary.totalBusinessRules})`}</Tab>
             )}
 
+            {hasResults('classicWorkflows') && (
+              <Tab value="classicWorkflows">{`⚠️ Classic Workflows (${result.summary.totalClassicWorkflows})`}</Tab>
+            )}
+
             {hasResults('webResources') && (
               <Tab value="webResources">{`Web Resources (${result.summary.totalWebResources})`}</Tab>
             )}
@@ -370,7 +382,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
           <div style={{ marginTop: tokens.spacingVerticalL }}>
             {selectedTab === 'entities' && (
               <div style={{ display: 'flex', width: '100%', height: '600px' }}>
-                <EntityList blueprints={result.entities} />
+                <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} />
               </div>
             )}
 
@@ -384,6 +396,28 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
 
             {selectedTab === 'businessRules' && hasResults('businessRules') && (
               <BusinessRulesList businessRules={result.businessRules} />
+            )}
+
+            {selectedTab === 'classicWorkflows' && hasResults('classicWorkflows') && (
+              <div>
+                {selectedClassicWorkflow ? (
+                  <div>
+                    <Button
+                      appearance="secondary"
+                      onClick={() => setSelectedClassicWorkflow(null)}
+                      style={{ marginBottom: '16px' }}
+                    >
+                      ← Back to List
+                    </Button>
+                    <ClassicWorkflowDetailView workflow={selectedClassicWorkflow} />
+                  </div>
+                ) : (
+                  <ClassicWorkflowsList
+                    workflows={result.classicWorkflows}
+                    onSelectWorkflow={setSelectedClassicWorkflow}
+                  />
+                )}
+              </div>
             )}
 
             {selectedTab === 'webResources' && hasResults('webResources') && (

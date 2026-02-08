@@ -5,8 +5,12 @@ import {
   tokens,
   Select,
   Spinner,
+  MessageBar,
+  MessageBarBody,
+  Button,
 } from '@fluentui/react-components';
-import type { EntityBlueprint } from '@ppsb/core';
+import { Warning20Regular } from '@fluentui/react-icons';
+import type { EntityBlueprint, ClassicWorkflow } from '@ppsb/core';
 import { ExecutionOrderCalculator, PerformanceAnalyzer } from '@ppsb/core';
 import type { ExecutionPipeline } from '@ppsb/core';
 import { ExecutionTimeline } from './ExecutionTimeline';
@@ -46,9 +50,11 @@ const useStyles = makeStyles({
 
 export interface ExecutionPipelineViewProps {
   blueprint: EntityBlueprint;
+  classicWorkflows?: ClassicWorkflow[];
+  onViewClassicWorkflows?: () => void;
 }
 
-export function ExecutionPipelineView({ blueprint }: ExecutionPipelineViewProps) {
+export function ExecutionPipelineView({ blueprint, classicWorkflows = [], onViewClassicWorkflows }: ExecutionPipelineViewProps) {
   const styles = useStyles();
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
 
@@ -92,6 +98,13 @@ export function ExecutionPipelineView({ blueprint }: ExecutionPipelineViewProps)
     return basePipeline;
   }, [selectedEvent, blueprint]);
 
+  // Filter classic workflows for this entity
+  const entityClassicWorkflows = useMemo(() => {
+    return classicWorkflows.filter(
+      (wf) => wf.entity.toLowerCase() === blueprint.entity.LogicalName.toLowerCase()
+    );
+  }, [classicWorkflows, blueprint.entity.LogicalName]);
+
   if (availableEvents.length === 0) {
     return (
       <div className={styles.emptyState}>
@@ -111,6 +124,30 @@ export function ExecutionPipelineView({ blueprint }: ExecutionPipelineViewProps)
 
   return (
     <div className={styles.container}>
+      {/* Classic Workflows Warning */}
+      {entityClassicWorkflows.length > 0 && (
+        <MessageBar intent="warning" icon={<Warning20Regular />}>
+          <MessageBarBody>
+            <strong>Classic workflows detected:</strong> This entity has{' '}
+            {entityClassicWorkflows.length} classic workflow(s) that require migration to Power
+            Automate. Classic workflows are deprecated and will be removed in a future update.
+            {onViewClassicWorkflows && (
+              <>
+                {' '}
+                <Button
+                  appearance="transparent"
+                  size="small"
+                  onClick={onViewClassicWorkflows}
+                  style={{ verticalAlign: 'baseline' }}
+                >
+                  View Migration Guidance →
+                </Button>
+              </>
+            )}
+          </MessageBarBody>
+        </MessageBar>
+      )}
+
       <div className={styles.header}>
         <Text weight="semibold" size={400}>Event:</Text>
         <Select

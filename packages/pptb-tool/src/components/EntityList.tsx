@@ -6,7 +6,7 @@ import {
   tokens,
 } from '@fluentui/react-components';
 import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import type { EntityBlueprint } from '@ppsb/core';
+import type { EntityBlueprint, ClassicWorkflow } from '@ppsb/core';
 import { SchemaView } from './SchemaView';
 
 const useStyles = makeStyles({
@@ -168,9 +168,10 @@ const useStyles = makeStyles({
 
 export interface EntityListProps {
   blueprints: EntityBlueprint[];
+  classicWorkflows?: ClassicWorkflow[];
 }
 
-export function EntityList({ blueprints }: EntityListProps) {
+export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProps) {
   const styles = useStyles();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEntityId, setExpandedEntityId] = useState<string | null>(null);
@@ -208,7 +209,7 @@ export function EntityList({ blueprints }: EntityListProps) {
   const renderEntityDetails = (blueprint: EntityBlueprint) => {
     return (
       <div className={styles.expandedDetails}>
-        <SchemaView blueprint={blueprint} />
+        <SchemaView blueprint={blueprint} classicWorkflows={classicWorkflows} />
       </div>
     );
   };

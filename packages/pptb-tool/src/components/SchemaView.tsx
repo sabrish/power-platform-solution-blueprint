@@ -12,7 +12,7 @@ import {
   SelectTabEvent,
 } from '@fluentui/react-components';
 import { Database24Regular } from '@fluentui/react-icons';
-import type { DetailedEntityMetadata, EntityBlueprint } from '@ppsb/core';
+import type { DetailedEntityMetadata, EntityBlueprint, ClassicWorkflow } from '@ppsb/core';
 import { FieldsTable } from './FieldsTable';
 import { RelationshipsView } from './RelationshipsView';
 import { AlternateKeysView } from './AlternateKeysView';
@@ -74,9 +74,10 @@ const useStyles = makeStyles({
 export interface SchemaViewProps {
   schema?: DetailedEntityMetadata;
   blueprint?: EntityBlueprint;
+  classicWorkflows?: ClassicWorkflow[];
 }
 
-export function SchemaView({ schema: schemaProp, blueprint }: SchemaViewProps) {
+export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [] }: SchemaViewProps) {
   const styles = useStyles();
   const [selectedTab, setSelectedTab] = useState<string>('fields');
 
@@ -224,7 +225,7 @@ export function SchemaView({ schema: schemaProp, blueprint }: SchemaViewProps) {
           )}
 
           {selectedTab === 'execution-pipeline' && blueprint && (
-            <ExecutionPipelineView blueprint={blueprint} />
+            <ExecutionPipelineView blueprint={blueprint} classicWorkflows={classicWorkflows} />
           )}
         </div>
       </Card>
