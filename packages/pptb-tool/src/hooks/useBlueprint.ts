@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   PptbDataverseClient,
   BlueprintGenerator,
@@ -48,6 +48,13 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
   const [error, setError] = useState<Error | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Reset state when scope changes (e.g., when user clicks "Change Selection")
+  useEffect(() => {
+    setResult(null);
+    setError(null);
+    setProgress(null);
+  }, [scope]);
 
   const generate = useCallback(async () => {
     try {
