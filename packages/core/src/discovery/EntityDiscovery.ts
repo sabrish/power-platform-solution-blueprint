@@ -167,19 +167,8 @@ export class EntityDiscovery {
    */
   async getAllEntities(includeSystem: boolean, onlyUnmanaged: boolean = false): Promise<EntityMetadata[]> {
     try {
-      const filters: string[] = [];
-
-      if (!includeSystem) {
-        // Only custom entities
-        filters.push('IsCustomEntity eq true');
-      }
-
-      if (onlyUnmanaged) {
-        // Only unmanaged entities (for Default Solution)
-        filters.push('IsManaged eq false');
-      }
-
-      const filter = filters.length > 0 ? filters.join(' and ') : undefined;
+      // Only use IsCustomEntity filter in the query - metadata API has limited filter support
+      const filter = !includeSystem ? 'IsCustomEntity eq true' : undefined;
 
       const result = await this.client.queryMetadata<EntityMetadata>('EntityDefinitions', {
         select: [
@@ -199,7 +188,14 @@ export class EntityDiscovery {
         orderBy: ['LogicalName'],
       });
 
-      return result.value;
+      // Filter for unmanaged in memory (metadata API doesn't support IsManaged filter well)
+      let entities = result.value;
+      if (onlyUnmanaged) {
+        entities = entities.filter(e => !e.IsManaged);
+        console.log(`📊 Filtered to ${entities.length} unmanaged entities (from ${result.value.length} total)`);
+      }
+
+      return entities;
     } catch (error) {
       throw new Error(
         `Failed to retrieve all entities: ${error instanceof Error ? error.message : 'Unknown error'}`
