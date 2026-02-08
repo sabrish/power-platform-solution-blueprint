@@ -23,7 +23,7 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, GlobalChoice } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -41,6 +41,8 @@ import { EnvironmentVariablesList } from './EnvironmentVariablesList';
 import { EnvironmentVariableDetailView } from './EnvironmentVariableDetailView';
 import { ConnectionReferencesList } from './ConnectionReferencesList';
 import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
+import { GlobalChoicesList } from './GlobalChoicesList';
+import { GlobalChoiceDetailView } from './GlobalChoiceDetailView';
 
 const useStyles = makeStyles({
   container: {
@@ -147,6 +149,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
   const [selectedEnvVar, setSelectedEnvVar] = useState<EnvironmentVariable | null>(null);
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
+  const [selectedGlobalChoice, setSelectedGlobalChoice] = useState<GlobalChoice | null>(null);
 
   // Format timestamp
   const formattedDate = formatDate(result.metadata.generatedAt);
@@ -185,6 +188,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalEnvironmentVariables > 0;
       case 'connectionReferences':
         return result.summary.totalConnectionReferences > 0;
+      case 'globalChoices':
+        return result.summary.totalGlobalChoices > 0;
       case 'webResources':
         return result.summary.totalWebResources > 0;
       case 'canvasApps':
@@ -217,6 +222,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalEnvironmentVariables;
       case 'connectionReferences':
         return result.summary.totalConnectionReferences;
+      case 'globalChoices':
+        return result.summary.totalGlobalChoices;
       case 'webResources':
         return result.summary.totalWebResources;
       case 'canvasApps':
@@ -239,6 +246,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
     { key: 'customAPIs', label: 'Custom APIs', icon: '🔧' },
     { key: 'environmentVariables', label: 'Environment Variables', icon: '🌍' },
     { key: 'connectionReferences', label: 'Connection References', icon: '🔗' },
+    { key: 'globalChoices', label: 'Global Choices', icon: '📋' },
     { key: 'webResources', label: 'Web Resources', icon: '🌐' },
     { key: 'canvasApps', label: 'Canvas Apps', icon: '🎨' },
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
@@ -545,6 +553,28 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                   <ConnectionReferencesList
                     connectionReferences={result.connectionReferences}
                     onSelectReference={setSelectedConnRef}
+                  />
+                )}
+              </div>
+            )}
+
+            {selectedTab === 'globalChoices' && hasResults('globalChoices') && (
+              <div>
+                {selectedGlobalChoice ? (
+                  <div>
+                    <Button
+                      appearance="secondary"
+                      onClick={() => setSelectedGlobalChoice(null)}
+                      style={{ marginBottom: '16px' }}
+                    >
+                      ← Back to List
+                    </Button>
+                    <GlobalChoiceDetailView globalChoice={selectedGlobalChoice} />
+                  </div>
+                ) : (
+                  <GlobalChoicesList
+                    globalChoices={result.globalChoices}
+                    onSelectChoice={setSelectedGlobalChoice}
                   />
                 )}
               </div>

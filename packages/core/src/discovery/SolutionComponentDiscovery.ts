@@ -45,6 +45,7 @@ export class SolutionComponentDiscovery {
         connectionReferenceIds: [],
         customApiIds: [],
         environmentVariableIds: [],
+        globalChoiceIds: [],
       };
 
       // OPTIMIZED: Query all solution components in a single batch query using OR filters
@@ -82,6 +83,11 @@ export class SolutionComponentDiscovery {
             case ComponentType.Attribute:
               if (!inventory.attributeIds.includes(objectId)) {
                 inventory.attributeIds.push(objectId);
+              }
+              break;
+            case ComponentType.GlobalOptionSet:
+              if (!inventory.globalChoiceIds.includes(objectId)) {
+                inventory.globalChoiceIds.push(objectId);
               }
               break;
             case ComponentType.SdkMessageProcessingStep:
@@ -140,6 +146,7 @@ export class SolutionComponentDiscovery {
         connectionRefs: inventory.connectionReferenceIds.length,
         customApis: inventory.customApiIds.length,
         envVars: inventory.environmentVariableIds.length,
+        globalChoices: inventory.globalChoiceIds.length,
       });
 
       console.log(`🔌 PLUGINS: Found ${inventory.pluginIds.length} plugin(s):`, inventory.pluginIds);

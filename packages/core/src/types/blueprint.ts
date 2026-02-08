@@ -461,6 +461,7 @@ export interface BlueprintSummary {
   totalCustomAPIs: number;
   totalEnvironmentVariables: number;
   totalConnectionReferences: number;
+  totalGlobalChoices: number;
   totalAttributes: number;
   totalWebResources: number;
   totalCanvasApps: number;
@@ -500,6 +501,7 @@ export interface BlueprintResult {
   customAPIs: import('./customApi.js').CustomAPI[];
   environmentVariables: import('./environmentVariable.js').EnvironmentVariable[];
   connectionReferences: import('./connectionReference.js').ConnectionReference[];
+  globalChoices: import('./globalChoice.js').GlobalChoice[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
 }

@@ -10,6 +10,8 @@ export type { EnvironmentVariable, EnvironmentVariableValue, EnvironmentVariable
 export { ENV_VAR_TYPE_COLORS } from './types/environmentVariable.js';
 export type { ConnectionReference } from './types/connectionReference.js';
 export { CONNECTION_STATUS_COLORS } from './types/connectionReference.js';
+export type { GlobalChoice, GlobalChoiceOption } from './types/globalChoice.js';
+export { GLOBAL_CHOICE_STATUS_COLORS } from './types/globalChoice.js';
 export type {
   ProgressPhase,
   ProgressInfo,
@@ -67,6 +69,7 @@ export { BusinessProcessFlowDiscovery } from './discovery/BusinessProcessFlowDis
 export { CustomAPIDiscovery } from './discovery/CustomAPIDiscovery.js';
 export { EnvironmentVariableDiscovery } from './discovery/EnvironmentVariableDiscovery.js';
 export { ConnectionReferenceDiscovery } from './discovery/ConnectionReferenceDiscovery.js';
+export { GlobalChoiceDiscovery } from './discovery/GlobalChoiceDiscovery.js';
 
 // Generators
 export { BlueprintGenerator } from './generators/BlueprintGenerator.js';

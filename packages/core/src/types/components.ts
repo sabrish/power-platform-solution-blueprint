@@ -16,6 +16,7 @@ export interface ComponentInventory {
   connectionReferenceIds: string[];
   customApiIds: string[];
   environmentVariableIds: string[];
+  globalChoiceIds: string[];
 }
 
 /**
@@ -35,6 +36,7 @@ export interface WorkflowInventory {
 export enum ComponentType {
   Entity = 1,
   Attribute = 2,
+  GlobalOptionSet = 9,
   PluginType = 90,
   PluginAssembly = 91,
   SdkMessageProcessingStep = 92,  // Plugin steps

@@ -141,6 +141,9 @@ export class BlueprintGenerator {
       // STEP 6.7: Process Connection References
       const connectionReferences = await this.processConnectionReferences(inventory.connectionReferenceIds);
 
+      // STEP 6.8: Process Global Choices (Option Sets)
+      const globalChoices = await this.processGlobalChoices(inventory.globalChoiceIds);
+
       // STEP 7: Process Forms and JavaScript Event Handlers
       const forms = await this.processForms(entities.map((e) => e.LogicalName));
       const formsByEntity = this.groupFormsByEntity(forms);
@@ -170,6 +173,7 @@ export class BlueprintGenerator {
         totalCustomAPIs: inventory.customApiIds.length,
         totalEnvironmentVariables: inventory.environmentVariableIds.length,
         totalConnectionReferences: inventory.connectionReferenceIds.length,
+        totalGlobalChoices: inventory.globalChoiceIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
         totalCanvasApps: inventory.canvasAppIds.length,
@@ -210,6 +214,7 @@ export class BlueprintGenerator {
         customAPIs,
         environmentVariables,
         connectionReferences,
+        globalChoices,
         webResources,
         webResourcesByType,
       };
@@ -261,6 +266,7 @@ export class BlueprintGenerator {
         connectionReferenceIds: [],
         customApiIds: [],
         environmentVariableIds: [],
+        globalChoiceIds: [],
       };
 
       const workflowInventory: WorkflowInventory = {
@@ -897,6 +903,21 @@ export class BlueprintGenerator {
       return refs;
     } catch (error) {
       console.error('❌ Error processing Connection References:', error);
+      throw error;
+    }
+  }
+
+  private async processGlobalChoices(globalChoiceIds: string[]): Promise<import('../types/globalChoice.js').GlobalChoice[]> {
+    if (globalChoiceIds.length === 0) return [];
+    try {
+      this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: globalChoiceIds.length,
+        message: `📋 Documenting ${globalChoiceIds.length} Global Choice(s)...` });
+      const { GlobalChoiceDiscovery } = await import('../discovery/GlobalChoiceDiscovery.js');
+      const discovery = new GlobalChoiceDiscovery(this.client);
+      const choices = await discovery.discoverGlobalChoices(globalChoiceIds);
+      return choices;
+    } catch (error) {
+      console.error('❌ Error processing Global Choices:', error);
       throw error;
     }
   }
