@@ -2,6 +2,7 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import { EntityDiscovery } from '../discovery/EntityDiscovery.js';
 import { SolutionComponentDiscovery } from '../discovery/SolutionComponentDiscovery.js';
 import { SolutionDiscovery } from '../discovery/SolutionDiscovery.js';
+import { PublisherDiscovery } from '../discovery/PublisherDiscovery.js';
 import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
 import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
 import { FlowDiscovery } from '../discovery/FlowDiscovery.js';
@@ -10,8 +11,12 @@ import { ClassicWorkflowDiscovery } from '../discovery/ClassicWorkflowDiscovery.
 import { FormDiscovery } from '../discovery/FormDiscovery.js';
 import { WebResourceDiscovery } from '../discovery/WebResourceDiscovery.js';
 import { WorkflowMigrationAnalyzer } from '../analyzers/WorkflowMigrationAnalyzer.js';
+import { ERDGenerator } from '../generators/ERDGenerator.js';
+import { CrossEntityMapper } from '../analyzers/CrossEntityMapper.js';
+import { ExternalDependencyAggregator } from '../analyzers/ExternalDependencyAggregator.js';
+import { SolutionDistributionAnalyzer } from '../analyzers/SolutionDistributionAnalyzer.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
-import type { EntityMetadata, PluginStep } from '../types.js';
+import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
 import type { ComponentInventory, WorkflowInventory } from '../types/components.js';
 import type {
   GeneratorOptions,
@@ -42,6 +47,8 @@ export class BlueprintGenerator {
   private readonly client: IDataverseClient;
   private readonly options: GeneratorOptions;
   private readonly scope: ScopeSelection;
+  private publishers: Publisher[] = [];
+  private solutions: Solution[] = [];
 
   constructor(client: IDataverseClient, scope: ScopeSelection, options: GeneratorOptions) {
     this.client = client;
@@ -166,10 +173,114 @@ export class BlueprintGenerator {
         warnings.push('No canvas apps found');
       }
 
+      // STEP 10: Generate ERD and Advanced Analysis
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: 4,
+        message: 'Generating ERD and analyzing system architecture...',
+      });
+
+      // 10.1: Generate ERD
+      const erdGenerator = new ERDGenerator();
+      const erd = erdGenerator.generateMermaidERD(entityBlueprints, this.publishers);
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 1,
+        total: 4,
+        message: 'ERD generated',
+      });
+
+      // 10.2: Map cross-entity automation
+      const crossEntityMapper = new CrossEntityMapper();
+      const crossEntityLinks = crossEntityMapper.mapCrossEntityAutomation(entityBlueprints);
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 2,
+        total: 4,
+        message: 'Cross-entity automation mapped',
+      });
+
+      // 10.3: Aggregate external dependencies
+      const externalDependencyAggregator = new ExternalDependencyAggregator();
+      const blueprintResultPartial: BlueprintResult = {
+        metadata: {
+          generatedAt: startTime,
+          environment: 'current',
+          scope: { type: this.scope.type, description: this.getScopeDescription() },
+          entityCount: entities.length,
+        },
+        entities: entityBlueprints,
+        summary: {
+          totalEntities: 0,
+          totalPlugins: 0,
+          totalPluginPackages: 0,
+          totalFlows: 0,
+          totalBusinessRules: 0,
+          totalClassicWorkflows: 0,
+          totalBusinessProcessFlows: 0,
+          totalCustomAPIs: 0,
+          totalEnvironmentVariables: 0,
+          totalConnectionReferences: 0,
+          totalGlobalChoices: 0,
+          totalCustomConnectors: 0,
+          totalAttributes: 0,
+          totalWebResources: 0,
+          totalCanvasApps: 0,
+          totalCustomPages: 0,
+        },
+        plugins,
+        pluginsByEntity,
+        flows,
+        flowsByEntity,
+        businessRules,
+        businessRulesByEntity,
+        classicWorkflows,
+        classicWorkflowsByEntity,
+        businessProcessFlows,
+        businessProcessFlowsByEntity,
+        customAPIs,
+        environmentVariables,
+        connectionReferences,
+        globalChoices,
+        customConnectors,
+        webResources,
+        webResourcesByType,
+      };
+      const externalEndpoints = externalDependencyAggregator.aggregateExternalDependencies(blueprintResultPartial);
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 3,
+        total: 4,
+        message: 'External dependencies aggregated',
+      });
+
+      // 10.4: Analyze solution distribution (if solution-based scope)
+      let solutionDistribution = undefined;
+      if (this.scope.type === 'solution' && this.solutions.length > 0) {
+        const solutionDistributionAnalyzer = new SolutionDistributionAnalyzer();
+        solutionDistribution = solutionDistributionAnalyzer.analyzeSolutionDistribution(
+          this.solutions,
+          blueprintResultPartial
+        );
+      }
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 4,
+        total: 4,
+        message: 'Solution distribution analyzed',
+      });
+
       // Generate summary
       const summary = {
         totalEntities: entityBlueprints.length,
         totalPlugins: inventory.pluginIds.length,
+        totalPluginPackages: inventory.pluginPackageIds.length,
         totalFlows: workflowInventory.flowIds.length,
         totalBusinessRules: workflowInventory.businessRuleIds.length,
         totalClassicWorkflows: workflowInventory.classicWorkflowIds.length,
@@ -223,6 +334,10 @@ export class BlueprintGenerator {
         customConnectors,
         webResources,
         webResourcesByType,
+        erd,
+        crossEntityLinks,
+        externalEndpoints,
+        solutionDistribution,
       };
     } catch (error) {
       throw new Error(
@@ -241,6 +356,10 @@ export class BlueprintGenerator {
   }> {
     const entityDiscovery = new EntityDiscovery(this.client);
 
+    // Fetch publishers for ERD generation
+    const publisherDiscovery = new PublisherDiscovery(this.client);
+    this.publishers = await publisherDiscovery.getPublishers();
+
     if (this.scope.type === 'solution' && this.scope.solutionIds) {
       // Solution-based discovery
       const componentDiscovery = new SolutionComponentDiscovery(this.client);
@@ -250,6 +369,9 @@ export class BlueprintGenerator {
       const allSolutions = await solutionDiscovery.getSolutions();
       const selectedSolutions = allSolutions.filter(s => this.scope.solutionIds?.includes(s.solutionid));
       const solutionUniqueNames = selectedSolutions.map(s => s.uniquename);
+
+      // Store solutions for distribution analysis
+      this.solutions = selectedSolutions;
 
       // Discover all component types (will use special handling for Default solution)
       const inventory = await componentDiscovery.discoverComponents(this.scope.solutionIds, solutionUniqueNames);
@@ -275,6 +397,7 @@ export class BlueprintGenerator {
         entityIds: entities.map(e => e.MetadataId),
         attributeIds: [],
         pluginIds: [],
+        pluginPackageIds: [],
         workflowIds: [],
         webResourceIds: [],
         canvasAppIds: [],

@@ -9,6 +9,7 @@ export interface ComponentInventory {
   entityIds: string[];
   attributeIds: string[];
   pluginIds: string[];
+  pluginPackageIds: string[];
   workflowIds: string[];
   webResourceIds: string[];
   canvasAppIds: string[];
@@ -46,6 +47,7 @@ export enum ComponentType {
   WebResource = 61,
   CanvasApp = 300,
   CustomPage = 10004,
+  PluginPackage = 10030,  // Plugin packages
   ConnectionReference = 371,
   CustomConnector = 372,
   CustomAPI = 10076,

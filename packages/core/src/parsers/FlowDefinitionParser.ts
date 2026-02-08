@@ -1,4 +1,4 @@
-import type { FlowDefinition, ExternalCall } from '../types/blueprint.js';
+import type { FlowDefinition, ExternalCall, DataverseAction } from '../types/blueprint.js';
 
 /**
  * Parses Power Automate flow definitions from clientdata JSON
@@ -16,6 +16,7 @@ export class FlowDefinitionParser {
       actionsCount: 0,
       externalCalls: [],
       connectionReferences: [],
+      dataverseActions: [],
     };
 
     if (!clientdata) {
@@ -31,6 +32,9 @@ export class FlowDefinitionParser {
       // Extract actions and external calls
       const { actionsCount, externalCalls, connectionReferences } = this.extractActions(data);
 
+      // Extract Dataverse actions
+      const dataverseActions = this.extractDataverseActions(data);
+
       // Extract scope/run as information
       const scopeType = this.extractScopeType(data);
 
@@ -42,6 +46,7 @@ export class FlowDefinitionParser {
         actionsCount,
         externalCalls,
         connectionReferences,
+        dataverseActions,
       };
     } catch (error) {
       console.warn('Failed to parse flow definition:', error);
@@ -236,5 +241,133 @@ export class FlowDefinitionParser {
 
     // Low confidence: Unclear or indirect
     return 'Low';
+  }
+
+  /**
+   * Extract Dataverse actions (create, update, delete, etc.) from flow definition
+   * Used for cross-entity automation mapping
+   */
+  private static extractDataverseActions(data: any): DataverseAction[] {
+    const definition = data?.properties?.definition;
+    const dataverseActions: DataverseAction[] = [];
+
+    if (!definition || !definition.actions) {
+      return [];
+    }
+
+    // Recursively process actions to find Dataverse operations
+    const processAction = (action: any, actionName: string) => {
+      // Check for Dataverse/CDS actions
+      const actionType = action.type?.toLowerCase() || '';
+
+      if (actionType.includes('dataverse') || actionType.includes('commondataservice') ||
+          actionType === 'openApiConnection') {
+
+        // Detect operation type
+        const operation = this.detectDataverseOperation(action, actionName);
+        if (operation) {
+          dataverseActions.push(operation);
+        }
+      }
+
+      // Process nested actions recursively
+      if (action.actions) {
+        Object.keys(action.actions).forEach((key) => {
+          processAction(action.actions[key], key);
+        });
+      }
+
+      // Process actions in 'else' branch (for conditions)
+      if (action.else?.actions) {
+        Object.keys(action.else.actions).forEach((key) => {
+          processAction(action.else.actions[key], key);
+        });
+      }
+    };
+
+    // Process all top-level actions
+    Object.keys(definition.actions).forEach((actionKey) => {
+      processAction(definition.actions[actionKey], actionKey);
+    });
+
+    return dataverseActions;
+  }
+
+  /**
+   * Detect Dataverse operation from action
+   */
+  private static detectDataverseOperation(action: any, actionName: string): DataverseAction | null {
+    const inputs = action.inputs;
+    if (!inputs) return null;
+
+    // Try to detect operation from action metadata
+    const operationId = inputs.operationId?.toLowerCase() || '';
+    const actionNameLower = actionName.toLowerCase();
+
+    let operation: DataverseAction['operation'] | null = null;
+    let targetEntity: string | null = null;
+    let confidence: DataverseAction['confidence'] = 'Low';
+
+    // Detect operation type
+    if (operationId.includes('createrecord') || actionNameLower.includes('create')) {
+      operation = 'Create';
+      confidence = 'High';
+    } else if (operationId.includes('updaterecord') || actionNameLower.includes('update')) {
+      operation = 'Update';
+      confidence = 'High';
+    } else if (operationId.includes('deleterecord') || actionNameLower.includes('delete')) {
+      operation = 'Delete';
+      confidence = 'High';
+    } else if (operationId.includes('getrecord') || operationId.includes('getitem') || actionNameLower.includes('get')) {
+      operation = 'Get';
+      confidence = 'Medium';
+    } else if (operationId.includes('listrecords') || operationId.includes('listitems') || actionNameLower.includes('list')) {
+      operation = 'List';
+      confidence = 'Medium';
+    }
+
+    if (!operation) {
+      return null;
+    }
+
+    // Try to extract target entity
+    // Method 1: From entityName parameter
+    if (inputs.parameters?.entityName) {
+      targetEntity = inputs.parameters.entityName;
+      confidence = 'High';
+    }
+    // Method 2: From entityLogicalName (classic CDS connector)
+    else if (inputs.parameters?.entityLogicalName) {
+      targetEntity = inputs.parameters.entityLogicalName;
+      confidence = 'High';
+    }
+    // Method 3: From path (OpenAPI style)
+    else if (inputs.path) {
+      const pathMatch = inputs.path.match(/\/([a-z_]+)\(/i);
+      if (pathMatch) {
+        targetEntity = pathMatch[1];
+        confidence = 'Medium';
+      }
+    }
+    // Method 4: From action name (low confidence)
+    else {
+      // Try to extract entity from action name like "Create_new_Contact"
+      const entityMatch = actionName.match(/_([A-Z][a-z]+)$/);
+      if (entityMatch) {
+        targetEntity = entityMatch[1].toLowerCase();
+        confidence = 'Low';
+      }
+    }
+
+    if (!targetEntity) {
+      return null;
+    }
+
+    return {
+      operation,
+      targetEntity,
+      actionName,
+      confidence,
+    };
   }
 }

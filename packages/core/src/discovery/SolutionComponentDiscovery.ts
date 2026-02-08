@@ -38,10 +38,17 @@ export class SolutionComponentDiscovery {
     solutionUniqueNames?: string[]
   ): Promise<ComponentInventory> {
     try {
+      console.log('🔍 ============================================');
+      console.log('🔍 SOLUTION COMPONENT DISCOVERY STARTED');
+      console.log('🔍 Solution IDs:', solutionIds);
+      console.log('🔍 Solution Unique Names:', solutionUniqueNames);
+      console.log('🔍 ============================================');
+
       const inventory: ComponentInventory = {
         entityIds: [],
         attributeIds: [],
         pluginIds: [],
+        pluginPackageIds: [],
         workflowIds: [],
         webResourceIds: [],
         canvasAppIds: [],
@@ -55,9 +62,11 @@ export class SolutionComponentDiscovery {
 
       // Check if Default Solution is among the selected solutions
       const includesDefaultSolution = solutionUniqueNames?.some(name => name.toLowerCase() === 'default');
+      console.log('🔍 Default Solution detected?', includesDefaultSolution);
 
       if (includesDefaultSolution) {
-        console.log('🔍 Default Solution detected - querying ALL unmanaged components');
+        console.log('⚠️ DEFAULT SOLUTION DETECTED - QUERYING ALL UNMANAGED COMPONENTS FROM ENTIRE ENVIRONMENT');
+        console.log('⚠️ This will return ALL components, not just those in the selected solution!');
         return this.discoverAllUnmanagedComponents();
       }
 
@@ -68,12 +77,14 @@ export class SolutionComponentDiscovery {
         return `_solutionid_value eq '${guidWithBraces}'`;
       }).join(' or ');
 
+      console.log('🔍 OData Filter:', solutionFilters);
+
       const result = await this.client.query<SolutionComponent>('solutioncomponents', {
         select: ['objectid', 'componenttype'],
         filter: solutionFilters,
       });
 
-      console.log(`🔍 Solution Components Discovery: Found ${result.value.length} total components`);
+      console.log(`🔍 Solution Components Query Result: Found ${result.value.length} total components`);
 
       // Count components by type for debugging
       const typeCounts = new Map<number, number>();
@@ -81,6 +92,13 @@ export class SolutionComponentDiscovery {
         typeCounts.set(comp.componenttype, (typeCounts.get(comp.componenttype) || 0) + 1);
       }
       console.log('📊 Components by type:', Object.fromEntries(typeCounts));
+
+      // Log web resource component type specifically (ComponentType.WebResource = 61)
+      const webResourceComponents = result.value.filter(c => c.componenttype === ComponentType.WebResource);
+      console.log(`📦 Web Resources in solutioncomponents query: ${webResourceComponents.length}`);
+      if (webResourceComponents.length > 0) {
+        console.log('📦 Web Resource IDs in solutioncomponents table:', webResourceComponents.map(c => c.objectid));
+      }
 
       // Group by component type (deduplicates across solutions)
       for (const component of result.value) {
@@ -109,6 +127,12 @@ export class SolutionComponentDiscovery {
                 console.log(`🔌 Found plugin: ${objectId}`);
               }
               break;
+            case ComponentType.PluginPackage:
+              if (!inventory.pluginPackageIds.includes(objectId)) {
+                inventory.pluginPackageIds.push(objectId);
+                console.log(`📦 Found plugin package: ${objectId}`);
+              }
+              break;
             case ComponentType.Workflow:
               if (!inventory.workflowIds.includes(objectId)) {
                 inventory.workflowIds.push(objectId);
@@ -117,6 +141,7 @@ export class SolutionComponentDiscovery {
             case ComponentType.WebResource:
               if (!inventory.webResourceIds.includes(objectId)) {
                 inventory.webResourceIds.push(objectId);
+                console.log(`📦 Added web resource: ${objectId}`);
               }
               break;
             case ComponentType.CanvasApp:
@@ -153,22 +178,29 @@ export class SolutionComponentDiscovery {
         }
 
       // Log final inventory counts
-      console.log('✅ Discovery Results:', {
-        entities: inventory.entityIds.length,
-        attributes: inventory.attributeIds.length,
-        plugins: inventory.pluginIds.length,
-        workflows: inventory.workflowIds.length,
-        webResources: inventory.webResourceIds.length,
-        canvasApps: inventory.canvasAppIds.length,
-        customPages: inventory.customPageIds.length,
-        connectionRefs: inventory.connectionReferenceIds.length,
-        customApis: inventory.customApiIds.length,
-        envVars: inventory.environmentVariableIds.length,
-        globalChoices: inventory.globalChoiceIds.length,
-        customConnectors: inventory.customConnectorIds.length,
-      });
+      console.log('✅ ============================================');
+      console.log('✅ DISCOVERY RESULTS (Components in Selected Solution(s)):');
+      console.log('✅ Entities:', inventory.entityIds.length);
+      console.log('✅ Attributes:', inventory.attributeIds.length);
+      console.log('✅ Plugins:', inventory.pluginIds.length);
+      console.log('✅ Plugin Packages:', inventory.pluginPackageIds.length);
+      console.log('✅ Workflows:', inventory.workflowIds.length);
+      console.log('✅ Web Resources:', inventory.webResourceIds.length);
+      console.log('✅ Canvas Apps:', inventory.canvasAppIds.length);
+      console.log('✅ Custom Pages:', inventory.customPageIds.length);
+      console.log('✅ Connection References:', inventory.connectionReferenceIds.length);
+      console.log('✅ Custom APIs:', inventory.customApiIds.length);
+      console.log('✅ Environment Variables:', inventory.environmentVariableIds.length);
+      console.log('✅ Global Choices:', inventory.globalChoiceIds.length);
+      console.log('✅ Custom Connectors:', inventory.customConnectorIds.length);
+      console.log('✅ ============================================');
 
-      console.log(`🔌 PLUGINS: Found ${inventory.pluginIds.length} plugin(s):`, inventory.pluginIds);
+      if (inventory.webResourceIds.length > 0) {
+        console.log('📦 Web Resource IDs:', inventory.webResourceIds);
+      }
+      if (inventory.pluginIds.length > 0) {
+        console.log('🔌 Plugin IDs:', inventory.pluginIds);
+      }
 
       return inventory;
     } catch (error) {
@@ -187,6 +219,7 @@ export class SolutionComponentDiscovery {
       entityIds: [],
       attributeIds: [],
       pluginIds: [],
+      pluginPackageIds: [],
       workflowIds: [],
       webResourceIds: [],
       canvasAppIds: [],

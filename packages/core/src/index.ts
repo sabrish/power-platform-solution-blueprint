@@ -43,6 +43,19 @@ export type {
   BlueprintSummary,
   BlueprintMetadata,
   BlueprintResult,
+  ERDDefinition,
+  ERDDiagram,
+  PublisherLegend,
+  EntityQuickLink,
+  CrossEntityLink,
+  ExternalEndpoint,
+  RiskFactor,
+  ExternalCallSource,
+  SolutionDistribution,
+  ComponentCounts,
+  SharedComponent,
+  SolutionDependency,
+  DataverseAction,
 } from './types/blueprint.js';
 export { WEB_RESOURCE_TYPE_NAMES } from './types/blueprint.js';
 export type {
@@ -85,3 +98,5 @@ export { WorkflowMigrationAnalyzer } from './analyzers/WorkflowMigrationAnalyzer
 
 // Utils
 export { filterSystemFields, isSystemField } from './utils/fieldFilters.js';
+export { generatePublisherColor, getPublisherColors } from './utils/ColorGenerator.js';
+export type { PublisherColors } from './utils/ColorGenerator.js';

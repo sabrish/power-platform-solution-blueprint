@@ -242,6 +242,7 @@ export interface FlowDefinition {
   actionsCount: number;
   externalCalls: ExternalCall[];
   connectionReferences: string[];
+  dataverseActions?: DataverseAction[];
 }
 
 /**
@@ -454,6 +455,7 @@ export interface EntityBlueprint {
 export interface BlueprintSummary {
   totalEntities: number;
   totalPlugins: number;
+  totalPluginPackages: number;
   totalFlows: number;
   totalBusinessRules: number;
   totalClassicWorkflows: number;
@@ -483,6 +485,169 @@ export interface BlueprintMetadata {
 }
 
 /**
+ * ERD (Entity Relationship Diagram) definition
+ */
+export interface ERDDefinition {
+  diagrams: ERDDiagram[];
+  legend: PublisherLegend[];
+  entityQuickLinks: EntityQuickLink[];
+  totalEntities: number;
+  totalRelationships: number;
+  warnings?: string[];
+}
+
+/**
+ * Individual ERD diagram (one per publisher or grouping)
+ */
+export interface ERDDiagram {
+  id: string;
+  title: string;
+  description: string;
+  mermaidDiagram: string;
+  diagramType: 'mermaid-class' | 'mermaid-er';
+  direction: 'TB' | 'LR';
+  entityCount: number;
+  relationshipCount: number;
+}
+
+/**
+ * Publisher legend for ERD color coding
+ */
+export interface PublisherLegend {
+  publisherPrefix: string;
+  publisherName: string;
+  color: string;
+  entityCount: number;
+  entities: string[];
+}
+
+/**
+ * Entity quick link with summary stats
+ */
+export interface EntityQuickLink {
+  logicalName: string;
+  displayName: string;
+  publisherPrefix: string;
+  fieldCount: number;
+  pluginCount: number;
+  flowCount: number;
+  businessRuleCount: number;
+  complexity: 'High' | 'Medium' | 'Low';
+}
+
+/**
+ * Cross-entity automation link
+ */
+export interface CrossEntityLink {
+  sourceEntity: string;
+  sourceEntityDisplayName: string;
+  targetEntity: string;
+  targetEntityDisplayName: string;
+  automationType: 'Plugin' | 'Flow' | 'BusinessRule' | 'ClassicWorkflow';
+  automationName: string;
+  automationId: string;
+  operation: string; // Create, Update, Delete, Read
+  description: string;
+  isAsynchronous: boolean;
+}
+
+/**
+ * External API endpoint with risk assessment
+ */
+export interface ExternalEndpoint {
+  url: string;
+  domain: string;
+  protocol: 'http' | 'https';
+  riskLevel: 'Trusted' | 'Known' | 'Unknown';
+  riskFactors: RiskFactor[];
+  detectedIn: ExternalCallSource[];
+  callCount: number;
+}
+
+/**
+ * Risk factor for external endpoint
+ */
+export interface RiskFactor {
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  factor: string;
+  description: string;
+  recommendation: string;
+}
+
+/**
+ * Source of external call detection
+ */
+export interface ExternalCallSource {
+  type: 'Plugin' | 'Flow' | 'JavaScript' | 'ClassicWorkflow' | 'CustomAPI';
+  name: string;
+  id: string;
+  entity: string | null;
+  mode: 'Sync' | 'Async' | 'Client';
+  confidence: 'High' | 'Medium' | 'Low';
+}
+
+/**
+ * Solution distribution analysis
+ */
+export interface SolutionDistribution {
+  solutionName: string;
+  solutionId: string;
+  publisher: string;
+  version: string;
+  isManaged: boolean;
+  componentCounts: ComponentCounts;
+  sharedComponents: SharedComponent[];
+  dependencies: SolutionDependency[];
+}
+
+/**
+ * Component counts by type
+ */
+export interface ComponentCounts {
+  entities: number;
+  plugins: number;
+  flows: number;
+  businessRules: number;
+  classicWorkflows: number;
+  bpfs: number;
+  webResources: number;
+  customAPIs: number;
+  environmentVariables: number;
+  connectionReferences: number;
+  globalChoices: number;
+  total: number;
+}
+
+/**
+ * Shared component across solutions
+ */
+export interface SharedComponent {
+  componentType: string;
+  componentName: string;
+  componentId: string;
+  alsoInSolutions: string[];
+}
+
+/**
+ * Solution dependency
+ */
+export interface SolutionDependency {
+  dependsOnSolution: string;
+  reason: string;
+  componentReferences: string[];
+}
+
+/**
+ * Dataverse action detected in flow
+ */
+export interface DataverseAction {
+  operation: 'Create' | 'Update' | 'Get' | 'List' | 'Delete';
+  targetEntity: string;
+  actionName: string;
+  confidence: 'High' | 'Medium' | 'Low';
+}
+
+/**
  * Complete blueprint result
  */
 export interface BlueprintResult {
@@ -506,6 +671,10 @@ export interface BlueprintResult {
   customConnectors: import('./customConnector.js').CustomConnector[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
+  erd?: ERDDefinition;
+  crossEntityLinks?: CrossEntityLink[];
+  externalEndpoints?: ExternalEndpoint[];
+  solutionDistribution?: SolutionDistribution[];
 }
 
 // Re-export PluginStep from types.ts

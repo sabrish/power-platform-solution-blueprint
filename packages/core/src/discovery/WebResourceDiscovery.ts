@@ -74,6 +74,14 @@ export class WebResourceDiscovery {
 
       console.log(`📋 Total Web Resources retrieved: ${allResults.length}`);
 
+      // Log web resource details for debugging
+      if (allResults.length > 0) {
+        console.log('📦 Web Resources in solution:');
+        allResults.forEach(wr => {
+          console.log(`   - ${wr.name} (Type: ${this.getTypeName(wr.webresourcetype)}, ID: ${wr.webresourceid})`);
+        });
+      }
+
       // Map to WebResource objects
       const webResources = allResults.map((record) => this.mapRecordToWebResource(record));
 

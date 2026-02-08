@@ -1,15 +1,10 @@
 import { useState } from 'react';
 import {
   Button,
-  Title1,
   Title2,
   Title3,
   Text,
   Card,
-  Badge,
-  MessageBar,
-  MessageBarBody,
-  MessageBarActions,
   Tab,
   TabList,
   makeStyles,
@@ -19,9 +14,9 @@ import {
 } from '@fluentui/react-components';
 import {
   CheckmarkCircle24Regular,
-  Warning24Regular,
   ArrowDownload24Regular,
   ArrowReset24Regular,
+  ChartMultiple24Regular,
 } from '@fluentui/react-icons';
 import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, GlobalChoice, CustomConnector } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
@@ -45,6 +40,7 @@ import { GlobalChoicesList } from './GlobalChoicesList';
 import { GlobalChoiceDetailView } from './GlobalChoiceDetailView';
 import { CustomConnectorsList } from './CustomConnectorsList';
 import { CustomConnectorDetailView } from './CustomConnectorDetailView';
+import { ArchitectureView } from './ArchitectureView';
 
 const useStyles = makeStyles({
   container: {
@@ -74,20 +70,21 @@ const useStyles = makeStyles({
   },
   actionButtons: {
     display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    marginTop: tokens.spacingVerticalM,
+    gap: tokens.spacingHorizontalS,
+    marginTop: tokens.spacingVerticalS,
+    flexWrap: 'wrap',
   },
   section: {
-    marginBottom: tokens.spacingVerticalXXL,
+    marginBottom: tokens.spacingVerticalL,
   },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-    marginTop: tokens.spacingVerticalL,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gap: tokens.spacingHorizontalS,
+    marginTop: tokens.spacingVerticalM,
   },
   summaryCard: {
-    padding: tokens.spacingVerticalL,
+    padding: tokens.spacingVerticalM,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     ':hover': {
@@ -96,24 +93,24 @@ const useStyles = makeStyles({
     },
   },
   summaryCardDisabled: {
-    padding: tokens.spacingVerticalL,
-    opacity: 0.6,
+    padding: tokens.spacingVerticalM,
+    opacity: 0.5,
     cursor: 'default',
   },
   summaryCardContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
+    gap: tokens.spacingVerticalXXS,
     alignItems: 'center',
     textAlign: 'center',
   },
   summaryCount: {
-    fontSize: tokens.fontSizeHero800,
-    fontWeight: tokens.fontWeightBold,
-    lineHeight: tokens.lineHeightHero800,
+    fontSize: tokens.fontSizeHero700,
+    fontWeight: tokens.fontWeightSemibold,
+    lineHeight: tokens.lineHeightHero700,
   },
   summaryLabel: {
-    fontSize: tokens.fontSizeBase300,
+    fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground2,
   },
   warningsContainer: {
@@ -144,7 +141,7 @@ export interface ResultsDashboardProps {
 
 export function ResultsDashboard({ result, scope, onStartOver, onExport }: ResultsDashboardProps) {
   const styles = useStyles();
-  const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set());
+  const [showArchitectureView, setShowArchitectureView] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>('entities');
   const [selectedClassicWorkflow, setSelectedClassicWorkflow] = useState<ClassicWorkflow | null>(null);
   const [selectedBPF, setSelectedBPF] = useState<BusinessProcessFlow | null>(null);
@@ -153,6 +150,24 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
   const [selectedGlobalChoice, setSelectedGlobalChoice] = useState<GlobalChoice | null>(null);
   const [selectedCustomConnector, setSelectedCustomConnector] = useState<CustomConnector | null>(null);
+
+  // Check if architecture features are available
+  const hasArchitectureFeatures = !!(
+    result.erd ||
+    (result.crossEntityLinks && result.crossEntityLinks.length > 0) ||
+    (result.externalEndpoints && result.externalEndpoints.length > 0) ||
+    (result.solutionDistribution && result.solutionDistribution.length > 0)
+  );
+
+  // If showing architecture view, render that instead
+  if (showArchitectureView) {
+    return (
+      <ArchitectureView
+        result={result}
+        onBack={() => setShowArchitectureView(false)}
+      />
+    );
+  }
 
   // Format timestamp
   const formattedDate = formatDate(result.metadata.generatedAt);
@@ -177,6 +192,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalEntities > 0;
       case 'plugins':
         return result.summary.totalPlugins > 0;
+      case 'pluginPackages':
+        return result.summary.totalPluginPackages > 0;
       case 'flows':
         return result.summary.totalFlows > 0;
       case 'businessRules':
@@ -213,6 +230,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalEntities;
       case 'plugins':
         return result.summary.totalPlugins;
+      case 'pluginPackages':
+        return result.summary.totalPluginPackages;
       case 'flows':
         return result.summary.totalFlows;
       case 'businessRules':
@@ -246,6 +265,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const componentTypes = [
     { key: 'entities', label: 'Entities', icon: '📊' },
     { key: 'plugins', label: 'Plugins', icon: '🔌' },
+    { key: 'pluginPackages', label: 'Plugin Packages', icon: '📦' },
     { key: 'flows', label: 'Flows', icon: '🌊' },
     { key: 'businessRules', label: 'Business Rules', icon: '📋' },
     { key: 'classicWorkflows', label: 'Classic Workflows', icon: '⚠️' },
@@ -260,19 +280,6 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
   ];
 
-  // Generate warnings for missing component types
-  const warnings = componentTypes
-    .filter((type) => !hasResults(type.key))
-    .map((type) => ({
-      key: type.key,
-      message: `No ${type.label.toLowerCase()} found in selected solution(s)`,
-    }));
-
-  const handleDismissWarning = (key: string) => {
-    setDismissedWarnings((prev) => new Set(prev).add(key));
-  };
-
-  const visibleWarnings = warnings.filter((w) => !dismissedWarnings.has(w.key));
 
   return (
     <div className={styles.container}>
@@ -280,19 +287,27 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
       <div className={styles.header}>
         <div className={styles.titleRow}>
           <CheckmarkCircle24Regular className={styles.checkIcon} />
-          <Title1>System Blueprint Generated Successfully!</Title1>
+          <Title2>System Blueprint Generated</Title2>
         </div>
 
         <div className={styles.metadata}>
-          <Text>Generated on {formattedDate} at {formattedTime}</Text>
-          <Badge appearance="outline" color="brand" size="large">
-            {scopeDescription()}
-          </Badge>
+          <Text style={{ fontSize: tokens.fontSizeBase200 }}>
+            {formattedDate} at {formattedTime} • {scopeDescription()}
+          </Text>
         </div>
 
         <div className={styles.actionButtons}>
+          {hasArchitectureFeatures && (
+            <Button
+              appearance="primary"
+              icon={<ChartMultiple24Regular />}
+              onClick={() => setShowArchitectureView(true)}
+            >
+              View Architecture Analysis
+            </Button>
+          )}
           <Button
-            appearance="primary"
+            appearance={hasArchitectureFeatures ? "secondary" : "primary"}
             icon={<ArrowDownload24Regular />}
             onClick={onExport}
           >
@@ -318,7 +333,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
       {/* SECTION 2: Discovery Summary */}
       <div className={styles.section}>
         <Card>
-          <Title2>What We Found</Title2>
+          <Title3>Component Summary</Title3>
           <div className={styles.summaryGrid}>
             {componentTypes.map((type) => {
               const count = getCount(type.key);
@@ -331,18 +346,9 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                   appearance={hasData ? 'filled' : 'outline'}
                 >
                   <div className={styles.summaryCardContent}>
-                    <Text style={{ fontSize: '32px' }}>{type.icon}</Text>
+                    <Text style={{ fontSize: '20px' }}>{type.icon}</Text>
                     <Text className={styles.summaryCount}>{count}</Text>
                     <Text className={styles.summaryLabel}>{type.label}</Text>
-                    {hasData ? (
-                      <Badge appearance="filled" color="success" size="small">
-                        Found
-                      </Badge>
-                    ) : (
-                      <Badge appearance="outline" color="subtle" size="small">
-                        Not Found
-                      </Badge>
-                    )}
                   </div>
                 </Card>
               );
@@ -351,31 +357,6 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         </Card>
       </div>
 
-      {/* SECTION 3: Warnings/Info Messages */}
-      {visibleWarnings.length > 0 && (
-        <div className={styles.section}>
-          <div className={styles.warningsContainer}>
-            {visibleWarnings.map((warning) => (
-              <MessageBar
-                key={warning.key}
-                intent="info"
-                icon={<Warning24Regular />}
-              >
-                <MessageBarBody>{warning.message}</MessageBarBody>
-                <MessageBarActions>
-                  <Button
-                    appearance="transparent"
-                    size="small"
-                    onClick={() => handleDismissWarning(warning.key)}
-                  >
-                    Dismiss
-                  </Button>
-                </MessageBarActions>
-              </MessageBar>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* SECTION 4: Entity Browser (Tabbed Interface) */}
       <div className={styles.browserSection}>
