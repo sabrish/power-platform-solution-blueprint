@@ -14,6 +14,7 @@ import {
   ArrowRight20Regular,
 } from '@fluentui/react-icons';
 import type { BusinessProcessFlow, BPFStage } from '@ppsb/core';
+import { formatDate } from '../utils/dateFormat';
 
 interface BusinessProcessFlowDetailViewProps {
   bpf: BusinessProcessFlow;
@@ -86,7 +87,7 @@ export function BusinessProcessFlowDetailView({ bpf }: BusinessProcessFlowDetail
           <div>
             <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Last Modified</Caption1>
             <Body1>
-              {new Date(bpf.modifiedOn).toLocaleDateString()} by {bpf.modifiedBy}
+              {formatDate(bpf.modifiedOn)} by {bpf.modifiedBy}
             </Body1>
           </div>
         </div>

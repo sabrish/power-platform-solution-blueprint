@@ -22,6 +22,7 @@ import {
   LockClosed20Regular,
 } from '@fluentui/react-icons';
 import type { CustomAPI, CustomAPIParameter } from '@ppsb/core';
+import { formatDate } from '../utils/dateFormat';
 
 interface CustomAPIDetailViewProps {
   api: CustomAPI;
@@ -192,7 +193,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
           <div>
             <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Last Modified</Caption1>
             <Body1>
-              {new Date(api.modifiedOn).toLocaleDateString()} by {api.modifiedBy}
+              {formatDate(api.modifiedOn)} by {api.modifiedBy}
             </Body1>
           </div>
         </div>

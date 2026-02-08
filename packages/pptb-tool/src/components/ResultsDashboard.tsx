@@ -25,6 +25,7 @@ import {
 } from '@fluentui/react-icons';
 import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
+import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
 import { EntityList } from './EntityList';
 import { FlowsList } from './FlowsList';
@@ -148,15 +149,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
 
   // Format timestamp
-  const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-  const formattedTime = result.metadata.generatedAt.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formattedDate = formatDate(result.metadata.generatedAt);
+  const formattedTime = formatDateTime(result.metadata.generatedAt).split(' ')[1]; // Extract time portion
 
   // Build scope description
   const scopeDescription = () => {

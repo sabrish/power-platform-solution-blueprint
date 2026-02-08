@@ -9,6 +9,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { Flow } from '@ppsb/core';
+import { formatDate, formatDateTime } from '../utils/dateFormat';
 
 const useStyles = makeStyles({
   container: {
@@ -189,7 +190,7 @@ export function FlowsList({
           <div className={styles.detailItem}>
             <Text className={styles.detailLabel}>Modified On</Text>
             <Text className={styles.detailValue}>
-              {new Date(flow.modifiedOn).toLocaleString()}
+              {formatDateTime(flow.modifiedOn)}
             </Text>
           </div>
           <div className={styles.detailItem}>
@@ -331,7 +332,7 @@ export function FlowsList({
               </Badge>
               <Badge {...stateBadgeProps}>{flow.state}</Badge>
               <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-                {new Date(flow.modifiedOn).toLocaleDateString()}
+                {formatDate(flow.modifiedOn)}
               </Text>
             </div>
             {isExpanded && renderFlowDetails(flow)}

@@ -18,6 +18,7 @@ import {
   Open20Regular,
 } from '@fluentui/react-icons';
 import type { ClassicWorkflow, MigrationFeature } from '@ppsb/core';
+import { formatDate } from '../utils/dateFormat';
 
 interface ClassicWorkflowDetailViewProps {
   workflow: ClassicWorkflow;
@@ -161,7 +162,7 @@ export function ClassicWorkflowDetailView({ workflow }: ClassicWorkflowDetailVie
           <div>
             <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Last Modified</Caption1>
             <Body1>
-              {new Date(workflow.modifiedOn).toLocaleDateString()} by {workflow.modifiedBy}
+              {formatDate(workflow.modifiedOn)} by {workflow.modifiedBy}
             </Body1>
           </div>
         </div>
