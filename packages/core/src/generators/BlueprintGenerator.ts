@@ -5,8 +5,10 @@ import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
 import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
 import { FlowDiscovery } from '../discovery/FlowDiscovery.js';
 import { BusinessRuleDiscovery } from '../discovery/BusinessRuleDiscovery.js';
+import { ClassicWorkflowDiscovery } from '../discovery/ClassicWorkflowDiscovery.js';
 import { FormDiscovery } from '../discovery/FormDiscovery.js';
 import { WebResourceDiscovery } from '../discovery/WebResourceDiscovery.js';
+import { WorkflowMigrationAnalyzer } from '../analyzers/WorkflowMigrationAnalyzer.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import type { EntityMetadata, PluginStep } from '../types.js';
 import type { ComponentInventory, WorkflowInventory } from '../types/components.js';
@@ -110,6 +112,14 @@ export class BlueprintGenerator {
         warnings.push('No business rules found');
       }
 
+      // STEP 5.5: Process Classic Workflows (deprecated, requires migration)
+      const classicWorkflows = await this.processClassicWorkflows(workflowInventory.classicWorkflowIds);
+      const classicWorkflowsByEntity = this.groupClassicWorkflowsByEntity(classicWorkflows);
+
+      if (workflowInventory.classicWorkflowIds.length > 0) {
+        warnings.push(`⚠️ ${workflowInventory.classicWorkflowIds.length} classic workflow(s) detected - migration to Power Automate recommended`);
+      }
+
       // STEP 6: Process Web Resources
       const webResources = await this.processWebResources(inventory.webResourceIds);
       const webResourcesByType = this.groupWebResourcesByType(webResources);
@@ -142,6 +152,7 @@ export class BlueprintGenerator {
         totalPlugins: inventory.pluginIds.length,
         totalFlows: workflowInventory.flowIds.length,
         totalBusinessRules: workflowInventory.businessRuleIds.length,
+        totalClassicWorkflows: workflowInventory.classicWorkflowIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
         totalCanvasApps: inventory.canvasAppIds.length,
@@ -176,6 +187,8 @@ export class BlueprintGenerator {
         flowsByEntity,
         businessRules,
         businessRulesByEntity,
+        classicWorkflows,
+        classicWorkflowsByEntity,
         webResources,
         webResourcesByType,
       };
@@ -626,6 +639,77 @@ export class BlueprintGenerator {
     }
 
     return businessRulesByEntity;
+  }
+
+  /**
+   * Process classic workflows (deprecated, requires migration)
+   */
+  private async processClassicWorkflows(workflowIds: string[]): Promise<import('../types/classicWorkflow.js').ClassicWorkflow[]> {
+    console.log(`⚠️ processClassicWorkflows called with ${workflowIds.length} classic workflow IDs`);
+
+    if (workflowIds.length === 0) {
+      console.log('⚠️ No classic workflows to process');
+      return [];
+    }
+
+    try {
+      // Report progress
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: workflowIds.length,
+        message: `⚠️ Documenting ${workflowIds.length} classic workflow(s) (migration recommended)...`,
+      });
+
+      const classicWorkflowDiscovery = new ClassicWorkflowDiscovery(this.client);
+      const workflows = await classicWorkflowDiscovery.getClassicWorkflowsByIds(workflowIds);
+
+      // Analyze each workflow for migration
+      const analyzer = new WorkflowMigrationAnalyzer();
+      for (const workflow of workflows) {
+        workflow.migrationRecommendation = analyzer.analyze(workflow);
+      }
+
+      console.log(`⚠️ Successfully retrieved and analyzed ${workflows.length} classic workflow(s)`);
+
+      // Report completion
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: workflows.length,
+        total: workflows.length,
+        message: 'Classic workflows documented with migration recommendations',
+      });
+
+      return workflows;
+    } catch (error) {
+      console.error('❌ Error processing classic workflows:', error);
+      // Don't fail the entire generation if classic workflows fail
+      return [];
+    }
+  }
+
+  /**
+   * Group classic workflows by entity
+   */
+  private groupClassicWorkflowsByEntity(workflows: import('../types/classicWorkflow.js').ClassicWorkflow[]): Map<string, import('../types/classicWorkflow.js').ClassicWorkflow[]> {
+    const workflowsByEntity = new Map<string, import('../types/classicWorkflow.js').ClassicWorkflow[]>();
+
+    for (const workflow of workflows) {
+      const entity = workflow.entity.toLowerCase();
+      if (!workflowsByEntity.has(entity)) {
+        workflowsByEntity.set(entity, []);
+      }
+      workflowsByEntity.get(entity)!.push(workflow);
+    }
+
+    // Sort workflows within each entity by name
+    for (const [, entityWorkflows] of workflowsByEntity) {
+      entityWorkflows.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return workflowsByEntity;
   }
 
   /**
