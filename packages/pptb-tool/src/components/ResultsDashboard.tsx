@@ -23,7 +23,7 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
 import { EntityList } from './EntityList';
@@ -34,6 +34,8 @@ import { ClassicWorkflowsList } from './ClassicWorkflowsList';
 import { ClassicWorkflowDetailView } from './ClassicWorkflowDetailView';
 import { BusinessProcessFlowsList } from './BusinessProcessFlowsList';
 import { BusinessProcessFlowDetailView } from './BusinessProcessFlowDetailView';
+import { CustomAPIsList } from './CustomAPIsList';
+import { CustomAPIDetailView } from './CustomAPIDetailView';
 
 const useStyles = makeStyles({
   container: {
@@ -137,6 +139,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [selectedTab, setSelectedTab] = useState<string>('entities');
   const [selectedClassicWorkflow, setSelectedClassicWorkflow] = useState<ClassicWorkflow | null>(null);
   const [selectedBPF, setSelectedBPF] = useState<BusinessProcessFlow | null>(null);
+  const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -176,6 +179,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalClassicWorkflows > 0;
       case 'businessProcessFlows':
         return result.summary.totalBusinessProcessFlows > 0;
+      case 'customAPIs':
+        return result.summary.totalCustomAPIs > 0;
       case 'webResources':
         return result.summary.totalWebResources > 0;
       case 'canvasApps':
@@ -202,6 +207,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalClassicWorkflows;
       case 'businessProcessFlows':
         return result.summary.totalBusinessProcessFlows;
+      case 'customAPIs':
+        return result.summary.totalCustomAPIs;
       case 'webResources':
         return result.summary.totalWebResources;
       case 'canvasApps':
@@ -221,6 +228,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
     { key: 'businessRules', label: 'Business Rules', icon: '📋' },
     { key: 'classicWorkflows', label: 'Classic Workflows', icon: '⚠️' },
     { key: 'businessProcessFlows', label: 'Business Process Flows', icon: '🔄' },
+    { key: 'customAPIs', label: 'Custom APIs', icon: '🔧' },
     { key: 'webResources', label: 'Web Resources', icon: '🌐' },
     { key: 'canvasApps', label: 'Canvas Apps', icon: '🎨' },
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
@@ -377,6 +385,10 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
               <Tab value="businessProcessFlows">{`Business Process Flows (${result.summary.totalBusinessProcessFlows})`}</Tab>
             )}
 
+            {hasResults('customAPIs') && (
+              <Tab value="customAPIs">{`Custom APIs (${result.summary.totalCustomAPIs})`}</Tab>
+            )}
+
             {hasResults('webResources') && (
               <Tab value="webResources">{`Web Resources (${result.summary.totalWebResources})`}</Tab>
             )}
@@ -449,6 +461,28 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                   <BusinessProcessFlowsList
                     businessProcessFlows={result.businessProcessFlows}
                     onSelectBPF={setSelectedBPF}
+                  />
+                )}
+              </div>
+            )}
+
+            {selectedTab === 'customAPIs' && hasResults('customAPIs') && (
+              <div>
+                {selectedCustomAPI ? (
+                  <div>
+                    <Button
+                      appearance="secondary"
+                      onClick={() => setSelectedCustomAPI(null)}
+                      style={{ marginBottom: '16px' }}
+                    >
+                      ← Back to List
+                    </Button>
+                    <CustomAPIDetailView api={selectedCustomAPI} />
+                  </div>
+                ) : (
+                  <CustomAPIsList
+                    customAPIs={result.customAPIs}
+                    onSelectAPI={setSelectedCustomAPI}
                   />
                 )}
               </div>

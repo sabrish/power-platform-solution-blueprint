@@ -458,6 +458,7 @@ export interface BlueprintSummary {
   totalBusinessRules: number;
   totalClassicWorkflows: number;
   totalBusinessProcessFlows: number;
+  totalCustomAPIs: number;
   totalAttributes: number;
   totalWebResources: number;
   totalCanvasApps: number;
@@ -495,6 +496,7 @@ export interface BlueprintResult {
   classicWorkflowsByEntity: Map<string, import('./classicWorkflow.js').ClassicWorkflow[]>;
   businessProcessFlows: import('./businessProcessFlow.js').BusinessProcessFlow[];
   businessProcessFlowsByEntity: Map<string, import('./businessProcessFlow.js').BusinessProcessFlow[]>;
+  customAPIs: import('./customApi.js').CustomAPI[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
 }

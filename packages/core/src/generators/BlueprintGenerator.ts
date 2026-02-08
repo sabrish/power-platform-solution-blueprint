@@ -132,6 +132,9 @@ export class BlueprintGenerator {
         warnings.push('No web resources found');
       }
 
+      // STEP 6.5: Process Custom APIs
+      const customAPIs = await this.processCustomAPIs(inventory.customApiIds);
+
       // STEP 7: Process Forms and JavaScript Event Handlers
       const forms = await this.processForms(entities.map((e) => e.LogicalName));
       const formsByEntity = this.groupFormsByEntity(forms);
@@ -158,6 +161,7 @@ export class BlueprintGenerator {
         totalBusinessRules: workflowInventory.businessRuleIds.length,
         totalClassicWorkflows: workflowInventory.classicWorkflowIds.length,
         totalBusinessProcessFlows: workflowInventory.businessProcessFlowIds.length,
+        totalCustomAPIs: inventory.customApiIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
         totalCanvasApps: inventory.canvasAppIds.length,
@@ -196,6 +200,7 @@ export class BlueprintGenerator {
         classicWorkflowsByEntity,
         businessProcessFlows,
         businessProcessFlowsByEntity,
+        customAPIs,
         webResources,
         webResourcesByType,
       };
@@ -245,6 +250,7 @@ export class BlueprintGenerator {
         canvasAppIds: [],
         customPageIds: [],
         connectionReferenceIds: [],
+        customApiIds: [],
       };
 
       const workflowInventory: WorkflowInventory = {
@@ -349,7 +355,8 @@ export class BlueprintGenerator {
       inventory.webResourceIds.length === 0 &&
       inventory.canvasAppIds.length === 0 &&
       inventory.customPageIds.length === 0 &&
-      inventory.connectionReferenceIds.length === 0
+      inventory.connectionReferenceIds.length === 0 &&
+      inventory.customApiIds.length === 0
     );
   }
 
@@ -782,6 +789,49 @@ export class BlueprintGenerator {
     }
 
     return bpfsByEntity;
+  }
+
+  /**
+   * Process Custom APIs
+   */
+  private async processCustomAPIs(customApiIds: string[]): Promise<import('../types/customApi.js').CustomAPI[]> {
+    console.log(`🔧 processCustomAPIs called with ${customApiIds.length} Custom API IDs`);
+
+    if (customApiIds.length === 0) {
+      console.log('🔧 No Custom APIs to process');
+      return [];
+    }
+
+    try {
+      // Report progress
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: customApiIds.length,
+        message: `🔧 Documenting ${customApiIds.length} Custom API(s)...`,
+      });
+
+      const { CustomAPIDiscovery } = await import('../discovery/CustomAPIDiscovery.js');
+      const customApiDiscovery = new CustomAPIDiscovery(this.client);
+      const customAPIs = await customApiDiscovery.getCustomAPIsByIds(customApiIds);
+
+      console.log(`🔧 Successfully retrieved ${customAPIs.length} Custom API(s)`);
+
+      // Report completion
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: customApiIds.length,
+        total: customApiIds.length,
+        message: `🔧 Documented ${customAPIs.length} Custom API(s)`,
+      });
+
+      return customAPIs;
+    } catch (error) {
+      console.error('❌ Error processing Custom APIs:', error);
+      throw error;
+    }
   }
 
   /**

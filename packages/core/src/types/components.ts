@@ -14,6 +14,7 @@ export interface ComponentInventory {
   canvasAppIds: string[];
   customPageIds: string[];
   connectionReferenceIds: string[];
+  customApiIds: string[];
 }
 
 /**
@@ -42,6 +43,7 @@ export enum ComponentType {
   CanvasApp = 300,
   CustomPage = 10004,
   ConnectionReference = 371,
+  CustomAPI = 10076,
 }
 
 /**
