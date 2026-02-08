@@ -47,39 +47,47 @@ export class BusinessProcessFlowDiscovery {
     }
 
     try {
-      // Build filter for multiple IDs
-      const filterClauses = workflowIds.map((id) => {
-        const cleanGuid = id.replace(/[{}]/g, '');
-        return `workflowid eq ${cleanGuid}`;
-      });
-      const filter = `(${filterClauses.join(' or ')}) and category eq 4`;
+      const batchSize = 20;
+      const allResults: RawBusinessProcessFlow[] = [];
 
-      console.log('📋 Querying Business Process Flows:', filter);
+      console.log(`📋 Querying ${workflowIds.length} Business Process Flows in batches of ${batchSize}...`);
 
-      // Query workflows
-      const result = await this.client.query<RawBusinessProcessFlow>('workflows', {
-        select: [
-          'workflowid',
-          'name',
-          'description',
-          'category',
-          'uniquename',
-          'primaryentity',
-          'statecode',
-          'xaml',
-          'ismanaged',
-          'createdon',
-          'modifiedon',
-        ],
-        filter,
-        expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
-        orderBy: ['primaryentity asc', 'name asc'],
-      });
+      for (let i = 0; i < workflowIds.length; i += batchSize) {
+        const batch = workflowIds.slice(i, i + batchSize);
+        const filterClauses = batch.map((id) => {
+          const cleanGuid = id.replace(/[{}]/g, '');
+          return `workflowid eq ${cleanGuid}`;
+        });
+        const filter = `(${filterClauses.join(' or ')}) and category eq 4`;
 
-      console.log(`📋 Retrieved ${result.value.length} Business Process Flows`);
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Business Process Flows...`);
+
+        const result = await this.client.query<RawBusinessProcessFlow>('workflows', {
+          select: [
+            'workflowid',
+            'name',
+            'description',
+            'category',
+            'uniquename',
+            'primaryentity',
+            'statecode',
+            'xaml',
+            'ismanaged',
+            'createdon',
+            'modifiedon',
+          ],
+          filter,
+          expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
+          orderBy: ['primaryentity asc', 'name asc'],
+        });
+
+        allResults.push(...result.value);
+      }
+
+      console.log(`📋 Total Business Process Flows retrieved: ${allResults.length}`);
 
       // Map to BusinessProcessFlow objects
-      return result.value.map((raw) => this.mapToBusinessProcessFlow(raw));
+      return allResults.map((raw) => this.mapToBusinessProcessFlow(raw));
     } catch (error) {
       throw new Error(
         `Failed to retrieve Business Process Flows: ${error instanceof Error ? error.message : 'Unknown error'}`

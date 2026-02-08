@@ -41,37 +41,43 @@ export class FlowDiscovery {
     console.log(`🌊 Fetching ${workflowIds.length} flow(s)...`);
 
     try {
-      // Build filter for workflow IDs
-      const filters = workflowIds.map((id) => `workflowid eq ${id}`);
-      const filter = `(${filters.join(' or ')}) and category eq 5`;
+      const batchSize = 20;
+      const allResults: WorkflowRecord[] = [];
 
-      // Fetch workflow records with category=5 (Modern flows)
-      // Note: We can't expand polymorphic lookups like ownerid directly
-      // Instead, we rely on formatted values which are automatically included
-      const response = await this.client.query<WorkflowRecord>('workflows', {
-        select: [
-          'workflowid',
-          'name',
-          'description',
-          'statecode',
-          'statuscode',
-          'primaryentity',
-          'scope',
-          '_ownerid_value',
-          '_modifiedby_value',
-          'modifiedon',
-          'createdon',
-          'clientdata',
-        ],
-        filter,
-      });
+      console.log(`📋 Querying ${workflowIds.length} Flows in batches of ${batchSize}...`);
 
-      const records = response.value;
+      for (let i = 0; i < workflowIds.length; i += batchSize) {
+        const batch = workflowIds.slice(i, i + batchSize);
+        const filterClauses = batch.map((id) => `workflowid eq ${id}`);
+        const filter = `(${filterClauses.join(' or ')}) and category eq 5`;
 
-      console.log(`🌊 Retrieved ${records.length} flow record(s)`);
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Flows...`);
+
+        const response = await this.client.query<WorkflowRecord>('workflows', {
+          select: [
+            'workflowid',
+            'name',
+            'description',
+            'statecode',
+            'statuscode',
+            'primaryentity',
+            'scope',
+            '_ownerid_value',
+            '_modifiedby_value',
+            'modifiedon',
+            'createdon',
+            'clientdata',
+          ],
+          filter,
+        });
+
+        allResults.push(...response.value);
+      }
+
+      console.log(`📋 Total Flows retrieved: ${allResults.length}`);
 
       // Map to Flow objects
-      const flows = records.map((record) => this.mapWorkflowToFlow(record));
+      const flows = allResults.map((record) => this.mapWorkflowToFlow(record));
 
       return flows;
     } catch (error) {

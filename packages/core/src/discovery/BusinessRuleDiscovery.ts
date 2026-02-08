@@ -40,36 +40,42 @@ export class BusinessRuleDiscovery {
     console.log(`📋 Fetching ${brIds.length} business rule(s)...`);
 
     try {
-      // Build filter for business rule IDs
-      const filters = brIds.map((id) => `workflowid eq ${id}`);
-      const filter = `(${filters.join(' or ')}) and category eq 2`;
+      const batchSize = 20;
+      const allResults: BusinessRuleRecord[] = [];
 
-      // Fetch workflow records with category=2 (Business Rules)
-      // Note: Don't select lookup fields directly (_formid_value, _ownerid_value)
-      // Formatted values come automatically as OData annotations
-      const response = await this.client.query<BusinessRuleRecord>('workflows', {
-        select: [
-          'workflowid',
-          'name',
-          'description',
-          'statecode',
-          'primaryentity',
-          'scope',
-          'xaml',
-          'clientdata',
-          'modifiedon',
-          'createdon',
-        ],
-        filter,
-        orderBy: ['primaryentity', 'name'],
-      });
+      console.log(`📋 Querying ${brIds.length} Business Rules in batches of ${batchSize}...`);
 
-      const records = response.value;
+      for (let i = 0; i < brIds.length; i += batchSize) {
+        const batch = brIds.slice(i, i + batchSize);
+        const filterClauses = batch.map((id) => `workflowid eq ${id}`);
+        const filter = `(${filterClauses.join(' or ')}) and category eq 2`;
 
-      console.log(`📋 Retrieved ${records.length} business rule record(s)`);
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Business Rules...`);
+
+        const response = await this.client.query<BusinessRuleRecord>('workflows', {
+          select: [
+            'workflowid',
+            'name',
+            'description',
+            'statecode',
+            'primaryentity',
+            'scope',
+            'xaml',
+            'clientdata',
+            'modifiedon',
+            'createdon',
+          ],
+          filter,
+          orderBy: ['primaryentity', 'name'],
+        });
+
+        allResults.push(...response.value);
+      }
+
+      console.log(`📋 Total Business Rules retrieved: ${allResults.length}`);
 
       // Map to BusinessRule objects
-      const businessRules = records.map((record) => this.mapRecordToBusinessRule(record));
+      const businessRules = allResults.map((record) => this.mapRecordToBusinessRule(record));
 
       return businessRules;
     } catch (error) {

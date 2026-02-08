@@ -29,20 +29,32 @@ export class ConnectionReferenceDiscovery {
     if (ids.length === 0) return [];
 
     try {
-      const filter = ids.map(id => `connectionreferenceid eq ${id.replace(/[{}]/g, '')}`).join(' or ');
-      console.log('🔗 Querying Connection References:', ids.length);
+      const batchSize = 20;
+      const allResults: RawConnectionReference[] = [];
 
-      const result = await this.client.query<RawConnectionReference>('connectionreferences', {
-        select: ['connectionreferenceid', 'connectionreferencelogicalname', 'connectionreferencedisplayname',
-          'description', 'connectionid', 'connectorid', 'ismanaged', 'iscustomizable',
-          'statecode', 'statuscode', 'createdon', 'modifiedon'],
-        filter,
-        expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
-        orderBy: ['connectionreferencelogicalname asc'],
-      });
+      console.log(`📋 Querying ${ids.length} Connection References in batches of ${batchSize}...`);
 
-      console.log(`🔗 Retrieved ${result.value.length} Connection References`);
-      return result.value.map(raw => this.mapToConnectionReference(raw));
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        const filterClauses = batch.map(id => `connectionreferenceid eq ${id.replace(/[{}]/g, '')}`);
+        const filter = filterClauses.join(' or ');
+
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Connection References...`);
+
+        const result = await this.client.query<RawConnectionReference>('connectionreferences', {
+          select: ['connectionreferenceid', 'connectionreferencelogicalname', 'connectionreferencedisplayname',
+            'description', 'connectionid', 'connectorid', 'ismanaged', 'iscustomizable',
+            'statecode', 'statuscode', 'createdon', 'modifiedon'],
+          filter,
+          expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
+          orderBy: ['connectionreferencelogicalname asc'],
+        });
+
+        allResults.push(...result.value);
+      }
+
+      console.log(`📋 Total Connection References retrieved: ${allResults.length}`);
+      return allResults.map(raw => this.mapToConnectionReference(raw));
     } catch (error) {
       throw new Error(`Failed to retrieve Connection References: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

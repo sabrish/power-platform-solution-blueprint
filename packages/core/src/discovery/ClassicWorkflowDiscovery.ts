@@ -52,45 +52,53 @@ export class ClassicWorkflowDiscovery {
     }
 
     try {
-      // Build filter for multiple IDs
-      const filterClauses = workflowIds.map((id) => {
-        const cleanGuid = id.replace(/[{}]/g, '');
-        return `workflowid eq ${cleanGuid}`;
-      });
-      const filter = `(${filterClauses.join(' or ')}) and category eq 0`;
+      const batchSize = 20;
+      const allResults: RawClassicWorkflow[] = [];
 
-      console.log('📋 Querying classic workflows:', filter);
+      console.log(`📋 Querying ${workflowIds.length} Classic Workflows in batches of ${batchSize}...`);
 
-      // Query workflows
-      const result = await this.client.query<RawClassicWorkflow>('workflows', {
-        select: [
-          'workflowid',
-          'name',
-          'description',
-          'type',
-          'category',
-          'mode',
-          'triggeroncreate',
-          'triggeronupdate',
-          'triggerondelete',
-          'ondemand',
-          'scope',
-          'primaryentity',
-          'statecode',
-          'xaml',
-          'ismanaged',
-          'createdon',
-          'modifiedon',
-        ],
-        filter,
-        expand: 'ownerid($select=fullname),modifiedby($select=fullname)',
-        orderBy: ['primaryentity asc', 'name asc'],
-      });
+      for (let i = 0; i < workflowIds.length; i += batchSize) {
+        const batch = workflowIds.slice(i, i + batchSize);
+        const filterClauses = batch.map((id) => {
+          const cleanGuid = id.replace(/[{}]/g, '');
+          return `workflowid eq ${cleanGuid}`;
+        });
+        const filter = `(${filterClauses.join(' or ')}) and category eq 0`;
 
-      console.log(`📋 Retrieved ${result.value.length} classic workflows`);
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Classic Workflows...`);
+
+        const result = await this.client.query<RawClassicWorkflow>('workflows', {
+          select: [
+            'workflowid',
+            'name',
+            'description',
+            'type',
+            'category',
+            'mode',
+            'triggeroncreate',
+            'triggeronupdate',
+            'triggerondelete',
+            'ondemand',
+            'scope',
+            'primaryentity',
+            'statecode',
+            'xaml',
+            'ismanaged',
+            'createdon',
+            'modifiedon',
+          ],
+          filter,
+          expand: 'ownerid($select=fullname),modifiedby($select=fullname)',
+          orderBy: ['primaryentity asc', 'name asc'],
+        });
+
+        allResults.push(...result.value);
+      }
+
+      console.log(`📋 Total Classic Workflows retrieved: ${allResults.length}`);
 
       // Map to ClassicWorkflow objects
-      return result.value.map((raw) => this.mapToClassicWorkflow(raw));
+      return allResults.map((raw) => this.mapToClassicWorkflow(raw));
     } catch (error) {
       throw new Error(
         `Failed to retrieve classic workflows: ${error instanceof Error ? error.message : 'Unknown error'}`

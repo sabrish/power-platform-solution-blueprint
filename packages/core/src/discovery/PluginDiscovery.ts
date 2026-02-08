@@ -65,47 +65,61 @@ export class PluginDiscovery {
     }
 
     try {
-      // Build filter for multiple IDs (use OData v4 guid literal syntax)
-      const filterClauses = pluginIds.map((id) => {
-        // Remove braces if present for OData guid literal
-        const cleanGuid = id.replace(/[{}]/g, '');
-        return `sdkmessageprocessingstepid eq ${cleanGuid}`;
-      });
-      const filter = filterClauses.join(' or ');
+      // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
+      // Split plugin IDs into batches of 20 to keep URL length manageable
+      const batchSize = 20;
+      const allPluginSteps: RawPluginStep[] = [];
 
-      console.log('🔌 Plugin query filter:', filter);
+      console.log(`🔌 Querying ${pluginIds.length} plugins in batches of ${batchSize}...`);
 
-      // Query plugin steps with expanded relationships
-      const result = await this.client.query<RawPluginStep>('sdkmessageprocessingsteps', {
-        select: [
-          'sdkmessageprocessingstepid',
-          'name',
-          'stage',
-          'mode',
-          'rank',
-          'filteringattributes',
-          'description',
-          'asyncautodelete',
-          'configuration',
-        ],
-        filter,
-        expand:
-          'sdkmessageid($select=name),plugintypeid($select=typename,name,assemblyname,plugintypeid),sdkmessagefilterid($select=primaryobjecttypecode),impersonatinguserid($select=fullname,systemuserid)',
-        orderBy: ['stage asc', 'rank asc'],
-      });
+      for (let i = 0; i < pluginIds.length; i += batchSize) {
+        const batch = pluginIds.slice(i, i + batchSize);
 
-      console.log(`🔌 Plugin query returned ${result.value.length} results`);
+        // Build filter for this batch
+        const filterClauses = batch.map((id) => {
+          // Remove braces if present for OData guid literal
+          const cleanGuid = id.replace(/[{}]/g, '');
+          return `sdkmessageprocessingstepid eq ${cleanGuid}`;
+        });
+        const filter = filterClauses.join(' or ');
 
-      // OPTIMIZED: Pre-fetch all plugin images in a single batch query
-      // This reduces N queries (one per plugin) to 1 query for all plugins
+        console.log(`🔌 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} plugins...`);
+
+        // Query this batch of plugin steps with expanded relationships
+        const result = await this.client.query<RawPluginStep>('sdkmessageprocessingsteps', {
+          select: [
+            'sdkmessageprocessingstepid',
+            'name',
+            'stage',
+            'mode',
+            'rank',
+            'filteringattributes',
+            'description',
+            'asyncautodelete',
+            'configuration',
+          ],
+          filter,
+          expand:
+            'sdkmessageid($select=name),plugintypeid($select=typename,name,assemblyname,plugintypeid),sdkmessagefilterid($select=primaryobjecttypecode),impersonatinguserid($select=fullname,systemuserid)',
+          orderBy: ['stage asc', 'rank asc'],
+        });
+
+        allPluginSteps.push(...result.value);
+        console.log(`🔌 Batch ${Math.floor(i / batchSize) + 1}: Retrieved ${result.value.length} plugins`);
+      }
+
+      console.log(`🔌 Total plugins retrieved: ${allPluginSteps.length}`);
+
+      // OPTIMIZED: Pre-fetch all plugin images in batched queries
+      // This reduces N queries (one per plugin) to fewer batch queries
       const allImages = await this.getPluginImagesForAllSteps(
-        result.value.map(r => r.sdkmessageprocessingstepid)
+        allPluginSteps.map(r => r.sdkmessageprocessingstepid)
       );
 
       // Process each plugin step
       const pluginSteps: PluginStep[] = [];
 
-      for (const raw of result.value) {
+      for (const raw of allPluginSteps) {
         // Get images from pre-fetched data
         const images = allImages.get(raw.sdkmessageprocessingstepid) || { preImage: null, postImage: null };
 
@@ -146,8 +160,8 @@ export class PluginDiscovery {
   }
 
   /**
-   * Get plugin images (pre and post) for multiple plugin steps in a single batch query
-   * OPTIMIZED: Reduces N queries to 1 query
+   * Get plugin images (pre and post) for multiple plugin steps in batched queries
+   * OPTIMIZED: Reduces N queries to fewer batch queries, avoiding HTTP 414 errors
    */
   private async getPluginImagesForAllSteps(
     pluginStepIds: string[]
@@ -164,26 +178,37 @@ export class PluginDiscovery {
     }
 
     try {
-      // Batch query all images with OR filter (GUIDs need braces and quotes in OData)
-      const imageFilters = pluginStepIds.map(id => {
-        const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
-        return `_sdkmessageprocessingstepid_value eq '${guidWithBraces}'`;
-      }).join(' or ');
+      // BATCH QUERIES to avoid HTTP 414 errors
+      // Split into batches of 20 plugin step IDs
+      const batchSize = 20;
+      const allImages: RawPluginImage[] = [];
 
-      const result = await this.client.query<RawPluginImage>('sdkmessageprocessingstepimages', {
-        select: [
-          'sdkmessageprocessingstepimageid',
-          '_sdkmessageprocessingstepid_value',
-          'imagetype',
-          'name',
-          'attributes',
-          'messagepropertyname',
-        ],
-        filter: imageFilters,
-      });
+      for (let i = 0; i < pluginStepIds.length; i += batchSize) {
+        const batch = pluginStepIds.slice(i, i + batchSize);
+
+        // Batch query images for this batch with OR filter (GUIDs need braces and quotes in OData)
+        const imageFilters = batch.map(id => {
+          const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+          return `_sdkmessageprocessingstepid_value eq '${guidWithBraces}'`;
+        }).join(' or ');
+
+        const result = await this.client.query<RawPluginImage>('sdkmessageprocessingstepimages', {
+          select: [
+            'sdkmessageprocessingstepimageid',
+            '_sdkmessageprocessingstepid_value',
+            'imagetype',
+            'name',
+            'attributes',
+            'messagepropertyname',
+          ],
+          filter: imageFilters,
+        });
+
+        allImages.push(...result.value);
+      }
 
       // Group images by plugin step ID
-      for (const raw of result.value) {
+      for (const raw of allImages) {
         const stepId = (raw as any)._sdkmessageprocessingstepid_value?.toLowerCase();
         if (!stepId) continue;
 

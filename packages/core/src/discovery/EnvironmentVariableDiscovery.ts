@@ -66,44 +66,52 @@ export class EnvironmentVariableDiscovery {
     }
 
     try {
-      // Build filter for multiple IDs
-      const filterClauses = envVarIds.map((id) => {
-        const cleanGuid = id.replace(/[{}]/g, '');
-        return `environmentvariabledefinitionid eq ${cleanGuid}`;
-      });
-      const filter = filterClauses.join(' or ');
+      const batchSize = 20;
+      const allResults: RawEnvironmentVariableDefinition[] = [];
 
-      console.log('🌍 Querying Environment Variables:', envVarIds.length);
+      console.log(`📋 Querying ${envVarIds.length} Environment Variables in batches of ${batchSize}...`);
 
-      // Query environment variable definitions
-      const result = await this.client.query<RawEnvironmentVariableDefinition>(
-        'environmentvariabledefinitions',
-        {
-          select: [
-            'environmentvariabledefinitionid',
-            'schemaname',
-            'displayname',
-            'description',
-            'type',
-            'defaultvalue',
-            'ismanaged',
-            'isrequired',
-            'iscustomizable',
-            'hint',
-            'createdon',
-            'modifiedon',
-          ],
-          filter,
-          expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
-          orderBy: ['schemaname asc'],
-        }
-      );
+      for (let i = 0; i < envVarIds.length; i += batchSize) {
+        const batch = envVarIds.slice(i, i + batchSize);
+        const filterClauses = batch.map((id) => {
+          const cleanGuid = id.replace(/[{}]/g, '');
+          return `environmentvariabledefinitionid eq ${cleanGuid}`;
+        });
+        const filter = filterClauses.join(' or ');
 
-      console.log(`🌍 Retrieved ${result.value.length} Environment Variable definitions`);
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Environment Variables...`);
+
+        const result = await this.client.query<RawEnvironmentVariableDefinition>(
+          'environmentvariabledefinitions',
+          {
+            select: [
+              'environmentvariabledefinitionid',
+              'schemaname',
+              'displayname',
+              'description',
+              'type',
+              'defaultvalue',
+              'ismanaged',
+              'isrequired',
+              'iscustomizable',
+              'hint',
+              'createdon',
+              'modifiedon',
+            ],
+            filter,
+            expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
+            orderBy: ['schemaname asc'],
+          }
+        );
+
+        allResults.push(...result.value);
+      }
+
+      console.log(`📋 Total Environment Variable definitions retrieved: ${allResults.length}`);
 
       // For each definition, fetch its values
       const environmentVariables: EnvironmentVariable[] = [];
-      for (const rawDef of result.value) {
+      for (const rawDef of allResults) {
         const values = await this.getValuesForDefinition(rawDef.environmentvariabledefinitionid);
 
         // Find current value (there should typically be only one active value per environment)

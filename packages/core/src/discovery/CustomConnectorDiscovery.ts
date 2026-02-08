@@ -34,21 +34,34 @@ export class CustomConnectorDiscovery {
     }
 
     try {
-      // Build filter for connector IDs
-      const idFilters = connectorIds.map(id => {
-        const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
-        return `connectorid eq ${guidWithBraces}`;
-      }).join(' or ');
+      const batchSize = 20;
+      const allResults: RawConnector[] = [];
 
-      const result = await this.client.query<RawConnector>('connectors', {
-        select: ['connectorid', 'name', 'displayname', 'description', 'connectortype',
-                 'iconuri', 'ismanaged', 'iscustomizable', 'capabilities',
-                 'connectionparameters', 'ownerid', 'modifiedon', 'modifiedby',
-                 'policytemplateinstances', 'openapidefinition'],
-        filter: idFilters,
-      });
+      console.log(`📋 Querying ${connectorIds.length} Custom Connectors in batches of ${batchSize}...`);
 
-      return result.value.map(raw => this.mapToCustomConnector(raw));
+      for (let i = 0; i < connectorIds.length; i += batchSize) {
+        const batch = connectorIds.slice(i, i + batchSize);
+        const filterClauses = batch.map(id => {
+          const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+          return `connectorid eq ${guidWithBraces}`;
+        });
+        const filter = filterClauses.join(' or ');
+
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Custom Connectors...`);
+
+        const result = await this.client.query<RawConnector>('connectors', {
+          select: ['connectorid', 'name', 'displayname', 'description', 'connectortype',
+                   'iconuri', 'ismanaged', 'iscustomizable', 'capabilities',
+                   'connectionparameters', 'ownerid', 'modifiedon', 'modifiedby',
+                   'policytemplateinstances', 'openapidefinition'],
+          filter,
+        });
+
+        allResults.push(...result.value);
+      }
+
+      console.log(`📋 Total Custom Connectors retrieved: ${allResults.length}`);
+      return allResults.map(raw => this.mapToCustomConnector(raw));
     } catch (error) {
       console.error('Error fetching custom connectors:', error);
       return [];

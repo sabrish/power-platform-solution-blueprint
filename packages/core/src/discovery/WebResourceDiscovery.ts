@@ -35,32 +35,40 @@ export class WebResourceDiscovery {
     console.log(`📦 Fetching ${resourceIds.length} web resource(s)...`);
 
     try {
-      // Build filter for web resource IDs
-      const filters = resourceIds.map((id) => `webresourceid eq ${id}`);
-      const filter = filters.join(' or ');
+      const batchSize = 20;
+      const allResults: WebResourceRecord[] = [];
 
-      // Fetch web resource records
-      const response = await this.client.query<WebResourceRecord>('webresourceset', {
-        select: [
-          'webresourceid',
-          'name',
-          'displayname',
-          'webresourcetype',
-          'content',
-          'description',
-          'modifiedon',
-          'createdon',
-        ],
-        filter,
-        orderBy: ['webresourcetype', 'name'],
-      });
+      console.log(`📋 Querying ${resourceIds.length} Web Resources in batches of ${batchSize}...`);
 
-      const records = response.value;
+      for (let i = 0; i < resourceIds.length; i += batchSize) {
+        const batch = resourceIds.slice(i, i + batchSize);
+        const filterClauses = batch.map((id) => `webresourceid eq ${id}`);
+        const filter = filterClauses.join(' or ');
 
-      console.log(`📦 Retrieved ${records.length} web resource record(s)`);
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Web Resources...`);
+
+        const response = await this.client.query<WebResourceRecord>('webresourceset', {
+          select: [
+            'webresourceid',
+            'name',
+            'displayname',
+            'webresourcetype',
+            'content',
+            'description',
+            'modifiedon',
+            'createdon',
+          ],
+          filter,
+          orderBy: ['webresourcetype', 'name'],
+        });
+
+        allResults.push(...response.value);
+      }
+
+      console.log(`📋 Total Web Resources retrieved: ${allResults.length}`);
 
       // Map to WebResource objects
-      const webResources = records.map((record) => this.mapRecordToWebResource(record));
+      const webResources = allResults.map((record) => this.mapRecordToWebResource(record));
 
       return webResources;
     } catch (error) {

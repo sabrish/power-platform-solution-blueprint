@@ -62,42 +62,50 @@ export class CustomAPIDiscovery {
     }
 
     try {
-      // Build filter for multiple IDs
-      const filterClauses = customApiIds.map((id) => {
-        const cleanGuid = id.replace(/[{}]/g, '');
-        return `customapiid eq ${cleanGuid}`;
-      });
-      const filter = filterClauses.join(' or ');
+      const batchSize = 20;
+      const allResults: RawCustomAPI[] = [];
 
-      console.log('🔧 Querying Custom APIs:', customApiIds.length);
+      console.log(`📋 Querying ${customApiIds.length} Custom APIs in batches of ${batchSize}...`);
 
-      // Query custom APIs
-      const result = await this.client.query<RawCustomAPI>('customapis', {
-        select: [
-          'customapiid',
-          'uniquename',
-          'displayname',
-          'description',
-          'bindingtype',
-          'boundentitylogicalname',
-          'isfunction',
-          'isprivate',
-          'ismanaged',
-          'allowedcustomprocessingsteptype',
-          'executeprivilegename',
-          'createdon',
-          'modifiedon',
-        ],
-        filter,
-        expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
-        orderBy: ['uniquename asc'],
-      });
+      for (let i = 0; i < customApiIds.length; i += batchSize) {
+        const batch = customApiIds.slice(i, i + batchSize);
+        const filterClauses = batch.map((id) => {
+          const cleanGuid = id.replace(/[{}]/g, '');
+          return `customapiid eq ${cleanGuid}`;
+        });
+        const filter = filterClauses.join(' or ');
 
-      console.log(`🔧 Retrieved ${result.value.length} Custom APIs`);
+        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Custom APIs...`);
+
+        const result = await this.client.query<RawCustomAPI>('customapis', {
+          select: [
+            'customapiid',
+            'uniquename',
+            'displayname',
+            'description',
+            'bindingtype',
+            'boundentitylogicalname',
+            'isfunction',
+            'isprivate',
+            'ismanaged',
+            'allowedcustomprocessingsteptype',
+            'executeprivilegename',
+            'createdon',
+            'modifiedon',
+          ],
+          filter,
+          expand: 'ownerid($select=fullname,ownerid),modifiedby($select=fullname)',
+          orderBy: ['uniquename asc'],
+        });
+
+        allResults.push(...result.value);
+      }
+
+      console.log(`📋 Total Custom APIs retrieved: ${allResults.length}`);
 
       // For each Custom API, fetch its request parameters and response properties
       const customAPIs: CustomAPI[] = [];
-      for (const rawApi of result.value) {
+      for (const rawApi of allResults) {
         const [requestParams, responseProps] = await Promise.all([
           this.getRequestParameters(rawApi.customapiid),
           this.getResponseProperties(rawApi.customapiid),
