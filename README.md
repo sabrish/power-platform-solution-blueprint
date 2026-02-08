@@ -243,24 +243,29 @@ Thanks to the Power Platform community for inspiration, feedback, and the collec
 
 PPSB is under active development with exciting features planned:
 
-### Version 0.6 - Baseline Comparison & Automation
-- **Baseline Comparison**: Load previous JSON export and compare against current state
-- **Change Detection**: Identify added/removed/modified components with risk levels
-- **CLI Tool**: Command-line interface for automation (`ppsb generate`)
-- **CI/CD Integration**: GitHub Actions and Azure DevOps pipeline tasks
+**Baseline Comparison & Automation**
+- Baseline comparison (load previous JSON and detect changes)
+- Change detection with risk assessment
+- Command-line interface (CLI) for automation
+- CI/CD integration (GitHub Actions, Azure DevOps)
 
-### Version 0.7 - Enhanced Analysis
-- **Impact Analysis**: "What if" scenarios (e.g., "What breaks if I delete this entity?")
-- **Unused Component Detection**: Find orphaned web resources, unused flows, etc.
-- **Business Process Mining**: Analyze actual flow execution data
-- **Custom Analysis Rules**: Define your own compliance and quality rules
+**Enhanced Analysis**
+- Impact analysis ("What breaks if I delete this?")
+- Unused component detection
+- Business process mining
+- Custom analysis rules
 
-### Future Versions
-- Canvas App documentation enhancement
-- Power Pages integration analysis
-- Customer Insights - Journeys support
-- Performance benchmarking and recommendations
+**Extended Platform Support**
+- Canvas Apps (enhanced with screen analysis)
+- Power Pages (forms, lists, Liquid templates)
+- Customer Insights & Marketing (journeys, segments, email templates)
+- Additional component types (30+ new types)
+
+**Enterprise Features**
+- Performance benchmarking
 - Multi-environment comparison
+- Multi-tenant support
+- Advanced visualizations and AI-powered insights
 
 📖 **[Full Roadmap](docs/roadmap.md)**
 
