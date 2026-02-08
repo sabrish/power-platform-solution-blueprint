@@ -23,7 +23,7 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
 import { EntityList } from './EntityList';
@@ -32,6 +32,8 @@ import { BusinessRulesList } from './BusinessRulesList';
 import { WebResourcesList } from './WebResourcesList';
 import { ClassicWorkflowsList } from './ClassicWorkflowsList';
 import { ClassicWorkflowDetailView } from './ClassicWorkflowDetailView';
+import { BusinessProcessFlowsList } from './BusinessProcessFlowsList';
+import { BusinessProcessFlowDetailView } from './BusinessProcessFlowDetailView';
 
 const useStyles = makeStyles({
   container: {
@@ -134,6 +136,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState<string>('entities');
   const [selectedClassicWorkflow, setSelectedClassicWorkflow] = useState<ClassicWorkflow | null>(null);
+  const [selectedBPF, setSelectedBPF] = useState<BusinessProcessFlow | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -171,6 +174,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalBusinessRules > 0;
       case 'classicWorkflows':
         return result.summary.totalClassicWorkflows > 0;
+      case 'businessProcessFlows':
+        return result.summary.totalBusinessProcessFlows > 0;
       case 'webResources':
         return result.summary.totalWebResources > 0;
       case 'canvasApps':
@@ -195,6 +200,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalBusinessRules;
       case 'classicWorkflows':
         return result.summary.totalClassicWorkflows;
+      case 'businessProcessFlows':
+        return result.summary.totalBusinessProcessFlows;
       case 'webResources':
         return result.summary.totalWebResources;
       case 'canvasApps':
@@ -213,6 +220,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
     { key: 'flows', label: 'Flows', icon: '🌊' },
     { key: 'businessRules', label: 'Business Rules', icon: '📋' },
     { key: 'classicWorkflows', label: 'Classic Workflows', icon: '⚠️' },
+    { key: 'businessProcessFlows', label: 'Business Process Flows', icon: '🔄' },
     { key: 'webResources', label: 'Web Resources', icon: '🌐' },
     { key: 'canvasApps', label: 'Canvas Apps', icon: '🎨' },
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
@@ -365,6 +373,10 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
               <Tab value="classicWorkflows">{`⚠️ Classic Workflows (${result.summary.totalClassicWorkflows})`}</Tab>
             )}
 
+            {hasResults('businessProcessFlows') && (
+              <Tab value="businessProcessFlows">{`Business Process Flows (${result.summary.totalBusinessProcessFlows})`}</Tab>
+            )}
+
             {hasResults('webResources') && (
               <Tab value="webResources">{`Web Resources (${result.summary.totalWebResources})`}</Tab>
             )}
@@ -415,6 +427,28 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                   <ClassicWorkflowsList
                     workflows={result.classicWorkflows}
                     onSelectWorkflow={setSelectedClassicWorkflow}
+                  />
+                )}
+              </div>
+            )}
+
+            {selectedTab === 'businessProcessFlows' && hasResults('businessProcessFlows') && (
+              <div>
+                {selectedBPF ? (
+                  <div>
+                    <Button
+                      appearance="secondary"
+                      onClick={() => setSelectedBPF(null)}
+                      style={{ marginBottom: '16px' }}
+                    >
+                      ← Back to List
+                    </Button>
+                    <BusinessProcessFlowDetailView bpf={selectedBPF} />
+                  </div>
+                ) : (
+                  <BusinessProcessFlowsList
+                    businessProcessFlows={result.businessProcessFlows}
+                    onSelectBPF={setSelectedBPF}
                   />
                 )}
               </div>

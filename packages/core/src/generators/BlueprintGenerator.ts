@@ -120,6 +120,10 @@ export class BlueprintGenerator {
         warnings.push(`⚠️ ${workflowInventory.classicWorkflowIds.length} classic workflow(s) detected - migration to Power Automate recommended`);
       }
 
+      // STEP 5.6: Process Business Process Flows
+      const businessProcessFlows = await this.processBusinessProcessFlows(workflowInventory.businessProcessFlowIds);
+      const businessProcessFlowsByEntity = this.groupBusinessProcessFlowsByEntity(businessProcessFlows);
+
       // STEP 6: Process Web Resources
       const webResources = await this.processWebResources(inventory.webResourceIds);
       const webResourcesByType = this.groupWebResourcesByType(webResources);
@@ -153,6 +157,7 @@ export class BlueprintGenerator {
         totalFlows: workflowInventory.flowIds.length,
         totalBusinessRules: workflowInventory.businessRuleIds.length,
         totalClassicWorkflows: workflowInventory.classicWorkflowIds.length,
+        totalBusinessProcessFlows: workflowInventory.businessProcessFlowIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
         totalCanvasApps: inventory.canvasAppIds.length,
@@ -189,6 +194,8 @@ export class BlueprintGenerator {
         businessRulesByEntity,
         classicWorkflows,
         classicWorkflowsByEntity,
+        businessProcessFlows,
+        businessProcessFlowsByEntity,
         webResources,
         webResourcesByType,
       };
@@ -710,6 +717,71 @@ export class BlueprintGenerator {
     }
 
     return workflowsByEntity;
+  }
+
+  /**
+   * Process Business Process Flows
+   */
+  private async processBusinessProcessFlows(workflowIds: string[]): Promise<import('../types/businessProcessFlow.js').BusinessProcessFlow[]> {
+    console.log(`📊 processBusinessProcessFlows called with ${workflowIds.length} BPF IDs`);
+
+    if (workflowIds.length === 0) {
+      console.log('📊 No Business Process Flows to process');
+      return [];
+    }
+
+    try {
+      // Report progress
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: workflowIds.length,
+        message: `📊 Documenting ${workflowIds.length} Business Process Flow(s)...`,
+      });
+
+      const { BusinessProcessFlowDiscovery } = await import('../discovery/BusinessProcessFlowDiscovery.js');
+      const bpfDiscovery = new BusinessProcessFlowDiscovery(this.client);
+      const bpfs = await bpfDiscovery.getBusinessProcessFlowsByIds(workflowIds);
+
+      console.log(`📊 Successfully retrieved ${bpfs.length} Business Process Flow(s)`);
+
+      // Report completion
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: workflowIds.length,
+        total: workflowIds.length,
+        message: `📊 Documented ${bpfs.length} Business Process Flow(s)`,
+      });
+
+      return bpfs;
+    } catch (error) {
+      console.error('❌ Error processing Business Process Flows:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Group Business Process Flows by primary entity
+   */
+  private groupBusinessProcessFlowsByEntity(bpfs: import('../types/businessProcessFlow.js').BusinessProcessFlow[]): Map<string, import('../types/businessProcessFlow.js').BusinessProcessFlow[]> {
+    const bpfsByEntity = new Map<string, import('../types/businessProcessFlow.js').BusinessProcessFlow[]>();
+
+    for (const bpf of bpfs) {
+      const entity = bpf.primaryEntity.toLowerCase();
+      if (!bpfsByEntity.has(entity)) {
+        bpfsByEntity.set(entity, []);
+      }
+      bpfsByEntity.get(entity)!.push(bpf);
+    }
+
+    // Sort BPFs within each entity by name
+    for (const [, entityBpfs] of bpfsByEntity) {
+      entityBpfs.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return bpfsByEntity;
   }
 
   /**

@@ -2,6 +2,8 @@
 export type { Publisher, Solution, EntityMetadata, PluginStep, ImageDefinition } from './types.js';
 export { STAGE_COLORS } from './types.js';
 export type { ClassicWorkflow, MigrationRecommendation, MigrationFeature } from './types/classicWorkflow.js';
+export type { BusinessProcessFlow, BPFDefinition, BPFStage, BPFStep } from './types/businessProcessFlow.js';
+export { BPF_STATE_COLORS } from './types/businessProcessFlow.js';
 export type {
   ProgressPhase,
   ProgressInfo,
@@ -55,6 +57,7 @@ export { FlowDiscovery } from './discovery/FlowDiscovery.js';
 export { BusinessRuleDiscovery } from './discovery/BusinessRuleDiscovery.js';
 export { FormDiscovery } from './discovery/FormDiscovery.js';
 export { ClassicWorkflowDiscovery } from './discovery/ClassicWorkflowDiscovery.js';
+export { BusinessProcessFlowDiscovery } from './discovery/BusinessProcessFlowDiscovery.js';
 
 // Generators
 export { BlueprintGenerator } from './generators/BlueprintGenerator.js';
