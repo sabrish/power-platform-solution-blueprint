@@ -1,6 +1,7 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import { EntityDiscovery } from '../discovery/EntityDiscovery.js';
 import { SolutionComponentDiscovery } from '../discovery/SolutionComponentDiscovery.js';
+import { SolutionDiscovery } from '../discovery/SolutionDiscovery.js';
 import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
 import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
 import { FlowDiscovery } from '../discovery/FlowDiscovery.js';
@@ -244,14 +245,24 @@ export class BlueprintGenerator {
       // Solution-based discovery
       const componentDiscovery = new SolutionComponentDiscovery(this.client);
 
-      // Discover all component types
-      const inventory = await componentDiscovery.discoverComponents(this.scope.solutionIds);
+      // Get solution unique names to detect Default solution
+      const solutionDiscovery = new SolutionDiscovery(this.client);
+      const allSolutions = await solutionDiscovery.getSolutions();
+      const selectedSolutions = allSolutions.filter(s => this.scope.solutionIds?.includes(s.solutionid));
+      const solutionUniqueNames = selectedSolutions.map(s => s.uniquename);
+
+      // Discover all component types (will use special handling for Default solution)
+      const inventory = await componentDiscovery.discoverComponents(this.scope.solutionIds, solutionUniqueNames);
 
       // Classify workflows
       const workflowInventory = await componentDiscovery.classifyWorkflows(inventory.workflowIds);
 
       // Get entity metadata for discovered entities
-      const entities = await entityDiscovery.getEntitiesByIds(inventory.entityIds);
+      // For Default Solution, query all unmanaged entities
+      const includesDefaultSolution = solutionUniqueNames.some(name => name.toLowerCase() === 'default');
+      const entities = includesDefaultSolution
+        ? await entityDiscovery.getAllEntities(this.scope.includeSystem, true) // true = onlyUnmanaged
+        : await entityDiscovery.getEntitiesByIds(inventory.entityIds);
 
       return { inventory, workflowInventory, entities };
     } else if (this.scope.type === 'publisher' && this.scope.publisherPrefixes) {

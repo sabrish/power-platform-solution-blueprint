@@ -30,9 +30,13 @@ export class SolutionComponentDiscovery {
   /**
    * Discover all components in the specified solutions
    * @param solutionIds Array of solution IDs to discover
+   * @param solutionUniqueNames Array of solution unique names (to detect Default solution)
    * @returns Inventory of all component types found
    */
-  async discoverComponents(solutionIds: string[]): Promise<ComponentInventory> {
+  async discoverComponents(
+    solutionIds: string[],
+    solutionUniqueNames?: string[]
+  ): Promise<ComponentInventory> {
     try {
       const inventory: ComponentInventory = {
         entityIds: [],
@@ -48,6 +52,14 @@ export class SolutionComponentDiscovery {
         globalChoiceIds: [],
         customConnectorIds: [],
       };
+
+      // Check if Default Solution is among the selected solutions
+      const includesDefaultSolution = solutionUniqueNames?.some(name => name.toLowerCase() === 'default');
+
+      if (includesDefaultSolution) {
+        console.log('🔍 Default Solution detected - querying ALL unmanaged components');
+        return this.discoverAllUnmanagedComponents();
+      }
 
       // OPTIMIZED: Query all solution components in a single batch query using OR filters
       // This reduces N queries (one per solution) to 1 query for all solutions
@@ -162,6 +174,107 @@ export class SolutionComponentDiscovery {
     } catch (error) {
       throw new Error(
         `Failed to discover solution components: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Discover ALL unmanaged components (for Default Solution)
+   * Queries each component type directly instead of using solutioncomponents table
+   */
+  private async discoverAllUnmanagedComponents(): Promise<ComponentInventory> {
+    const inventory: ComponentInventory = {
+      entityIds: [],
+      attributeIds: [],
+      pluginIds: [],
+      workflowIds: [],
+      webResourceIds: [],
+      canvasAppIds: [],
+      customPageIds: [],
+      connectionReferenceIds: [],
+      customApiIds: [],
+      environmentVariableIds: [],
+      globalChoiceIds: [],
+      customConnectorIds: [],
+    };
+
+    console.log('🔍 Querying ALL unmanaged components across the environment...');
+
+    try {
+      // Query plugins (SDK Message Processing Steps) - unmanaged only
+      const pluginsResult = await this.client.query<{ sdkmessageprocessingstepid: string }>('sdkmessageprocessingsteps', {
+        select: ['sdkmessageprocessingstepid'],
+        filter: 'ismanaged eq false',
+      });
+      inventory.pluginIds = pluginsResult.value.map(p => p.sdkmessageprocessingstepid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`🔌 Found ${inventory.pluginIds.length} unmanaged plugins`);
+
+      // Query workflows (all categories) - unmanaged only
+      const workflowsResult = await this.client.query<{ workflowid: string }>('workflows', {
+        select: ['workflowid'],
+        filter: 'ismanaged eq false',
+      });
+      inventory.workflowIds = workflowsResult.value.map(w => w.workflowid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`📋 Found ${inventory.workflowIds.length} unmanaged workflows`);
+
+      // Query web resources - unmanaged only
+      const webResourcesResult = await this.client.query<{ webresourceid: string }>('webresourceset', {
+        select: ['webresourceid'],
+        filter: 'ismanaged eq false',
+      });
+      inventory.webResourceIds = webResourcesResult.value.map(w => w.webresourceid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`📦 Found ${inventory.webResourceIds.length} unmanaged web resources`);
+
+      // Query custom APIs - unmanaged only
+      const customApisResult = await this.client.query<{ customapiid: string }>('customapis', {
+        select: ['customapiid'],
+        filter: 'ismanaged eq false',
+      });
+      inventory.customApiIds = customApisResult.value.map(c => c.customapiid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`🔧 Found ${inventory.customApiIds.length} unmanaged custom APIs`);
+
+      // Query environment variables - unmanaged only
+      const envVarsResult = await this.client.query<{ environmentvariabledefinitionid: string }>('environmentvariabledefinitions', {
+        select: ['environmentvariabledefinitionid'],
+        filter: 'ismanaged eq false',
+      });
+      inventory.environmentVariableIds = envVarsResult.value.map(e => e.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`🌍 Found ${inventory.environmentVariableIds.length} unmanaged environment variables`);
+
+      // Query connection references - unmanaged only
+      const connRefsResult = await this.client.query<{ connectionreferenceid: string }>('connectionreferences', {
+        select: ['connectionreferenceid'],
+        filter: 'ismanaged eq false',
+      });
+      inventory.connectionReferenceIds = connRefsResult.value.map(c => c.connectionreferenceid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`🔗 Found ${inventory.connectionReferenceIds.length} unmanaged connection references`);
+
+      // Query custom connectors - unmanaged only
+      const customConnectorsResult = await this.client.query<{ connectorid: string }>('connectors', {
+        select: ['connectorid'],
+        filter: 'ismanaged eq false and iscustomizable/Value eq true',
+      });
+      inventory.customConnectorIds = customConnectorsResult.value.map(c => c.connectorid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`🔌 Found ${inventory.customConnectorIds.length} unmanaged custom connectors`);
+
+      // Canvas apps and custom pages - unmanaged only
+      const canvasAppsResult = await this.client.query<{ canvasappid: string }>('canvasapps', {
+        select: ['canvasappid'],
+        filter: 'ismanaged eq false',
+      });
+      inventory.canvasAppIds = canvasAppsResult.value.map(c => c.canvasappid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`🎨 Found ${inventory.canvasAppIds.length} unmanaged canvas apps`);
+
+      // For entities and attributes, we'll use the metadata API via EntityDiscovery
+      // These will be handled by the BlueprintGenerator's entity discovery process
+      console.log('📊 Entity and attribute discovery will be handled by entity metadata queries');
+
+      console.log('✅ All unmanaged components discovered');
+      return inventory;
+    } catch (error) {
+      console.error('❌ Error discovering unmanaged components:', error);
+      throw new Error(
+        `Failed to discover unmanaged components: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

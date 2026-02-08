@@ -162,16 +162,24 @@ export class EntityDiscovery {
   /**
    * Get all entities in the environment
    * @param includeSystem Whether to include system-owned entities
+   * @param onlyUnmanaged Only include unmanaged entities (for Default Solution)
    * @returns Array of all entities
    */
-  async getAllEntities(includeSystem: boolean): Promise<EntityMetadata[]> {
+  async getAllEntities(includeSystem: boolean, onlyUnmanaged: boolean = false): Promise<EntityMetadata[]> {
     try {
-      let filter: string | undefined;
+      const filters: string[] = [];
 
       if (!includeSystem) {
-        // Only custom entities that are customizable and not managed
-        filter = 'IsCustomEntity eq true';
+        // Only custom entities
+        filters.push('IsCustomEntity eq true');
       }
+
+      if (onlyUnmanaged) {
+        // Only unmanaged entities (for Default Solution)
+        filters.push('IsManaged eq false');
+      }
+
+      const filter = filters.length > 0 ? filters.join(' and ') : undefined;
 
       const result = await this.client.queryMetadata<EntityMetadata>('EntityDefinitions', {
         select: [
