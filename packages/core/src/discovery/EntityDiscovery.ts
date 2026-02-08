@@ -167,7 +167,7 @@ export class EntityDiscovery {
    */
   async getAllEntities(includeSystem: boolean, onlyUnmanaged: boolean = false): Promise<EntityMetadata[]> {
     try {
-      // Only use IsCustomEntity filter in the query - metadata API has limited filter support
+      // Only use IsCustomEntity filter in the query - metadata API has limited query parameter support
       const filter = !includeSystem ? 'IsCustomEntity eq true' : undefined;
 
       const result = await this.client.queryMetadata<EntityMetadata>('EntityDefinitions', {
@@ -185,15 +185,18 @@ export class EntityDiscovery {
           'Description',
         ],
         filter,
-        orderBy: ['LogicalName'],
+        // Note: orderBy not supported by metadata API - sort in memory instead
       });
 
-      // Filter for unmanaged in memory (metadata API doesn't support IsManaged filter well)
+      // Filter for unmanaged in memory (metadata API doesn't support IsManaged filter)
       let entities = result.value;
       if (onlyUnmanaged) {
         entities = entities.filter(e => !e.IsManaged);
         console.log(`📊 Filtered to ${entities.length} unmanaged entities (from ${result.value.length} total)`);
       }
+
+      // Sort in memory since metadata API doesn't support orderBy
+      entities.sort((a, b) => a.LogicalName.localeCompare(b.LogicalName));
 
       return entities;
     } catch (error) {
