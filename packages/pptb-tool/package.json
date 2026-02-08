@@ -1,8 +1,26 @@
 {
-  "name": "@ppsb/pptb",
-  "displayName": "Power Platform Solution Blueprint (PPSB)",
-  "version": "0.1.0",
-  "description": "PPTB Desktop tool for Power Platform System Blueprint",
+  "name": "@sabrish/power-platform-solution-blueprint",
+  "version": "0.5.0",
+  "displayName": "Power Platform Solution Blueprint Generator",
+  "description": "A comprehensive blueprint generator for Microsoft Power Platform.",
+  "main": "index.html",
+  "license": "MIT",
+  "contributors": [
+    {
+      "name": "SAB",
+      "url": "https://github.com/sabrish"
+    },
+    {
+      "name": "Claude Code"
+    },
+    {
+      "name": "ChatGPT"
+    }
+  ],
+  "configurations": {
+    "repository": "https://github.com/sabrish/power-platform-solution-blueprint",
+    "readmeUrl": "https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/refs/heads/main/README.md"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
