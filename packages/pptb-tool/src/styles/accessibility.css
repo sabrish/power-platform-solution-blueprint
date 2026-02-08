@@ -1,0 +1,176 @@
+/**
+ * Accessibility styles for WCAG AA compliance
+ */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip navigation link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #0078d4;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 10000;
+  font-weight: 600;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Enhanced focus indicators (WCAG 2.4.7) */
+*:focus {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+}
+
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    border-color: currentColor !important;
+  }
+
+  button,
+  a {
+    outline: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus visible polyfill */
+.focus-visible:focus {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Keyboard navigation indicators */
+body.keyboard-nav *:focus {
+  outline: 3px solid #0078d4;
+  outline-offset: 3px;
+}
+
+/* ARIA live region styles */
+[aria-live] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Ensure sufficient color contrast (WCAG 1.4.3) */
+:root {
+  --text-primary: #242424;
+  --text-secondary: #605e5c;
+  --text-tertiary: #8a8886;
+  --background-primary: #ffffff;
+  --background-secondary: #faf9f8;
+  --link-color: #0078d4;
+  --link-hover: #004578;
+}
+
+/* Dark mode with proper contrast */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary: #ffffff;
+    --text-secondary: #d2d0ce;
+    --text-tertiary: #a19f9d;
+    --background-primary: #1b1a19;
+    --background-secondary: #292827;
+    --link-color: #4a9eff;
+    --link-hover: #82bcff;
+  }
+}
+
+/* Touch target size (WCAG 2.5.5) */
+button,
+a,
+input[type="checkbox"],
+input[type="radio"],
+select {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Exception for inline links */
+p a,
+li a {
+  min-height: auto;
+  min-width: auto;
+}
+
+/* Disabled state with proper contrast */
+:disabled,
+[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error states with sufficient contrast */
+[aria-invalid="true"],
+.error {
+  border-color: #a4262c !important;
+}
+
+/* Required field indicator */
+[aria-required="true"]::after,
+.required::after {
+  content: " *";
+  color: #a4262c;
+  font-weight: bold;
+}
+
+/* Loading states */
+[aria-busy="true"] {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+/* Expandable/collapsible regions */
+[aria-expanded="false"] .expand-icon {
+  transform: rotate(0deg);
+}
+
+[aria-expanded="true"] .expand-icon {
+  transform: rotate(90deg);
+}

@@ -58,6 +58,8 @@ export class SolutionComponentDiscovery {
         environmentVariableIds: [],
         globalChoiceIds: [],
         customConnectorIds: [],
+        securityRoleIds: [],
+        fieldSecurityProfileIds: [],
       };
 
       // Check if Default Solution is among the selected solutions
@@ -119,6 +121,18 @@ export class SolutionComponentDiscovery {
             case ComponentType.GlobalOptionSet:
               if (!inventory.globalChoiceIds.includes(objectId)) {
                 inventory.globalChoiceIds.push(objectId);
+              }
+              break;
+            case ComponentType.SecurityRole:
+              if (!inventory.securityRoleIds.includes(objectId)) {
+                inventory.securityRoleIds.push(objectId);
+                console.log(`🔒 Found security role: ${objectId}`);
+              }
+              break;
+            case ComponentType.FieldSecurityProfile:
+              if (!inventory.fieldSecurityProfileIds.includes(objectId)) {
+                inventory.fieldSecurityProfileIds.push(objectId);
+                console.log(`🛡️ Found field security profile: ${objectId}`);
               }
               break;
             case ComponentType.SdkMessageProcessingStep:
@@ -193,6 +207,8 @@ export class SolutionComponentDiscovery {
       console.log('✅ Environment Variables:', inventory.environmentVariableIds.length);
       console.log('✅ Global Choices:', inventory.globalChoiceIds.length);
       console.log('✅ Custom Connectors:', inventory.customConnectorIds.length);
+      console.log('✅ Security Roles:', inventory.securityRoleIds.length);
+      console.log('✅ Field Security Profiles:', inventory.fieldSecurityProfileIds.length);
       console.log('✅ ============================================');
 
       if (inventory.webResourceIds.length > 0) {
@@ -229,6 +245,8 @@ export class SolutionComponentDiscovery {
       environmentVariableIds: [],
       globalChoiceIds: [],
       customConnectorIds: [],
+      securityRoleIds: [],
+      fieldSecurityProfileIds: [],
     };
 
     console.log('🔍 Querying ALL components across the environment (Default Solution)...');
@@ -283,6 +301,20 @@ export class SolutionComponentDiscovery {
       });
       inventory.customConnectorIds = customConnectorsResult.value.map(c => c.connectorid.toLowerCase().replace(/[{}]/g, ''));
       console.log(`🔌 Found ${inventory.customConnectorIds.length} custom connectors`);
+
+      // Query security roles - all
+      const securityRolesResult = await this.client.query<{ roleid: string }>('roles', {
+        select: ['roleid'],
+      });
+      inventory.securityRoleIds = securityRolesResult.value.map(r => r.roleid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`🔒 Found ${inventory.securityRoleIds.length} security roles`);
+
+      // Query field security profiles - all
+      const fieldSecurityProfilesResult = await this.client.query<{ fieldsecurityprofileid: string }>('fieldsecurityprofiles', {
+        select: ['fieldsecurityprofileid'],
+      });
+      inventory.fieldSecurityProfileIds = fieldSecurityProfilesResult.value.map(f => f.fieldsecurityprofileid.toLowerCase().replace(/[{}]/g, ''));
+      console.log(`🛡️ Found ${inventory.fieldSecurityProfileIds.length} field security profiles`);
 
       // Canvas apps - all
       const canvasAppsResult = await this.client.query<{ canvasappid: string }>('canvasapps', {

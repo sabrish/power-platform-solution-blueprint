@@ -188,6 +188,13 @@ export function PluginsList({
           </div>
         </div>
 
+        {plugin.description && (
+          <div className={styles.section}>
+            <Text className={styles.detailLabel}>Description</Text>
+            <Text className={styles.wrapText}>{plugin.description}</Text>
+          </div>
+        )}
+
         {plugin.filteringAttributes.length > 0 && (
           <div className={styles.section}>
             <Title3>Filtering Attributes ({plugin.filteringAttributes.length})</Title3>

@@ -15,6 +15,7 @@ interface UseBlueprintResult {
   isGenerating: boolean;
   error: Error | null;
   cancel: () => void;
+  blueprintGenerator: BlueprintGenerator | null;
 }
 
 /**
@@ -48,6 +49,7 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
   const [error, setError] = useState<Error | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const generatorRef = useRef<BlueprintGenerator | null>(null);
 
   // Reset state when scope changes (e.g., when user clicks "Change Selection")
   useEffect(() => {
@@ -83,6 +85,9 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
         signal: abortController.signal,
       });
 
+      // Store generator for export functionality
+      generatorRef.current = generator;
+
       // Generate blueprint
       const blueprintResult = await generator.generate();
 
@@ -117,5 +122,6 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
     isGenerating,
     error,
     cancel,
+    blueprintGenerator: generatorRef.current,
   };
 }

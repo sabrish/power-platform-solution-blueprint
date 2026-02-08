@@ -70,6 +70,10 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground2,
   },
+  wrapText: {
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+  },
 });
 
 interface FlowDetailViewProps {
@@ -102,7 +106,7 @@ export function FlowDetailView({ flow, onClose }: FlowDetailViewProps) {
         <div className={styles.headerContent}>
           <Title2>{flow.name}</Title2>
           {flow.description && (
-            <Text style={{ color: tokens.colorNeutralForeground2 }}>
+            <Text className={styles.wrapText} style={{ color: tokens.colorNeutralForeground2 }}>
               {flow.description}
             </Text>
           )}

@@ -15,6 +15,8 @@ import { ERDGenerator } from '../generators/ERDGenerator.js';
 import { CrossEntityMapper } from '../analyzers/CrossEntityMapper.js';
 import { ExternalDependencyAggregator } from '../analyzers/ExternalDependencyAggregator.js';
 import { SolutionDistributionAnalyzer } from '../analyzers/SolutionDistributionAnalyzer.js';
+import { SecurityRoleDiscovery } from '../discovery/SecurityRoleDiscovery.js';
+import { FieldSecurityProfileDiscovery } from '../discovery/FieldSecurityProfileDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
 import type { ComponentInventory, WorkflowInventory } from '../types/components.js';
@@ -49,6 +51,7 @@ export class BlueprintGenerator {
   private readonly scope: ScopeSelection;
   private publishers: Publisher[] = [];
   private solutions: Solution[] = [];
+  private latestResult: BlueprintResult | null = null;
 
   constructor(client: IDataverseClient, scope: ScopeSelection, options: GeneratorOptions) {
     this.client = client;
@@ -155,17 +158,35 @@ export class BlueprintGenerator {
       // STEP 6.9: Process Custom Connectors
       const customConnectors = await this.processCustomConnectors(inventory.customConnectorIds);
 
+      // STEP 6.10: Process Security Roles
+      const securityRoles = await this.processSecurityRoles(inventory.securityRoleIds);
+
+      // STEP 6.11: Process Field Security Profiles
+      const { profiles: fieldSecurityProfiles, fieldSecurityByEntity } = await this.processFieldSecurityProfiles(
+        inventory.fieldSecurityProfileIds,
+        entities.map((e) => e.LogicalName)
+      );
+
+      // STEP 6.12: Process Column Security (Attribute Masking & Column Security Profiles)
+      const { attributeMaskingRules, columnSecurityProfiles } = await this.processColumnSecurity();
+
       // STEP 7: Process Forms and JavaScript Event Handlers
       const forms = await this.processForms(entities.map((e) => e.LogicalName));
       const formsByEntity = this.groupFormsByEntity(forms);
 
-      // STEP 8: Populate automation in entity blueprints
+      // STEP 8: Populate automation and security in entity blueprints
       for (const blueprint of entityBlueprints) {
         const entityName = blueprint.entity.LogicalName;
         blueprint.plugins = pluginsByEntity.get(entityName) || [];
         blueprint.flows = flowsByEntity.get(entityName) || [];
         blueprint.businessRules = businessRulesByEntity.get(entityName) || [];
         blueprint.forms = formsByEntity.get(entityName) || [];
+
+        // Attach field security if it exists for this entity
+        const fieldSecurity = fieldSecurityByEntity.get(entityName);
+        if (fieldSecurity) {
+          blueprint.fieldSecurity = fieldSecurity;
+        }
       }
 
       // STEP 9: Other components (stubbed for now)
@@ -227,6 +248,10 @@ export class BlueprintGenerator {
           totalConnectionReferences: 0,
           totalGlobalChoices: 0,
           totalCustomConnectors: 0,
+          totalSecurityRoles: 0,
+          totalFieldSecurityProfiles: 0,
+          totalAttributeMaskingRules: 0,
+          totalColumnSecurityProfiles: 0,
           totalAttributes: 0,
           totalWebResources: 0,
           totalCanvasApps: 0,
@@ -289,6 +314,10 @@ export class BlueprintGenerator {
         totalEnvironmentVariables: inventory.environmentVariableIds.length,
         totalConnectionReferences: inventory.connectionReferenceIds.length,
         totalGlobalChoices: inventory.globalChoiceIds.length,
+        totalSecurityRoles: securityRoles.length,
+        totalFieldSecurityProfiles: fieldSecurityProfiles.length,
+        totalAttributeMaskingRules: attributeMaskingRules.length,
+        totalColumnSecurityProfiles: columnSecurityProfiles.length,
         totalCustomConnectors: inventory.customConnectorIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
@@ -305,7 +334,8 @@ export class BlueprintGenerator {
         message: 'Blueprint generation complete!',
       });
 
-      return {
+      // Store result for export functionality
+      const result: BlueprintResult = {
         metadata: {
           generatedAt: startTime,
           environment: 'current',
@@ -338,7 +368,16 @@ export class BlueprintGenerator {
         crossEntityLinks,
         externalEndpoints,
         solutionDistribution,
+        securityRoles: securityRoles.length > 0 ? securityRoles : undefined,
+        fieldSecurityProfiles: fieldSecurityProfiles.length > 0 ? fieldSecurityProfiles : undefined,
+        attributeMaskingRules: attributeMaskingRules.length > 0 ? attributeMaskingRules : undefined,
+        columnSecurityProfiles: columnSecurityProfiles.length > 0 ? columnSecurityProfiles : undefined,
       };
+
+      // Store for export
+      this.latestResult = result;
+
+      return result;
     } catch (error) {
       throw new Error(
         `Blueprint generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -407,6 +446,8 @@ export class BlueprintGenerator {
         environmentVariableIds: [],
         globalChoiceIds: [],
         customConnectorIds: [],
+        securityRoleIds: [],
+        fieldSecurityProfileIds: [],
       };
 
       const workflowInventory: WorkflowInventory = {
@@ -1158,6 +1199,192 @@ export class BlueprintGenerator {
   }
 
   /**
+   * Process Security Roles
+   */
+  private async processSecurityRoles(securityRoleIds: string[]): Promise<import('../discovery/SecurityRoleDiscovery.js').SecurityRoleDetail[]> {
+    console.log(`🔒 processSecurityRoles called with ${securityRoleIds.length} security role IDs`);
+
+    if (securityRoleIds.length === 0) {
+      console.log('🔒 No security roles to process');
+      return [];
+    }
+
+    try {
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: securityRoleIds.length,
+        message: `🔒 Documenting ${securityRoleIds.length} security role(s)...`,
+      });
+
+      const securityRoleDiscovery = new SecurityRoleDiscovery(this.client, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          message: `🔒 Documenting security roles (${current}/${total})...`,
+        });
+      });
+
+      // Get all roles first
+      const allRoles = await securityRoleDiscovery.getSecurityRoles();
+
+      // Filter to only roles in the solution
+      const rolesInSolution = allRoles.filter(role =>
+        securityRoleIds.some(id =>
+          this.normalizeGuid(id) === this.normalizeGuid(role.roleid)
+        )
+      );
+
+      // Get detailed permissions for each role
+      const roleDetails: import('../discovery/SecurityRoleDiscovery.js').SecurityRoleDetail[] = [];
+      for (let i = 0; i < rolesInSolution.length; i++) {
+        const detail = await securityRoleDiscovery.getSecurityRoleDetail(rolesInSolution[i]);
+        roleDetails.push(detail);
+
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current: i + 1,
+          total: rolesInSolution.length,
+          message: `🔒 Processing security role: ${rolesInSolution[i].name}`,
+        });
+      }
+
+      console.log(`🔒 Successfully retrieved ${roleDetails.length} security role(s)`);
+      return roleDetails;
+    } catch (error) {
+      console.error('❌ Error processing security roles:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process Field Security Profiles
+   */
+  private async processFieldSecurityProfiles(
+    profileIds: string[],
+    entityNames: string[]
+  ): Promise<{
+    profiles: import('../discovery/FieldSecurityProfileDiscovery.js').FieldSecurityProfile[];
+    fieldSecurityByEntity: Map<string, import('../discovery/FieldSecurityProfileDiscovery.js').EntityFieldSecurity>;
+  }> {
+    console.log(`🛡️ processFieldSecurityProfiles called with ${profileIds.length} profile IDs`);
+
+    if (profileIds.length === 0) {
+      console.log('🛡️ No field security profiles to process');
+      return {
+        profiles: [],
+        fieldSecurityByEntity: new Map(),
+      };
+    }
+
+    try {
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: profileIds.length,
+        message: `🛡️ Documenting ${profileIds.length} field security profile(s)...`,
+      });
+
+      const fieldSecurityDiscovery = new FieldSecurityProfileDiscovery(this.client);
+
+      // Get all profiles
+      const allProfiles = await fieldSecurityDiscovery.getFieldSecurityProfiles();
+
+      // Filter to only profiles in the solution
+      const profilesInSolution = allProfiles.filter(profile =>
+        profileIds.some(id =>
+          this.normalizeGuid(id) === this.normalizeGuid(profile.fieldsecurityprofileid)
+        )
+      );
+
+      // Get field security for all entities
+      const fieldSecurityByEntity = await fieldSecurityDiscovery.getEntitiesFieldSecurity(entityNames);
+
+      console.log(`🛡️ Successfully retrieved ${profilesInSolution.length} field security profile(s)`);
+
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: profileIds.length,
+        total: profileIds.length,
+        message: `🛡️ Documented ${profilesInSolution.length} field security profile(s)`,
+      });
+
+      return {
+        profiles: profilesInSolution,
+        fieldSecurityByEntity,
+      };
+    } catch (error) {
+      console.error('❌ Error processing field security profiles:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process column security (attribute masking rules and column security profiles)
+   */
+  private async processColumnSecurity(): Promise<{
+    attributeMaskingRules: import('../discovery/ColumnSecurityDiscovery.js').AttributeMaskingRule[];
+    columnSecurityProfiles: import('../discovery/ColumnSecurityDiscovery.js').ColumnSecurityProfile[];
+  }> {
+    console.log(`🎭 processColumnSecurity called`);
+
+    try {
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: 2,
+        message: `🎭 Discovering attribute masking and column security...`,
+      });
+
+      const { ColumnSecurityDiscovery } = await import('../discovery/ColumnSecurityDiscovery.js');
+      const columnSecurityDiscovery = new ColumnSecurityDiscovery(this.client);
+
+      // Get attribute masking rules
+      const attributeMaskingRules = await columnSecurityDiscovery.getAttributeMaskingRules();
+      console.log(`🎭 Found ${attributeMaskingRules.length} attribute masking rule(s)`);
+
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 1,
+        total: 2,
+        message: `🎭 Found ${attributeMaskingRules.length} attribute masking rule(s)`,
+      });
+
+      // Get column security profiles
+      const columnSecurityProfiles = await columnSecurityDiscovery.getColumnSecurityProfiles();
+      console.log(`🎭 Found ${columnSecurityProfiles.length} column security profile(s)`);
+
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 2,
+        total: 2,
+        message: `🎭 Column security discovery complete`,
+      });
+
+      return {
+        attributeMaskingRules,
+        columnSecurityProfiles,
+      };
+    } catch (error) {
+      console.error('❌ Error processing column security:', error);
+      // Return empty arrays on error instead of failing the entire blueprint
+      return {
+        attributeMaskingRules: [],
+        columnSecurityProfiles: [],
+      };
+    }
+  }
+
+  /**
    * Process forms and JavaScript event handlers
    */
   private async processForms(entityNames: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
@@ -1257,4 +1484,74 @@ export class BlueprintGenerator {
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
+  /**
+   * Export blueprint as JSON
+   * @returns JSON string with metadata wrapper
+   */
+  async exportAsJson(): Promise<string> {
+    const { JsonReporter } = await import('../reporters/JsonReporter.js');
+    const reporter = new JsonReporter();
+    return reporter.generate(this.latestResult!);
+  }
+
+  /**
+   * Export blueprint as Markdown
+   * @returns MarkdownExport with file map and structure
+   */
+  async exportAsMarkdown(): Promise<import('../types/blueprint.js').MarkdownExport> {
+    const { MarkdownReporter } = await import('../reporters/MarkdownReporter.js');
+    const reporter = new MarkdownReporter();
+    return reporter.generate(this.latestResult!);
+  }
+
+  /**
+   * Export blueprint as HTML
+   * @returns HTML string (single-page document)
+   */
+  async exportAsHtml(): Promise<string> {
+    const { HtmlReporter } = await import('../reporters/HtmlReporter.js');
+    const reporter = new HtmlReporter();
+    return reporter.generate(this.latestResult!);
+  }
+
+  /**
+   * Export blueprint as ZIP package
+   * @param formats Array of formats to include ('json', 'html', 'markdown')
+   * @returns ZIP file as Blob for browser download
+   */
+  async exportAsZip(formats: string[]): Promise<Blob> {
+    const { ZipPackager } = await import('../exporters/ZipPackager.js');
+    const packager = new ZipPackager();
+
+    let json: string | undefined;
+    let html: string | undefined;
+    let markdown: import('../types/blueprint.js').MarkdownExport | undefined;
+
+    // Generate selected formats
+    if (formats.includes('json')) {
+      json = await this.exportAsJson();
+    }
+
+    if (formats.includes('html')) {
+      html = await this.exportAsHtml();
+    }
+
+    if (formats.includes('markdown')) {
+      markdown = await this.exportAsMarkdown();
+    }
+
+    // Package into ZIP
+    return packager.packageBlueprint(markdown, json, html);
+  }
+
+  /**
+   * Export all formats as ZIP
+   * Convenience method for full export
+   * @returns ZIP file as Blob
+   */
+  async exportAll(): Promise<Blob> {
+    return this.exportAsZip(['markdown', 'json', 'html']);
+  }
+
 }

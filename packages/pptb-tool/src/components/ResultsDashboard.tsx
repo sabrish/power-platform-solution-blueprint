@@ -41,6 +41,8 @@ import { GlobalChoiceDetailView } from './GlobalChoiceDetailView';
 import { CustomConnectorsList } from './CustomConnectorsList';
 import { CustomConnectorDetailView } from './CustomConnectorDetailView';
 import { ArchitectureView } from './ArchitectureView';
+import { ExportDialog } from './ExportDialog';
+import { SecurityOverview } from './SecurityOverview';
 
 const useStyles = makeStyles({
   container: {
@@ -135,13 +137,14 @@ const useStyles = makeStyles({
 export interface ResultsDashboardProps {
   result: BlueprintResult;
   scope: ScopeSelection;
+  blueprintGenerator: any;
   onStartOver: () => void;
-  onExport: () => void;
 }
 
-export function ResultsDashboard({ result, scope, onStartOver, onExport }: ResultsDashboardProps) {
+export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOver }: ResultsDashboardProps) {
   const styles = useStyles();
   const [showArchitectureView, setShowArchitectureView] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>('entities');
   const [selectedClassicWorkflow, setSelectedClassicWorkflow] = useState<ClassicWorkflow | null>(null);
   const [selectedBPF, setSelectedBPF] = useState<BusinessProcessFlow | null>(null);
@@ -309,16 +312,9 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
           <Button
             appearance={hasArchitectureFeatures ? "secondary" : "primary"}
             icon={<ArrowDownload24Regular />}
-            onClick={onExport}
+            onClick={() => setShowExportDialog(true)}
           >
-            Export as Markdown
-          </Button>
-          <Button
-            appearance="secondary"
-            icon={<ArrowDownload24Regular />}
-            onClick={() => alert('JSON export coming soon!')}
-          >
-            Export as JSON
+            Export
           </Button>
           <Button
             appearance="secondary"
@@ -414,6 +410,10 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
 
             {hasResults('customPages') && (
               <Tab value="customPages">{`Custom Pages (${result.summary.totalCustomPages})`}</Tab>
+            )}
+
+            {((result.securityRoles?.length ?? 0) > 0 || (result.fieldSecurityProfiles?.length ?? 0) > 0) && (
+              <Tab value="security">{`🔒 Security (${(result.securityRoles?.length ?? 0) + (result.fieldSecurityProfiles?.length ?? 0)})`}</Tab>
             )}
           </TabList>
 
@@ -610,9 +610,26 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                 <Text>Custom pages browser coming soon...</Text>
               </div>
             )}
+
+            {selectedTab === 'security' && ((result.securityRoles?.length ?? 0) > 0 || (result.fieldSecurityProfiles?.length ?? 0) > 0) && (
+              <SecurityOverview
+                securityRoles={result.securityRoles || []}
+                fieldSecurityProfiles={result.fieldSecurityProfiles || []}
+                attributeMaskingRules={result.attributeMaskingRules}
+                columnSecurityProfiles={result.columnSecurityProfiles}
+              />
+            )}
           </div>
         </Card>
       </div>
+
+      {/* Export Dialog */}
+      <ExportDialog
+        isOpen={showExportDialog}
+        result={result}
+        blueprintGenerator={blueprintGenerator}
+        onClose={() => setShowExportDialog(false)}
+      />
     </div>
   );
 }

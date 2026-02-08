@@ -56,6 +56,9 @@ export type {
   SharedComponent,
   SolutionDependency,
   DataverseAction,
+  FileNode,
+  MarkdownExport,
+  ExportProgress,
 } from './types/blueprint.js';
 export { WEB_RESOURCE_TYPE_NAMES } from './types/blueprint.js';
 export type {
@@ -86,6 +89,30 @@ export { EnvironmentVariableDiscovery } from './discovery/EnvironmentVariableDis
 export { ConnectionReferenceDiscovery } from './discovery/ConnectionReferenceDiscovery.js';
 export { GlobalChoiceDiscovery } from './discovery/GlobalChoiceDiscovery.js';
 export { CustomConnectorDiscovery } from './discovery/CustomConnectorDiscovery.js';
+export { FieldSecurityProfileDiscovery } from './discovery/FieldSecurityProfileDiscovery.js';
+export type {
+  FieldSecurityProfile,
+  FieldPermission,
+  EntityFieldSecurity,
+  SecuredField,
+  FieldSecurityProfilePermission,
+} from './discovery/FieldSecurityProfileDiscovery.js';
+export { SecurityRoleDiscovery } from './discovery/SecurityRoleDiscovery.js';
+export type {
+  SecurityRole,
+  RolePrivilege,
+  PrivilegeDetail,
+  EntityPermission,
+  SecurityRoleDetail,
+  SpecialPermissions,
+  EntitySecurityAccess,
+} from './discovery/SecurityRoleDiscovery.js';
+export { ColumnSecurityDiscovery } from './discovery/ColumnSecurityDiscovery.js';
+export type {
+  AttributeMaskingRule,
+  ColumnSecurityProfile,
+  ColumnPermission,
+} from './discovery/ColumnSecurityDiscovery.js';
 
 // Generators
 export { BlueprintGenerator } from './generators/BlueprintGenerator.js';
@@ -95,6 +122,14 @@ export type { ScopeSelection as BlueprintScope } from './generators/BlueprintGen
 export { ExecutionOrderCalculator } from './analyzers/ExecutionOrderCalculator.js';
 export { PerformanceAnalyzer } from './analyzers/PerformanceAnalyzer.js';
 export { WorkflowMigrationAnalyzer } from './analyzers/WorkflowMigrationAnalyzer.js';
+
+// Reporters
+export { HtmlReporter } from './reporters/HtmlReporter.js';
+export { JsonReporter } from './reporters/JsonReporter.js';
+export { MarkdownReporter } from './reporters/MarkdownReporter.js';
+
+// Exporters
+export { ZipPackager } from './exporters/ZipPackager.js';
 
 // Utils
 export { filterSystemFields, isSystemField } from './utils/fieldFilters.js';

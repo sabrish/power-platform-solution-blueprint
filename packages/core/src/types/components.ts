@@ -19,6 +19,8 @@ export interface ComponentInventory {
   environmentVariableIds: string[];
   globalChoiceIds: string[];
   customConnectorIds: string[];
+  securityRoleIds: string[];
+  fieldSecurityProfileIds: string[];
 }
 
 /**
@@ -39,12 +41,14 @@ export enum ComponentType {
   Entity = 1,
   Attribute = 2,
   GlobalOptionSet = 9,
+  SecurityRole = 20,
   PluginType = 90,
   PluginAssembly = 91,
   SdkMessageProcessingStep = 92,  // Plugin steps
   SdkMessageProcessingStepImage = 93,  // Plugin step images
   Workflow = 29,
   WebResource = 61,
+  FieldSecurityProfile = 70,
   CanvasApp = 300,
   CustomPage = 10004,
   PluginPackage = 10030,  // Plugin packages

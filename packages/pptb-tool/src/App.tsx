@@ -97,7 +97,7 @@ function App() {
   const [selectedScope, setSelectedScope] = useState<ScopeSelection | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const { generate, result, progress, isGenerating, error, cancel } = useBlueprint(
+  const { generate, result, progress, isGenerating, error, cancel, blueprintGenerator } = useBlueprint(
     selectedScope!
   );
 
@@ -185,20 +185,20 @@ function App() {
         result={result}
         scope={selectedScope}
         onStartOver={handleChangeSelection}
-        onExport={() => alert('Export functionality coming soon!')}
+        blueprintGenerator={blueprintGenerator}
       />
     );
   }
 
   // Show confirmation screen
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
+    <main id="main-content" className={styles.container} role="main" aria-label="Power Platform System Blueprint">
+      <header className={styles.header}>
         <Title1>Power Platform System Blueprint</Title1>
         <Subtitle1 className={styles.subtitle}>
           Complete architectural blueprints for your Power Platform systems
         </Subtitle1>
-      </div>
+      </header>
 
       {error && (
         <div className={styles.errorContainer}>
@@ -239,11 +239,11 @@ function App() {
         <Button appearance="secondary" onClick={handleChangeSelection}>
           Change Selection
         </Button>
-        <Button appearance="primary" onClick={handleGenerate}>
+        <Button appearance="primary" onClick={handleGenerate} aria-label="Generate system blueprint">
           Generate Blueprint
         </Button>
       </div>
-    </div>
+    </main>
   );
 }
 

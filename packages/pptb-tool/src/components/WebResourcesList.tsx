@@ -256,7 +256,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
         {resource.description && (
           <div className={styles.section}>
             <Text className={styles.detailLabel}>Description</Text>
-            <Text>{resource.description}</Text>
+            <Text className={styles.wrapText}>{resource.description}</Text>
           </div>
         )}
 

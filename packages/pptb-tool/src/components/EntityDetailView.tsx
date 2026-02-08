@@ -312,7 +312,7 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
               Logical Name: {entity.LogicalName} | Schema: {entity.SchemaName}
             </Text>
             {description && (
-              <Text style={{ marginTop: tokens.spacingVerticalS }}>{description}</Text>
+              <Text className={styles.wrapText} style={{ marginTop: tokens.spacingVerticalS }}>{description}</Text>
             )}
           </div>
         </div>

@@ -2,6 +2,8 @@
  * Blueprint generation types for PPSB
  */
 import type { PluginStep } from '../types.js';
+import type { EntityFieldSecurity } from '../discovery/FieldSecurityProfileDiscovery.js';
+import type { SecurityRoleDetail } from '../discovery/SecurityRoleDiscovery.js';
 
 /**
  * Progress phases during blueprint generation
@@ -447,6 +449,7 @@ export interface EntityBlueprint {
   forms: FormDefinition[];
   executionPipelines?: Map<string, ExecutionPipeline>;
   performanceRisks?: PerformanceRisk[];
+  fieldSecurity?: EntityFieldSecurity;
 }
 
 /**
@@ -465,6 +468,10 @@ export interface BlueprintSummary {
   totalConnectionReferences: number;
   totalGlobalChoices: number;
   totalCustomConnectors: number;
+  totalSecurityRoles: number;
+  totalFieldSecurityProfiles: number;
+  totalAttributeMaskingRules: number;
+  totalColumnSecurityProfiles: number;
   totalAttributes: number;
   totalWebResources: number;
   totalCanvasApps: number;
@@ -675,6 +682,41 @@ export interface BlueprintResult {
   crossEntityLinks?: CrossEntityLink[];
   externalEndpoints?: ExternalEndpoint[];
   solutionDistribution?: SolutionDistribution[];
+  securityRoles?: SecurityRoleDetail[];
+  fieldSecurityProfiles?: import('../discovery/FieldSecurityProfileDiscovery.js').FieldSecurityProfile[];
+  attributeMaskingRules?: import('../discovery/ColumnSecurityDiscovery.js').AttributeMaskingRule[];
+  columnSecurityProfiles?: import('../discovery/ColumnSecurityDiscovery.js').ColumnSecurityProfile[];
+}
+
+/**
+ * File tree node for markdown export structure
+ */
+export interface FileNode {
+  name: string;
+  type: 'file' | 'directory';
+  path: string;
+  size?: number;
+  children?: FileNode[];
+}
+
+/**
+ * Markdown export result
+ */
+export interface MarkdownExport {
+  files: Map<string, string>;
+  structure: FileNode;
+  totalFiles: number;
+  totalSize: number;
+}
+
+/**
+ * Export progress information
+ */
+export interface ExportProgress {
+  phase: string;
+  current: number;
+  total: number;
+  message: string;
 }
 
 // Re-export PluginStep from types.ts

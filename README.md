@@ -1,184 +1,296 @@
 # Power Platform System Blueprint (PPSB)
 
-**Complete architectural blueprints for your Power Platform systems**
+> Complete architectural blueprints for your Power Platform systems
 
-PPSB is a documentation tool that runs inside PPTB Desktop, providing comprehensive architectural documentation and analysis of your Power Platform environments.
+![Version](https://img.shields.io/badge/version-0.5-blue)
+![Status](https://img.shields.io/badge/status-initial%20release-green)
 
-## Project Structure
+Generate comprehensive technical documentation for Dataverse and Power Platform environments with automated discovery, analysis, and export capabilities.
 
-This is a pnpm monorepo with the following packages:
+---
 
-```
-power-platform-solution-blueprint/
-├── packages/
-│   ├── core/                 # @ppsb/core - Pure TypeScript core library
-│   │   ├── src/
-│   │   │   ├── types.ts                    # Core type definitions
-│   │   │   ├── dataverse/
-│   │   │   │   ├── IDataverseClient.ts     # Client interface
-│   │   │   │   └── PptbDataverseClient.ts  # PPTB implementation
-│   │   │   ├── discovery/
-│   │   │   │   ├── PublisherDiscovery.ts   # Publisher discovery
-│   │   │   │   └── SolutionDiscovery.ts    # Solution discovery
-│   │   │   └── index.ts                    # Main exports
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   └── pptb-tool/            # @ppsb/pptb - React UI tool
-│       ├── src/
-│       │   ├── App.tsx                     # Main application
-│       │   ├── main.tsx                    # Entry point
-│       │   └── types/
-│       │       └── pptb.d.ts               # PPTB API types
-│       ├── index.html
-│       ├── vite.config.ts
-│       ├── package.json
-│       └── tsconfig.json
-│
-├── package.json              # Monorepo root
-├── pnpm-workspace.yaml       # pnpm workspace config
-└── README.md                 # This file
-```
+## 🎯 What is PPSB?
 
-## Setup Instructions
+**PPSB** is an automated documentation tool that generates complete architectural blueprints for Power Platform systems. It discovers, analyzes, and documents your entire Dataverse environment—from entity schemas to automation pipelines—saving architects and developers hundreds of hours of manual documentation work.
 
-### Prerequisites
+The tool generates **comprehensive blueprints** including Entity Relationship Diagrams (ERD), complete entity documentation with automation execution pipelines, cross-entity automation mapping, external dependency analysis, and solution distribution breakdowns. All exports are production-ready: Markdown files ready for Azure DevOps Wiki, JSON for programmatic analysis, and self-contained HTML for stakeholder sharing.
 
-- Node.js >= 18.0.0
-- pnpm >= 8.0.0
-- PPTB Desktop (Power Platform Toolbox Desktop)
+PPSB benefits **solution architects** (system documentation), **developers** (onboarding and reference), **governance teams** (compliance and dependency tracking), and **consultants** (assessment and migration planning). Primary use cases include technical documentation generation, governance and compliance auditing, performance analysis, and migration planning.
 
-### Installation
+---
 
-1. **Install pnpm** (if not already installed):
-   ```bash
-   npm install -g pnpm
-   ```
+## ✨ Key Features
 
-2. **Install dependencies**:
-   ```bash
-   pnpm install
-   ```
+<details>
+<summary><b>📋 Discovery & Documentation</b> (click to expand)</summary>
 
-3. **Build all packages**:
-   ```bash
-   pnpm build
-   ```
+- **Entities**: Complete schema (fields, relationships, keys, alternate keys)
+- **Plugins**: Full registration details with execution order analysis
+- **Power Automate Flows**: Trigger analysis, connection references, external calls
+- **Business Rules**: Client-side and server-side with condition parsing
+- **Classic Workflows**: Documentation with migration recommendations and risk assessment
+- **Business Process Flows**: Stage and step documentation
+- **JavaScript Web Resources**: Code analysis with external call detection and deprecated API warnings
+- **Custom APIs**: Complete parameter documentation and privilege requirements
+- **Environment Variables**: Value tracking critical for ALM
+- **Connection References**: Premium connector detection for licensing
+- **Global Choices**: Shared option sets with usage tracking
+- **Security**: Roles, field security profiles, attribute masking, column security
 
-## Development
+</details>
 
-### Run in development mode:
+<details>
+<summary><b>📊 Analysis & Visualization</b> (click to expand)</summary>
+
+- **Entity Relationship Diagram (ERD)**: Mermaid diagram with publisher color-coding and relationship types
+- **Execution Pipeline**: Visual representation of client → sync → async automation flow per entity
+- **Cross-Entity Automation**: Map automation that creates/updates records across entity boundaries
+- **External Dependencies**: Detect and risk-assess all external API calls (flows, plugins, web resources)
+- **Solution Distribution**: Component breakdown across solutions with dependency mapping
+- **Entity Complexity**: Scoring based on field count, automation density, and relationship complexity
+- **Performance Risks**: Identify synchronous plugins with external calls, long execution chains
+
+</details>
+
+<details>
+<summary><b>💾 Export Formats</b> (click to expand)</summary>
+
+- **Markdown**: Complete file structure ready for Azure DevOps Wiki upload
+- **JSON**: Full data export for programmatic use, baselines, and CI/CD pipelines
+- **HTML**: Single-page interactive document with navigation, search, and accordion sections
+- **ZIP**: All formats bundled together with organized directory structure
+
+</details>
+
+<details>
+<summary><b>🔍 Smart Scope Selection</b> (click to expand)</summary>
+
+- **By Publisher**: Select one or more publishers to document all their solutions
+- **By Solution**: Choose specific solutions regardless of publisher
+- **By Entity**: Document all entities (with optional system entity inclusion)
+- **Filtering**: Multi-select with live filtering and selected item management
+
+</details>
+
+---
+
+## 🚀 Quick Start
+
+1. **Install**: Add PPSB to your PPTB Desktop tools directory
+2. **Launch**: Open PPSB from PPTB Desktop with an active Dataverse connection
+3. **Select Scope**: Choose publisher(s), solution(s), or all entities
+4. **Generate**: Click "Generate Blueprint" and wait for discovery and analysis
+5. **Review**: Explore the interactive results with ERD, entity details, and automation analysis
+6. **Export**: Download as Markdown, JSON, HTML, or ZIP bundle
+7. **Use**: Upload Markdown to Azure DevOps Wiki or share HTML with stakeholders
+
+📖 **[Detailed User Guide](docs/user-guide.md)** |
+📊 **[Example Output Structure](docs/examples/example-output-structure.md)** |
+🏗️ **[Architecture Documentation](docs/architecture.md)**
+
+---
+
+## 📸 Screenshots
+
+> Screenshots will be added in a future update
+
+**Key Views You'll See:**
+- **Scope Selection**: Publisher and solution multi-select with filtering
+- **Generation Progress**: Real-time progress tracking with phase indicators
+- **ERD View**: Color-coded entity relationships with legend and quick links
+- **Entity Detail**: Complete schema, automation, and execution pipeline visualization
+- **Security Roles**: Interactive accordion with permission matrices
+- **Export Dialog**: Format selection and download management
+
+---
+
+## 💡 Use Cases
+
+### Architecture Documentation
+- **Onboarding**: Generate complete system docs for new team members joining projects
+- **Proposals**: Create technical specifications and architecture diagrams for client proposals
+- **Handover**: Provide comprehensive documentation during project transitions
+
+### Governance & Compliance
+- **External Dependencies**: Identify all external API calls for security review and approval
+- **Premium Connectors**: Track premium connector usage for accurate licensing compliance
+- **Environment Variables**: Monitor configuration management and ALM readiness
+- **Security Audit**: Document all security roles, field security, and data masking rules
+
+### Performance Analysis
+- **Bottleneck Detection**: Find synchronous plugins with external calls blocking transactions
+- **Execution Chains**: Identify complex automation sequences that may cause performance issues
+- **Optimization Planning**: Prioritize refactoring based on complexity scores and risk levels
+
+### Migration Planning
+- **Classic Workflow Assessment**: Identify all workflows requiring migration to cloud flows
+- **Complexity Analysis**: Get detailed migration recommendations with step-by-step guidance
+- **Dependency Mapping**: Understand cross-entity automation before migration
+
+📖 **[More Use Cases in User Guide](docs/user-guide.md#common-use-cases)**
+
+---
+
+## 🔧 Technical Stack
+
+- **Language**: TypeScript 5.x (strict mode)
+- **UI Framework**: React 18 + Vite 5
+- **Component Library**: Fluent UI v9 (Microsoft Design System)
+- **Diagrams**: Mermaid (ERD and execution pipelines)
+- **Export**: JSZip (multi-file packages)
+- **Architecture**: Monorepo with `@ppsb/core` (pure TypeScript) and `@ppsb/pptb-tool` (React UI)
+
+🏗️ **[Architecture Details](docs/architecture.md)** |
+🛣️ **[Roadmap](docs/roadmap.md)**
+
+---
+
+## 🚦 Installation
+
+### For PPTB Desktop Users
+
+1. Download PPSB from releases
+2. Extract to PPTB Desktop tools directory
+3. Restart PPTB Desktop
+4. Launch PPSB with an active Dataverse connection
+
+### For Development
+
 ```bash
+# Clone repository
+git clone https://github.com/sabrish/power-platform-solution-blueprint.git
+cd power-platform-solution-blueprint
+
+# Install dependencies (uses pnpm workspaces)
+pnpm install
+
+# Run development server
 pnpm dev
-```
 
-This will start the Vite dev server for the PPTB tool.
-
-### Build all packages:
-```bash
+# Build for production
 pnpm build
-```
 
-### Type checking:
-```bash
+# Type check
 pnpm typecheck
 ```
 
-### Clean build artifacts:
-```bash
-pnpm clean
-```
+**Development Requirements:**
+- Node.js 18+ and pnpm 8+
+- PPTB Desktop for testing (connects to Dataverse)
+- Windows, macOS, or Linux
 
-## Running in PPTB Desktop
+---
 
-1. **Build the project**:
-   ```bash
-   pnpm build
-   ```
+## 📚 Documentation
 
-2. **Locate the built files**:
-   - The built tool will be in `packages/pptb-tool/dist/`
+Comprehensive documentation for all aspects of PPSB:
 
-3. **Load in PPTB Desktop**:
-   - Open PPTB Desktop
-   - Navigate to the Tools section
-   - Add a new custom tool pointing to the `dist/index.html` file
-   - The tool will now have access to `window.toolboxAPI` for Dataverse operations
+- **[User Guide](docs/user-guide.md)** - Complete usage instructions from scope selection to export
+- **[Architecture](docs/architecture.md)** - Technical design, component structure, and extension points
+- **[Roadmap](docs/roadmap.md)** - Future versions (baseline comparison, CLI, CI/CD integration)
+- **[Examples](docs/examples/)** - Sample outputs and documentation structure
+  - [Output Structure](docs/examples/example-output-structure.md)
+  - [Sample ERD](docs/examples/sample-erd.md)
+  - [Sample Entity Documentation](docs/examples/sample-entity-doc.md)
+- **[Changelog](CHANGELOG.md)** - Version history and release notes
 
-4. **Use the tool**:
-   - Click "Load Publishers & Solutions" to fetch data from your connected environment
-   - The tool will display all custom publishers and visible solutions
+---
 
-## Package Details
+## 🙏 Credits & Acknowledgments
 
-### @ppsb/core
+### Development Team
+- **Primary Developer**: [SAB](https://github.com/sabrish)
 
-Pure TypeScript library with no UI dependencies. Provides:
+### AI Collaboration
 
-- **Type Definitions**: Publisher, Solution, EntityMetadata
-- **Dataverse Client**: OData query interface with PPTB integration
-- **Discovery Services**: Publisher and Solution discovery with filtering and ordering
+This project was developed with significant AI assistance:
 
-**Key Features**:
-- Strict TypeScript with full type safety
-- Clean separation from UI concerns
-- Extensible architecture for adding more discovery services
-- Proper error handling and async/await patterns
+- **ChatGPT (OpenAI)**: Initial brainstorming, concept validation, feature ideation, and requirements exploration. Helped refine the vision for what PPSB should be and validated technical approaches.
 
-### @ppsb/pptb
+- **Claude (Anthropic)**: Detailed architecture design, comprehensive implementation planning, and hands-on code development via **Claude Code**. Provided deep technical expertise for TypeScript/React implementation, Dataverse API integration, performance optimization strategies, and accessibility compliance.
 
-React 18 + Vite + Fluent UI v9 tool for PPTB Desktop. Provides:
+The combination of AI tools accelerated development while maintaining high code quality and architectural consistency. ChatGPT helped explore possibilities and refine the product vision, while Claude provided meticulous technical implementation with thousands of lines of production-ready code.
 
-- Modern React UI with Fluent Design System
-- Integration with @ppsb/core for data access
-- Loading states and error handling
-- Responsive layout with side-by-side data views
+**AI Development Approach:**
+- Architecture designed through iterative collaboration with Claude
+- Implementation executed via Claude Code (AI-assisted coding)
+- Code reviews and optimization suggestions from both AI assistants
+- Documentation structure and content refined with AI input
 
-**Technology Stack**:
-- React 18 with TypeScript
-- Vite for fast development and optimized builds
-- Fluent UI React v9 components
-- Strict mode enabled for better development experience
+### Technology Partners
 
-## Features
+- **PPTB Desktop** - Power Platform Toolbox (platform for PPSB deployment)
+- **Microsoft Dataverse** - Data platform and APIs
+- **Fluent UI** - Microsoft's design system and React components
+- **Mermaid** - Diagram rendering engine for ERD and pipeline visualizations
+- **TypeScript** - Language and type system
+- **React** - UI framework
+- **Vite** - Build tool and development server
 
-### Current Features
+### Open Source Libraries
 
-- ✅ Fetch all custom publishers from Dataverse
-- ✅ Fetch all visible solutions with publisher information
-- ✅ Display in organized, scrollable lists
-- ✅ Loading states with spinner
-- ✅ Error handling with user-friendly messages
-- ✅ Fluent UI design system integration
+- JSZip (ZIP file generation)
+- React Router (navigation)
+- Various TypeScript utilities and type definitions
 
-### Coming Soon
+### Community
 
-- 📋 Entity metadata discovery
-- 🔍 Advanced filtering and search
-- 📊 Dependency graphs
-- 📄 Export blueprints to various formats
-- 🎨 Enhanced visualizations
+Thanks to the Power Platform community for inspiration, feedback, and the collective knowledge that shaped PPSB's feature set and use cases.
 
-## Architecture
+---
 
-The project follows a clean architecture pattern:
+## 🛣️ Roadmap Highlights
 
-1. **Core Layer** (`@ppsb/core`):
-   - Pure TypeScript, no framework dependencies
-   - Interfaces for extensibility (IDataverseClient)
-   - Business logic and data models
-   - Can be used in any JavaScript/TypeScript environment
+PPSB is under active development with exciting features planned:
 
-2. **Presentation Layer** (`@ppsb/pptb`):
-   - React-based UI
-   - Consumes @ppsb/core for all business logic
-   - Provides PPTB-specific integration via window.toolboxAPI
-   - Fluent UI for consistent Microsoft 365 design
+### Version 0.6 - Baseline Comparison & Automation
+- **Baseline Comparison**: Load previous JSON export and compare against current state
+- **Change Detection**: Identify added/removed/modified components with risk levels
+- **CLI Tool**: Command-line interface for automation (`ppsb generate`)
+- **CI/CD Integration**: GitHub Actions and Azure DevOps pipeline tasks
 
-## Contributing
+### Version 0.7 - Enhanced Analysis
+- **Impact Analysis**: "What if" scenarios (e.g., "What breaks if I delete this entity?")
+- **Unused Component Detection**: Find orphaned web resources, unused flows, etc.
+- **Business Process Mining**: Analyze actual flow execution data
+- **Custom Analysis Rules**: Define your own compliance and quality rules
 
-This is an internal tool. For questions or issues, please contact the development team.
+### Future Versions
+- Canvas App documentation enhancement
+- Power Pages integration analysis
+- Customer Insights - Journeys support
+- Performance benchmarking and recommendations
+- Multi-environment comparison
 
-## License
+📖 **[Full Roadmap](docs/roadmap.md)**
 
-MIT
+---
+
+## 📄 License
+
+[MIT License](LICENSE)
+
+Copyright © 2026 SAB. All rights reserved.
+
+---
+
+## 💬 Support
+
+- **Issues**: [GitHub Issues](https://github.com/sabrish/power-platform-solution-blueprint/issues) - Report bugs or request features
+- **Discussions**: [GitHub Discussions](https://github.com/sabrish/power-platform-solution-blueprint/discussions) - Ask questions and share ideas
+- **Documentation**: [docs/](docs/) - Comprehensive guides and examples
+
+---
+
+## 🌟 Quick Links
+
+- [Installation](#installation)
+- [User Guide](docs/user-guide.md)
+- [Architecture](docs/architecture.md)
+- [Roadmap](docs/roadmap.md)
+- [Changelog](CHANGELOG.md)
+- [Examples](docs/examples/)
+
+---
+
+**Made with ❤️ for the Power Platform community**

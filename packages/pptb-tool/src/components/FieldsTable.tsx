@@ -298,7 +298,7 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
       {attr.Description?.UserLocalizedLabel?.Label && (
         <div style={{ marginTop: tokens.spacingVerticalM }}>
           <Text className={styles.detailLabel}>Description</Text>
-          <Text>{attr.Description.UserLocalizedLabel.Label}</Text>
+          <Text className={styles.wrapText}>{attr.Description.UserLocalizedLabel.Label}</Text>
         </div>
       )}
 
