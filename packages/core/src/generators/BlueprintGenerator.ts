@@ -258,10 +258,10 @@ export class BlueprintGenerator {
       const workflowInventory = await componentDiscovery.classifyWorkflows(inventory.workflowIds);
 
       // Get entity metadata for discovered entities
-      // For Default Solution, query all unmanaged entities
+      // For Default Solution, query all entities (don't filter by managed status)
       const includesDefaultSolution = solutionUniqueNames.some(name => name.toLowerCase() === 'default');
       const entities = includesDefaultSolution
-        ? await entityDiscovery.getAllEntities(this.scope.includeSystem, true) // true = onlyUnmanaged
+        ? await entityDiscovery.getAllEntities(this.scope.includeSystem) // Get all entities
         : await entityDiscovery.getEntitiesByIds(inventory.entityIds);
 
       return { inventory, workflowInventory, entities };

@@ -179,7 +179,7 @@ export class SolutionComponentDiscovery {
   }
 
   /**
-   * Discover ALL unmanaged components (for Default Solution)
+   * Discover ALL components (for Default Solution)
    * Queries each component type directly instead of using solutioncomponents table
    */
   private async discoverAllUnmanagedComponents(): Promise<ComponentInventory> {
@@ -198,81 +198,74 @@ export class SolutionComponentDiscovery {
       customConnectorIds: [],
     };
 
-    console.log('🔍 Querying ALL unmanaged components across the environment...');
+    console.log('🔍 Querying ALL components across the environment (Default Solution)...');
 
     try {
-      // Query plugins (SDK Message Processing Steps) - unmanaged only
+      // Query plugins (SDK Message Processing Steps) - all plugins
       const pluginsResult = await this.client.query<{ sdkmessageprocessingstepid: string }>('sdkmessageprocessingsteps', {
         select: ['sdkmessageprocessingstepid'],
-        filter: 'ismanaged eq false',
       });
       inventory.pluginIds = pluginsResult.value.map(p => p.sdkmessageprocessingstepid.toLowerCase().replace(/[{}]/g, ''));
-      console.log(`🔌 Found ${inventory.pluginIds.length} unmanaged plugins`);
+      console.log(`🔌 Found ${inventory.pluginIds.length} plugins`);
 
-      // Query workflows (all categories) - unmanaged only
+      // Query workflows (all categories) - all workflows
       const workflowsResult = await this.client.query<{ workflowid: string }>('workflows', {
         select: ['workflowid'],
-        filter: 'ismanaged eq false',
       });
       inventory.workflowIds = workflowsResult.value.map(w => w.workflowid.toLowerCase().replace(/[{}]/g, ''));
-      console.log(`📋 Found ${inventory.workflowIds.length} unmanaged workflows`);
+      console.log(`📋 Found ${inventory.workflowIds.length} workflows`);
 
-      // Query web resources - unmanaged only
+      // Query web resources - all
       const webResourcesResult = await this.client.query<{ webresourceid: string }>('webresourceset', {
         select: ['webresourceid'],
-        filter: 'ismanaged eq false',
       });
       inventory.webResourceIds = webResourcesResult.value.map(w => w.webresourceid.toLowerCase().replace(/[{}]/g, ''));
-      console.log(`📦 Found ${inventory.webResourceIds.length} unmanaged web resources`);
+      console.log(`📦 Found ${inventory.webResourceIds.length} web resources`);
 
-      // Query custom APIs - unmanaged only
+      // Query custom APIs - all
       const customApisResult = await this.client.query<{ customapiid: string }>('customapis', {
         select: ['customapiid'],
-        filter: 'ismanaged eq false',
       });
       inventory.customApiIds = customApisResult.value.map(c => c.customapiid.toLowerCase().replace(/[{}]/g, ''));
-      console.log(`🔧 Found ${inventory.customApiIds.length} unmanaged custom APIs`);
+      console.log(`🔧 Found ${inventory.customApiIds.length} custom APIs`);
 
-      // Query environment variables - unmanaged only
+      // Query environment variables - all
       const envVarsResult = await this.client.query<{ environmentvariabledefinitionid: string }>('environmentvariabledefinitions', {
         select: ['environmentvariabledefinitionid'],
-        filter: 'ismanaged eq false',
       });
       inventory.environmentVariableIds = envVarsResult.value.map(e => e.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, ''));
-      console.log(`🌍 Found ${inventory.environmentVariableIds.length} unmanaged environment variables`);
+      console.log(`🌍 Found ${inventory.environmentVariableIds.length} environment variables`);
 
-      // Query connection references - unmanaged only
+      // Query connection references - all
       const connRefsResult = await this.client.query<{ connectionreferenceid: string }>('connectionreferences', {
         select: ['connectionreferenceid'],
-        filter: 'ismanaged eq false',
       });
       inventory.connectionReferenceIds = connRefsResult.value.map(c => c.connectionreferenceid.toLowerCase().replace(/[{}]/g, ''));
-      console.log(`🔗 Found ${inventory.connectionReferenceIds.length} unmanaged connection references`);
+      console.log(`🔗 Found ${inventory.connectionReferenceIds.length} connection references`);
 
-      // Query custom connectors - unmanaged only
+      // Query custom connectors - all customizable
       const customConnectorsResult = await this.client.query<{ connectorid: string }>('connectors', {
         select: ['connectorid'],
-        filter: 'ismanaged eq false and iscustomizable/Value eq true',
+        filter: 'iscustomizable/Value eq true',
       });
       inventory.customConnectorIds = customConnectorsResult.value.map(c => c.connectorid.toLowerCase().replace(/[{}]/g, ''));
-      console.log(`🔌 Found ${inventory.customConnectorIds.length} unmanaged custom connectors`);
+      console.log(`🔌 Found ${inventory.customConnectorIds.length} custom connectors`);
 
-      // Canvas apps and custom pages - unmanaged only
+      // Canvas apps - all
       const canvasAppsResult = await this.client.query<{ canvasappid: string }>('canvasapps', {
         select: ['canvasappid'],
-        filter: 'ismanaged eq false',
       });
       inventory.canvasAppIds = canvasAppsResult.value.map(c => c.canvasappid.toLowerCase().replace(/[{}]/g, ''));
-      console.log(`🎨 Found ${inventory.canvasAppIds.length} unmanaged canvas apps`);
+      console.log(`🎨 Found ${inventory.canvasAppIds.length} canvas apps`);
 
       // For entities and attributes, we'll use the metadata API via EntityDiscovery
       // These will be handled by the BlueprintGenerator's entity discovery process
       console.log('📊 Entity and attribute discovery will be handled by entity metadata queries');
 
-      console.log('✅ All unmanaged components discovered');
+      console.log('✅ All components discovered for Default Solution');
       return inventory;
     } catch (error) {
-      console.error('❌ Error discovering unmanaged components:', error);
+      console.error('❌ Error discovering components:', error);
       throw new Error(
         `Failed to discover unmanaged components: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
