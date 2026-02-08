@@ -44,6 +44,7 @@ export class SolutionComponentDiscovery {
         customPageIds: [],
         connectionReferenceIds: [],
         customApiIds: [],
+        environmentVariableIds: [],
       };
 
       // OPTIMIZED: Query all solution components in a single batch query using OR filters
@@ -119,6 +120,11 @@ export class SolutionComponentDiscovery {
                 inventory.customApiIds.push(objectId);
               }
               break;
+            case ComponentType.EnvironmentVariableDefinition:
+              if (!inventory.environmentVariableIds.includes(objectId)) {
+                inventory.environmentVariableIds.push(objectId);
+              }
+              break;
           }
         }
 
@@ -133,6 +139,7 @@ export class SolutionComponentDiscovery {
         customPages: inventory.customPageIds.length,
         connectionRefs: inventory.connectionReferenceIds.length,
         customApis: inventory.customApiIds.length,
+        envVars: inventory.environmentVariableIds.length,
       });
 
       console.log(`🔌 PLUGINS: Found ${inventory.pluginIds.length} plugin(s):`, inventory.pluginIds);

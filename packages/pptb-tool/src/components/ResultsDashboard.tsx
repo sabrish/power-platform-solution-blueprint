@@ -23,7 +23,7 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
 import { EntityList } from './EntityList';
@@ -36,6 +36,8 @@ import { BusinessProcessFlowsList } from './BusinessProcessFlowsList';
 import { BusinessProcessFlowDetailView } from './BusinessProcessFlowDetailView';
 import { CustomAPIsList } from './CustomAPIsList';
 import { CustomAPIDetailView } from './CustomAPIDetailView';
+import { EnvironmentVariablesList } from './EnvironmentVariablesList';
+import { EnvironmentVariableDetailView } from './EnvironmentVariableDetailView';
 
 const useStyles = makeStyles({
   container: {
@@ -140,6 +142,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [selectedClassicWorkflow, setSelectedClassicWorkflow] = useState<ClassicWorkflow | null>(null);
   const [selectedBPF, setSelectedBPF] = useState<BusinessProcessFlow | null>(null);
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
+  const [selectedEnvVar, setSelectedEnvVar] = useState<EnvironmentVariable | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -181,6 +184,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalBusinessProcessFlows > 0;
       case 'customAPIs':
         return result.summary.totalCustomAPIs > 0;
+      case 'environmentVariables':
+        return result.summary.totalEnvironmentVariables > 0;
       case 'webResources':
         return result.summary.totalWebResources > 0;
       case 'canvasApps':
@@ -209,6 +214,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalBusinessProcessFlows;
       case 'customAPIs':
         return result.summary.totalCustomAPIs;
+      case 'environmentVariables':
+        return result.summary.totalEnvironmentVariables;
       case 'webResources':
         return result.summary.totalWebResources;
       case 'canvasApps':
@@ -229,6 +236,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
     { key: 'classicWorkflows', label: 'Classic Workflows', icon: '⚠️' },
     { key: 'businessProcessFlows', label: 'Business Process Flows', icon: '🔄' },
     { key: 'customAPIs', label: 'Custom APIs', icon: '🔧' },
+    { key: 'environmentVariables', label: 'Environment Variables', icon: '🌍' },
     { key: 'webResources', label: 'Web Resources', icon: '🌐' },
     { key: 'canvasApps', label: 'Canvas Apps', icon: '🎨' },
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
@@ -389,6 +397,10 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
               <Tab value="customAPIs">{`Custom APIs (${result.summary.totalCustomAPIs})`}</Tab>
             )}
 
+            {hasResults('environmentVariables') && (
+              <Tab value="environmentVariables">{`Environment Variables (${result.summary.totalEnvironmentVariables})`}</Tab>
+            )}
+
             {hasResults('webResources') && (
               <Tab value="webResources">{`Web Resources (${result.summary.totalWebResources})`}</Tab>
             )}
@@ -483,6 +495,28 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                   <CustomAPIsList
                     customAPIs={result.customAPIs}
                     onSelectAPI={setSelectedCustomAPI}
+                  />
+                )}
+              </div>
+            )}
+
+            {selectedTab === 'environmentVariables' && hasResults('environmentVariables') && (
+              <div>
+                {selectedEnvVar ? (
+                  <div>
+                    <Button
+                      appearance="secondary"
+                      onClick={() => setSelectedEnvVar(null)}
+                      style={{ marginBottom: '16px' }}
+                    >
+                      ← Back to List
+                    </Button>
+                    <EnvironmentVariableDetailView envVar={selectedEnvVar} />
+                  </div>
+                ) : (
+                  <EnvironmentVariablesList
+                    environmentVariables={result.environmentVariables}
+                    onSelectVariable={setSelectedEnvVar}
                   />
                 )}
               </div>

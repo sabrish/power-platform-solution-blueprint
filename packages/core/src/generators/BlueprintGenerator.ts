@@ -135,6 +135,9 @@ export class BlueprintGenerator {
       // STEP 6.5: Process Custom APIs
       const customAPIs = await this.processCustomAPIs(inventory.customApiIds);
 
+      // STEP 6.6: Process Environment Variables
+      const environmentVariables = await this.processEnvironmentVariables(inventory.environmentVariableIds);
+
       // STEP 7: Process Forms and JavaScript Event Handlers
       const forms = await this.processForms(entities.map((e) => e.LogicalName));
       const formsByEntity = this.groupFormsByEntity(forms);
@@ -162,6 +165,7 @@ export class BlueprintGenerator {
         totalClassicWorkflows: workflowInventory.classicWorkflowIds.length,
         totalBusinessProcessFlows: workflowInventory.businessProcessFlowIds.length,
         totalCustomAPIs: inventory.customApiIds.length,
+        totalEnvironmentVariables: inventory.environmentVariableIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
         totalCanvasApps: inventory.canvasAppIds.length,
@@ -201,6 +205,7 @@ export class BlueprintGenerator {
         businessProcessFlows,
         businessProcessFlowsByEntity,
         customAPIs,
+        environmentVariables,
         webResources,
         webResourcesByType,
       };
@@ -251,6 +256,7 @@ export class BlueprintGenerator {
         customPageIds: [],
         connectionReferenceIds: [],
         customApiIds: [],
+        environmentVariableIds: [],
       };
 
       const workflowInventory: WorkflowInventory = {
@@ -356,7 +362,8 @@ export class BlueprintGenerator {
       inventory.canvasAppIds.length === 0 &&
       inventory.customPageIds.length === 0 &&
       inventory.connectionReferenceIds.length === 0 &&
-      inventory.customApiIds.length === 0
+      inventory.customApiIds.length === 0 &&
+      inventory.environmentVariableIds.length === 0
     );
   }
 
@@ -830,6 +837,47 @@ export class BlueprintGenerator {
       return customAPIs;
     } catch (error) {
       console.error('❌ Error processing Custom APIs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process Environment Variables
+   */
+  private async processEnvironmentVariables(envVarIds: string[]): Promise<import('../types/environmentVariable.js').EnvironmentVariable[]> {
+    console.log(`🌍 processEnvironmentVariables called with ${envVarIds.length} Environment Variable IDs`);
+
+    if (envVarIds.length === 0) {
+      console.log('🌍 No Environment Variables to process');
+      return [];
+    }
+
+    try {
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: 0,
+        total: envVarIds.length,
+        message: `🌍 Documenting ${envVarIds.length} Environment Variable(s)...`,
+      });
+
+      const { EnvironmentVariableDiscovery } = await import('../discovery/EnvironmentVariableDiscovery.js');
+      const envVarDiscovery = new EnvironmentVariableDiscovery(this.client);
+      const envVars = await envVarDiscovery.getEnvironmentVariablesByIds(envVarIds);
+
+      console.log(`🌍 Successfully retrieved ${envVars.length} Environment Variable(s)`);
+
+      this.reportProgress({
+        phase: 'discovering',
+        entityName: '',
+        current: envVarIds.length,
+        total: envVarIds.length,
+        message: `🌍 Documented ${envVars.length} Environment Variable(s)`,
+      });
+
+      return envVars;
+    } catch (error) {
+      console.error('❌ Error processing Environment Variables:', error);
       throw error;
     }
   }

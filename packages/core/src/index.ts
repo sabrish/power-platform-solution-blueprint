@@ -6,6 +6,8 @@ export type { BusinessProcessFlow, BPFDefinition, BPFStage, BPFStep } from './ty
 export { BPF_STATE_COLORS } from './types/businessProcessFlow.js';
 export type { CustomAPI, CustomAPIParameter, CustomAPIParameterType } from './types/customApi.js';
 export { CUSTOM_API_BINDING_COLORS, CUSTOM_API_TYPE_COLORS } from './types/customApi.js';
+export type { EnvironmentVariable, EnvironmentVariableValue, EnvironmentVariableType } from './types/environmentVariable.js';
+export { ENV_VAR_TYPE_COLORS } from './types/environmentVariable.js';
 export type {
   ProgressPhase,
   ProgressInfo,
@@ -61,6 +63,7 @@ export { FormDiscovery } from './discovery/FormDiscovery.js';
 export { ClassicWorkflowDiscovery } from './discovery/ClassicWorkflowDiscovery.js';
 export { BusinessProcessFlowDiscovery } from './discovery/BusinessProcessFlowDiscovery.js';
 export { CustomAPIDiscovery } from './discovery/CustomAPIDiscovery.js';
+export { EnvironmentVariableDiscovery } from './discovery/EnvironmentVariableDiscovery.js';
 
 // Generators
 export { BlueprintGenerator } from './generators/BlueprintGenerator.js';

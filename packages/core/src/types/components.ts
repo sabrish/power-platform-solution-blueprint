@@ -15,6 +15,7 @@ export interface ComponentInventory {
   customPageIds: string[];
   connectionReferenceIds: string[];
   customApiIds: string[];
+  environmentVariableIds: string[];
 }
 
 /**
@@ -44,6 +45,7 @@ export enum ComponentType {
   CustomPage = 10004,
   ConnectionReference = 371,
   CustomAPI = 10076,
+  EnvironmentVariableDefinition = 380,
 }
 
 /**
