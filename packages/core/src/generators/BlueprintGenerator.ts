@@ -144,6 +144,9 @@ export class BlueprintGenerator {
       // STEP 6.8: Process Global Choices (Option Sets)
       const globalChoices = await this.processGlobalChoices(inventory.globalChoiceIds);
 
+      // STEP 6.9: Process Custom Connectors
+      const customConnectors = await this.processCustomConnectors(inventory.customConnectorIds);
+
       // STEP 7: Process Forms and JavaScript Event Handlers
       const forms = await this.processForms(entities.map((e) => e.LogicalName));
       const formsByEntity = this.groupFormsByEntity(forms);
@@ -174,6 +177,7 @@ export class BlueprintGenerator {
         totalEnvironmentVariables: inventory.environmentVariableIds.length,
         totalConnectionReferences: inventory.connectionReferenceIds.length,
         totalGlobalChoices: inventory.globalChoiceIds.length,
+        totalCustomConnectors: inventory.customConnectorIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
         totalCanvasApps: inventory.canvasAppIds.length,
@@ -215,6 +219,7 @@ export class BlueprintGenerator {
         environmentVariables,
         connectionReferences,
         globalChoices,
+        customConnectors,
         webResources,
         webResourcesByType,
       };
@@ -267,6 +272,7 @@ export class BlueprintGenerator {
         customApiIds: [],
         environmentVariableIds: [],
         globalChoiceIds: [],
+        customConnectorIds: [],
       };
 
       const workflowInventory: WorkflowInventory = {
@@ -918,6 +924,21 @@ export class BlueprintGenerator {
       return choices;
     } catch (error) {
       console.error('❌ Error processing Global Choices:', error);
+      throw error;
+    }
+  }
+
+  private async processCustomConnectors(connectorIds: string[]): Promise<import('../types/customConnector.js').CustomConnector[]> {
+    if (connectorIds.length === 0) return [];
+    try {
+      this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connectorIds.length,
+        message: `🔌 Documenting ${connectorIds.length} Custom Connector(s)...` });
+      const { CustomConnectorDiscovery } = await import('../discovery/CustomConnectorDiscovery.js');
+      const discovery = new CustomConnectorDiscovery(this.client);
+      const connectors = await discovery.getConnectorsByIds(connectorIds);
+      return connectors;
+    } catch (error) {
+      console.error('❌ Error processing Custom Connectors:', error);
       throw error;
     }
   }

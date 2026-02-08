@@ -23,7 +23,7 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, GlobalChoice } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, GlobalChoice, CustomConnector } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -43,6 +43,8 @@ import { ConnectionReferencesList } from './ConnectionReferencesList';
 import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
 import { GlobalChoicesList } from './GlobalChoicesList';
 import { GlobalChoiceDetailView } from './GlobalChoiceDetailView';
+import { CustomConnectorsList } from './CustomConnectorsList';
+import { CustomConnectorDetailView } from './CustomConnectorDetailView';
 
 const useStyles = makeStyles({
   container: {
@@ -150,6 +152,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [selectedEnvVar, setSelectedEnvVar] = useState<EnvironmentVariable | null>(null);
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
   const [selectedGlobalChoice, setSelectedGlobalChoice] = useState<GlobalChoice | null>(null);
+  const [selectedCustomConnector, setSelectedCustomConnector] = useState<CustomConnector | null>(null);
 
   // Format timestamp
   const formattedDate = formatDate(result.metadata.generatedAt);
@@ -190,6 +193,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalConnectionReferences > 0;
       case 'globalChoices':
         return result.summary.totalGlobalChoices > 0;
+      case 'customConnectors':
+        return result.summary.totalCustomConnectors > 0;
       case 'webResources':
         return result.summary.totalWebResources > 0;
       case 'canvasApps':
@@ -224,6 +229,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalConnectionReferences;
       case 'globalChoices':
         return result.summary.totalGlobalChoices;
+      case 'customConnectors':
+        return result.summary.totalCustomConnectors;
       case 'webResources':
         return result.summary.totalWebResources;
       case 'canvasApps':
@@ -247,6 +254,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
     { key: 'environmentVariables', label: 'Environment Variables', icon: '🌍' },
     { key: 'connectionReferences', label: 'Connection References', icon: '🔗' },
     { key: 'globalChoices', label: 'Global Choices', icon: '📋' },
+    { key: 'customConnectors', label: 'Custom Connectors', icon: '🔌' },
     { key: 'webResources', label: 'Web Resources', icon: '🌐' },
     { key: 'canvasApps', label: 'Canvas Apps', icon: '🎨' },
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
@@ -575,6 +583,28 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                   <GlobalChoicesList
                     globalChoices={result.globalChoices}
                     onSelectChoice={setSelectedGlobalChoice}
+                  />
+                )}
+              </div>
+            )}
+
+            {selectedTab === 'customConnectors' && hasResults('customConnectors') && (
+              <div>
+                {selectedCustomConnector ? (
+                  <div>
+                    <Button
+                      appearance="secondary"
+                      onClick={() => setSelectedCustomConnector(null)}
+                      style={{ marginBottom: '16px' }}
+                    >
+                      ← Back to List
+                    </Button>
+                    <CustomConnectorDetailView customConnector={selectedCustomConnector} />
+                  </div>
+                ) : (
+                  <CustomConnectorsList
+                    customConnectors={result.customConnectors}
+                    onSelectConnector={setSelectedCustomConnector}
                   />
                 )}
               </div>

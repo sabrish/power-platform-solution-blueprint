@@ -17,6 +17,7 @@ export interface ComponentInventory {
   customApiIds: string[];
   environmentVariableIds: string[];
   globalChoiceIds: string[];
+  customConnectorIds: string[];
 }
 
 /**
@@ -46,6 +47,7 @@ export enum ComponentType {
   CanvasApp = 300,
   CustomPage = 10004,
   ConnectionReference = 371,
+  CustomConnector = 372,
   CustomAPI = 10076,
   EnvironmentVariableDefinition = 380,
 }
