@@ -460,11 +460,11 @@ export interface BlueprintSummary {
   totalBusinessProcessFlows: number;
   totalCustomAPIs: number;
   totalEnvironmentVariables: number;
+  totalConnectionReferences: number;
   totalAttributes: number;
   totalWebResources: number;
   totalCanvasApps: number;
   totalCustomPages: number;
-  totalConnectionReferences: number;
 }
 
 /**
@@ -499,6 +499,7 @@ export interface BlueprintResult {
   businessProcessFlowsByEntity: Map<string, import('./businessProcessFlow.js').BusinessProcessFlow[]>;
   customAPIs: import('./customApi.js').CustomAPI[];
   environmentVariables: import('./environmentVariable.js').EnvironmentVariable[];
+  connectionReferences: import('./connectionReference.js').ConnectionReference[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
 }

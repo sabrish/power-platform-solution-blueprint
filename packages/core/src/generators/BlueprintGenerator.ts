@@ -138,6 +138,9 @@ export class BlueprintGenerator {
       // STEP 6.6: Process Environment Variables
       const environmentVariables = await this.processEnvironmentVariables(inventory.environmentVariableIds);
 
+      // STEP 6.7: Process Connection References
+      const connectionReferences = await this.processConnectionReferences(inventory.connectionReferenceIds);
+
       // STEP 7: Process Forms and JavaScript Event Handlers
       const forms = await this.processForms(entities.map((e) => e.LogicalName));
       const formsByEntity = this.groupFormsByEntity(forms);
@@ -166,11 +169,11 @@ export class BlueprintGenerator {
         totalBusinessProcessFlows: workflowInventory.businessProcessFlowIds.length,
         totalCustomAPIs: inventory.customApiIds.length,
         totalEnvironmentVariables: inventory.environmentVariableIds.length,
+        totalConnectionReferences: inventory.connectionReferenceIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
         totalCanvasApps: inventory.canvasAppIds.length,
         totalCustomPages: inventory.customPageIds.length,
-        totalConnectionReferences: inventory.connectionReferenceIds.length,
       };
 
       // Complete
@@ -206,6 +209,7 @@ export class BlueprintGenerator {
         businessProcessFlowsByEntity,
         customAPIs,
         environmentVariables,
+        connectionReferences,
         webResources,
         webResourcesByType,
       };
@@ -878,6 +882,21 @@ export class BlueprintGenerator {
       return envVars;
     } catch (error) {
       console.error('❌ Error processing Environment Variables:', error);
+      throw error;
+    }
+  }
+
+  private async processConnectionReferences(connRefIds: string[]): Promise<import('../types/connectionReference.js').ConnectionReference[]> {
+    if (connRefIds.length === 0) return [];
+    try {
+      this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connRefIds.length,
+        message: `🔗 Documenting ${connRefIds.length} Connection Reference(s)...` });
+      const { ConnectionReferenceDiscovery } = await import('../discovery/ConnectionReferenceDiscovery.js');
+      const discovery = new ConnectionReferenceDiscovery(this.client);
+      const refs = await discovery.getConnectionReferencesByIds(connRefIds);
+      return refs;
+    } catch (error) {
+      console.error('❌ Error processing Connection References:', error);
       throw error;
     }
   }

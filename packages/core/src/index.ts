@@ -8,6 +8,8 @@ export type { CustomAPI, CustomAPIParameter, CustomAPIParameterType } from './ty
 export { CUSTOM_API_BINDING_COLORS, CUSTOM_API_TYPE_COLORS } from './types/customApi.js';
 export type { EnvironmentVariable, EnvironmentVariableValue, EnvironmentVariableType } from './types/environmentVariable.js';
 export { ENV_VAR_TYPE_COLORS } from './types/environmentVariable.js';
+export type { ConnectionReference } from './types/connectionReference.js';
+export { CONNECTION_STATUS_COLORS } from './types/connectionReference.js';
 export type {
   ProgressPhase,
   ProgressInfo,
@@ -64,6 +66,7 @@ export { ClassicWorkflowDiscovery } from './discovery/ClassicWorkflowDiscovery.j
 export { BusinessProcessFlowDiscovery } from './discovery/BusinessProcessFlowDiscovery.js';
 export { CustomAPIDiscovery } from './discovery/CustomAPIDiscovery.js';
 export { EnvironmentVariableDiscovery } from './discovery/EnvironmentVariableDiscovery.js';
+export { ConnectionReferenceDiscovery } from './discovery/ConnectionReferenceDiscovery.js';
 
 // Generators
 export { BlueprintGenerator } from './generators/BlueprintGenerator.js';

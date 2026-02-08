@@ -23,7 +23,7 @@ import {
   ArrowDownload24Regular,
   ArrowReset24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { PluginsList } from './PluginsList';
 import { EntityList } from './EntityList';
@@ -38,6 +38,8 @@ import { CustomAPIsList } from './CustomAPIsList';
 import { CustomAPIDetailView } from './CustomAPIDetailView';
 import { EnvironmentVariablesList } from './EnvironmentVariablesList';
 import { EnvironmentVariableDetailView } from './EnvironmentVariableDetailView';
+import { ConnectionReferencesList } from './ConnectionReferencesList';
+import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
 
 const useStyles = makeStyles({
   container: {
@@ -143,6 +145,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
   const [selectedBPF, setSelectedBPF] = useState<BusinessProcessFlow | null>(null);
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
   const [selectedEnvVar, setSelectedEnvVar] = useState<EnvironmentVariable | null>(null);
+  const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
 
   // Format timestamp
   const formattedDate = result.metadata.generatedAt.toLocaleDateString('en-US', {
@@ -186,6 +189,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalCustomAPIs > 0;
       case 'environmentVariables':
         return result.summary.totalEnvironmentVariables > 0;
+      case 'connectionReferences':
+        return result.summary.totalConnectionReferences > 0;
       case 'webResources':
         return result.summary.totalWebResources > 0;
       case 'canvasApps':
@@ -216,6 +221,8 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
         return result.summary.totalCustomAPIs;
       case 'environmentVariables':
         return result.summary.totalEnvironmentVariables;
+      case 'connectionReferences':
+        return result.summary.totalConnectionReferences;
       case 'webResources':
         return result.summary.totalWebResources;
       case 'canvasApps':
@@ -237,6 +244,7 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
     { key: 'businessProcessFlows', label: 'Business Process Flows', icon: '🔄' },
     { key: 'customAPIs', label: 'Custom APIs', icon: '🔧' },
     { key: 'environmentVariables', label: 'Environment Variables', icon: '🌍' },
+    { key: 'connectionReferences', label: 'Connection References', icon: '🔗' },
     { key: 'webResources', label: 'Web Resources', icon: '🌐' },
     { key: 'canvasApps', label: 'Canvas Apps', icon: '🎨' },
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
@@ -401,6 +409,10 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
               <Tab value="environmentVariables">{`Environment Variables (${result.summary.totalEnvironmentVariables})`}</Tab>
             )}
 
+            {hasResults('connectionReferences') && (
+              <Tab value="connectionReferences">{`Connection References (${result.summary.totalConnectionReferences})`}</Tab>
+            )}
+
             {hasResults('webResources') && (
               <Tab value="webResources">{`Web Resources (${result.summary.totalWebResources})`}</Tab>
             )}
@@ -517,6 +529,28 @@ export function ResultsDashboard({ result, scope, onStartOver, onExport }: Resul
                   <EnvironmentVariablesList
                     environmentVariables={result.environmentVariables}
                     onSelectVariable={setSelectedEnvVar}
+                  />
+                )}
+              </div>
+            )}
+
+            {selectedTab === 'connectionReferences' && hasResults('connectionReferences') && (
+              <div>
+                {selectedConnRef ? (
+                  <div>
+                    <Button
+                      appearance="secondary"
+                      onClick={() => setSelectedConnRef(null)}
+                      style={{ marginBottom: '16px' }}
+                    >
+                      ← Back to List
+                    </Button>
+                    <ConnectionReferenceDetailView connectionRef={selectedConnRef} />
+                  </div>
+                ) : (
+                  <ConnectionReferencesList
+                    connectionReferences={result.connectionReferences}
+                    onSelectReference={setSelectedConnRef}
                   />
                 )}
               </div>
