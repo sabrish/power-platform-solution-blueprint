@@ -65,14 +65,17 @@ export class GlobalChoiceDiscovery {
       // Fetch each global option set individually from metadata API
       for (const id of ids) {
         try {
-          // Query metadata for this specific global option set
-          const filter = `MetadataId eq ${id}`;
-          const response = await this.client.queryMetadata<RawGlobalOptionSet>('GlobalOptionSetDefinitions', {
-            filter,
-          });
+          // Query metadata by MetadataId - $filter not supported on GlobalOptionSetDefinitions
+          // Use direct path query instead: GlobalOptionSetDefinitions(MetadataId)
+          const cleanId = id.replace(/[{}]/g, '');
+          const response = await this.client.queryMetadata<RawGlobalOptionSet>(`GlobalOptionSetDefinitions(${cleanId})`, {});
 
-          if (response.value && response.value.length > 0) {
+          // Direct path query returns single object, not array
+          if (response.value && Array.isArray(response.value) && response.value.length > 0) {
             globalChoices.push(this.mapToGlobalChoice(response.value[0]));
+          } else if (response.value && !Array.isArray(response.value)) {
+            // Handle case where API returns single object instead of array
+            globalChoices.push(this.mapToGlobalChoice(response.value as any));
           }
         } catch (error) {
           console.warn(`Failed to fetch global choice ${id}:`, error);

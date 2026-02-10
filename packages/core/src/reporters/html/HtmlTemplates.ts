@@ -2659,7 +2659,6 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Rule Name</th>
             <th>Entity</th>
             <th>Attribute</th>
             <th>Masking Type</th>
@@ -2672,8 +2671,7 @@ ${this.embeddedJavaScript()}
       const maskingType = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
       html += `
           <tr>
-            <td><strong>${this.escapeHtml(rule.name)}</strong></td>
-            <td>${this.escapeHtml(rule.entitylogicalname)}</td>
+            <td><strong>${this.escapeHtml(rule.entitylogicalname)}</strong></td>
             <td>${this.escapeHtml(rule.attributelogicalname)}</td>
             <td><span class="badge">${maskingType}</span></td>
             <td>${rule.ismanaged ? '<span class="badge">Managed</span>' : ''}</td>
