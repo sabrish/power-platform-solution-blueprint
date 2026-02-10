@@ -1,6 +1,6 @@
 # PPSB User Guide
 
-Complete guide for using Power Platform System Blueprint (PPSB) v0.5
+Complete guide for using Power Platform Solution Blueprint (PPSB) v0.5
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ Complete guide for using Power Platform System Blueprint (PPSB) v0.5
 
 ## 1. Introduction
 
-PPSB (Power Platform System Blueprint) generates comprehensive architectural documentation for your Power Platform systems automatically. Instead of spending weeks manually documenting entities, plugins, flows, and dependencies, PPSB discovers everything in minutes and produces production-ready documentation.
+PPSB (Power Platform Solution Blueprint) generates comprehensive architectural documentation for your Power Platform systems automatically. Instead of spending weeks manually documenting entities, plugins, flows, and dependencies, PPSB discovers everything in minutes and produces production-ready documentation.
 
 ###What PPSB Does
 
@@ -62,7 +62,7 @@ After running PPSB, you'll have:
 1. Open **PPTB Desktop**
 2. Ensure you're connected to your Dataverse environment
 3. Navigate to the **Tools** section
-4. Click **Power Platform System Blueprint (PPSB)**
+4. Click **Power Platform Solution Blueprint (PPSB)**
 5. Wait for PPSB to load (2-5 seconds)
 
 ### First-Time Setup

@@ -15,10 +15,9 @@ import {
 import {
   CheckmarkCircle24Regular,
   ArrowDownload24Regular,
-  ArrowReset24Regular,
-  ChartMultiple24Regular,
+  ArrowLeft24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, GlobalChoice, CustomConnector } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, CustomConnector } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -37,12 +36,16 @@ import { EnvironmentVariableDetailView } from './EnvironmentVariableDetailView';
 import { ConnectionReferencesList } from './ConnectionReferencesList';
 import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
 import { GlobalChoicesList } from './GlobalChoicesList';
-import { GlobalChoiceDetailView } from './GlobalChoiceDetailView';
 import { CustomConnectorsList } from './CustomConnectorsList';
 import { CustomConnectorDetailView } from './CustomConnectorDetailView';
-import { ArchitectureView } from './ArchitectureView';
+import { ERDView } from './ERDView';
+import { CrossEntityMapView } from './CrossEntityMapView';
+import { ExternalDependenciesView } from './ExternalDependenciesView';
+import { SolutionDistributionView } from './SolutionDistributionView';
 import { ExportDialog } from './ExportDialog';
-import { SecurityOverview } from './SecurityOverview';
+import { SecurityRolesView } from './SecurityRolesView';
+import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
+import { Footer } from './Footer';
 
 const useStyles = makeStyles({
   container: {
@@ -50,13 +53,22 @@ const useStyles = makeStyles({
     maxWidth: '1400px',
     margin: '0 auto',
   },
+  backButton: {
+    marginBottom: tokens.spacingVerticalL,
+  },
   header: {
-    marginBottom: tokens.spacingVerticalXXL,
+    marginBottom: tokens.spacingVerticalL,
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
+    gap: tokens.spacingVerticalS,
   },
   titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: tokens.spacingHorizontalM,
+  },
+  titleContent: {
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalM,
@@ -70,32 +82,26 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalXS,
     color: tokens.colorNeutralForeground3,
   },
-  actionButtons: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    marginTop: tokens.spacingVerticalS,
-    flexWrap: 'wrap',
+  mainTabsSection: {
+    marginTop: tokens.spacingVerticalXL,
+  },
+  tabContent: {
+    marginTop: tokens.spacingVerticalL,
   },
   section: {
     marginBottom: tokens.spacingVerticalL,
   },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-    gap: tokens.spacingHorizontalS,
-    marginTop: tokens.spacingVerticalM,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+    gap: tokens.spacingHorizontalXS,
+    marginTop: tokens.spacingVerticalS,
   },
   summaryCard: {
-    padding: tokens.spacingVerticalM,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: tokens.shadow8,
-    },
+    padding: tokens.spacingVerticalS,
   },
   summaryCardDisabled: {
-    padding: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalS,
     opacity: 0.5,
     cursor: 'default',
   },
@@ -107,12 +113,12 @@ const useStyles = makeStyles({
     textAlign: 'center',
   },
   summaryCount: {
-    fontSize: tokens.fontSizeHero700,
+    fontSize: tokens.fontSizeHero800,
     fontWeight: tokens.fontWeightSemibold,
-    lineHeight: tokens.lineHeightHero700,
+    lineHeight: tokens.lineHeightHero800,
   },
   summaryLabel: {
-    fontSize: tokens.fontSizeBase200,
+    fontSize: tokens.fontSizeBase100,
     color: tokens.colorNeutralForeground2,
   },
   warningsContainer: {
@@ -143,7 +149,7 @@ export interface ResultsDashboardProps {
 
 export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOver }: ResultsDashboardProps) {
   const styles = useStyles();
-  const [showArchitectureView, setShowArchitectureView] = useState(false);
+  const [mainTab, setMainTab] = useState<string>('dashboard');
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>('entities');
   const [selectedClassicWorkflow, setSelectedClassicWorkflow] = useState<ClassicWorkflow | null>(null);
@@ -151,26 +157,13 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
   const [selectedEnvVar, setSelectedEnvVar] = useState<EnvironmentVariable | null>(null);
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
-  const [selectedGlobalChoice, setSelectedGlobalChoice] = useState<GlobalChoice | null>(null);
   const [selectedCustomConnector, setSelectedCustomConnector] = useState<CustomConnector | null>(null);
 
-  // Check if architecture features are available
-  const hasArchitectureFeatures = !!(
-    result.erd ||
-    (result.crossEntityLinks && result.crossEntityLinks.length > 0) ||
-    (result.externalEndpoints && result.externalEndpoints.length > 0) ||
-    (result.solutionDistribution && result.solutionDistribution.length > 0)
-  );
-
-  // If showing architecture view, render that instead
-  if (showArchitectureView) {
-    return (
-      <ArchitectureView
-        result={result}
-        onBack={() => setShowArchitectureView(false)}
-      />
-    );
-  }
+  // Check what architecture features are available
+  const hasERD = !!result.erd;
+  const hasCrossEntity = !!(result.crossEntityLinks && result.crossEntityLinks.length > 0);
+  const hasExternalDeps = !!(result.externalEndpoints && result.externalEndpoints.length > 0);
+  const hasSolutionDist = !!(result.solutionDistribution && result.solutionDistribution.length > 0);
 
   // Format timestamp
   const formattedDate = formatDate(result.metadata.generatedAt);
@@ -217,8 +210,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         return result.summary.totalCustomConnectors > 0;
       case 'webResources':
         return result.summary.totalWebResources > 0;
-      case 'canvasApps':
-        return result.summary.totalCanvasApps > 0;
+      case 'securityRoles':
+        return (result.securityRoles?.length ?? 0) > 0;
+      case 'fieldSecurityProfiles':
+        return (result.fieldSecurityProfiles?.length ?? 0) > 0;
       case 'customPages':
         return result.summary.totalCustomPages > 0;
       default:
@@ -255,8 +250,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         return result.summary.totalCustomConnectors;
       case 'webResources':
         return result.summary.totalWebResources;
-      case 'canvasApps':
-        return result.summary.totalCanvasApps;
+      case 'securityRoles':
+        return result.securityRoles?.length ?? 0;
+      case 'fieldSecurityProfiles':
+        return result.fieldSecurityProfiles?.length ?? 0;
       case 'customPages':
         return result.summary.totalCustomPages;
       default:
@@ -274,23 +271,43 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
     { key: 'classicWorkflows', label: 'Classic Workflows', icon: '⚠️' },
     { key: 'businessProcessFlows', label: 'Business Process Flows', icon: '🔄' },
     { key: 'customAPIs', label: 'Custom APIs', icon: '🔧' },
-    { key: 'environmentVariables', label: 'Environment Variables', icon: '🌍' },
+    { key: 'environmentVariables', label: 'Environment Variables', icon: '⚙️' },
     { key: 'connectionReferences', label: 'Connection References', icon: '🔗' },
-    { key: 'globalChoices', label: 'Global Choices', icon: '📋' },
-    { key: 'customConnectors', label: 'Custom Connectors', icon: '🔌' },
+    { key: 'globalChoices', label: 'Global Choices', icon: '🎯' },
+    { key: 'customConnectors', label: 'Custom Connectors', icon: '🔀' },
     { key: 'webResources', label: 'Web Resources', icon: '🌐' },
-    { key: 'canvasApps', label: 'Canvas Apps', icon: '🎨' },
+    { key: 'securityRoles', label: 'Security Roles', icon: '🔒' },
+    { key: 'fieldSecurityProfiles', label: 'Field Security Profiles', icon: '🛡️' },
     { key: 'customPages', label: 'Custom Pages', icon: '📄' },
   ];
 
 
   return (
     <div className={styles.container}>
+      {/* Back Button */}
+      <Button
+        className={styles.backButton}
+        appearance="subtle"
+        icon={<ArrowLeft24Regular />}
+        onClick={onStartOver}
+      >
+        Generate New Blueprint
+      </Button>
+
       {/* SECTION 1: Header */}
       <div className={styles.header}>
         <div className={styles.titleRow}>
-          <CheckmarkCircle24Regular className={styles.checkIcon} />
-          <Title2>System Blueprint Generated</Title2>
+          <div className={styles.titleContent}>
+            <CheckmarkCircle24Regular className={styles.checkIcon} />
+            <Title2>Solution Blueprint Generated</Title2>
+          </div>
+          <Button
+            appearance="primary"
+            icon={<ArrowDownload24Regular />}
+            onClick={() => setShowExportDialog(true)}
+          >
+            Export
+          </Button>
         </div>
 
         <div className={styles.metadata}>
@@ -298,63 +315,67 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             {formattedDate} at {formattedTime} • {scopeDescription()}
           </Text>
         </div>
+      </div>
 
-        <div className={styles.actionButtons}>
-          {hasArchitectureFeatures && (
-            <Button
-              appearance="primary"
-              icon={<ChartMultiple24Regular />}
-              onClick={() => setShowArchitectureView(true)}
-            >
-              View Architecture Analysis
-            </Button>
+      {/* Main Tabs */}
+      <div className={styles.mainTabsSection}>
+        <TabList
+          selectedValue={mainTab}
+          onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
+            setMainTab(data.value as string);
+          }}
+        >
+          <Tab value="dashboard">📊 Dashboard</Tab>
+
+          {hasERD && (
+            <Tab value="erd">📐 Entity Relationship Diagram</Tab>
           )}
-          <Button
-            appearance={hasArchitectureFeatures ? "secondary" : "primary"}
-            icon={<ArrowDownload24Regular />}
-            onClick={() => setShowExportDialog(true)}
-          >
-            Export
-          </Button>
-          <Button
-            appearance="secondary"
-            icon={<ArrowReset24Regular />}
-            onClick={onStartOver}
-          >
-            Generate New Blueprint
-          </Button>
-        </div>
+
+          {hasCrossEntity && (
+            <Tab value="crossEntity">🔗 Cross-Entity Automation</Tab>
+          )}
+
+          {hasExternalDeps && (
+            <Tab value="externalDeps">🌐 External Dependencies</Tab>
+          )}
+
+          {hasSolutionDist && (
+            <Tab value="solutionDist">📦 Solution Distribution</Tab>
+          )}
+        </TabList>
       </div>
 
-      {/* SECTION 2: Discovery Summary */}
-      <div className={styles.section}>
-        <Card>
-          <Title3>Component Summary</Title3>
-          <div className={styles.summaryGrid}>
-            {componentTypes.map((type) => {
-              const count = getCount(type.key);
-              const hasData = count > 0;
+      {/* Dashboard Tab Content */}
+      {mainTab === 'dashboard' && (
+        <>
+          {/* SECTION 2: Discovery Summary */}
+          <div className={styles.section}>
+            <Card>
+              <Title3>Component Summary</Title3>
+              <div className={styles.summaryGrid}>
+                {componentTypes.map((type) => {
+                  const count = getCount(type.key);
+                  const hasData = count > 0;
 
-              return (
-                <Card
-                  key={type.key}
-                  className={hasData ? styles.summaryCard : styles.summaryCardDisabled}
-                  appearance={hasData ? 'filled' : 'outline'}
-                >
-                  <div className={styles.summaryCardContent}>
-                    <Text style={{ fontSize: '20px' }}>{type.icon}</Text>
-                    <Text className={styles.summaryCount}>{count}</Text>
-                    <Text className={styles.summaryLabel}>{type.label}</Text>
-                  </div>
-                </Card>
-              );
-            })}
+                  return (
+                    <Card
+                      key={type.key}
+                      className={hasData ? styles.summaryCard : styles.summaryCardDisabled}
+                      appearance={hasData ? 'filled' : 'outline'}
+                    >
+                      <div className={styles.summaryCardContent}>
+                        <Text style={{ fontSize: '18px' }}>{type.icon}</Text>
+                        <Text className={styles.summaryCount}>{count}</Text>
+                        <Text className={styles.summaryLabel}>{type.label}</Text>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
 
-
-      {/* SECTION 4: Entity Browser (Tabbed Interface) */}
+          {/* SECTION 3: Component Browser (Tabbed Interface) */}
       <div className={styles.browserSection}>
         <Card>
           <Title3>Component Browser</Title3>
@@ -363,21 +384,26 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
               setSelectedTab(data.value as string);
             }}
+            size="small"
+            style={{
+              flexWrap: 'wrap',
+              gap: tokens.spacingHorizontalS
+            }}
           >
             {/* Entities Tab - Always shown */}
-            <Tab value="entities">{`Entities (${result.summary.totalEntities})`}</Tab>
+            <Tab value="entities">{`📊 Entities (${result.summary.totalEntities})`}</Tab>
 
             {/* Conditional Tabs */}
             {hasResults('plugins') && (
-              <Tab value="plugins">{`Plugins (${result.summary.totalPlugins})`}</Tab>
+              <Tab value="plugins">{`🔌 Plugins (${result.summary.totalPlugins})`}</Tab>
             )}
 
             {hasResults('flows') && (
-              <Tab value="flows">{`Flows (${result.summary.totalFlows})`}</Tab>
+              <Tab value="flows">{`🌊 Flows (${result.summary.totalFlows})`}</Tab>
             )}
 
             {hasResults('businessRules') && (
-              <Tab value="businessRules">{`Business Rules (${result.summary.totalBusinessRules})`}</Tab>
+              <Tab value="businessRules">{`📋 Business Rules (${result.summary.totalBusinessRules})`}</Tab>
             )}
 
             {hasResults('classicWorkflows') && (
@@ -385,35 +411,43 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {hasResults('businessProcessFlows') && (
-              <Tab value="businessProcessFlows">{`Business Process Flows (${result.summary.totalBusinessProcessFlows})`}</Tab>
+              <Tab value="businessProcessFlows">{`🔄 Business Process Flows (${result.summary.totalBusinessProcessFlows})`}</Tab>
             )}
 
             {hasResults('customAPIs') && (
-              <Tab value="customAPIs">{`Custom APIs (${result.summary.totalCustomAPIs})`}</Tab>
+              <Tab value="customAPIs">{`🔧 Custom APIs (${result.summary.totalCustomAPIs})`}</Tab>
             )}
 
             {hasResults('environmentVariables') && (
-              <Tab value="environmentVariables">{`Environment Variables (${result.summary.totalEnvironmentVariables})`}</Tab>
+              <Tab value="environmentVariables">{`⚙️ Environment Variables (${result.summary.totalEnvironmentVariables})`}</Tab>
             )}
 
             {hasResults('connectionReferences') && (
-              <Tab value="connectionReferences">{`Connection References (${result.summary.totalConnectionReferences})`}</Tab>
+              <Tab value="connectionReferences">{`🔗 Connection References (${result.summary.totalConnectionReferences})`}</Tab>
+            )}
+
+            {hasResults('globalChoices') && (
+              <Tab value="globalChoices">{`🎯 Global Choices (${result.summary.totalGlobalChoices})`}</Tab>
+            )}
+
+            {hasResults('customConnectors') && (
+              <Tab value="customConnectors">{`🔀 Custom Connectors (${result.summary.totalCustomConnectors})`}</Tab>
             )}
 
             {hasResults('webResources') && (
-              <Tab value="webResources">{`Web Resources (${result.summary.totalWebResources})`}</Tab>
+              <Tab value="webResources">{`🌐 Web Resources (${result.summary.totalWebResources})`}</Tab>
             )}
 
-            {hasResults('canvasApps') && (
-              <Tab value="canvasApps">{`Canvas Apps (${result.summary.totalCanvasApps})`}</Tab>
+            {hasResults('securityRoles') && (
+              <Tab value="securityRoles">{`🔒 Security Roles (${getCount('securityRoles')})`}</Tab>
+            )}
+
+            {hasResults('fieldSecurityProfiles') && (
+              <Tab value="fieldSecurityProfiles">{`🛡️ Field Security Profiles (${getCount('fieldSecurityProfiles')})`}</Tab>
             )}
 
             {hasResults('customPages') && (
-              <Tab value="customPages">{`Custom Pages (${result.summary.totalCustomPages})`}</Tab>
-            )}
-
-            {((result.securityRoles?.length ?? 0) > 0 || (result.fieldSecurityProfiles?.length ?? 0) > 0) && (
-              <Tab value="security">{`🔒 Security (${(result.securityRoles?.length ?? 0) + (result.fieldSecurityProfiles?.length ?? 0)})`}</Tab>
+              <Tab value="customPages">{`📄 Custom Pages (${result.summary.totalCustomPages})`}</Tab>
             )}
           </TabList>
 
@@ -548,25 +582,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'globalChoices' && hasResults('globalChoices') && (
-              <div>
-                {selectedGlobalChoice ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedGlobalChoice(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <GlobalChoiceDetailView globalChoice={selectedGlobalChoice} />
-                  </div>
-                ) : (
-                  <GlobalChoicesList
-                    globalChoices={result.globalChoices}
-                    onSelectChoice={setSelectedGlobalChoice}
-                  />
-                )}
-              </div>
+              <GlobalChoicesList
+                globalChoices={result.globalChoices}
+                onSelectChoice={() => {}} // Unused - list handles expansion internally
+              />
             )}
 
             {selectedTab === 'customConnectors' && hasResults('customConnectors') && (
@@ -595,12 +614,16 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
               <WebResourcesList webResources={result.webResources} />
             )}
 
-            {selectedTab === 'canvasApps' && hasResults('canvasApps') && (
-              <div className={styles.emptyState}>
-                <Text style={{ fontSize: '48px' }}>🎨</Text>
-                <Title3>Canvas Apps</Title3>
-                <Text>Canvas apps browser coming soon...</Text>
-              </div>
+            {selectedTab === 'securityRoles' && hasResults('securityRoles') && (
+              <SecurityRolesView securityRoles={result.securityRoles || []} />
+            )}
+
+            {selectedTab === 'fieldSecurityProfiles' && hasResults('fieldSecurityProfiles') && (
+              <FieldSecurityProfilesView
+                profiles={result.fieldSecurityProfiles || []}
+                attributeMaskingRules={result.attributeMaskingRules}
+                columnSecurityProfiles={result.columnSecurityProfiles}
+              />
             )}
 
             {selectedTab === 'customPages' && hasResults('customPages') && (
@@ -610,18 +633,39 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                 <Text>Custom pages browser coming soon...</Text>
               </div>
             )}
-
-            {selectedTab === 'security' && ((result.securityRoles?.length ?? 0) > 0 || (result.fieldSecurityProfiles?.length ?? 0) > 0) && (
-              <SecurityOverview
-                securityRoles={result.securityRoles || []}
-                fieldSecurityProfiles={result.fieldSecurityProfiles || []}
-                attributeMaskingRules={result.attributeMaskingRules}
-                columnSecurityProfiles={result.columnSecurityProfiles}
-              />
-            )}
           </div>
         </Card>
       </div>
+        </>
+      )}
+
+      {/* ERD Tab Content */}
+      {mainTab === 'erd' && hasERD && (
+        <div className={styles.tabContent}>
+          <ERDView erd={result.erd!} blueprintResult={result} />
+        </div>
+      )}
+
+      {/* Cross-Entity Automation Tab Content */}
+      {mainTab === 'crossEntity' && hasCrossEntity && (
+        <div className={styles.tabContent}>
+          <CrossEntityMapView links={result.crossEntityLinks!} />
+        </div>
+      )}
+
+      {/* External Dependencies Tab Content */}
+      {mainTab === 'externalDeps' && hasExternalDeps && (
+        <div className={styles.tabContent}>
+          <ExternalDependenciesView endpoints={result.externalEndpoints!} />
+        </div>
+      )}
+
+      {/* Solution Distribution Tab Content */}
+      {mainTab === 'solutionDist' && hasSolutionDist && (
+        <div className={styles.tabContent}>
+          <SolutionDistributionView distributions={result.solutionDistribution!} />
+        </div>
+      )}
 
       {/* Export Dialog */}
       <ExportDialog
@@ -630,6 +674,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         blueprintGenerator={blueprintGenerator}
         onClose={() => setShowExportDialog(false)}
       />
+
+      <Footer />
     </div>
   );
 }

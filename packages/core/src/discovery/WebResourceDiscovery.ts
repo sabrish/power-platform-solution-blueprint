@@ -34,20 +34,14 @@ export class WebResourceDiscovery {
       return [];
     }
 
-    console.log(`📦 Fetching ${resourceIds.length} web resource(s)...`);
-
     try {
       const batchSize = 20;
       const allResults: WebResourceRecord[] = [];
-
-      console.log(`📋 Querying ${resourceIds.length} Web Resources in batches of ${batchSize}...`);
 
       for (let i = 0; i < resourceIds.length; i += batchSize) {
         const batch = resourceIds.slice(i, i + batchSize);
         const filterClauses = batch.map((id) => `webresourceid eq ${id}`);
         const filter = filterClauses.join(' or ');
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Web Resources...`);
 
         const response = await this.client.query<WebResourceRecord>('webresourceset', {
           select: [
@@ -72,22 +66,11 @@ export class WebResourceDiscovery {
         }
       }
 
-      console.log(`📋 Total Web Resources retrieved: ${allResults.length}`);
-
-      // Log web resource details for debugging
-      if (allResults.length > 0) {
-        console.log('📦 Web Resources in solution:');
-        allResults.forEach(wr => {
-          console.log(`   - ${wr.name} (Type: ${this.getTypeName(wr.webresourcetype)}, ID: ${wr.webresourceid})`);
-        });
-      }
-
       // Map to WebResource objects
       const webResources = allResults.map((record) => this.mapRecordToWebResource(record));
 
       return webResources;
     } catch (error) {
-      console.error('📦 ERROR fetching web resources:', error);
       throw error;
     }
   }
@@ -112,7 +95,6 @@ export class WebResourceDiscovery {
         try {
           content = atob(record.content);
         } catch (error) {
-          console.error(`Error decoding web resource ${record.name}:`, error);
           content = null;
         }
       }

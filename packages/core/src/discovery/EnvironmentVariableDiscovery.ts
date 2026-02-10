@@ -63,8 +63,6 @@ export class EnvironmentVariableDiscovery {
       const batchSize = 20;
       const allResults: RawEnvironmentVariableDefinition[] = [];
 
-      console.log(`📋 Querying ${envVarIds.length} Environment Variables in batches of ${batchSize}...`);
-
       for (let i = 0; i < envVarIds.length; i += batchSize) {
         const batch = envVarIds.slice(i, i + batchSize);
         const filterClauses = batch.map((id) => {
@@ -72,8 +70,6 @@ export class EnvironmentVariableDiscovery {
           return `environmentvariabledefinitionid eq ${cleanGuid}`;
         });
         const filter = filterClauses.join(' or ');
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Environment Variables...`);
 
         const result = await this.client.query<RawEnvironmentVariableDefinition>(
           'environmentvariabledefinitions',
@@ -105,8 +101,6 @@ export class EnvironmentVariableDiscovery {
           this.onProgress(allResults.length, envVarIds.length);
         }
       }
-
-      console.log(`📋 Total Environment Variable definitions retrieved: ${allResults.length}`);
 
       // For each definition, fetch its values
       const environmentVariables: EnvironmentVariable[] = [];
@@ -153,7 +147,6 @@ export class EnvironmentVariableDiscovery {
 
       return result.value.map((raw) => this.mapToEnvironmentVariableValue(raw));
     } catch (error) {
-      console.error(`Error fetching values for ${definitionId}:`, error);
       return [];
     }
   }

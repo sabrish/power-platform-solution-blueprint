@@ -74,6 +74,10 @@ export class JsonReporter {
       crossEntityLinks: result.crossEntityLinks,
       externalEndpoints: result.externalEndpoints,
       solutionDistribution: result.solutionDistribution,
+      securityRoles: result.securityRoles,
+      fieldSecurityProfiles: result.fieldSecurityProfiles,
+      attributeMaskingRules: result.attributeMaskingRules,
+      columnSecurityProfiles: result.columnSecurityProfiles,
     };
   }
 

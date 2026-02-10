@@ -9,14 +9,6 @@ import {
   AccordionItem,
   AccordionHeader,
   AccordionPanel,
-  DataGrid,
-  DataGridHeader,
-  DataGridRow,
-  DataGridHeaderCell,
-  DataGridBody,
-  DataGridCell,
-  TableColumnDefinition,
-  createTableColumn,
 } from '@fluentui/react-components';
 import type { SolutionDistribution } from '@ppsb/core';
 
@@ -77,6 +69,10 @@ const useStyles = makeStyles({
   detailsSection: {
     marginTop: tokens.spacingVerticalL,
   },
+  description: {
+    color: tokens.colorNeutralForeground3,
+    display: 'block',
+  },
 });
 
 export interface SolutionDistributionViewProps {
@@ -113,27 +109,14 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
     };
   };
 
-  // Component counts table columns
-  const countsColumns: TableColumnDefinition<{ type: string; count: number }>[] = [
-    createTableColumn<{ type: string; count: number }>({
-      columnId: 'type',
-      renderHeaderCell: () => 'Component Type',
-      renderCell: (item) => <Text>{item.type}</Text>,
-    }),
-    createTableColumn<{ type: string; count: number }>({
-      columnId: 'count',
-      renderHeaderCell: () => 'Count',
-      renderCell: (item) => <Badge appearance="tint" color="brand">{item.count}</Badge>,
-      compare: (a, b) => b.count - a.count,
-    }),
-  ];
-
   return (
     <div className={styles.container}>
-      <Title3>Solution Distribution Analysis</Title3>
-      <Text>
-        Analyzing {distributions.length} solution{distributions.length !== 1 ? 's' : ''}
-      </Text>
+      <div style={{ marginBottom: tokens.spacingVerticalM }}>
+        <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Solution Distribution Analysis</Title3>
+        <Text>
+          Analyzing {distributions.length} solution{distributions.length !== 1 ? 's' : ''}
+        </Text>
+      </div>
 
       {/* Overview Cards */}
       <div className={styles.overviewGrid}>
@@ -232,61 +215,45 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
         })}
       </div>
 
-      {/* Detailed Breakdown */}
-      <div className={styles.detailsSection}>
-        <Title3>Detailed Component Breakdown</Title3>
-        <Accordion multiple collapsible>
-          {distributions.map((solution) => {
-            const componentData = [
-              { type: 'Entities', count: solution.componentCounts.entities },
-              { type: 'Plugins', count: solution.componentCounts.plugins },
-              { type: 'Flows', count: solution.componentCounts.flows },
-              { type: 'Business Rules', count: solution.componentCounts.businessRules },
-              { type: 'Classic Workflows', count: solution.componentCounts.classicWorkflows },
-              { type: 'Business Process Flows', count: solution.componentCounts.bpfs },
-              { type: 'Web Resources', count: solution.componentCounts.webResources },
-              { type: 'Custom APIs', count: solution.componentCounts.customAPIs },
-              { type: 'Environment Variables', count: solution.componentCounts.environmentVariables },
-              { type: 'Connection References', count: solution.componentCounts.connectionReferences },
-              { type: 'Global Choices', count: solution.componentCounts.globalChoices },
-            ].filter((item) => item.count > 0);
+      {/* Solution Details - Only show if there are dependencies or shared components */}
+      {!distributions.every(s => s.dependencies.length === 0 && s.sharedComponents.length === 0) && (
+        <div className={styles.detailsSection}>
+          <div style={{ marginBottom: tokens.spacingVerticalM }}>
+            <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Solution Dependencies & Shared Components</Title3>
+            <Text className={styles.description}>
+              View dependencies between solutions and components shared across multiple solutions
+            </Text>
+          </div>
 
-            return (
+          <Accordion multiple collapsible style={{ marginTop: tokens.spacingVerticalM }}>
+            {distributions.map((solution) => {
+              const hasDependencies = solution.dependencies.length > 0;
+              const hasSharedComponents = solution.sharedComponents.length > 0;
+
+              // Skip if no dependencies or shared components
+              if (!hasDependencies && !hasSharedComponents) {
+                return null;
+              }
+
+              return (
               <AccordionItem key={solution.solutionId} value={solution.solutionId}>
                 <AccordionHeader>
                   <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
                     <Text weight="semibold">{solution.solutionName}</Text>
-                    <Badge appearance="outline">{solution.componentCounts.total} components</Badge>
+                    {hasDependencies && (
+                      <Badge appearance="outline" color="warning">
+                        {solution.dependencies.length} dependencies
+                      </Badge>
+                    )}
+                    {hasSharedComponents && (
+                      <Badge appearance="outline" color="informative">
+                        {solution.sharedComponents.length} shared
+                      </Badge>
+                    )}
                   </div>
                 </AccordionHeader>
                 <AccordionPanel>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalL }}>
-                    {/* Component Counts Table */}
-                    <div>
-                      <Text weight="semibold">Component Counts</Text>
-                      <DataGrid
-                        items={componentData}
-                        columns={countsColumns}
-                        sortable
-                        style={{ marginTop: tokens.spacingVerticalS }}
-                      >
-                        <DataGridHeader>
-                          <DataGridRow>
-                            {({ renderHeaderCell }) => (
-                              <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                            )}
-                          </DataGridRow>
-                        </DataGridHeader>
-                        <DataGridBody<{ type: string; count: number }>>
-                          {({ item, rowId }) => (
-                            <DataGridRow<{ type: string; count: number }> key={rowId}>
-                              {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
-                            </DataGridRow>
-                          )}
-                        </DataGridBody>
-                      </DataGrid>
-                    </div>
-
                     {/* Dependencies */}
                     {solution.dependencies.length > 0 && (
                       <div>
@@ -330,8 +297,9 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
               </AccordionItem>
             );
           })}
-        </Accordion>
-      </div>
+          </Accordion>
+        </div>
+      )}
     </div>
   );
 }

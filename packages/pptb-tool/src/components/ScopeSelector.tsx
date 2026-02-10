@@ -27,12 +27,16 @@ import {
   type Solution,
 } from '@ppsb/core';
 import type { ScopeType, ScopeSelection, PublisherScopeMode } from '../types/scope';
+import { Footer } from './Footer';
 
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
     maxWidth: '800px',
     margin: '0 auto',
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
   },
   header: {
     marginBottom: tokens.spacingVerticalXXL,
@@ -159,11 +163,15 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
       setLoading(true);
       setError(null);
 
-      if (!window.toolboxAPI) {
+      if (!window.toolboxAPI || !window.dataverseAPI) {
         throw new Error('PPTB Desktop API not available. Please run this tool inside PPTB Desktop.');
       }
 
-      const client = new PptbDataverseClient(window.toolboxAPI);
+      // Get environment URL from tool context
+      const toolContext = await window.toolboxAPI.getToolContext();
+      const environmentUrl = toolContext?.connectionUrl || 'Current Environment';
+
+      const client = new PptbDataverseClient(window.dataverseAPI, environmentUrl);
       const publisherDiscovery = new PublisherDiscovery(client);
       const solutionDiscovery = new SolutionDiscovery(client);
 
@@ -181,7 +189,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
-      console.error('Error loading data:', err);
+      console.error('Error loading publishers and solutions:', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -278,6 +286,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
           <Spinner size="medium" />
           <Text>Loading publishers and solutions...</Text>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -285,7 +294,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Title1>Power Platform System Blueprint</Title1>
+        <Title1>Power Platform Solution Blueprint</Title1>
         <Subtitle1 className={styles.subtitle}>Select what you'd like to document</Subtitle1>
       </div>
 
@@ -526,6 +535,8 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
           Continue
         </Button>
       </div>
+
+      <Footer />
     </div>
   );
 }

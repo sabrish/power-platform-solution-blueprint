@@ -1,17 +1,17 @@
-# Power Platform System Blueprint (PPSB)
+# Power Platform Solution Blueprint (PPSB)
 
-> Complete architectural blueprints for your Power Platform systems
+> Complete architectural blueprints for your Power Platform solutions.
 
 ![Version](https://img.shields.io/badge/version-0.5-blue)
 ![Status](https://img.shields.io/badge/status-initial%20release-green)
 
-Generate comprehensive technical documentation for Dataverse and Power Platform environments with automated discovery, analysis, and export capabilities.
+Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.
 
 ---
 
 ## 🎯 What is PPSB?
 
-**PPSB** is an automated documentation tool that generates complete architectural blueprints for Power Platform systems. It discovers, analyzes, and documents your entire Dataverse environment—from entity schemas to automation pipelines—saving architects and developers hundreds of hours of manual documentation work.
+**PPSB** is an automated documentation tool that generates complete architectural blueprints for Power Platform solutions. It discovers, analyzes, and documents your entire Dataverse environment—from entity schemas to automation pipelines—saving architects and developers hundreds of hours of manual documentation work.
 
 The tool generates **comprehensive blueprints** including Entity Relationship Diagrams (ERD), complete entity documentation with automation execution pipelines, cross-entity automation mapping, external dependency analysis, and solution distribution breakdowns. All exports are production-ready: Markdown files ready for Azure DevOps Wiki, JSON for programmatic analysis, and self-contained HTML for stakeholder sharing.
 
@@ -103,24 +103,36 @@ Review your selection before generating the blueprint.
 ![Generator Confirmation](docs/screenshots/PPSB-2-Generator-Confirmation.png)
 
 ### Results Dashboard
-Interactive dashboard with ERD, entity details, automation analysis, and security roles.
+Interactive dashboard with summary metrics, ERD visualization, and component browser.
 
-![Generated Dashboard](docs/screenshots/PPSB-3-Generated%20Dashboard.png)
+![Dashboard](docs/screenshots/PPSB-3-Dashboard.png)
 
-### Analysis View
-Comprehensive analysis including performance risks, workflow migration recommendations, and complexity scores.
+### Component Details
+Browse and explore all discovered components with expandable details and inline documentation.
 
-![Analysis View](docs/screenshots/PPSB-4-Analysis.png)
+![Component Details](docs/screenshots/PPSB-4-Component-Details.png)
+
+### Solution Distribution Analysis
+Analyze component distribution across solutions with dependency mapping and shared component detection.
+
+![Solution Distribution Analysis](docs/screenshots/PPSB-5-Solution%20Distrubution%20Analysis.png)
+
+### External Dependencies Analysis
+Identify and assess all external API calls across flows, plugins, and web resources with risk scoring.
+
+![External Dependencies Analysis](docs/screenshots/PPSB-6-External%20Dependencies%20Analysis.png)
 
 ### Export Options
 Choose your export format - Markdown, JSON, HTML, or ZIP bundle.
 
-![Export Options](docs/screenshots/PPSB-5-Export%20Options.png)
+![Export Options](docs/screenshots/PPSB-6-Export%20Options.png)
 
 ### HTML Export
 Self-contained, interactive HTML documentation ready to share with stakeholders.
 
-![HTML Export](docs/screenshots/PPSB-6-Export%20html.png)
+![HTML Export Example 1](docs/screenshots/PPSB-7-Export%20html.png)
+
+![HTML Export Example 2](docs/screenshots/PPSB-8-Export%20html.png)
 
 ---
 
@@ -204,6 +216,7 @@ Comprehensive documentation for all aspects of PPSB:
 
 - **[User Guide](docs/user-guide.md)** - Complete usage instructions from scope selection to export
 - **[Architecture](docs/architecture.md)** - Technical design, component structure, and extension points
+- **[API Security](docs/API_SECURITY.md)** - Complete API reference, security considerations, and data access documentation
 - **[Roadmap](docs/roadmap.md)** - Future versions (baseline comparison, CLI, CI/CD integration)
 - **[Examples](docs/examples/)** - Sample outputs and documentation structure
   - [Output Structure](docs/examples/example-output-structure.md)

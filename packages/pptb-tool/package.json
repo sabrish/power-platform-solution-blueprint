@@ -2,9 +2,13 @@
   "name": "@sabrish/power-platform-solution-blueprint",
   "version": "0.5.0",
   "displayName": "Power Platform Solution Blueprint Generator",
-  "description": "A comprehensive blueprint generator for Microsoft Power Platform.",
+  "description": "Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.",
   "main": "index.html",
   "license": "MIT",
+  "author": {
+    "name": "SAB",
+    "url": "https://github.com/sabrish"
+  },
   "contributors": [
     {
       "name": "SAB",
@@ -16,6 +20,20 @@
     {
       "name": "ChatGPT"
     }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sabrish/power-platform-solution-blueprint"
+  },
+  "keywords": [
+    "powerplatform",
+    "dataverse",
+    "toolbox",
+    "power-platform",
+    "blueprint",
+    "documentation",
+    "pptb",
+    "solution-analyzer"
   ],
   "configurations": {
     "repository": "https://github.com/sabrish/power-platform-solution-blueprint",
@@ -38,6 +56,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@pptb/types": "^1.0.19",
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",

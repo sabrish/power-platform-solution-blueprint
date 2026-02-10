@@ -105,6 +105,7 @@ ${this.embeddedCSS()}
 
   /**
    * Generate ERD section
+   * Note: Only includes the first diagram (comprehensive view) to match the tool UI behavior
    */
   htmlErdSection(erd: ERDDefinition | undefined): string {
     if (!erd || erd.diagrams.length === 0) {
@@ -115,21 +116,22 @@ ${this.embeddedCSS()}
     }
 
     const legendHtml = this.generateLegendHtml(erd.legend);
-    const diagramsHtml = erd.diagrams.map((diagram, index) => {
-      return `<div class="erd-diagram">
+
+    // Use only the first diagram (comprehensive view with all entities) - matches UI behavior
+    const diagram = erd.diagrams[0];
+    const diagramHtml = `<div class="erd-diagram">
   <h3>${this.escapeHtml(diagram.title)}</h3>
   <p class="diagram-description">${this.escapeHtml(diagram.description)}</p>
-  <div class="mermaid" id="diagram-${index}">
+  <div class="mermaid" id="diagram-0">
 ${diagram.mermaidDiagram}
   </div>
   <p class="diagram-stats">Entities: ${diagram.entityCount} | Relationships: ${diagram.relationshipCount}</p>
 </div>`;
-    }).join('\n');
 
     return `<section id="erd" class="content-section">
   <h2>Entity Relationship Diagram</h2>
   ${legendHtml}
-  ${diagramsHtml}
+  ${diagramHtml}
 </section>`;
   }
 
@@ -2659,7 +2661,6 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Rule Name</th>
             <th>Entity</th>
             <th>Attribute</th>
             <th>Masking Type</th>
@@ -2672,8 +2673,7 @@ ${this.embeddedJavaScript()}
       const maskingType = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
       html += `
           <tr>
-            <td><strong>${this.escapeHtml(rule.name)}</strong></td>
-            <td>${this.escapeHtml(rule.entitylogicalname)}</td>
+            <td><strong>${this.escapeHtml(rule.entitylogicalname)}</strong></td>
             <td>${this.escapeHtml(rule.attributelogicalname)}</td>
             <td><span class="badge">${maskingType}</span></td>
             <td>${rule.ismanaged ? '<span class="badge">Managed</span>' : ''}</td>

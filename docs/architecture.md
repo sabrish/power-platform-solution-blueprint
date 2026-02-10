@@ -1,6 +1,6 @@
 # PPSB Architecture
 
-Technical architecture and design documentation for Power Platform System Blueprint
+Technical architecture and design documentation for Power Platform Solution Blueprint
 
 ---
 

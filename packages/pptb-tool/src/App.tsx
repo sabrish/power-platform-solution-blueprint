@@ -17,6 +17,7 @@ import { ProcessingScreen } from './components/ProcessingScreen';
 import { ResultsDashboard } from './components/ResultsDashboard';
 import { useBlueprint } from './hooks/useBlueprint';
 import type { ScopeSelection } from './types/scope';
+import { Footer } from './components/Footer';
 
 const useStyles = makeStyles({
   container: {
@@ -192,9 +193,9 @@ function App() {
 
   // Show confirmation screen
   return (
-    <main id="main-content" className={styles.container} role="main" aria-label="Power Platform System Blueprint">
+    <main id="main-content" className={styles.container} role="main" aria-label="Power Platform Solution Blueprint">
       <header className={styles.header}>
-        <Title1>Power Platform System Blueprint</Title1>
+        <Title1>Power Platform Solution Blueprint</Title1>
         <Subtitle1 className={styles.subtitle}>
           Complete architectural blueprints for your Power Platform systems
         </Subtitle1>
@@ -243,6 +244,8 @@ function App() {
           Generate Blueprint
         </Button>
       </div>
+
+      <Footer />
     </main>
   );
 }

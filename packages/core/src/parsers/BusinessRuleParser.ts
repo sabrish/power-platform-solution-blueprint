@@ -30,7 +30,6 @@ export class BusinessRuleParser {
         conditionLogic,
       };
     } catch (error) {
-      console.error('Error parsing business rule XAML:', error);
       return {
         conditions: [],
         actions: [],
