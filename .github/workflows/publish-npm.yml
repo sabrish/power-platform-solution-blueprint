@@ -41,7 +41,6 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Publish to npm with provenance
+      - name: Publish to npm with provenance (Trusted Publishing via OIDC)
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # No NODE_AUTH_TOKEN needed - uses OIDC trusted publishing
