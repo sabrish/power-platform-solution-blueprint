@@ -225,7 +225,7 @@ export class BlueprintGenerator {
       const blueprintResultPartial: BlueprintResult = {
         metadata: {
           generatedAt: startTime,
-          environment: 'current',
+          environment: this.client.getEnvironmentUrl(),
           scope: { type: this.scope.type, description: this.getScopeDescription() },
           entityCount: entities.length,
         },
@@ -334,7 +334,7 @@ export class BlueprintGenerator {
       const result: BlueprintResult = {
         metadata: {
           generatedAt: startTime,
-          environment: 'current',
+          environment: this.client.getEnvironmentUrl(),
           scope: {
             type: this.scope.type,
             description: this.getScopeDescription(),

@@ -167,7 +167,11 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         throw new Error('PPTB Desktop API not available. Please run this tool inside PPTB Desktop.');
       }
 
-      const client = new PptbDataverseClient(window.toolboxAPI);
+      // Get environment URL from tool context
+      const toolContext = window.toolboxAPI.getToolContext();
+      const environmentUrl = toolContext?.primaryConnection?.url || 'Unknown Environment';
+
+      const client = new PptbDataverseClient(window.toolboxAPI, environmentUrl);
       const publisherDiscovery = new PublisherDiscovery(client);
       const solutionDiscovery = new SolutionDiscovery(client);
 
