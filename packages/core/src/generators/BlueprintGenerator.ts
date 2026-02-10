@@ -19,7 +19,7 @@ import { SecurityRoleDiscovery } from '../discovery/SecurityRoleDiscovery.js';
 import { FieldSecurityProfileDiscovery } from '../discovery/FieldSecurityProfileDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
-import type { ComponentInventory, WorkflowInventory } from '../types/components.js';
+import type { ComponentInventory, ComponentInventoryWithSolutions, WorkflowInventory } from '../types/components.js';
 import type {
   GeneratorOptions,
   BlueprintResult,
@@ -189,12 +189,7 @@ export class BlueprintGenerator {
         }
       }
 
-      // STEP 9: Other components (stubbed for now)
-      if (inventory.canvasAppIds.length === 0) {
-        warnings.push('No canvas apps found');
-      }
-
-      // STEP 10: Generate ERD and Advanced Analysis
+      // STEP 9: Generate ERD and Advanced Analysis
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
@@ -290,7 +285,8 @@ export class BlueprintGenerator {
         const solutionDistributionAnalyzer = new SolutionDistributionAnalyzer();
         solutionDistribution = solutionDistributionAnalyzer.analyzeSolutionDistribution(
           this.solutions,
-          blueprintResultPartial
+          blueprintResultPartial,
+          inventory.solutionComponentMap  // Pass component membership for accurate counting
         );
       }
       this.reportProgress({
@@ -389,7 +385,7 @@ export class BlueprintGenerator {
    * Discover all components in the selected scope
    */
   private async discoverComponents(): Promise<{
-    inventory: ComponentInventory;
+    inventory: ComponentInventoryWithSolutions;
     workflowInventory: WorkflowInventory;
     entities: EntityMetadata[];
   }> {
@@ -415,8 +411,12 @@ export class BlueprintGenerator {
       // Discover all component types (will use special handling for Default solution)
       const inventory = await componentDiscovery.discoverComponents(this.scope.solutionIds, solutionUniqueNames);
 
-      // Classify workflows
-      const workflowInventory = await componentDiscovery.classifyWorkflows(inventory.workflowIds);
+      // Classify workflows (pass solution maps for tracking)
+      const workflowInventory = await componentDiscovery.classifyWorkflows(
+        inventory.workflowIds,
+        inventory.solutionComponentMap,
+        inventory.componentToSolutions
+      );
 
       // Get entity metadata for discovered entities
       // For Default Solution, query all entities (don't filter by managed status)
@@ -432,7 +432,7 @@ export class BlueprintGenerator {
 
       // For publisher-based, we don't have component inventory
       // Return empty inventory (no attribute filtering for publisher-based)
-      const inventory: ComponentInventory = {
+      const inventory: ComponentInventoryWithSolutions = {
         entityIds: entities.map(e => e.MetadataId),
         attributeIds: [],
         pluginIds: [],
@@ -448,6 +448,9 @@ export class BlueprintGenerator {
         customConnectorIds: [],
         securityRoleIds: [],
         fieldSecurityProfileIds: [],
+        componentToSolutions: new Map(),
+        solutionComponentMap: new Map(),
+        componentTypes: new Map(),
       };
 
       const workflowInventory: WorkflowInventory = {
@@ -1384,6 +1387,9 @@ export class BlueprintGenerator {
     }
   }
 
+  /**
+   * Process Canvas Apps
+   */
   /**
    * Process forms and JavaScript event handlers
    */

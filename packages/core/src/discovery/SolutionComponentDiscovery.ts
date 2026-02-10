@@ -1,5 +1,5 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
-import { ComponentType, WorkflowCategory, type ComponentInventory, type WorkflowInventory } from '../types/components.js';
+import { ComponentType, WorkflowCategory, type ComponentInventory, type ComponentInventoryWithSolutions, type WorkflowInventory, type WorkflowInventoryWithSolutions } from '../types/components.js';
 
 /**
  * Solution component record
@@ -7,6 +7,7 @@ import { ComponentType, WorkflowCategory, type ComponentInventory, type Workflow
 interface SolutionComponent {
   objectid: string;
   componenttype: number;
+  _solutionid_value?: string;
 }
 
 /**
@@ -36,7 +37,7 @@ export class SolutionComponentDiscovery {
   async discoverComponents(
     solutionIds: string[],
     solutionUniqueNames?: string[]
-  ): Promise<ComponentInventory> {
+  ): Promise<ComponentInventoryWithSolutions> {
     try {
       console.log('🔍 ============================================');
       console.log('🔍 SOLUTION COMPONENT DISCOVERY STARTED');
@@ -62,6 +63,11 @@ export class SolutionComponentDiscovery {
         fieldSecurityProfileIds: [],
       };
 
+      // Tracking maps for solution membership
+      const componentToSolutions = new Map<string, string[]>();
+      const solutionComponentMap = new Map<string, Set<string>>();
+      const componentTypes = new Map<string, number>();
+
       // Check if Default Solution is among the selected solutions
       const includesDefaultSolution = solutionUniqueNames?.some(name => name.toLowerCase() === 'default');
       console.log('🔍 Default Solution detected?', includesDefaultSolution);
@@ -82,7 +88,7 @@ export class SolutionComponentDiscovery {
       console.log('🔍 OData Filter:', solutionFilters);
 
       const result = await this.client.query<SolutionComponent>('solutioncomponents', {
-        select: ['objectid', 'componenttype'],
+        select: ['objectid', 'componenttype', '_solutionid_value'],
         filter: solutionFilters,
       });
 
@@ -106,6 +112,27 @@ export class SolutionComponentDiscovery {
       for (const component of result.value) {
         // Normalize GUID: remove braces and lowercase for consistent comparison
         const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
+        const componentType = component.componenttype;
+        const solutionId = (component._solutionid_value || '').toLowerCase().replace(/[{}]/g, '');
+
+        // Track which solutions contain this component
+        if (!componentToSolutions.has(objectId)) {
+          componentToSolutions.set(objectId, []);
+        }
+        if (solutionId && !componentToSolutions.get(objectId)!.includes(solutionId)) {
+          componentToSolutions.get(objectId)!.push(solutionId);
+        }
+
+        // Track components in each solution
+        if (solutionId) {
+          if (!solutionComponentMap.has(solutionId)) {
+            solutionComponentMap.set(solutionId, new Set());
+          }
+          solutionComponentMap.get(solutionId)!.add(objectId);
+        }
+
+        // Track component type
+        componentTypes.set(objectId, componentType);
 
           switch (component.componenttype) {
             case ComponentType.Entity:
@@ -218,7 +245,12 @@ export class SolutionComponentDiscovery {
         console.log('🔌 Plugin IDs:', inventory.pluginIds);
       }
 
-      return inventory;
+      return {
+        ...inventory,
+        componentToSolutions,
+        solutionComponentMap,
+        componentTypes,
+      } as ComponentInventoryWithSolutions;
     } catch (error) {
       throw new Error(
         `Failed to discover solution components: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -230,7 +262,7 @@ export class SolutionComponentDiscovery {
    * Discover ALL components (for Default Solution)
    * Queries each component type directly instead of using solutioncomponents table
    */
-  private async discoverAllUnmanagedComponents(): Promise<ComponentInventory> {
+  private async discoverAllUnmanagedComponents(): Promise<ComponentInventoryWithSolutions> {
     const inventory: ComponentInventory = {
       entityIds: [],
       attributeIds: [],
@@ -328,7 +360,14 @@ export class SolutionComponentDiscovery {
       console.log('📊 Entity and attribute discovery will be handled by entity metadata queries');
 
       console.log('✅ All components discovered for Default Solution');
-      return inventory;
+
+      // For Default Solution, we don't have solution membership tracking
+      return {
+        ...inventory,
+        componentToSolutions: new Map(),
+        solutionComponentMap: new Map(),
+        componentTypes: new Map(),
+      } as ComponentInventoryWithSolutions;
     } catch (error) {
       console.error('❌ Error discovering components:', error);
       throw new Error(
@@ -340,9 +379,15 @@ export class SolutionComponentDiscovery {
   /**
    * Classify workflows into flows, business rules, classic workflows, and BPFs
    * @param workflowIds Array of workflow IDs to classify
-   * @returns Classified workflow inventory
+   * @param solutionComponentMap Optional solution component map for tracking membership
+   * @param componentToSolutions Optional component to solutions map for tracking membership
+   * @returns Classified workflow inventory with solution tracking
    */
-  async classifyWorkflows(workflowIds: string[]): Promise<WorkflowInventory> {
+  async classifyWorkflows(
+    workflowIds: string[],
+    solutionComponentMap?: Map<string, Set<string>>,
+    componentToSolutions?: Map<string, string[]>
+  ): Promise<WorkflowInventoryWithSolutions> {
     try {
       if (workflowIds.length === 0) {
         return {
@@ -350,6 +395,8 @@ export class SolutionComponentDiscovery {
           businessRuleIds: [],
           classicWorkflowIds: [],
           businessProcessFlowIds: [],
+          componentToSolutions: componentToSolutions || new Map(),
+          solutionComponentMap: solutionComponentMap || new Map(),
         };
       }
 
@@ -392,7 +439,11 @@ export class SolutionComponentDiscovery {
         }
       }
 
-      return inventory;
+      return {
+        ...inventory,
+        componentToSolutions: componentToSolutions || new Map(),
+        solutionComponentMap: solutionComponentMap || new Map(),
+      };
     } catch (error) {
       throw new Error(
         `Failed to classify workflows: ${error instanceof Error ? error.message : 'Unknown error'}`

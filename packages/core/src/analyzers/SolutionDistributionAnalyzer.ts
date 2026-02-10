@@ -15,16 +15,20 @@ export class SolutionDistributionAnalyzer {
    * Analyze solution distribution with component counts and dependencies
    * @param solutions Array of solution metadata
    * @param result Complete blueprint result with all components
+   * @param solutionComponentMap Optional map of solution IDs to component IDs for accurate counting
    */
   analyzeSolutionDistribution(
     solutions: Solution[],
-    result: BlueprintResult
+    result: BlueprintResult,
+    solutionComponentMap?: Map<string, Set<string>>
   ): SolutionDistribution[] {
     const distributions: SolutionDistribution[] = [];
 
     for (const solution of solutions) {
       // Count components in this solution
-      const componentCounts = this.countComponentsInSolution(solution, result);
+      const componentCounts = solutionComponentMap
+        ? this.countComponentsInSolutionAccurate(solution, result, solutionComponentMap)
+        : this.countComponentsInSolution(solution, result);
 
       // Identify shared components (appear in multiple solutions)
       const sharedComponents = this.identifySharedComponents(solution, solutions, result);
@@ -71,6 +75,73 @@ export class SolutionDistributionAnalyzer {
       environmentVariables: result.environmentVariables.length,
       connectionReferences: result.connectionReferences.length,
       globalChoices: result.globalChoices.length,
+      total: 0,
+    };
+
+    // Calculate total
+    counts.total = Object.entries(counts)
+      .filter(([key]) => key !== 'total')
+      .reduce((sum, [, value]) => sum + value, 0);
+
+    return counts;
+  }
+
+  /**
+   * Count components that actually belong to a specific solution (accurate counting)
+   */
+  private countComponentsInSolutionAccurate(
+    solution: Solution,
+    result: BlueprintResult,
+    solutionComponentMap: Map<string, Set<string>>
+  ): ComponentCounts {
+    const solutionId = solution.solutionid.toLowerCase().replace(/[{}]/g, '');
+    const componentIdsInSolution = solutionComponentMap.get(solutionId) || new Set();
+
+    const counts: ComponentCounts = {
+      entities: result.entities.filter(e =>
+        componentIdsInSolution.has(e.entity.MetadataId.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      plugins: result.plugins.filter(p =>
+        componentIdsInSolution.has(p.sdkmessageprocessingstepid.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      flows: result.flows.filter(f =>
+        componentIdsInSolution.has(f.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      businessRules: result.businessRules.filter(br =>
+        componentIdsInSolution.has(br.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      classicWorkflows: result.classicWorkflows.filter(wf =>
+        componentIdsInSolution.has(wf.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      bpfs: result.businessProcessFlows.filter(bpf =>
+        componentIdsInSolution.has(bpf.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      webResources: result.webResources.filter(wr =>
+        componentIdsInSolution.has(wr.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      customAPIs: result.customAPIs.filter(api =>
+        componentIdsInSolution.has(api.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      environmentVariables: result.environmentVariables.filter(ev =>
+        componentIdsInSolution.has(ev.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      connectionReferences: result.connectionReferences.filter(cr =>
+        componentIdsInSolution.has(cr.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      globalChoices: result.globalChoices.filter(gc =>
+        componentIdsInSolution.has(gc.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
       total: 0,
     };
 

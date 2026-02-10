@@ -34,6 +34,25 @@ export interface WorkflowInventory {
 }
 
 /**
+ * Enhanced inventory with solution membership tracking
+ */
+export interface ComponentInventoryWithSolutions extends ComponentInventory {
+  // Maps for solution membership
+  componentToSolutions: Map<string, string[]>;  // componentId → solutionIds
+  solutionComponentMap: Map<string, Set<string>>;  // solutionId → componentIds
+  componentTypes: Map<string, number>;  // componentId → componentType
+}
+
+/**
+ * Classified workflow inventory with solution tracking
+ */
+export interface WorkflowInventoryWithSolutions extends WorkflowInventory {
+  // Solution membership
+  componentToSolutions: Map<string, string[]>;
+  solutionComponentMap: Map<string, Set<string>>;
+}
+
+/**
  * Solution component type codes
  * Reference: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/reference/entities/solutioncomponent
  */
@@ -42,20 +61,21 @@ export enum ComponentType {
   Attribute = 2,
   GlobalOptionSet = 9,
   SecurityRole = 20,
+  Workflow = 29,
+  WebResource = 61,
+  FieldSecurityProfile = 70,
+  // AppModule = 80,  // Model-Driven Apps (future implementation)
   PluginType = 90,
   PluginAssembly = 91,
   SdkMessageProcessingStep = 92,  // Plugin steps
   SdkMessageProcessingStepImage = 93,  // Plugin step images
-  Workflow = 29,
-  WebResource = 61,
-  FieldSecurityProfile = 70,
-  CanvasApp = 300,
-  CustomPage = 10004,
-  PluginPackage = 10030,  // Plugin packages
+  CanvasApp = 300,  // Future implementation
   ConnectionReference = 371,
   CustomConnector = 372,
-  CustomAPI = 10076,
   EnvironmentVariableDefinition = 380,
+  CustomAPI = 10076,
+  CustomPage = 10004,
+  PluginPackage = 10030,  // Plugin packages
 }
 
 /**

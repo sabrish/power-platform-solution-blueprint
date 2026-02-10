@@ -83,7 +83,7 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Title2>Generating System Blueprint</Title2>
+        <Title2>Generating Solution Blueprint</Title2>
       </div>
 
       <div className={styles.progressSection}>

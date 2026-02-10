@@ -285,7 +285,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Title1>Power Platform System Blueprint</Title1>
+        <Title1>Power Platform Solution Blueprint</Title1>
         <Subtitle1 className={styles.subtitle}>Select what you'd like to document</Subtitle1>
       </div>
 
