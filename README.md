@@ -216,6 +216,7 @@ Comprehensive documentation for all aspects of PPSB:
 
 - **[User Guide](docs/user-guide.md)** - Complete usage instructions from scope selection to export
 - **[Architecture](docs/architecture.md)** - Technical design, component structure, and extension points
+- **[API Security](docs/API_SECURITY.md)** - Complete API reference, security considerations, and data access documentation
 - **[Roadmap](docs/roadmap.md)** - Future versions (baseline comparison, CLI, CI/CD integration)
 - **[Examples](docs/examples/)** - Sample outputs and documentation structure
   - [Output Structure](docs/examples/example-output-structure.md)
