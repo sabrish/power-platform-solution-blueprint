@@ -73,19 +73,14 @@ function FieldSecurityProfilesViewComponent({
 
   const maskingRuleColumns = useMemo<TableColumnDefinition<AttributeMaskingRule>[]>(() => [
     createTableColumn<AttributeMaskingRule>({
-      columnId: 'name',
-      renderHeaderCell: () => 'Rule Name',
-      renderCell: (rule) => <Text weight="semibold">{rule.name}</Text>,
-    }),
-    createTableColumn<AttributeMaskingRule>({
       columnId: 'entity',
       renderHeaderCell: () => 'Entity',
-      renderCell: (rule) => rule.entitylogicalname,
+      renderCell: (rule) => <Text weight="semibold">{rule.entitylogicalname}</Text>,
     }),
     createTableColumn<AttributeMaskingRule>({
       columnId: 'attribute',
       renderHeaderCell: () => 'Attribute',
-      renderCell: (rule) => rule.attributelogicalname,
+      renderCell: (rule) => <Text>{rule.attributelogicalname}</Text>,
     }),
     createTableColumn<AttributeMaskingRule>({
       columnId: 'maskingType',
@@ -123,9 +118,9 @@ function FieldSecurityProfilesViewComponent({
   return (
     <div className={styles.container}>
       <div style={{ marginBottom: tokens.spacingVerticalM }}>
-        <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>🛡️ Field Security</Title3>
+        <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Field Security Profiles</Title3>
         <Text className={styles.description}>
-          Field security profiles, attribute masking rules, and column security in the selected solution(s).
+          Configure which users can read, create, or update specific secured fields.
         </Text>
       </div>
 

@@ -2314,13 +2314,12 @@ export class MarkdownReporter {
     sections.push('');
 
     if (result.attributeMaskingRules && result.attributeMaskingRules.length > 0) {
-      const headers = ['Rule Name', 'Entity', 'Attribute', 'Masking Type', 'Managed'];
+      const headers = ['Entity', 'Attribute', 'Masking Type', 'Managed'];
       const rows: string[][] = [];
 
       for (const rule of result.attributeMaskingRules) {
         const maskingType = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
         rows.push([
-          rule.name,
           rule.entitylogicalname,
           rule.attributelogicalname,
           maskingType,
