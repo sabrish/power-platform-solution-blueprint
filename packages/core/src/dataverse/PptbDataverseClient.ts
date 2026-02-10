@@ -16,9 +16,18 @@ interface PptbApi {
  */
 export class PptbDataverseClient implements IDataverseClient {
   private readonly pptbApi: PptbApi;
+  private readonly environmentUrl: string;
 
-  constructor(pptbApi: PptbApi) {
+  constructor(pptbApi: PptbApi, environmentUrl?: string) {
     this.pptbApi = pptbApi;
+    this.environmentUrl = environmentUrl || 'Unknown Environment';
+  }
+
+  /**
+   * Get the Dataverse environment URL
+   */
+  getEnvironmentUrl(): string {
+    return this.environmentUrl;
   }
 
   /**

@@ -13,6 +13,11 @@ export function GlobalChoicesList({ globalChoices, onSelectChoice }: GlobalChoic
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const sorted = useMemo(() => [...globalChoices].sort((a, b) => a.name.localeCompare(b.name)), [globalChoices]);
 
+  // Debug logging
+  console.log('[GlobalChoicesList] Received globalChoices:', globalChoices.length);
+  console.log('[GlobalChoicesList] Sorted array:', sorted.length);
+  console.log('[GlobalChoicesList] First item:', sorted[0]);
+
   const columns: TableColumnDefinition<GlobalChoice>[] = [
     createTableColumn<GlobalChoice>({
       columnId: 'name',
@@ -58,7 +63,7 @@ export function GlobalChoicesList({ globalChoices, onSelectChoice }: GlobalChoic
       <div style={{ marginBottom: tokens.spacingVerticalM }}>
         <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>🎯 Global Choices</Title3>
         <Text style={{ color: tokens.colorNeutralForeground3, display: 'block' }}>
-          Click on a global choice to view its options and details
+          Click on a global choice to view its options and details ({sorted.length} found)
         </Text>
       </div>
 

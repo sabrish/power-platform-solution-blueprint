@@ -36,4 +36,10 @@ export interface IDataverseClient {
    * @returns Query result with array of metadata objects
    */
   queryMetadata<T>(metadataPath: string, options?: QueryOptions): Promise<QueryResult<T>>;
+
+  /**
+   * Get the Dataverse environment URL
+   * @returns The environment URL or a default string if not available
+   */
+  getEnvironmentUrl(): string;
 }

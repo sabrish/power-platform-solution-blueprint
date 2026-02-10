@@ -100,8 +100,21 @@ interface SettingsAPI {
   // Add settings methods as needed
 }
 
+interface ToolContext {
+  primaryConnection?: {
+    url?: string;
+    environmentId?: string;
+    friendlyName?: string;
+  };
+  secondaryConnection?: {
+    url?: string;
+    environmentId?: string;
+    friendlyName?: string;
+  };
+}
+
 interface ToolboxAPI {
-  getToolContext(): unknown;
+  getToolContext(): ToolContext;
   connections: ConnectionsAPI;
   dataverse: DataverseAPI;
   utils: UtilsAPI;
