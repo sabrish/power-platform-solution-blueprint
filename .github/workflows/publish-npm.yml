@@ -17,6 +17,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment:
+      name: npm-production
+      url: https://www.npmjs.com/package/@sabrish/power-platform-solution-blueprint
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
