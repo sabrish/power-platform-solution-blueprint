@@ -2,7 +2,7 @@
 
 > Complete architectural blueprints for your Power Platform solutions.
 
-![Version](https://img.shields.io/badge/version-0.5-blue)
+![Version](https://img.shields.io/badge/version-0.5.1-blue)
 ![Status](https://img.shields.io/badge/status-initial%20release-green)
 
 Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.
@@ -170,7 +170,7 @@ Self-contained, interactive HTML documentation ready to share with stakeholders.
 - **Component Library**: Fluent UI v9 (Microsoft Design System)
 - **Diagrams**: Mermaid (ERD and execution pipelines)
 - **Export**: JSZip (multi-file packages)
-- **Architecture**: Monorepo with `@ppsb/core` (pure TypeScript) and `@ppsb/pptb-tool` (React UI)
+- **Architecture**: Flat structure with separated core logic (`src/core/`) and React UI (`src/components/`)
 
 🏗️ **[Architecture Details](docs/architecture.md)** |
 🛣️ **[Roadmap](docs/roadmap.md)**
@@ -190,7 +190,7 @@ Self-contained, interactive HTML documentation ready to share with stakeholders.
 git clone https://github.com/sabrish/power-platform-solution-blueprint.git
 cd power-platform-solution-blueprint
 
-# Install dependencies (uses pnpm workspaces)
+# Install dependencies
 pnpm install
 
 # Run development server
