@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { DataGrid, DataGridBody, DataGridRow, DataGridHeader, DataGridHeaderCell, DataGridCell, TableCellLayout,
-  TableColumnDefinition, createTableColumn, Badge, tokens } from '@fluentui/react-components';
+  TableColumnDefinition, createTableColumn, Badge, tokens, Text, Title3 } from '@fluentui/react-components';
 import { Options20Regular } from '@fluentui/react-icons';
 import type { GlobalChoice } from '@ppsb/core';
 
@@ -54,15 +54,42 @@ export function GlobalChoicesList({ globalChoices, onSelectChoice }: GlobalChoic
   }
 
   return (
-    <div style={{ marginTop: '16px' }}>
-      <DataGrid items={sorted} columns={columns} sortable selectionMode="single" selectedItems={selectedChoice ? [selectedChoice] : []}
-        getRowId={(item) => item.id} focusMode="composite">
-        <DataGridHeader><DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow></DataGridHeader>
+    <div>
+      <div style={{ marginBottom: tokens.spacingVerticalM }}>
+        <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>🎯 Global Choices</Title3>
+        <Text style={{ color: tokens.colorNeutralForeground3, display: 'block' }}>
+          Click on a global choice to view its options and details
+        </Text>
+      </div>
+
+      <DataGrid
+        items={sorted}
+        columns={columns}
+        sortable
+        selectionMode="single"
+        selectedItems={selectedChoice ? [selectedChoice] : []}
+        getRowId={(item) => item.id}
+        focusMode="composite"
+        style={{ minHeight: '200px' }}
+      >
+        <DataGridHeader>
+          <DataGridRow>
+            {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
+          </DataGridRow>
+        </DataGridHeader>
         <DataGridBody<GlobalChoice>>
           {({ item, rowId }) => (
-            <DataGridRow<GlobalChoice> key={rowId} style={{ cursor: 'pointer',
-              backgroundColor: selectedChoice === item.id ? tokens.colorNeutralBackground1Selected : undefined }}
-              onClick={() => { setSelectedChoice(item.id); onSelectChoice(item); }}>
+            <DataGridRow<GlobalChoice>
+              key={rowId}
+              style={{
+                cursor: 'pointer',
+                backgroundColor: selectedChoice === item.id ? tokens.colorNeutralBackground1Selected : undefined
+              }}
+              onClick={() => {
+                setSelectedChoice(item.id);
+                onSelectChoice(item);
+              }}
+            >
               {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
             </DataGridRow>
           )}
