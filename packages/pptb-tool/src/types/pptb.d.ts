@@ -101,16 +101,14 @@ interface SettingsAPI {
 }
 
 interface ToolContext {
-  primaryConnection?: {
-    url?: string;
-    environmentId?: string;
-    friendlyName?: string;
-  };
-  secondaryConnection?: {
-    url?: string;
-    environmentId?: string;
-    friendlyName?: string;
-  };
+  connectionId?: string;
+  connectionUrl?: string;
+  instanceId?: string;
+  secondaryConnectionId?: string | null;
+  secondaryConnectionUrl?: string | null;
+  toolId?: string;
+  toolName?: string;
+  version?: string;
 }
 
 interface ToolboxAPI {

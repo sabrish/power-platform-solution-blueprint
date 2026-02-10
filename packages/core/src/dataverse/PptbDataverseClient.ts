@@ -109,13 +109,24 @@ export class PptbDataverseClient implements IDataverseClient {
 
     const data = response as Record<string, unknown>;
 
-    if (!Array.isArray(data.value)) {
-      throw new Error('Response does not contain a value array');
+    // Handle collection queries (e.g., entity sets)
+    if (Array.isArray(data.value)) {
+      return {
+        value: data.value as T[],
+        count: typeof data['@odata.count'] === 'number' ? data['@odata.count'] : undefined,
+      };
     }
 
-    return {
-      value: data.value as T[],
-      count: typeof data['@odata.count'] === 'number' ? data['@odata.count'] : undefined,
-    };
+    // Handle single item queries (e.g., EntitySet(id))
+    // When querying by ID, OData returns the object directly without a 'value' wrapper
+    if (!Array.isArray(data.value) && data['@odata.context']) {
+      // This is a single item response - wrap it in an array
+      return {
+        value: [data as T],
+        count: 1,
+      };
+    }
+
+    throw new Error('Response does not contain a value array or single item');
   }
 }
