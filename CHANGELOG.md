@@ -5,6 +5,22 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-02-10
+
+### Changed
+
+**Publishing Infrastructure**
+- Testing npm release with Trusted Publishers (OIDC)
+- Fixed workflow environment name to match actual environment configuration
+- Configured npm Trusted Publishing for token-free deployments
+
+### Technical Notes
+- This is a test release to verify npm Trusted Publishing setup
+- Future releases will use OIDC authentication automatically
+- No functional changes to the tool itself
+
+[0.5.2]: https://github.com/sabrish/power-platform-solution-blueprint/releases/tag/v0.5.2
+
 ## [0.5.1] - 2026-02-10
 
 ### Changed
