@@ -169,7 +169,15 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
 
       // Get environment URL from tool context
       const toolContext = window.toolboxAPI.getToolContext();
-      const environmentUrl = toolContext?.primaryConnection?.url || 'Unknown Environment';
+      console.log('[ScopeSelector] Tool context:', toolContext);
+
+      // Try multiple possible fields for environment URL
+      const environmentUrl =
+        toolContext?.primaryConnection?.url ||
+        toolContext?.primaryConnection?.friendlyName ||
+        'Current Environment';
+
+      console.log('[ScopeSelector] Environment URL:', environmentUrl);
 
       const client = new PptbDataverseClient(window.toolboxAPI, environmentUrl);
       const publisherDiscovery = new PublisherDiscovery(client);
