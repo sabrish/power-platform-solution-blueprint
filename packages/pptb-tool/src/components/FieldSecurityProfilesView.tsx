@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from 'react';
+import { useMemo, memo } from 'react';
 import {
   Title3,
   Text,
@@ -13,10 +13,6 @@ import {
   TableColumnDefinition,
   createTableColumn,
   Badge,
-  Tab,
-  TabList,
-  SelectTabData,
-  SelectTabEvent,
 } from '@fluentui/react-components';
 import type {
   FieldSecurityProfile,
@@ -61,7 +57,6 @@ function FieldSecurityProfilesViewComponent({
   columnSecurityProfiles = [],
 }: FieldSecurityProfilesViewProps) {
   const styles = useStyles();
-  const [selectedTab, setSelectedTab] = useState<string>('profiles');
 
   const profileColumns = useMemo<TableColumnDefinition<FieldSecurityProfile>[]>(() => [
     createTableColumn<FieldSecurityProfile>({
@@ -134,24 +129,7 @@ function FieldSecurityProfilesViewComponent({
         </Text>
       </div>
 
-      <TabList
-        selectedValue={selectedTab}
-        onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
-          setSelectedTab(data.value as string);
-        }}
-      >
-        {profiles.length > 0 && (
-          <Tab value="profiles">Field Security Profiles ({profiles.length})</Tab>
-        )}
-        {attributeMaskingRules.length > 0 && (
-          <Tab value="masking">Attribute Masking ({attributeMaskingRules.length})</Tab>
-        )}
-        {columnSecurityProfiles.length > 0 && (
-          <Tab value="columnsecurity">Column Security ({columnSecurityProfiles.length})</Tab>
-        )}
-      </TabList>
-
-      {selectedTab === 'profiles' && profiles.length > 0 && (
+      {profiles.length > 0 && (
         <div className={styles.section}>
           <div style={{ marginBottom: tokens.spacingVerticalS }}>
             <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Field Security Profiles</Title3>
@@ -190,7 +168,7 @@ function FieldSecurityProfilesViewComponent({
         </div>
       )}
 
-      {selectedTab === 'masking' && attributeMaskingRules.length > 0 && (
+      {attributeMaskingRules.length > 0 && (
         <div className={styles.section}>
           <div style={{ marginBottom: tokens.spacingVerticalS }}>
             <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Attribute Masking Rules</Title3>
@@ -229,7 +207,7 @@ function FieldSecurityProfilesViewComponent({
         </div>
       )}
 
-      {selectedTab === 'columnsecurity' && columnSecurityProfiles.length > 0 && (
+      {columnSecurityProfiles.length > 0 && (
         <div className={styles.section}>
           <div style={{ marginBottom: tokens.spacingVerticalS }}>
             <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Column Security Profiles</Title3>
