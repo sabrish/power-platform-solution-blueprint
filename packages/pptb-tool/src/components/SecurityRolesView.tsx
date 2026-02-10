@@ -165,8 +165,16 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                     </td>
                     {privilegeTypes.map((type) => {
                       const priv = privMap.get(type as any);
-                      const depth = Number(priv?.depth ?? 0);
+                      // Ensure depth is a valid number between 0-4
+                      let depth = 0;
+                      if (priv?.depth !== undefined && priv?.depth !== null) {
+                        const parsedDepth = typeof priv.depth === 'string' ? parseInt(priv.depth, 10) : Number(priv.depth);
+                        if (!isNaN(parsedDepth) && parsedDepth >= 0 && parsedDepth <= 4) {
+                          depth = parsedDepth;
+                        }
+                      }
                       const backgroundColor = getDepthColor(depth);
+                      const label = depthLabelMap[depth] || depthLabelMap[0];
                       return (
                         <td
                           key={type}
@@ -176,73 +184,13 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                             backgroundColor,
                           }}
                         >
-                          <Text size={200}>{depthLabelMap[depth] || 'Unknown'}</Text>
+                          <Text size={200}>{label}</Text>
                         </td>
                       );
                     })}
                   </tr>
                 );
               })}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
-
-  // Render special permissions table for a role
-  const renderSpecialPermissionsTable = (role: SecurityRoleDetail) => {
-    if (!role.specialPermissions) return null;
-
-    return (
-      <div style={{ marginTop: tokens.spacingVerticalM }}>
-        <Text weight="semibold" style={{ marginBottom: tokens.spacingVerticalS }}>
-          Special Permissions
-        </Text>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: tokens.colorNeutralBackground2 }}>
-              <th
-                style={{
-                  padding: tokens.spacingVerticalS,
-                  textAlign: 'left',
-                  borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-                }}
-              >
-                Permission
-              </th>
-              <th
-                style={{
-                  padding: tokens.spacingVerticalS,
-                  textAlign: 'center',
-                  borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-                  width: '100px',
-                }}
-              >
-                Granted
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {specialPermissions.map((perm) => {
-              const value = role.specialPermissions?.[perm.key as keyof typeof role.specialPermissions];
-              const granted = value === true;
-              return (
-                <tr key={perm.key} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
-                  <td style={{ padding: tokens.spacingVerticalS }}>{perm.label}</td>
-                  <td
-                    style={{
-                      padding: tokens.spacingVerticalS,
-                      textAlign: 'center',
-                      backgroundColor: granted
-                        ? tokens.colorPaletteGreenBackground3
-                        : tokens.colorNeutralBackground3,
-                    }}
-                  >
-                    {granted ? '✓' : '—'}
-                  </td>
-                </tr>
-              );
-            })}
           </tbody>
         </table>
       </div>
@@ -315,48 +263,46 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                         zIndex: 1,
                       }}
                     >
-                      Permission
+                      Security Role
                     </th>
-                    {securityRoles.map((role) => (
+                    {specialPermissions.map((perm) => (
                       <th
-                        key={role.roleid}
+                        key={perm.key}
                         style={{
                           padding: tokens.spacingVerticalS,
                           textAlign: 'center',
                           borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-                          minWidth: '100px',
+                          minWidth: '120px',
+                          fontSize: tokens.fontSizeBase100,
                         }}
                       >
-                        <div style={{ fontSize: tokens.fontSizeBase200, fontWeight: tokens.fontWeightSemibold }}>
-                          {role.name}
-                        </div>
-                        <div style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, fontWeight: tokens.fontWeightRegular }}>
-                          {role.businessunitname}
-                        </div>
+                        {perm.label}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {specialPermissions.map((perm) => (
-                    <tr key={perm.key} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
+                  {securityRoles.map((role) => (
+                    <tr key={role.roleid} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
                       <td
                         style={{
                           padding: tokens.spacingVerticalS,
                           position: 'sticky',
                           left: 0,
                           backgroundColor: tokens.colorNeutralBackground1,
-                          fontWeight: tokens.fontWeightSemibold,
                         }}
                       >
-                        {perm.label}
+                        <div style={{ fontWeight: tokens.fontWeightSemibold }}>{role.name}</div>
+                        <div style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+                          {role.businessunitname}
+                        </div>
                       </td>
-                      {securityRoles.map((role) => {
+                      {specialPermissions.map((perm) => {
                         const value = role.specialPermissions?.[perm.key as keyof typeof role.specialPermissions];
                         const granted = value === true;
                         return (
                           <td
-                            key={role.roleid}
+                            key={perm.key}
                             style={{
                               padding: tokens.spacingVerticalS,
                               textAlign: 'center',
@@ -382,7 +328,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
             <div style={{ marginBottom: tokens.spacingVerticalS }}>
               <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Role Details</Title3>
               <Text className={styles.description}>
-                Expand each role to view detailed entity-level and special permissions.
+                Expand each role to view detailed entity-level permissions.
               </Text>
             </div>
 
@@ -397,7 +343,6 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                   </AccordionHeader>
                   <AccordionPanel>
                     {renderEntityPermissionsTable(role)}
-                    {renderSpecialPermissionsTable(role)}
                   </AccordionPanel>
                 </AccordionItem>
               ))}
