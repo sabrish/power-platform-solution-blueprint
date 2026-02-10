@@ -1,25 +1,22 @@
 import type { IDataverseClient, QueryOptions, QueryResult } from './IDataverseClient.js';
 
 /**
- * PPTB API interface for Dataverse requests
+ * PPTB Dataverse API interface (matches official @pptb/types DataverseAPI.API)
+ * Using minimal interface to avoid importing full types in core package
  */
-interface PptbDataverseApi {
-  queryData(odataQuery: string, connectionTarget?: 'primary' | 'secondary'): Promise<unknown>;
-}
-
-interface PptbApi {
-  dataverse: PptbDataverseApi;
+interface DataverseApi {
+  queryData(odataQuery: string, connectionTarget?: 'primary' | 'secondary'): Promise<{ value: Record<string, unknown>[] }>;
 }
 
 /**
  * Dataverse client implementation using PPTB Desktop API
  */
 export class PptbDataverseClient implements IDataverseClient {
-  private readonly pptbApi: PptbApi;
+  private readonly dataverseApi: DataverseApi;
   private readonly environmentUrl: string;
 
-  constructor(pptbApi: PptbApi, environmentUrl?: string) {
-    this.pptbApi = pptbApi;
+  constructor(dataverseApi: DataverseApi, environmentUrl?: string) {
+    this.dataverseApi = dataverseApi;
     this.environmentUrl = environmentUrl || 'Unknown Environment';
   }
 
@@ -38,7 +35,7 @@ export class PptbDataverseClient implements IDataverseClient {
       const queryString = this.buildQueryString(options);
       const odataQuery = queryString ? `${entitySet}?${queryString}` : entitySet;
 
-      const response = await this.pptbApi.dataverse.queryData(odataQuery, 'primary');
+      const response = await this.dataverseApi.queryData(odataQuery, 'primary');
 
       return this.parseResponse<T>(response);
     } catch (error) {
@@ -56,7 +53,7 @@ export class PptbDataverseClient implements IDataverseClient {
       const queryString = this.buildQueryString(options);
       const odataQuery = queryString ? `${metadataPath}?${queryString}` : metadataPath;
 
-      const response = await this.pptbApi.dataverse.queryData(odataQuery, 'primary');
+      const response = await this.dataverseApi.queryData(odataQuery, 'primary');
 
       return this.parseResponse<T>(response);
     } catch (error) {
