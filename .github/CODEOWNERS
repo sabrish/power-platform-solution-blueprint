@@ -1,0 +1,13 @@
+# Default owner for everything in the repo
+* @sabrish
+
+# Workflow files - require owner approval
+/.github/workflows/ @sabrish
+
+# Package configuration - require owner approval
+/package.json @sabrish
+/pnpm-lock.yaml @sabrish
+
+# Publishing and security - require owner approval
+/.github/PUBLISHING.md @sabrish
+/LICENSE @sabrish
