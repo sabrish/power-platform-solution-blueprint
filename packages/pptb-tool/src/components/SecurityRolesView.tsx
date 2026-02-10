@@ -165,16 +165,30 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                     </td>
                     {privilegeTypes.map((type) => {
                       const priv = privMap.get(type as any);
-                      // Ensure depth is a valid number between 0-4
-                      let depth = 0;
-                      if (priv?.depth !== undefined && priv?.depth !== null) {
-                        const parsedDepth = typeof priv.depth === 'string' ? parseInt(priv.depth, 10) : Number(priv.depth);
-                        if (!isNaN(parsedDepth) && parsedDepth >= 0 && parsedDepth <= 4) {
-                          depth = parsedDepth;
-                        }
+
+                      // If privilege doesn't exist at all, show empty cell
+                      if (!priv || priv.depth === undefined || priv.depth === null) {
+                        return (
+                          <td
+                            key={type}
+                            style={{
+                              padding: tokens.spacingVerticalS,
+                              textAlign: 'center',
+                              backgroundColor: tokens.colorNeutralBackground3,
+                            }}
+                          >
+                            <Text size={200}>—</Text>
+                          </td>
+                        );
                       }
+
+                      // Parse depth value
+                      const parsedDepth = typeof priv.depth === 'string' ? parseInt(priv.depth, 10) : Number(priv.depth);
+                      const depth = (!isNaN(parsedDepth) && parsedDepth >= 0 && parsedDepth <= 4) ? parsedDepth : 0;
+
                       const backgroundColor = getDepthColor(depth);
-                      const label = depthLabelMap[depth] || depthLabelMap[0];
+                      const label = depthLabelMap[depth];
+
                       return (
                         <td
                           key={type}
