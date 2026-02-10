@@ -339,8 +339,12 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
         <Card className={styles.diagramCard}>
           {isLoading && <Text>Rendering diagram...</Text>}
-          {error && <Text style={{ color: tokens.colorPaletteRedForeground1 }}>{error}</Text>}
-          {svgContent && !isLoading && (
+          {error && (
+            <div style={{ padding: tokens.spacingVerticalL, textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
+              <Text>Diagram preview unavailable. Use the export options to generate the full ERD.</Text>
+            </div>
+          )}
+          {svgContent && !isLoading && !error && (
             <div
               className={styles.diagramContainer}
               style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
