@@ -49,6 +49,9 @@ importers:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
     devDependencies:
+      '@pptb/types':
+        specifier: ^1.0.19
+        version: 1.0.19
       '@types/react':
         specifier: ^18.2.47
         version: 18.3.28
@@ -896,6 +899,9 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@pptb/types@1.0.19':
+    resolution: {integrity: sha512-1nzI65TZEcP5t672G8T3uzheDI5az7Q58HGOq7F2wh0oxcbLKjSfarD13cNKR01slyBIUTNUF5W3pNHJTLYHYA==}
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -3290,6 +3296,8 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
+
+  '@pptb/types@1.0.19': {}
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 

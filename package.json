@@ -10,12 +10,22 @@
     "typecheck": "pnpm -r typecheck"
   },
   "keywords": [
-    "power-platform",
+    "powerplatform",
     "dataverse",
+    "toolbox",
+    "power-platform",
     "blueprint",
-    "documentation"
+    "documentation",
+    "pptb"
   ],
-  "author": "",
+  "author": {
+    "name": "SAB",
+    "url": "https://github.com/sabrish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sabrish/power-platform-solution-blueprint"
+  },
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.3.3"
