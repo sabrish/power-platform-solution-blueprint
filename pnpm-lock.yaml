@@ -7,28 +7,6 @@ settings:
 importers:
 
   .:
-    devDependencies:
-      typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
-
-  packages/core:
-    dependencies:
-      '@types/jszip':
-        specifier: ^3.4.1
-        version: 3.4.1
-      jszip:
-        specifier: ^3.10.1
-        version: 3.10.1
-    devDependencies:
-      rimraf:
-        specifier: ^5.0.5
-        version: 5.0.10
-      typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
-
-  packages/pptb-tool:
     dependencies:
       '@fluentui/react-components':
         specifier: ^9.47.0
@@ -36,9 +14,12 @@ importers:
       '@fluentui/react-icons':
         specifier: ^2.0.318
         version: 2.0.318(react@18.3.1)
-      '@ppsb/core':
-        specifier: workspace:*
-        version: link:../core
+      '@types/jszip':
+        specifier: ^3.4.1
+        version: 3.4.1
+      jszip:
+        specifier: ^3.10.1
+        version: 3.10.1
       mermaid:
         specifier: ^11.12.2
         version: 11.12.2

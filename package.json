@@ -1,13 +1,29 @@
 {
   "name": "@sabrish/power-platform-solution-blueprint",
-  "version": "0.5.0",
-  "private": true,
+  "version": "0.5.1",
+  "displayName": "Power Platform Solution Blueprint Generator",
   "description": "Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.",
-  "scripts": {
-    "build": "pnpm -r build",
-    "dev": "pnpm --filter @ppsb/pptb dev",
-    "clean": "pnpm -r clean",
-    "typecheck": "pnpm -r typecheck"
+  "main": "index.html",
+  "license": "MIT",
+  "author": {
+    "name": "SAB",
+    "url": "https://github.com/sabrish"
+  },
+  "contributors": [
+    {
+      "name": "SAB",
+      "url": "https://github.com/sabrish"
+    },
+    {
+      "name": "Claude Code"
+    },
+    {
+      "name": "ChatGPT"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sabrish/power-platform-solution-blueprint"
   },
   "keywords": [
     "powerplatform",
@@ -16,22 +32,36 @@
     "power-platform",
     "blueprint",
     "documentation",
-    "pptb"
+    "pptb",
+    "solution-analyzer"
   ],
-  "author": {
-    "name": "SAB",
-    "url": "https://github.com/sabrish"
+  "configurations": {
+    "repository": "https://github.com/sabrish/power-platform-solution-blueprint",
+    "readmeUrl": "https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/refs/heads/main/README.md"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sabrish/power-platform-solution-blueprint"
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "clean": "rimraf dist",
+    "typecheck": "tsc --noEmit"
   },
-  "license": "MIT",
+  "dependencies": {
+    "@fluentui/react-components": "^9.47.0",
+    "@fluentui/react-icons": "^2.0.318",
+    "jszip": "^3.10.1",
+    "mermaid": "^11.12.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "devDependencies": {
-    "typescript": "^5.3.3"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "@pptb/types": "^1.0.19",
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.2.1",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
   }
 }

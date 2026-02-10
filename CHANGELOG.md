@@ -5,6 +5,66 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-02-10
+
+### Changed
+
+**Repository Structure**
+- Restructured repository from monorepo to flat structure to comply with PPTB tool development standards
+- Moved `packages/pptb-tool/*` to root directory for proper PPTB Desktop integration
+- Moved `packages/core/src/*` to `src/core/` maintaining logical separation
+- Updated all 47 source files with corrected import paths (replaced workspace references with relative paths)
+- Consolidated package.json files (removed workspace configuration)
+- Preserved documentation and screenshots during restructure
+
+**API Integration**
+- Integrated official `@pptb/types` package (v1.0.19) from npm registry
+- Updated all code to use `window.dataverseAPI` global (official PPTB Desktop API structure)
+- Removed custom type definitions in favor of official types
+- Updated `PptbDataverseClient` to accept `DataverseAPI.API` directly instead of nested structure
+- Updated all components to use `await window.toolboxAPI.getToolContext()` (async method)
+
+**Documentation**
+- Updated `docs/API_SECURITY.md` to reflect official @pptb/types integration
+- Clarified API connection mechanism and authentication flow
+
+### Fixed
+
+**Export Consistency**
+- Fixed ERD exports to generate single comprehensive diagram instead of 3 diagrams
+- HTML exports now show 1 ERD matching the in-tool UI behavior
+- Markdown exports now use only the first (comprehensive) ERD diagram
+- Eliminated redundant publisher-specific diagrams in exported documentation
+
+**PPTB Desktop Compatibility**
+- Added `base: './'` to `vite.config.ts` to fix dynamic import path resolution
+- Resolved "Failed to fetch dynamically imported module" error with custom `pptb-webview://` protocol
+- All asset paths now use relative paths compatible with PPTB Desktop's webview environment
+
+### Added
+
+**User Interface**
+- Added author attribution to footer ("by SAB" with link to GitHub profile)
+- Enhanced footer with GitHub repository link and Open icon
+
+### Technical Notes
+
+**Breaking Changes**
+- Repository structure changed from monorepo to flat layout
+- Import paths changed from workspace references (`@ppsb/core`) to relative paths (`./core` or `../core`)
+- API initialization requires awaiting `getToolContext()` instead of synchronous access
+- `PptbDataverseClient` constructor signature changed to accept `DataverseAPI.API`
+
+**Migration Guide**
+- If extending this codebase, use relative imports instead of workspace package references
+- Use `window.dataverseAPI` for Dataverse operations instead of `window.toolboxAPI.dataverse`
+- Always await `window.toolboxAPI.getToolContext()` for tool context access
+
+**Dependencies**
+- Added `@pptb/types@^1.0.19` as devDependency (official PPTB Desktop type definitions)
+- Maintained all existing runtime dependencies (React, Fluent UI, Mermaid, JSZip)
+
+[0.5.1]: https://github.com/sabrish/power-platform-solution-blueprint/releases/tag/v0.5.1
 ## [0.5.0] - 2026-02-08
 
 ### Added

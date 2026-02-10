@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a monorepo for **Power Platform Solution Blueprint (PPSB)**, a documentation tool that runs inside PPTB Desktop.
+This is a flat-structure project for **Power Platform Solution Blueprint (PPSB)**, a documentation tool that runs inside PPTB Desktop.
 
 **Tagline:** "Complete architectural blueprints for your Power Platform systems"
 
@@ -25,37 +25,48 @@ This is a monorepo for **Power Platform Solution Blueprint (PPSB)**, a documenta
 
 ### API Structure
 
-The PPTB API is available at `window.toolboxAPI` with the following structure:
+**IMPORTANT:** This project uses official `@pptb/types` package (v1.0.19+).
+
+The PPTB API provides two separate global objects:
 
 ```typescript
+// Toolbox API (getToolContext is async!)
 window.toolboxAPI = {
-  getToolContext: function,
+  getToolContext: async function,  // ← Returns Promise<ToolboxAPI.ToolContext>
   connections: object,
-  dataverse: object,     // ← Main API for Dataverse operations
   utils: object,
   fileSystem: object,
   terminal: object,
   events: object,
   settings: object
 }
+
+// Dataverse API (separate global)
+window.dataverseAPI = {
+  queryData: function,
+  fetchXmlQuery: function,
+  create: function,
+  retrieve: function,
+  update: function,
+  delete: function,
+  // ... other Dataverse methods
+}
 ```
 
 ### Dataverse API Methods
 
-**DO NOT use `executeDataverseRequest()` - this does NOT exist!**
-
-Instead, use these correct methods:
+**Use `window.dataverseAPI` for all Dataverse operations:**
 
 #### Query Data
 ```typescript
-window.toolboxAPI.dataverse.queryData(odataQuery: string, connectionTarget?: 'primary' | 'secondary')
+window.dataverseAPI.queryData(odataQuery: string, connectionTarget?: 'primary' | 'secondary')
 ```
 - Executes OData queries with `$select`, `$filter`, `$orderby`, `$expand`, etc.
 - Example: `queryData('publishers?$select=publisherid,friendlyname&$filter=isreadonly eq false')`
 
 #### FetchXML Queries
 ```typescript
-window.toolboxAPI.dataverse.fetchXmlQuery(fetchXml: string, connectionTarget?: 'primary' | 'secondary')
+window.dataverseAPI.fetchXmlQuery(fetchXml: string, connectionTarget?: 'primary' | 'secondary')
 ```
 
 #### CRUD Operations
@@ -92,34 +103,41 @@ To enable multi-connection support, add to `package.json`:
 
 ```
 power-platform-solution-blueprint/
-├── packages/
-│   ├── core/                 # @ppsb/core - Pure TypeScript library
-│   │   └── src/
-│   │       ├── dataverse/    # PptbDataverseClient implementation
-│   │       └── discovery/    # Publisher & Solution discovery
+├── src/
+│   ├── core/                 # Core business logic (TypeScript)
+│   │   ├── dataverse/        # PptbDataverseClient implementation
+│   │   ├── discovery/        # Component discovery classes
+│   │   ├── generators/       # Blueprint generation logic
+│   │   ├── analyzers/        # Analysis engines
+│   │   └── reporters/        # Export format generators
 │   │
-│   └── pptb-tool/            # @ppsb/pptb - React UI for PPTB Desktop
-│       └── src/
-│           ├── App.tsx       # Main UI component
-│           └── types/pptb.d.ts  # PPTB API type definitions
+│   ├── components/           # React UI components
+│   ├── hooks/                # React custom hooks
+│   ├── utils/                # UI utilities
+│   ├── types/                # TypeScript type definitions
+│   ├── App.tsx               # Main UI component
+│   └── main.tsx              # React entry point
 │
-├── package.json
-├── pnpm-workspace.yaml
+├── docs/                     # Documentation
+├── dist/                     # Build output
+├── index.html                # PPTB tool entry point
+├── package.json              # Project configuration
 └── CLAUDE.md                 # This file
 ```
 
 ## Key Implementation Details
 
 ### PptbDataverseClient.ts
-- Located: `packages/core/src/dataverse/PptbDataverseClient.ts`
-- Uses: `window.toolboxAPI.dataverse.queryData()`
+- Located: `src/core/dataverse/PptbDataverseClient.ts`
+- Uses: `window.dataverseAPI.queryData()` (official PPTB Dataverse API)
+- Accepts `DataverseAPI.API` instance in constructor
 - Builds OData query strings from QueryOptions
 - Returns QueryResult<T> with parsed response
 
 ### Type Definitions
-- Located: `packages/pptb-tool/src/types/pptb.d.ts`
-- Contains complete PPTB API interface definitions
-- Keep this in sync with official PPTB documentation
+- Official types from `@pptb/types` package (v1.0.19+)
+- Custom types in: `src/types/`
+- Always use official PPTB types for API integration
 
 ## Development Commands
 
@@ -133,7 +151,7 @@ pnpm typecheck       # Type check all packages
 ## Testing in PPTB Desktop
 
 1. Build the project: `pnpm build`
-2. Load in PPTB Desktop from: `packages/pptb-tool/dist/index.html`
+2. Load in PPTB Desktop from: `dist/index.html`
 3. Tool display name: "Power Platform Solution Blueprint (PPSB)"
 
 ## Features
@@ -177,7 +195,7 @@ The app includes a professional scope selection screen with two main options:
 ### Entity Discovery (Current)
 After scope selection, the app fetches and displays entities:
 
-**Core Package (@ppsb/core):**
+**Core Business Logic (`src/core/`):**
 - `EntityDiscovery` class with three methods:
   - `getEntitiesByPublisher(publisherPrefixes)` - Gets entities by publisher prefix
   - `getEntitiesBySolutions(solutionIds)` - Gets entities from solution components
@@ -185,7 +203,7 @@ After scope selection, the app fetches and displays entities:
 - Uses `queryMetadata()` for EntityDefinitions endpoint
 - Queries solution components to find entities in solutions
 
-**UI Package (@ppsb/pptb):**
+**UI Components (`src/components/`):**
 - `useEntityDiscovery` hook - Fetches entities based on selected scope
 - `EntityList` component:
   - Searchable list (filters by LogicalName or DisplayName)
@@ -273,8 +291,9 @@ inventory.pluginIds.push(objectId);
 - 📚 **Check official docs first:**
   - Microsoft Dataverse: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/
   - PPTB Desktop: https://docs.powerplatformtoolbox.com/tool-development/api-reference
+  - PPTB Types: Use official `@pptb/types` package (v1.0.19+)
 - 🎨 **UI Framework:** Fluent UI React v9 (includes @fluentui/react-icons)
-- 📦 **Package Manager:** pnpm workspaces
+- 📦 **Package Manager:** pnpm
 - 🔧 **Build Tool:** Vite + TypeScript (strict mode)
 - 🎯 **Default Scope:** "By Solution" is the recommended and default selection
 - ⚡ **Performance:** Follow DATAVERSE_OPTIMIZATION_GUIDE.md patterns
