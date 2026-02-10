@@ -393,9 +393,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             }}
             size="small"
             style={{
-              overflowX: 'auto',
-              flexWrap: 'nowrap',
-              maxWidth: '100%'
+              flexWrap: 'wrap',
+              gap: tokens.spacingHorizontalS
             }}
           >
             {/* Entities Tab - Always shown */}
