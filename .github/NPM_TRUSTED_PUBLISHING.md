@@ -91,7 +91,7 @@ gh release create v0.5.2 --title "v0.5.2" --notes "Release notes"
 ### Manual Publish (via Workflow):
 1. Go to Actions → Publish to npm
 2. Click "Run workflow"
-3. No approvals needed - OIDC handles auth automatically
+3. OIDC handles npm authentication automatically (no npm token required), but GitHub environment protection rules for the `npm-production` environment may still require manual approval before the job runs.
 
 ---
 
