@@ -99,12 +99,6 @@ const useStyles = makeStyles({
   },
   summaryCard: {
     padding: tokens.spacingVerticalS,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: tokens.shadow8,
-    },
   },
   summaryCardDisabled: {
     padding: tokens.spacingVerticalS,
