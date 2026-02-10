@@ -28,7 +28,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # registry-url removed - OIDC/Trusted Publishing handles authentication
+          registry-url: 'https://registry.npmjs.org'
+          # registry-url configures npm for OIDC when id-token: write is present and NODE_AUTH_TOKEN is not set
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
