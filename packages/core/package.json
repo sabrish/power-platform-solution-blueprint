@@ -1,7 +1,7 @@
 {
   "name": "@ppsb/core",
   "version": "0.1.0",
-  "description": "Core TypeScript library for Power Platform System Blueprint",
+  "description": "Core TypeScript library for Power Platform Solution Blueprint",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

@@ -1,4 +1,4 @@
-# Power Platform System Blueprint (PPSB)
+# Power Platform Solution Blueprint (PPSB)
 
 > Complete architectural blueprints for your Power Platform systems
 

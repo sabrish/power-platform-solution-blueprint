@@ -144,7 +144,7 @@ export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: Ex
                 />
               }
             >
-              Export System Blueprint
+              Export Solution Blueprint
             </DialogTitle>
 
             <DialogContent>

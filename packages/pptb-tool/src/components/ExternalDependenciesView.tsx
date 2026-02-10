@@ -10,14 +10,6 @@ import {
   Button,
   makeStyles,
   tokens,
-  DataGrid,
-  DataGridHeader,
-  DataGridRow,
-  DataGridHeaderCell,
-  DataGridBody,
-  DataGridCell,
-  TableColumnDefinition,
-  createTableColumn,
 } from '@fluentui/react-components';
 import {
   ChevronDown20Regular,
@@ -101,10 +93,32 @@ const useStyles = makeStyles({
   domainCell: {
     fontFamily: 'Consolas, Monaco, monospace',
     fontSize: tokens.fontSizeBase200,
+    maxWidth: '250px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   wrapText: {
     wordBreak: 'break-word',
     overflowWrap: 'break-word',
+  },
+  rowContainer: {
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+    marginBottom: tokens.spacingVerticalS,
+  },
+  mainRow: {
+    display: 'grid',
+    gridTemplateColumns: '40px minmax(250px, 1fr) 150px 200px 120px',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalM,
+    padding: tokens.spacingVerticalS,
+    cursor: 'pointer',
+    ':hover': {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+    },
+  },
+  cellContent: {
+    overflow: 'hidden',
   },
 });
 
@@ -170,98 +184,6 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
       return newSet;
     });
   };
-
-  // Table columns
-  const columns: TableColumnDefinition<ExternalEndpoint>[] = [
-    createTableColumn<ExternalEndpoint>({
-      columnId: 'expand',
-      renderHeaderCell: () => '',
-      renderCell: (item) => (
-        <Button
-          appearance="subtle"
-          size="small"
-          icon={expandedRows.has(item.domain) ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
-          onClick={() => toggleRow(item.domain)}
-        />
-      ),
-    }),
-    createTableColumn<ExternalEndpoint>({
-      columnId: 'domain',
-      renderHeaderCell: () => 'Domain',
-      renderCell: (item) => (
-        <div>
-          <Text weight="semibold" className={`${styles.domainCell} ${styles.wrapText}`}>{item.domain}</Text>
-          <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-            {item.protocol}://
-          </Text>
-        </div>
-      ),
-      compare: (a, b) => a.domain.localeCompare(b.domain),
-    }),
-    createTableColumn<ExternalEndpoint>({
-      columnId: 'riskLevel',
-      renderHeaderCell: () => 'Risk Level',
-      renderCell: (item) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
-          {item.riskLevel === 'Trusted' ? (
-            <ShieldCheckmark24Regular style={{ color: tokens.colorPaletteGreenForeground1 }} />
-          ) : item.riskLevel === 'Known' ? (
-            <Shield24Regular style={{ color: tokens.colorPaletteBlueForeground2 }} />
-          ) : (
-            <ShieldError24Regular style={{ color: tokens.colorPaletteRedForeground1 }} />
-          )}
-          <Badge
-            appearance="filled"
-            color={
-              item.riskLevel === 'Trusted'
-                ? 'success'
-                : item.riskLevel === 'Known'
-                ? 'informative'
-                : 'danger'
-            }
-          >
-            {item.riskLevel}
-          </Badge>
-        </div>
-      ),
-    }),
-    createTableColumn<ExternalEndpoint>({
-      columnId: 'riskFactors',
-      renderHeaderCell: () => 'Risk Factors',
-      renderCell: (item) => {
-        const criticalCount = item.riskFactors.filter((f: { severity: string }) => f.severity === 'Critical').length;
-        const highCount = item.riskFactors.filter((f: { severity: string }) => f.severity === 'High').length;
-
-        return (
-          <div style={{ display: 'flex', gap: tokens.spacingHorizontalXS }}>
-            {criticalCount > 0 && (
-              <Badge appearance="filled" color="danger">
-                {criticalCount} Critical
-              </Badge>
-            )}
-            {highCount > 0 && (
-              <Badge appearance="filled" color="warning">
-                {highCount} High
-              </Badge>
-            )}
-            {criticalCount === 0 && highCount === 0 && item.riskFactors.length > 0 && (
-              <Badge appearance="outline">{item.riskFactors.length} factors</Badge>
-            )}
-          </div>
-        );
-      },
-    }),
-    createTableColumn<ExternalEndpoint>({
-      columnId: 'callCount',
-      renderHeaderCell: () => 'Called From',
-      renderCell: (item) => (
-        <Badge appearance="tint" color="brand">
-          {item.callCount} component{item.callCount !== 1 ? 's' : ''}
-        </Badge>
-      ),
-      compare: (a, b) => a.callCount - b.callCount,
-    }),
-  ];
 
   return (
     <div className={styles.container}>
@@ -340,110 +262,204 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
         Showing {filteredEndpoints.length} of {endpoints.length} endpoints
       </Text>
 
-      {/* Table with Expandable Rows */}
-      <div className={styles.tableContainer}>
-        {filteredEndpoints.map((endpoint) => (
-          <div key={endpoint.domain} style={{ marginBottom: tokens.spacingVerticalS }}>
-            <DataGrid items={[endpoint]} columns={columns} resizableColumns>
-              <DataGridHeader>
-                <DataGridRow>
-                  {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
-                </DataGridRow>
-              </DataGridHeader>
-              <DataGridBody<ExternalEndpoint>>
-                {({ item, rowId }) => (
-                  <DataGridRow<ExternalEndpoint> key={rowId}>
-                    {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
-                  </DataGridRow>
-                )}
-              </DataGridBody>
-            </DataGrid>
+      {/* Custom Table with Expandable Rows */}
+      <Card>
+        {/* Header Row */}
+        <div className={styles.mainRow} style={{ backgroundColor: tokens.colorNeutralBackground3, cursor: 'default', fontWeight: 600 }}>
+          <div></div>
+          <div>Domain</div>
+          <div>Risk Level</div>
+          <div>Risk Factors</div>
+          <div>Called From</div>
+        </div>
 
-            {/* Expanded Row Details */}
-            {expandedRows.has(endpoint.domain) && (
-              <div className={styles.expandedRow}>
-                {/* Risk Factors */}
-                {endpoint.riskFactors.length > 0 && (
-                  <div className={styles.riskFactorsSection}>
-                    <Text weight="semibold">Risk Factors</Text>
-                    {endpoint.riskFactors.map((factor: any, index: number) => (
-                      <Card
-                        key={index}
-                        className={`${styles.riskFactorCard} ${
-                          factor.severity === 'Critical'
-                            ? styles.riskFactorCritical
-                            : factor.severity === 'High'
-                            ? styles.riskFactorHigh
-                            : factor.severity === 'Medium'
-                            ? styles.riskFactorMedium
-                            : styles.riskFactorLow
-                        }`}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
-                          <Badge
-                            appearance="filled"
-                            color={
-                              factor.severity === 'Critical' || factor.severity === 'High'
-                                ? 'danger'
-                                : factor.severity === 'Medium'
-                                ? 'warning'
-                                : 'success'
-                            }
-                          >
-                            {factor.severity}
-                          </Badge>
-                          <Text weight="semibold" className={styles.wrapText}>{factor.factor}</Text>
-                        </div>
-                        <Text className={styles.wrapText} style={{ marginTop: tokens.spacingVerticalXS }}>{factor.description}</Text>
-                        <Text
-                          className={styles.wrapText}
-                          style={{
-                            marginTop: tokens.spacingVerticalXS,
-                            fontSize: tokens.fontSizeBase200,
-                            color: tokens.colorNeutralForeground3,
-                          }}
-                        >
-                          💡 {factor.recommendation}
-                        </Text>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+        {/* Data Rows */}
+        {filteredEndpoints.map((item) => (
+          <div key={item.domain} className={styles.rowContainer}>
+            {/* Main Row */}
+            <div className={styles.mainRow} onClick={() => toggleRow(item.domain)}>
+              {/* Expand Button */}
+              <Button
+                appearance="subtle"
+                size="small"
+                icon={expandedRows.has(item.domain) ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleRow(item.domain);
+                }}
+              />
 
-                {/* Sources */}
-                <div style={{ marginTop: tokens.spacingVerticalL }}>
-                  <Text weight="semibold">Called From ({endpoint.detectedIn.length})</Text>
-                  <div className={styles.sourcesGrid}>
-                    {endpoint.detectedIn.map((source: any, index: number) => (
-                      <Card key={index} className={styles.sourceCard}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, marginBottom: tokens.spacingVerticalXXS }}>
-                          <Badge appearance="outline" color="brand">
-                            {source.type}
-                          </Badge>
-                          <Badge appearance="tint" color={source.mode === 'Sync' ? 'warning' : 'success'}>
-                            {source.mode}
-                          </Badge>
-                        </div>
-                        <Text weight="semibold" className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200 }}>
-                          {source.name}
-                        </Text>
-                        {source.entity && (
-                          <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-                            Entity: {source.entity}
-                          </Text>
-                        )}
-                        <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-                          Confidence: {source.confidence}
-                        </Text>
-                      </Card>
-                    ))}
-                  </div>
+              {/* Domain */}
+              <div className={styles.cellContent} title={`${item.protocol}://${item.domain}`}>
+                <Text weight="semibold" className={styles.domainCell}>
+                  {item.domain}
+                </Text>
+                <div>
+                  <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+                    {item.protocol}://
+                  </Text>
                 </div>
               </div>
+
+              {/* Risk Level */}
+              <div className={styles.cellContent}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
+                  {item.riskLevel === 'Trusted' ? (
+                    <ShieldCheckmark24Regular style={{ color: tokens.colorPaletteGreenForeground1 }} />
+                  ) : item.riskLevel === 'Known' ? (
+                    <Shield24Regular style={{ color: tokens.colorPaletteBlueForeground2 }} />
+                  ) : (
+                    <ShieldError24Regular style={{ color: tokens.colorPaletteRedForeground1 }} />
+                  )}
+                  <Badge
+                    appearance="filled"
+                    color={
+                      item.riskLevel === 'Trusted'
+                        ? 'success'
+                        : item.riskLevel === 'Known'
+                        ? 'informative'
+                        : 'danger'
+                    }
+                  >
+                    {item.riskLevel}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Risk Factors */}
+              <div className={styles.cellContent}>
+                {(() => {
+                  const criticalCount = item.riskFactors.filter((f: { severity: string }) => f.severity === 'Critical').length;
+                  const highCount = item.riskFactors.filter((f: { severity: string }) => f.severity === 'High').length;
+
+                  return (
+                    <div style={{ display: 'flex', gap: tokens.spacingHorizontalXS, flexWrap: 'wrap' }}>
+                      {criticalCount > 0 && (
+                        <Badge appearance="filled" color="danger">
+                          {criticalCount} Critical
+                        </Badge>
+                      )}
+                      {highCount > 0 && (
+                        <Badge appearance="filled" color="warning">
+                          {highCount} High
+                        </Badge>
+                      )}
+                      {criticalCount === 0 && highCount === 0 && item.riskFactors.length > 0 && (
+                        <Badge appearance="outline">{item.riskFactors.length} factors</Badge>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Called From */}
+              <div className={styles.cellContent}>
+                <Badge appearance="tint" color="brand">
+                  {item.callCount}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Expanded Row Details */}
+            {expandedRows.has(item.domain) && (
+              <div className={styles.expandedRow}>
+              {/* Full URL */}
+              <div style={{ marginBottom: tokens.spacingVerticalM }}>
+                <Text weight="semibold">Full URL</Text>
+                <Text
+                  className={styles.wrapText}
+                  style={{
+                    fontFamily: 'Consolas, Monaco, monospace',
+                    fontSize: tokens.fontSizeBase200,
+                    marginTop: tokens.spacingVerticalXXS,
+                  }}
+                >
+                  {item.url}
+                </Text>
+              </div>
+
+              {/* Risk Factors */}
+              {item.riskFactors.length > 0 && (
+                <div className={styles.riskFactorsSection}>
+                  <Text weight="semibold">Risk Factors</Text>
+                  {item.riskFactors.map((factor: any, index: number) => (
+                    <Card
+                      key={index}
+                      className={`${styles.riskFactorCard} ${
+                        factor.severity === 'Critical'
+                          ? styles.riskFactorCritical
+                          : factor.severity === 'High'
+                          ? styles.riskFactorHigh
+                          : factor.severity === 'Medium'
+                          ? styles.riskFactorMedium
+                          : styles.riskFactorLow
+                      }`}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+                        <Badge
+                          appearance="filled"
+                          color={
+                            factor.severity === 'Critical' || factor.severity === 'High'
+                              ? 'danger'
+                              : factor.severity === 'Medium'
+                              ? 'warning'
+                              : 'success'
+                          }
+                        >
+                          {factor.severity}
+                        </Badge>
+                        <Text weight="semibold" className={styles.wrapText}>{factor.factor}</Text>
+                      </div>
+                      <Text className={styles.wrapText} style={{ marginTop: tokens.spacingVerticalXS }}>{factor.description}</Text>
+                      <Text
+                        className={styles.wrapText}
+                        style={{
+                          marginTop: tokens.spacingVerticalXS,
+                          fontSize: tokens.fontSizeBase200,
+                          color: tokens.colorNeutralForeground3,
+                        }}
+                      >
+                        💡 {factor.recommendation}
+                      </Text>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Sources */}
+              <div style={{ marginTop: tokens.spacingVerticalL }}>
+                <Text weight="semibold">Called From ({item.detectedIn.length})</Text>
+                <div className={styles.sourcesGrid}>
+                  {item.detectedIn.map((source: any, index: number) => (
+                    <Card key={index} className={styles.sourceCard}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, marginBottom: tokens.spacingVerticalXXS }}>
+                        <Badge appearance="outline" color="brand">
+                          {source.type}
+                        </Badge>
+                        <Badge appearance="tint" color={source.mode === 'Sync' ? 'warning' : 'success'}>
+                          {source.mode}
+                        </Badge>
+                      </div>
+                      <Text weight="semibold" className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200 }}>
+                        {source.name}
+                      </Text>
+                      {source.entity && (
+                        <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                          Entity: {source.entity}
+                        </Text>
+                      )}
+                      <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                        Confidence: {source.confidence}
+                      </Text>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
             )}
           </div>
         ))}
-      </div>
+      </Card>
     </div>
   );
 }

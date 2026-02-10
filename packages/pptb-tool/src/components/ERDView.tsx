@@ -6,8 +6,6 @@ import {
   Badge,
   Button,
   SearchBox,
-  Dropdown,
-  Option,
   makeStyles,
   tokens,
   DataGrid,
@@ -20,6 +18,11 @@ import {
   createTableColumn,
   MessageBar,
   MessageBarBody,
+  Toast,
+  ToastTitle,
+  Toaster,
+  useId,
+  useToastController,
 } from '@fluentui/react-components';
 import {
   ArrowDownload24Regular,
@@ -27,9 +30,11 @@ import {
   ZoomIn24Regular,
   ZoomOut24Regular,
   Info24Regular,
+  Checkmark24Regular,
 } from '@fluentui/react-icons';
-import type { ERDDefinition, EntityQuickLink } from '@ppsb/core';
+import type { ERDDefinition, EntityQuickLink, BlueprintResult } from '@ppsb/core';
 import { renderMermaid, initMermaid } from '../utils/mermaidRenderer';
+import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
 
 const useStyles = makeStyles({
   container: {
@@ -102,19 +107,23 @@ const useStyles = makeStyles({
 
 export interface ERDViewProps {
   erd: ERDDefinition;
+  blueprintResult: BlueprintResult;
 }
 
-export function ERDView({ erd }: ERDViewProps) {
+export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   const styles = useStyles();
-  const [selectedDiagramIndex, setSelectedDiagramIndex] = useState(0);
   const [svgContent, setSvgContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(100);
 
-  // Get current diagram
-  const currentDiagram = erd.diagrams[selectedDiagramIndex];
+  // Toast notifications
+  const toasterId = useId('toaster');
+  const { dispatchToast } = useToastController(toasterId);
+
+  // Use the first diagram (comprehensive view with all entities)
+  const currentDiagram = erd.diagrams[0];
 
   // Initialize Mermaid on mount
   useEffect(() => {
@@ -246,7 +255,28 @@ export function ERDView({ erd }: ERDViewProps) {
   const handleCopyMermaid = () => {
     if (currentDiagram) {
       navigator.clipboard.writeText(currentDiagram.mermaidDiagram);
+      dispatchToast(
+        <Toast>
+          <ToastTitle action={<Checkmark24Regular />}>
+            Mermaid code copied to clipboard
+          </ToastTitle>
+        </Toast>,
+        { intent: 'success', timeout: 2000 }
+      );
     }
+  };
+
+  const handleCopyDbDiagram = () => {
+    const dbDiagramCode = generateDbDiagramCode(blueprintResult);
+    navigator.clipboard.writeText(dbDiagramCode);
+    dispatchToast(
+      <Toast>
+        <ToastTitle action={<Checkmark24Regular />}>
+          dbdiagram.io code copied! Paste it at https://dbdiagram.io/d
+        </ToastTitle>
+      </Toast>,
+      { intent: 'success', timeout: 3000 }
+    );
   };
 
   const handleZoomIn = () => {
@@ -259,6 +289,7 @@ export function ERDView({ erd }: ERDViewProps) {
 
   return (
     <div className={styles.container}>
+      <Toaster toasterId={toasterId} />
       {/* ERD Diagram Section */}
       <div className={styles.diagramSection}>
         <Title3>Entity Relationship Diagram</Title3>
@@ -277,26 +308,6 @@ export function ERDView({ erd }: ERDViewProps) {
           </MessageBar>
         )}
 
-        {/* Diagram Selector */}
-        {erd.diagrams.length > 1 && (
-          <Dropdown
-            placeholder="Select diagram"
-            value={currentDiagram?.title || ''}
-            selectedOptions={[String(selectedDiagramIndex)]}
-            onOptionSelect={(_, data) => setSelectedDiagramIndex(Number(data.optionValue))}
-            style={{ minWidth: '300px', marginTop: tokens.spacingVerticalM }}
-          >
-            {erd.diagrams.map((diagram, index) => {
-              const label = `${diagram.title} (${diagram.entityCount} entities, ${diagram.relationshipCount} relationships)`;
-              return (
-                <Option key={diagram.id} value={String(index)} text={label}>
-                  {label}
-                </Option>
-              );
-            })}
-          </Dropdown>
-        )}
-
         {currentDiagram && (
           <Text style={{ marginTop: tokens.spacingVerticalS, color: tokens.colorNeutralForeground3 }}>
             {currentDiagram.description}
@@ -313,6 +324,9 @@ export function ERDView({ erd }: ERDViewProps) {
           </Button>
           <Button icon={<Copy24Regular />} onClick={handleCopyMermaid}>
             Copy Mermaid Code
+          </Button>
+          <Button icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
+            Copy dbdiagram.io Code
           </Button>
           <Button icon={<ZoomIn24Regular />} onClick={handleZoomIn} disabled={zoomLevel >= 200}>
             Zoom In

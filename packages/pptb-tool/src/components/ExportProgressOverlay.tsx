@@ -77,7 +77,7 @@ export function ExportProgressOverlay({ progress, onCancel }: ExportProgressOver
   return (
     <div className={styles.overlay}>
       <div className={styles.card}>
-        <div className={styles.title}>Exporting System Blueprint</div>
+        <div className={styles.title}>Exporting Solution Blueprint</div>
 
         <div className={styles.spinnerContainer}>
           <Spinner size="extra-large" />
