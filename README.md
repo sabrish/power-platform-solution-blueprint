@@ -1,17 +1,17 @@
 # Power Platform Solution Blueprint (PPSB)
 
-> Complete architectural blueprints for your Power Platform systems
+> Complete architectural blueprints for your Power Platform solutions.
 
 ![Version](https://img.shields.io/badge/version-0.5-blue)
 ![Status](https://img.shields.io/badge/status-initial%20release-green)
 
-Generate comprehensive technical documentation for Dataverse and Power Platform environments with automated discovery, analysis, and export capabilities.
+Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.
 
 ---
 
 ## 🎯 What is PPSB?
 
-**PPSB** is an automated documentation tool that generates complete architectural blueprints for Power Platform systems. It discovers, analyzes, and documents your entire Dataverse environment—from entity schemas to automation pipelines—saving architects and developers hundreds of hours of manual documentation work.
+**PPSB** is an automated documentation tool that generates complete architectural blueprints for Power Platform solutions. It discovers, analyzes, and documents your entire Dataverse environment—from entity schemas to automation pipelines—saving architects and developers hundreds of hours of manual documentation work.
 
 The tool generates **comprehensive blueprints** including Entity Relationship Diagrams (ERD), complete entity documentation with automation execution pipelines, cross-entity automation mapping, external dependency analysis, and solution distribution breakdowns. All exports are production-ready: Markdown files ready for Azure DevOps Wiki, JSON for programmatic analysis, and self-contained HTML for stakeholder sharing.
 
