@@ -81,28 +81,24 @@ export class GlobalChoiceDiscovery {
             {}
           );
 
-          console.log(`[GlobalChoiceDiscovery] Fetched global choice ${cleanId}:`, response);
-
           // Direct path query returns single object, not array
           if (response.value && Array.isArray(response.value) && response.value.length > 0) {
             const mapped = this.mapToGlobalChoice(response.value[0]);
-            console.log(`[GlobalChoiceDiscovery] Mapped (array):`, mapped);
             globalChoices.push(mapped);
           } else if (response.value && !Array.isArray(response.value)) {
             // Handle case where API returns single object instead of array
             const mapped = this.mapToGlobalChoice(response.value as any);
-            console.log(`[GlobalChoiceDiscovery] Mapped (object):`, mapped);
             globalChoices.push(mapped);
           }
         } catch (error) {
-          console.warn(`Failed to fetch global choice ${id}:`, error);
+          console.warn('Failed to fetch global choice:', error instanceof Error ? error.message : 'Unknown error');
           // Continue with other global choices even if one fails
         }
       }
 
       return globalChoices;
     } catch (error) {
-      console.error('Error fetching global choices batch:', error);
+      console.error('Error fetching global choices batch:', error instanceof Error ? error.message : 'Unknown error');
       return [];
     }
   }
@@ -130,8 +126,6 @@ export class GlobalChoiceDiscovery {
 
     // Sort options by value
     options.sort((a, b) => a.value - b.value);
-
-    console.log(`[GlobalChoiceDiscovery] Mapped ${raw.Name}: ${options.length} options`);
 
     return {
       id: raw.MetadataId,

@@ -49,7 +49,6 @@ export class FlowDefinitionParser {
         dataverseActions,
       };
     } catch (error) {
-      console.warn('Failed to parse flow definition:', error);
       return defaultDefinition;
     }
   }

@@ -43,8 +43,6 @@ export class CustomConnectorDiscovery {
       const batchSize = 20;
       const allResults: RawConnector[] = [];
 
-      console.log(`📋 Querying ${connectorIds.length} Custom Connectors in batches of ${batchSize}...`);
-
       for (let i = 0; i < connectorIds.length; i += batchSize) {
         const batch = connectorIds.slice(i, i + batchSize);
         const filterClauses = batch.map(id => {
@@ -52,8 +50,6 @@ export class CustomConnectorDiscovery {
           return `connectorid eq ${guidWithBraces}`;
         });
         const filter = filterClauses.join(' or ');
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Custom Connectors...`);
 
         const result = await this.client.query<RawConnector>('connectors', {
           select: ['connectorid', 'name', 'displayname', 'description', 'connectortype',
@@ -71,10 +67,8 @@ export class CustomConnectorDiscovery {
         }
       }
 
-      console.log(`📋 Total Custom Connectors retrieved: ${allResults.length}`);
       return allResults.map(raw => this.mapToCustomConnector(raw));
     } catch (error) {
-      console.error('Error fetching custom connectors:', error);
       return [];
     }
   }

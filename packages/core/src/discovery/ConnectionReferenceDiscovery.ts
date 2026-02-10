@@ -35,14 +35,10 @@ export class ConnectionReferenceDiscovery {
       const batchSize = 20;
       const allResults: RawConnectionReference[] = [];
 
-      console.log(`📋 Querying ${ids.length} Connection References in batches of ${batchSize}...`);
-
       for (let i = 0; i < ids.length; i += batchSize) {
         const batch = ids.slice(i, i + batchSize);
         const filterClauses = batch.map(id => `connectionreferenceid eq ${id.replace(/[{}]/g, '')}`);
         const filter = filterClauses.join(' or ');
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Connection References...`);
 
         const result = await this.client.query<RawConnectionReference>('connectionreferences', {
           select: ['connectionreferenceid', 'connectionreferencelogicalname', 'connectionreferencedisplayname',
@@ -60,7 +56,6 @@ export class ConnectionReferenceDiscovery {
         }
       }
 
-      console.log(`📋 Total Connection References retrieved: ${allResults.length}`);
       return allResults.map(raw => this.mapToConnectionReference(raw));
     } catch (error) {
       throw new Error(`Failed to retrieve Connection References: ${error instanceof Error ? error.message : 'Unknown error'}`);

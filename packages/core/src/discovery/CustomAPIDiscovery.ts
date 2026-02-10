@@ -63,8 +63,6 @@ export class CustomAPIDiscovery {
       const batchSize = 20;
       const allResults: RawCustomAPI[] = [];
 
-      console.log(`📋 Querying ${customApiIds.length} Custom APIs in batches of ${batchSize}...`);
-
       for (let i = 0; i < customApiIds.length; i += batchSize) {
         const batch = customApiIds.slice(i, i + batchSize);
         const filterClauses = batch.map((id) => {
@@ -72,8 +70,6 @@ export class CustomAPIDiscovery {
           return `customapiid eq ${cleanGuid}`;
         });
         const filter = filterClauses.join(' or ');
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Custom APIs...`);
 
         const result = await this.client.query<RawCustomAPI>('customapis', {
           select: [
@@ -103,8 +99,6 @@ export class CustomAPIDiscovery {
           this.onProgress(allResults.length, customApiIds.length);
         }
       }
-
-      console.log(`📋 Total Custom APIs retrieved: ${allResults.length}`);
 
       // For each Custom API, fetch its request parameters and response properties
       const customAPIs: CustomAPI[] = [];
@@ -149,7 +143,6 @@ export class CustomAPIDiscovery {
 
       return result.value.map((raw) => this.mapToParameter(raw, true));
     } catch (error) {
-      console.error(`Error fetching request parameters for ${customApiId}:`, error);
       return [];
     }
   }
@@ -178,7 +171,6 @@ export class CustomAPIDiscovery {
 
       return result.value.map((raw) => this.mapToParameter(raw, false));
     } catch (error) {
-      console.error(`Error fetching response properties for ${customApiId}:`, error);
       return [];
     }
   }

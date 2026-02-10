@@ -171,8 +171,6 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
       const toolContext = window.toolboxAPI.getToolContext();
       const environmentUrl = toolContext?.connectionUrl || 'Current Environment';
 
-      console.log('[ScopeSelector] Environment URL:', environmentUrl);
-
       const client = new PptbDataverseClient(window.toolboxAPI, environmentUrl);
       const publisherDiscovery = new PublisherDiscovery(client);
       const solutionDiscovery = new SolutionDiscovery(client);
@@ -191,7 +189,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
-      console.error('Error loading data:', err);
+      console.error('Error loading publishers and solutions:', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }

@@ -145,7 +145,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         setSvgContent(svg);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to render ERD');
-        console.error('ERD rendering error:', err);
       } finally {
         setIsLoading(false);
       }

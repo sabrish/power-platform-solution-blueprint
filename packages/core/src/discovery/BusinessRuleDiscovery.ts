@@ -39,20 +39,14 @@ export class BusinessRuleDiscovery {
       return [];
     }
 
-    console.log(`📋 Fetching ${brIds.length} business rule(s)...`);
-
     try {
       const batchSize = 20;
       const allResults: BusinessRuleRecord[] = [];
-
-      console.log(`📋 Querying ${brIds.length} Business Rules in batches of ${batchSize}...`);
 
       for (let i = 0; i < brIds.length; i += batchSize) {
         const batch = brIds.slice(i, i + batchSize);
         const filterClauses = batch.map((id) => `workflowid eq ${id}`);
         const filter = `(${filterClauses.join(' or ')}) and category eq 2`;
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Business Rules...`);
 
         const response = await this.client.query<BusinessRuleRecord>('workflows', {
           select: [
@@ -79,14 +73,11 @@ export class BusinessRuleDiscovery {
         }
       }
 
-      console.log(`📋 Total Business Rules retrieved: ${allResults.length}`);
-
       // Map to BusinessRule objects
       const businessRules = allResults.map((record) => this.mapRecordToBusinessRule(record));
 
       return businessRules;
     } catch (error) {
-      console.error('📋 ERROR fetching business rules:', error);
       throw error;
     }
   }
@@ -117,7 +108,6 @@ export class BusinessRuleDiscovery {
 
       return records.map((record) => this.mapRecordToBusinessRule(record));
     } catch (error) {
-      console.error(`📋 ERROR fetching business rules for entity ${logicalName}:`, error);
       return [];
     }
   }

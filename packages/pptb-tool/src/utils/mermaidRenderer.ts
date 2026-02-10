@@ -39,12 +39,8 @@ export async function renderMermaid(
     const { svg } = await mermaid.render(elementId, cleanedDiagram);
     return svg;
   } catch (error) {
-    console.error('Failed to render Mermaid diagram:', error);
-    console.error('Diagram content:', diagram.substring(0, 500) + '...');
-
     // Try with simplified configuration
     try {
-      console.log('Attempting render with simplified configuration...');
       mermaid.initialize({
         startOnLoad: false,
         theme: 'default',
@@ -60,7 +56,6 @@ export async function renderMermaid(
       const { svg } = await mermaid.render(elementId + '-retry', diagram.trim());
       return svg;
     } catch (retryError) {
-      console.error('Retry also failed:', retryError);
       throw new Error(
         `Mermaid rendering failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

@@ -501,8 +501,6 @@ export class BlueprintGenerator {
 
       if (detailedEntity.Attributes && !isCustomEntity && attributeIds.length > 0) {
         // Only filter system entity attributes to those in solution
-        const originalCount = detailedEntity.Attributes.length;
-
         detailedEntity.Attributes = detailedEntity.Attributes.filter((attr) => {
           if (!attr.MetadataId) return false;
 
@@ -515,13 +513,6 @@ export class BlueprintGenerator {
           );
         });
 
-        console.log(
-          `📊 ${entity.LogicalName} (system): Filtered ${originalCount} → ${detailedEntity.Attributes.length} attributes`
-        );
-      } else if (isCustomEntity) {
-        console.log(
-          `📊 ${entity.LogicalName} (custom): Keeping all ${detailedEntity.Attributes?.length || 0} attributes`
-        );
       }
 
       // Filter system fields if requested
@@ -618,10 +609,7 @@ export class BlueprintGenerator {
    * Process plugins - fetch detailed plugin metadata
    */
   private async processPlugins(pluginIds: string[]): Promise<PluginStep[]> {
-    console.log(`🔌 processPlugins called with ${pluginIds.length} plugin IDs:`, pluginIds);
-
     if (pluginIds.length === 0) {
-      console.log('🔌 No plugins to process, returning empty array');
       return [];
     }
 
@@ -646,8 +634,6 @@ export class BlueprintGenerator {
       });
       const plugins = await pluginDiscovery.getPluginsByIds(pluginIds);
 
-      console.log(`🔌 Successfully retrieved ${plugins.length} plugin(s)`);
-
       // Report completion
       this.reportProgress({
         phase: 'plugins',
@@ -659,7 +645,7 @@ export class BlueprintGenerator {
 
       return plugins;
     } catch (error) {
-      console.error('🔌 ERROR processing plugins:', error);
+      console.error('Error processing plugins:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -668,10 +654,7 @@ export class BlueprintGenerator {
    * Process flows - fetch detailed flow metadata
    */
   private async processFlows(flowIds: string[]): Promise<Flow[]> {
-    console.log(`🌊 processFlows called with ${flowIds.length} flow IDs:`, flowIds);
-
     if (flowIds.length === 0) {
-      console.log('🌊 No flows to process, returning empty array');
       return [];
     }
 
@@ -696,8 +679,6 @@ export class BlueprintGenerator {
       });
       const flows = await flowDiscovery.getFlowsByIds(flowIds);
 
-      console.log(`🌊 Successfully retrieved ${flows.length} flow(s)`);
-
       // Report completion
       this.reportProgress({
         phase: 'flows',
@@ -709,7 +690,7 @@ export class BlueprintGenerator {
 
       return flows;
     } catch (error) {
-      console.error('🌊 ERROR processing flows:', error);
+      console.error('Error processing flows:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -770,10 +751,7 @@ export class BlueprintGenerator {
    * Process business rules - fetch detailed business rule metadata
    */
   private async processBusinessRules(businessRuleIds: string[]): Promise<BusinessRule[]> {
-    console.log(`📋 processBusinessRules called with ${businessRuleIds.length} business rule IDs`);
-
     if (businessRuleIds.length === 0) {
-      console.log('📋 No business rules to process, returning empty array');
       return [];
     }
 
@@ -798,8 +776,6 @@ export class BlueprintGenerator {
       });
       const businessRules = await businessRuleDiscovery.getBusinessRulesByIds(businessRuleIds);
 
-      console.log(`📋 Successfully retrieved ${businessRules.length} business rule(s)`);
-
       // Report completion
       this.reportProgress({
         phase: 'business-rules',
@@ -811,7 +787,7 @@ export class BlueprintGenerator {
 
       return businessRules;
     } catch (error) {
-      console.error('📋 ERROR processing business rules:', error);
+      console.error('Error processing business rules:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -820,10 +796,7 @@ export class BlueprintGenerator {
    * Process web resources - fetch and analyze web resource content
    */
   private async processWebResources(webResourceIds: string[]): Promise<WebResource[]> {
-    console.log(`📦 processWebResources called with ${webResourceIds.length} web resource IDs`);
-
     if (webResourceIds.length === 0) {
-      console.log('📦 No web resources to process, returning empty array');
       return [];
     }
 
@@ -848,8 +821,6 @@ export class BlueprintGenerator {
       });
       const webResources = await webResourceDiscovery.getWebResourcesByIds(webResourceIds);
 
-      console.log(`📦 Successfully retrieved ${webResources.length} web resource(s)`);
-
       // Report completion
       this.reportProgress({
         phase: 'discovering',
@@ -861,7 +832,7 @@ export class BlueprintGenerator {
 
       return webResources;
     } catch (error) {
-      console.error('📦 ERROR processing web resources:', error);
+      console.error('Error processing web resources:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -892,12 +863,11 @@ export class BlueprintGenerator {
    * Process classic workflows (deprecated, requires migration)
    */
   private async processClassicWorkflows(workflowIds: string[]): Promise<import('../types/classicWorkflow.js').ClassicWorkflow[]> {
-    console.log(`⚠️ processClassicWorkflows called with ${workflowIds.length} classic workflow IDs`);
-
     if (workflowIds.length === 0) {
-      console.log('⚠️ No classic workflows to process');
       return [];
     }
+
+    console.warn(`⚠️ Found ${workflowIds.length} classic workflow(s) - migration to Power Automate is recommended`);
 
     try {
       // Report progress
@@ -926,8 +896,6 @@ export class BlueprintGenerator {
         workflow.migrationRecommendation = analyzer.analyze(workflow);
       }
 
-      console.log(`⚠️ Successfully retrieved and analyzed ${workflows.length} classic workflow(s)`);
-
       // Report completion
       this.reportProgress({
         phase: 'discovering',
@@ -939,7 +907,7 @@ export class BlueprintGenerator {
 
       return workflows;
     } catch (error) {
-      console.error('❌ Error processing classic workflows:', error);
+      console.error('Error processing classic workflows:', error instanceof Error ? error.message : 'Unknown error');
       // Don't fail the entire generation if classic workflows fail
       return [];
     }
@@ -971,10 +939,7 @@ export class BlueprintGenerator {
    * Process Business Process Flows
    */
   private async processBusinessProcessFlows(workflowIds: string[]): Promise<import('../types/businessProcessFlow.js').BusinessProcessFlow[]> {
-    console.log(`📊 processBusinessProcessFlows called with ${workflowIds.length} BPF IDs`);
-
     if (workflowIds.length === 0) {
-      console.log('📊 No Business Process Flows to process');
       return [];
     }
 
@@ -1000,8 +965,6 @@ export class BlueprintGenerator {
       });
       const bpfs = await bpfDiscovery.getBusinessProcessFlowsByIds(workflowIds);
 
-      console.log(`📊 Successfully retrieved ${bpfs.length} Business Process Flow(s)`);
-
       // Report completion
       this.reportProgress({
         phase: 'discovering',
@@ -1013,7 +976,7 @@ export class BlueprintGenerator {
 
       return bpfs;
     } catch (error) {
-      console.error('❌ Error processing Business Process Flows:', error);
+      console.error('Error processing Business Process Flows:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -1044,10 +1007,7 @@ export class BlueprintGenerator {
    * Process Custom APIs
    */
   private async processCustomAPIs(customApiIds: string[]): Promise<import('../types/customApi.js').CustomAPI[]> {
-    console.log(`🔧 processCustomAPIs called with ${customApiIds.length} Custom API IDs`);
-
     if (customApiIds.length === 0) {
-      console.log('🔧 No Custom APIs to process');
       return [];
     }
 
@@ -1073,8 +1033,6 @@ export class BlueprintGenerator {
       });
       const customAPIs = await customApiDiscovery.getCustomAPIsByIds(customApiIds);
 
-      console.log(`🔧 Successfully retrieved ${customAPIs.length} Custom API(s)`);
-
       // Report completion
       this.reportProgress({
         phase: 'discovering',
@@ -1086,7 +1044,7 @@ export class BlueprintGenerator {
 
       return customAPIs;
     } catch (error) {
-      console.error('❌ Error processing Custom APIs:', error);
+      console.error('Error processing Custom APIs:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -1095,10 +1053,7 @@ export class BlueprintGenerator {
    * Process Environment Variables
    */
   private async processEnvironmentVariables(envVarIds: string[]): Promise<import('../types/environmentVariable.js').EnvironmentVariable[]> {
-    console.log(`🌍 processEnvironmentVariables called with ${envVarIds.length} Environment Variable IDs`);
-
     if (envVarIds.length === 0) {
-      console.log('🌍 No Environment Variables to process');
       return [];
     }
 
@@ -1123,8 +1078,6 @@ export class BlueprintGenerator {
       });
       const envVars = await envVarDiscovery.getEnvironmentVariablesByIds(envVarIds);
 
-      console.log(`🌍 Successfully retrieved ${envVars.length} Environment Variable(s)`);
-
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
@@ -1135,7 +1088,7 @@ export class BlueprintGenerator {
 
       return envVars;
     } catch (error) {
-      console.error('❌ Error processing Environment Variables:', error);
+      console.error('Error processing Environment Variables:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -1158,7 +1111,7 @@ export class BlueprintGenerator {
       const refs = await discovery.getConnectionReferencesByIds(connRefIds);
       return refs;
     } catch (error) {
-      console.error('❌ Error processing Connection References:', error);
+      console.error('Error processing Connection References:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -1173,7 +1126,7 @@ export class BlueprintGenerator {
       const choices = await discovery.discoverGlobalChoices(globalChoiceIds);
       return choices;
     } catch (error) {
-      console.error('❌ Error processing Global Choices:', error);
+      console.error('Error processing Global Choices:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -1196,7 +1149,7 @@ export class BlueprintGenerator {
       const connectors = await discovery.getConnectorsByIds(connectorIds);
       return connectors;
     } catch (error) {
-      console.error('❌ Error processing Custom Connectors:', error);
+      console.error('Error processing Custom Connectors:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -1205,10 +1158,7 @@ export class BlueprintGenerator {
    * Process Security Roles
    */
   private async processSecurityRoles(securityRoleIds: string[]): Promise<import('../discovery/SecurityRoleDiscovery.js').SecurityRoleDetail[]> {
-    console.log(`🔒 processSecurityRoles called with ${securityRoleIds.length} security role IDs`);
-
     if (securityRoleIds.length === 0) {
-      console.log('🔒 No security roles to process');
       return [];
     }
 
@@ -1256,10 +1206,9 @@ export class BlueprintGenerator {
         });
       }
 
-      console.log(`🔒 Successfully retrieved ${roleDetails.length} security role(s)`);
       return roleDetails;
     } catch (error) {
-      console.error('❌ Error processing security roles:', error);
+      console.error('Error processing security roles:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -1274,10 +1223,7 @@ export class BlueprintGenerator {
     profiles: import('../discovery/FieldSecurityProfileDiscovery.js').FieldSecurityProfile[];
     fieldSecurityByEntity: Map<string, import('../discovery/FieldSecurityProfileDiscovery.js').EntityFieldSecurity>;
   }> {
-    console.log(`🛡️ processFieldSecurityProfiles called with ${profileIds.length} profile IDs`);
-
     if (profileIds.length === 0) {
-      console.log('🛡️ No field security profiles to process');
       return {
         profiles: [],
         fieldSecurityByEntity: new Map(),
@@ -1308,8 +1254,6 @@ export class BlueprintGenerator {
       // Get field security for all entities
       const fieldSecurityByEntity = await fieldSecurityDiscovery.getEntitiesFieldSecurity(entityNames);
 
-      console.log(`🛡️ Successfully retrieved ${profilesInSolution.length} field security profile(s)`);
-
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
@@ -1323,7 +1267,7 @@ export class BlueprintGenerator {
         fieldSecurityByEntity,
       };
     } catch (error) {
-      console.error('❌ Error processing field security profiles:', error);
+      console.error('Error processing field security profiles:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -1335,8 +1279,6 @@ export class BlueprintGenerator {
     attributeMaskingRules: import('../discovery/ColumnSecurityDiscovery.js').AttributeMaskingRule[];
     columnSecurityProfiles: import('../discovery/ColumnSecurityDiscovery.js').ColumnSecurityProfile[];
   }> {
-    console.log(`🎭 processColumnSecurity called`);
-
     try {
       this.reportProgress({
         phase: 'discovering',
@@ -1351,7 +1293,6 @@ export class BlueprintGenerator {
 
       // Get attribute masking rules
       const attributeMaskingRules = await columnSecurityDiscovery.getAttributeMaskingRules();
-      console.log(`🎭 Found ${attributeMaskingRules.length} attribute masking rule(s)`);
 
       this.reportProgress({
         phase: 'discovering',
@@ -1363,7 +1304,6 @@ export class BlueprintGenerator {
 
       // Get column security profiles
       const columnSecurityProfiles = await columnSecurityDiscovery.getColumnSecurityProfiles();
-      console.log(`🎭 Found ${columnSecurityProfiles.length} column security profile(s)`);
 
       this.reportProgress({
         phase: 'discovering',
@@ -1378,7 +1318,7 @@ export class BlueprintGenerator {
         columnSecurityProfiles,
       };
     } catch (error) {
-      console.error('❌ Error processing column security:', error);
+      console.error('Error processing column security:', error instanceof Error ? error.message : 'Unknown error');
       // Return empty arrays on error instead of failing the entire blueprint
       return {
         attributeMaskingRules: [],
@@ -1394,10 +1334,7 @@ export class BlueprintGenerator {
    * Process forms and JavaScript event handlers
    */
   private async processForms(entityNames: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
-    console.log(`📋 processForms called for ${entityNames.length} entities`);
-
     if (entityNames.length === 0) {
-      console.log('📋 No entities to process forms for, returning empty array');
       return [];
     }
 
@@ -1414,8 +1351,6 @@ export class BlueprintGenerator {
       const formDiscovery = new FormDiscovery(this.client);
       const forms = await formDiscovery.getFormsForEntities(entityNames);
 
-      console.log(`📋 Successfully retrieved ${forms.length} form(s) with event handlers`);
-
       // Report completion
       this.reportProgress({
         phase: 'discovering',
@@ -1427,7 +1362,7 @@ export class BlueprintGenerator {
 
       return forms;
     } catch (error) {
-      console.error('❌ Error processing forms:', error);
+      console.error('Error processing forms:', error instanceof Error ? error.message : 'Unknown error');
       // Don't fail the entire generation if forms fail
       return [];
     }
