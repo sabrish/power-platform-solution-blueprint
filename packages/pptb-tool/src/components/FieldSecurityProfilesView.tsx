@@ -37,6 +37,7 @@ const useStyles = makeStyles({
   },
   description: {
     color: tokens.colorNeutralForeground3,
+    display: 'block',
   },
   legend: {
     padding: tokens.spacingVerticalS,
