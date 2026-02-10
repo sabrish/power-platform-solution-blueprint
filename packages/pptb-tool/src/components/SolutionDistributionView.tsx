@@ -69,6 +69,10 @@ const useStyles = makeStyles({
   detailsSection: {
     marginTop: tokens.spacingVerticalL,
   },
+  description: {
+    color: tokens.colorNeutralForeground3,
+    display: 'block',
+  },
 });
 
 export interface SolutionDistributionViewProps {
@@ -211,27 +215,16 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
         })}
       </div>
 
-      {/* Solution Details */}
-      <div className={styles.detailsSection}>
-        <div style={{ marginBottom: tokens.spacingVerticalM }}>
-          <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Solution Dependencies & Shared Components</Title3>
-          <Text style={{ color: tokens.colorNeutralForeground3 }}>
-            View dependencies between solutions and components shared across multiple solutions
-          </Text>
-        </div>
-        {distributions.every(s => s.dependencies.length === 0 && s.sharedComponents.length === 0) ? (
-          <div style={{
-            padding: tokens.spacingVerticalL,
-            textAlign: 'center',
-            color: tokens.colorNeutralForeground3
-          }}>
-            <Text>No dependencies or shared components detected in the selected solution(s).</Text>
-            <br />
-            <Text style={{ fontSize: tokens.fontSizeBase200, marginTop: tokens.spacingVerticalXS }}>
-              This analysis requires multiple solutions to be included in the blueprint scope.
+      {/* Solution Details - Only show if there are dependencies or shared components */}
+      {!distributions.every(s => s.dependencies.length === 0 && s.sharedComponents.length === 0) && (
+        <div className={styles.detailsSection}>
+          <div style={{ marginBottom: tokens.spacingVerticalM }}>
+            <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Solution Dependencies & Shared Components</Title3>
+            <Text className={styles.description}>
+              View dependencies between solutions and components shared across multiple solutions
             </Text>
           </div>
-        ) : (
+
           <Accordion multiple collapsible style={{ marginTop: tokens.spacingVerticalM }}>
             {distributions.map((solution) => {
               const hasDependencies = solution.dependencies.length > 0;
@@ -304,9 +297,9 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
               </AccordionItem>
             );
           })}
-        </Accordion>
-        )}
-      </div>
+          </Accordion>
+        </div>
+      )}
     </div>
   );
 }

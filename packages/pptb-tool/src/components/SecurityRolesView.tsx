@@ -33,6 +33,7 @@ const useStyles = makeStyles({
   },
   description: {
     color: tokens.colorNeutralForeground3,
+    display: 'block',
   },
   permissionsTable: {
     overflowX: 'auto',
@@ -287,6 +288,94 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                 )}
               </DataGridBody>
             </DataGrid>
+          </div>
+
+          {/* Special Permission Matrix */}
+          <div className={styles.section}>
+            <div style={{ marginBottom: tokens.spacingVerticalS }}>
+              <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Special Permission Matrix</Title3>
+              <Text className={styles.description}>
+                Matrix showing which roles have which special permissions.
+              </Text>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: tokens.colorNeutralBackground2 }}>
+                    <th
+                      style={{
+                        padding: tokens.spacingVerticalS,
+                        textAlign: 'left',
+                        borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+                        minWidth: '200px',
+                        position: 'sticky',
+                        left: 0,
+                        backgroundColor: tokens.colorNeutralBackground2,
+                        zIndex: 1,
+                      }}
+                    >
+                      Permission
+                    </th>
+                    {securityRoles.map((role) => (
+                      <th
+                        key={role.roleid}
+                        style={{
+                          padding: tokens.spacingVerticalS,
+                          textAlign: 'center',
+                          borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+                          minWidth: '100px',
+                        }}
+                      >
+                        <div style={{ fontSize: tokens.fontSizeBase200, fontWeight: tokens.fontWeightSemibold }}>
+                          {role.name}
+                        </div>
+                        <div style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, fontWeight: tokens.fontWeightRegular }}>
+                          {role.businessunitname}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {specialPermissions.map((perm) => (
+                    <tr key={perm.key} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
+                      <td
+                        style={{
+                          padding: tokens.spacingVerticalS,
+                          position: 'sticky',
+                          left: 0,
+                          backgroundColor: tokens.colorNeutralBackground1,
+                          fontWeight: tokens.fontWeightSemibold,
+                        }}
+                      >
+                        {perm.label}
+                      </td>
+                      {securityRoles.map((role) => {
+                        const value = role.specialPermissions?.[perm.key as keyof typeof role.specialPermissions];
+                        const granted = value === true;
+                        return (
+                          <td
+                            key={role.roleid}
+                            style={{
+                              padding: tokens.spacingVerticalS,
+                              textAlign: 'center',
+                              backgroundColor: granted
+                                ? tokens.colorPaletteGreenBackground3
+                                : tokens.colorNeutralBackground3,
+                            }}
+                          >
+                            <Text size={300} weight="semibold">
+                              {granted ? '✓' : '—'}
+                            </Text>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className={styles.section}>
