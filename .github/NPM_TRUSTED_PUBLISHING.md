@@ -72,12 +72,29 @@ npm publish --access public --otp=YOUR_2FA_CODE
 Once the package exists on npm:
 
 1. **Configure Trusted Publisher** (follow Step 1 above)
-2. **Verify workflow has OIDC permissions:**
+2. **Verify workflow has correct OIDC configuration:**
    ```yaml
    permissions:
      id-token: write  # ✅ Required for OIDC
+
+   jobs:
+     publish:
+       steps:
+         - name: Setup Node.js
+           uses: actions/setup-node@v4
+           with:
+             node-version: '20'
+             registry-url: 'https://registry.npmjs.org'  # ✅ REQUIRED for OIDC
    ```
-3. **Remove any token references** from the workflow ✅ (Already done)
+
+   **Important:** The `registry-url` parameter is REQUIRED for OIDC authentication. When setup-node sees:
+   - ✅ `registry-url` is set
+   - ✅ `id-token: write` permission exists
+   - ✅ NO `NODE_AUTH_TOKEN` environment variable
+
+   It automatically configures npm to use OIDC for authentication.
+
+3. **Ensure NO token environment variables** in the publish step ✅ (Already done)
 
 ---
 
