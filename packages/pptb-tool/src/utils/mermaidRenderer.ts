@@ -30,13 +30,36 @@ export async function renderMermaid(
   elementId: string
 ): Promise<string> {
   try {
-    const { svg } = await mermaid.render(elementId, diagram);
+    // Clean up the diagram string
+    const cleanedDiagram = diagram.trim();
+
+    // Re-initialize Mermaid before each render to ensure clean state
+    initMermaid();
+
+    const { svg } = await mermaid.render(elementId, cleanedDiagram);
     return svg;
   } catch (error) {
-    console.error('Failed to render Mermaid diagram:', error);
-    throw new Error(
-      `Mermaid rendering failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
+    // Try with simplified configuration
+    try {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'default',
+        securityLevel: 'loose',
+        maxTextSize: 900000,
+        er: {
+          useMaxWidth: true,
+          fontSize: 12,
+          layoutDirection: 'TB',
+        },
+      });
+
+      const { svg } = await mermaid.render(elementId + '-retry', diagram.trim());
+      return svg;
+    } catch (retryError) {
+      throw new Error(
+        `Mermaid rendering failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 }
 

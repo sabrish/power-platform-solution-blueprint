@@ -48,8 +48,6 @@ export class BusinessProcessFlowDiscovery {
       const batchSize = 20;
       const allResults: RawBusinessProcessFlow[] = [];
 
-      console.log(`📋 Querying ${workflowIds.length} Business Process Flows in batches of ${batchSize}...`);
-
       for (let i = 0; i < workflowIds.length; i += batchSize) {
         const batch = workflowIds.slice(i, i + batchSize);
         const filterClauses = batch.map((id) => {
@@ -57,8 +55,6 @@ export class BusinessProcessFlowDiscovery {
           return `workflowid eq ${cleanGuid}`;
         });
         const filter = `(${filterClauses.join(' or ')}) and category eq 4`;
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Business Process Flows...`);
 
         const result = await this.client.query<RawBusinessProcessFlow>('workflows', {
           select: [
@@ -86,8 +82,6 @@ export class BusinessProcessFlowDiscovery {
           this.onProgress(allResults.length, workflowIds.length);
         }
       }
-
-      console.log(`📋 Total Business Process Flows retrieved: ${allResults.length}`);
 
       // Map to BusinessProcessFlow objects
       return allResults.map((raw) => this.mapToBusinessProcessFlow(raw));

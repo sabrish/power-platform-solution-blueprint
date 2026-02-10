@@ -31,11 +31,11 @@ export function useEntityDiscovery(scope: ScopeSelection | null): UseEntityDisco
       setLoading(true);
       setError(null);
 
-      if (!window.toolboxAPI) {
+      if (!window.toolboxAPI || !window.dataverseAPI) {
         throw new Error('PPTB Desktop API not available.');
       }
 
-      const client = new PptbDataverseClient(window.toolboxAPI);
+      const client = new PptbDataverseClient(window.dataverseAPI);
       const entityDiscovery = new EntityDiscovery(client);
 
       let fetchedEntities: EntityMetadata[] = [];
@@ -62,7 +62,6 @@ export function useEntityDiscovery(scope: ScopeSelection | null): UseEntityDisco
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch entities');
       setError(error);
-      console.error('Error fetching entities:', err);
     } finally {
       setLoading(false);
     }

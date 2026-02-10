@@ -54,8 +54,6 @@ export class ClassicWorkflowDiscovery {
       const batchSize = 20;
       const allResults: RawClassicWorkflow[] = [];
 
-      console.log(`📋 Querying ${workflowIds.length} Classic Workflows in batches of ${batchSize}...`);
-
       for (let i = 0; i < workflowIds.length; i += batchSize) {
         const batch = workflowIds.slice(i, i + batchSize);
         const filterClauses = batch.map((id) => {
@@ -63,8 +61,6 @@ export class ClassicWorkflowDiscovery {
           return `workflowid eq ${cleanGuid}`;
         });
         const filter = `(${filterClauses.join(' or ')}) and category eq 0`;
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Classic Workflows...`);
 
         const result = await this.client.query<RawClassicWorkflow>('workflows', {
           select: [
@@ -98,8 +94,6 @@ export class ClassicWorkflowDiscovery {
           this.onProgress(allResults.length, workflowIds.length);
         }
       }
-
-      console.log(`📋 Total Classic Workflows retrieved: ${allResults.length}`);
 
       // Map to ClassicWorkflow objects
       return allResults.map((raw) => this.mapToClassicWorkflow(raw));

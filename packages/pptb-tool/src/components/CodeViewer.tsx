@@ -69,7 +69,7 @@ export function CodeViewer({ content, language = 'javascript', maxLines = 50 }: 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      // Failed to copy - silently ignore
     }
   };
 

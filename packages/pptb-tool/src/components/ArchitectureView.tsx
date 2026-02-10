@@ -143,7 +143,7 @@ export function ArchitectureView({ result, onBack }: ArchitectureViewProps) {
         {/* Tab Content */}
         <div style={{ marginTop: tokens.spacingVerticalL }}>
           {selectedTab === 'erd' && hasERD && (
-            <ERDView erd={result.erd!} />
+            <ERDView erd={result.erd!} blueprintResult={result} />
           )}
 
           {selectedTab === 'crossEntity' && hasCrossEntity && (

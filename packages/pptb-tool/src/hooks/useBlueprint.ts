@@ -74,7 +74,7 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
       abortControllerRef.current = abortController;
 
       // Create client and generator
-      const client = new PptbDataverseClient(window.toolboxAPI);
+      const client = new PptbDataverseClient(window.dataverseAPI);
       const blueprintScope = convertScope(scope);
 
       const generator = new BlueprintGenerator(client, blueprintScope, {
@@ -100,7 +100,6 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
       } else {
         const error = err instanceof Error ? err : new Error('Failed to generate blueprint');
         setError(error);
-        console.error('Error generating blueprint:', err);
       }
     } finally {
       setIsGenerating(false);

@@ -1,24 +1,30 @@
 import type { IDataverseClient, QueryOptions, QueryResult } from './IDataverseClient.js';
 
 /**
- * PPTB API interface for Dataverse requests
+ * PPTB Dataverse API interface (matches official @pptb/types DataverseAPI.API)
+ * Using minimal interface to avoid importing full types in core package
  */
-interface PptbDataverseApi {
-  queryData(odataQuery: string, connectionTarget?: 'primary' | 'secondary'): Promise<unknown>;
-}
-
-interface PptbApi {
-  dataverse: PptbDataverseApi;
+interface DataverseApi {
+  queryData(odataQuery: string, connectionTarget?: 'primary' | 'secondary'): Promise<{ value: Record<string, unknown>[] }>;
 }
 
 /**
  * Dataverse client implementation using PPTB Desktop API
  */
 export class PptbDataverseClient implements IDataverseClient {
-  private readonly pptbApi: PptbApi;
+  private readonly dataverseApi: DataverseApi;
+  private readonly environmentUrl: string;
 
-  constructor(pptbApi: PptbApi) {
-    this.pptbApi = pptbApi;
+  constructor(dataverseApi: DataverseApi, environmentUrl?: string) {
+    this.dataverseApi = dataverseApi;
+    this.environmentUrl = environmentUrl || 'Unknown Environment';
+  }
+
+  /**
+   * Get the Dataverse environment URL
+   */
+  getEnvironmentUrl(): string {
+    return this.environmentUrl;
   }
 
   /**
@@ -29,7 +35,7 @@ export class PptbDataverseClient implements IDataverseClient {
       const queryString = this.buildQueryString(options);
       const odataQuery = queryString ? `${entitySet}?${queryString}` : entitySet;
 
-      const response = await this.pptbApi.dataverse.queryData(odataQuery, 'primary');
+      const response = await this.dataverseApi.queryData(odataQuery, 'primary');
 
       return this.parseResponse<T>(response);
     } catch (error) {
@@ -47,7 +53,7 @@ export class PptbDataverseClient implements IDataverseClient {
       const queryString = this.buildQueryString(options);
       const odataQuery = queryString ? `${metadataPath}?${queryString}` : metadataPath;
 
-      const response = await this.pptbApi.dataverse.queryData(odataQuery, 'primary');
+      const response = await this.dataverseApi.queryData(odataQuery, 'primary');
 
       return this.parseResponse<T>(response);
     } catch (error) {
@@ -100,13 +106,24 @@ export class PptbDataverseClient implements IDataverseClient {
 
     const data = response as Record<string, unknown>;
 
-    if (!Array.isArray(data.value)) {
-      throw new Error('Response does not contain a value array');
+    // Handle collection queries (e.g., entity sets)
+    if (Array.isArray(data.value)) {
+      return {
+        value: data.value as T[],
+        count: typeof data['@odata.count'] === 'number' ? data['@odata.count'] : undefined,
+      };
     }
 
-    return {
-      value: data.value as T[],
-      count: typeof data['@odata.count'] === 'number' ? data['@odata.count'] : undefined,
-    };
+    // Handle single item queries (e.g., EntitySet(id))
+    // When querying by ID, OData returns the object directly without a 'value' wrapper
+    if (!Array.isArray(data.value) && data['@odata.context']) {
+      // This is a single item response - wrap it in an array
+      return {
+        value: [data as T],
+        count: 1,
+      };
+    }
+
+    throw new Error('Response does not contain a value array or single item');
   }
 }

@@ -192,7 +192,6 @@ export class EntityDiscovery {
       let entities = result.value;
       if (onlyUnmanaged) {
         entities = entities.filter(e => !e.IsManaged);
-        console.log(`📊 Filtered to ${entities.length} unmanaged entities (from ${result.value.length} total)`);
       }
 
       // Sort in memory since metadata API doesn't support orderBy

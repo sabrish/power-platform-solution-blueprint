@@ -1,6 +1,6 @@
 # PPSB Roadmap
 
-Future development plans for Power Platform System Blueprint
+Future development plans for Power Platform Solution Blueprint
 
 > This roadmap is subject to change based on community feedback and priorities
 

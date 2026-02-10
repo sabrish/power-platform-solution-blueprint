@@ -8,6 +8,7 @@ import {
 import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { EntityBlueprint, ClassicWorkflow } from '@ppsb/core';
 import { SchemaView } from './SchemaView';
+import { filterDescription } from '../utils/descriptionFilter';
 
 const useStyles = makeStyles({
   container: {
@@ -245,7 +246,7 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
             const entity = blueprint.entity;
             const isExpanded = expandedEntityId === entity.MetadataId;
             const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName || 'Unknown Entity';
-            const description = entity.Description?.UserLocalizedLabel?.Label;
+            const description = filterDescription(entity.Description?.UserLocalizedLabel?.Label);
             const attributeCount = entity.Attributes?.length || 0;
 
             return (

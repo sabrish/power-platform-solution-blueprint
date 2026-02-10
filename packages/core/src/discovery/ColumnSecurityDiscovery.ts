@@ -5,7 +5,7 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
  */
 export interface AttributeMaskingRule {
   attributemaskingruleid: string;
-  name: string;
+  name?: string; // Optional - may not exist in all Dataverse versions
   entitylogicalname: string;
   attributelogicalname: string;
   maskingtype: number; // 1 = Full, 2 = Partial, 3 = Email, 4 = Custom
@@ -53,7 +53,6 @@ export class ColumnSecurityDiscovery {
     const result = await this.client.query<AttributeMaskingRule>('attributemaskingrules', {
       select: [
         'attributemaskingruleid',
-        'name',
         'entitylogicalname',
         'attributelogicalname',
         'maskingtype',

@@ -70,8 +70,6 @@ export class PluginDiscovery {
       const batchSize = 20;
       const allPluginSteps: RawPluginStep[] = [];
 
-      console.log(`🔌 Querying ${pluginIds.length} plugins in batches of ${batchSize}...`);
-
       for (let i = 0; i < pluginIds.length; i += batchSize) {
         const batch = pluginIds.slice(i, i + batchSize);
 
@@ -82,8 +80,6 @@ export class PluginDiscovery {
           return `sdkmessageprocessingstepid eq ${cleanGuid}`;
         });
         const filter = filterClauses.join(' or ');
-
-        console.log(`🔌 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} plugins...`);
 
         // Query this batch of plugin steps with expanded relationships
         const result = await this.client.query<RawPluginStep>('sdkmessageprocessingsteps', {
@@ -106,15 +102,12 @@ export class PluginDiscovery {
         });
 
         allPluginSteps.push(...result.value);
-        console.log(`🔌 Batch ${Math.floor(i / batchSize) + 1}: Retrieved ${result.value.length} plugins`);
 
         // Report progress after each batch
         if (this.onProgress) {
           this.onProgress(allPluginSteps.length, pluginIds.length);
         }
       }
-
-      console.log(`🔌 Total plugins retrieved: ${allPluginSteps.length}`);
 
       // OPTIMIZED: Pre-fetch all plugin images in batched queries
       // This reduces N queries (one per plugin) to fewer batch queries
@@ -240,7 +233,6 @@ export class PluginDiscovery {
       return imageMap;
     } catch (error) {
       // If images query fails, return map with null images
-      console.warn('Failed to retrieve plugin images in batch:', error);
       return imageMap;
     }
   }

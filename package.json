@@ -1,8 +1,8 @@
 {
-  "name": "power-platform-system-blueprint",
-  "version": "0.1.0",
+  "name": "@sabrish/power-platform-solution-blueprint",
+  "version": "0.5.0",
   "private": true,
-  "description": "Complete architectural blueprints for your Power Platform systems",
+  "description": "Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.",
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm --filter @ppsb/pptb dev",
@@ -10,12 +10,22 @@
     "typecheck": "pnpm -r typecheck"
   },
   "keywords": [
-    "power-platform",
+    "powerplatform",
     "dataverse",
+    "toolbox",
+    "power-platform",
     "blueprint",
-    "documentation"
+    "documentation",
+    "pptb"
   ],
-  "author": "",
+  "author": {
+    "name": "SAB",
+    "url": "https://github.com/sabrish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sabrish/power-platform-solution-blueprint"
+  },
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.3.3"
