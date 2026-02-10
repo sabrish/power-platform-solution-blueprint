@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from 'react';
+import { useMemo, memo } from 'react';
 import {
   Title3,
   Text,
@@ -80,12 +80,12 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
     createTableColumn<SecurityRoleDetail>({
       columnId: 'name',
       renderHeaderCell: () => 'Role Name',
-      renderCell: (role) => role.roleName,
+      renderCell: (role) => role.name,
     }),
     createTableColumn<SecurityRoleDetail>({
       columnId: 'businessUnit',
       renderHeaderCell: () => 'Business Unit',
-      renderCell: (role) => role.businessUnitName || 'N/A',
+      renderCell: (role) => role.businessunitname || 'N/A',
     }),
     createTableColumn<SecurityRoleDetail>({
       columnId: 'entities',
@@ -117,7 +117,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
         case 3:
           return tokens.colorPaletteGreenBackground3;
         case 4:
-          return tokens.colorPaletteDarkGreenBackground3;
+          return tokens.colorPaletteDarkGreenBackground2;
         default:
           return tokens.colorNeutralBackground3;
       }
@@ -160,15 +160,11 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                 return (
                   <tr key={entityPerm.entityLogicalName} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
                     <td style={{ padding: tokens.spacingVerticalS }}>
-                      <Text weight="semibold">{entityPerm.entityDisplayName}</Text>
-                      <br />
-                      <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
-                        {entityPerm.entityLogicalName}
-                      </Text>
+                      <Text weight="semibold">{entityPerm.entityLogicalName}</Text>
                     </td>
                     {privilegeTypes.map((type) => {
-                      const priv = privMap.get(type);
-                      const depth = priv?.depth ?? 0;
+                      const priv = privMap.get(type as any);
+                      const depth = Number(priv?.depth ?? 0);
                       const backgroundColor = getDepthColor(depth);
                       return (
                         <td
@@ -303,11 +299,11 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
 
             <Accordion multiple collapsible>
               {securityRoles.map((role) => (
-                <AccordionItem key={role.roleId} value={role.roleId}>
+                <AccordionItem key={role.roleid} value={role.roleid}>
                   <AccordionHeader>
-                    {role.roleName}
-                    <Badge appearance="tonal" className={styles.badge}>
-                      {role.businessUnitName}
+                    {role.name}
+                    <Badge appearance="filled" className={styles.badge}>
+                      {role.businessunitname}
                     </Badge>
                   </AccordionHeader>
                   <AccordionPanel>

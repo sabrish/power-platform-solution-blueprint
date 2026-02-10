@@ -1,8 +1,8 @@
 {
-  "name": "power-platform-system-blueprint",
+  "name": "power-platform-solution-blueprint",
   "version": "0.1.0",
   "private": true,
-  "description": "Complete architectural blueprints for your Power Platform systems",
+  "description": "Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.",
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm --filter @ppsb/pptb dev",

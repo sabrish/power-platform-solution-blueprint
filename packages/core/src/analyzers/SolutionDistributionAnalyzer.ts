@@ -103,7 +103,7 @@ export class SolutionDistributionAnalyzer {
       ).length,
 
       plugins: result.plugins.filter(p =>
-        componentIdsInSolution.has(p.sdkmessageprocessingstepid.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(p.id.toLowerCase().replace(/[{}]/g, ''))
       ).length,
 
       flows: result.flows.filter(f =>
