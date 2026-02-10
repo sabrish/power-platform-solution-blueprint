@@ -62,7 +62,7 @@ npm publish --access public --otp=YOUR_2FA_CODE
    env:
      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
    ```
-4. Run the workflow to publish v0.5.1
+4. Run the workflow to publish the desired version (for example, your next release)
 5. After success, remove the token and revert the workflow
 
 ---
