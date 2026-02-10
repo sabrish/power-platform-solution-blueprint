@@ -39,13 +39,20 @@
     "repository": "https://github.com/sabrish/power-platform-solution-blueprint",
     "readmeUrl": "https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/refs/heads/main/README.md"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "clean": "rimraf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "finalize-package": "echo 'Package ready for publishing. dist/ contains built files.'"
   },
   "dependencies": {
     "@fluentui/react-components": "^9.47.0",
