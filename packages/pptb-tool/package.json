@@ -2,7 +2,7 @@
   "name": "@sabrish/power-platform-solution-blueprint",
   "version": "0.5.0",
   "displayName": "Power Platform Solution Blueprint Generator",
-  "description": "A comprehensive blueprint generator for Microsoft Power Platform.",
+  "description": "Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.",
   "main": "index.html",
   "license": "MIT",
   "contributors": [

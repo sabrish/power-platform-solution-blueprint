@@ -46,6 +46,7 @@ import { SolutionDistributionView } from './SolutionDistributionView';
 import { ExportDialog } from './ExportDialog';
 import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
+import { Footer } from './Footer';
 
 const useStyles = makeStyles({
   container: {
@@ -690,6 +691,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         blueprintGenerator={blueprintGenerator}
         onClose={() => setShowExportDialog(false)}
       />
+
+      <Footer />
     </div>
   );
 }

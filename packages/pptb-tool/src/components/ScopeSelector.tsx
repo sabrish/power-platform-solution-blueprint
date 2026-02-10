@@ -27,12 +27,16 @@ import {
   type Solution,
 } from '@ppsb/core';
 import type { ScopeType, ScopeSelection, PublisherScopeMode } from '../types/scope';
+import { Footer } from './Footer';
 
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
     maxWidth: '800px',
     margin: '0 auto',
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
   },
   header: {
     marginBottom: tokens.spacingVerticalXXL,
@@ -278,6 +282,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
           <Spinner size="medium" />
           <Text>Loading publishers and solutions...</Text>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -526,6 +531,8 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
           Continue
         </Button>
       </div>
+
+      <Footer />
     </div>
   );
 }

@@ -9,12 +9,14 @@ import {
 } from '@fluentui/react-components';
 import { ArrowClockwise24Regular } from '@fluentui/react-icons';
 import type { ProgressInfo } from '@ppsb/core';
+import { Footer } from './Footer';
 
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
     maxWidth: '800px',
     margin: '0 auto',
+    minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalXL,
@@ -113,6 +115,8 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
           Cancel
         </Button>
       </div>
+
+      <Footer />
     </div>
   );
 }
