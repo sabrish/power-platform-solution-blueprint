@@ -17,7 +17,7 @@ import {
   ArrowDownload24Regular,
   ArrowLeft24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, GlobalChoice, CustomConnector } from '@ppsb/core';
+import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, CustomConnector } from '@ppsb/core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -36,7 +36,6 @@ import { EnvironmentVariableDetailView } from './EnvironmentVariableDetailView';
 import { ConnectionReferencesList } from './ConnectionReferencesList';
 import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
 import { GlobalChoicesList } from './GlobalChoicesList';
-import { GlobalChoiceDetailView } from './GlobalChoiceDetailView';
 import { CustomConnectorsList } from './CustomConnectorsList';
 import { CustomConnectorDetailView } from './CustomConnectorDetailView';
 import { ERDView } from './ERDView';
@@ -158,7 +157,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
   const [selectedEnvVar, setSelectedEnvVar] = useState<EnvironmentVariable | null>(null);
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
-  const [selectedGlobalChoice, setSelectedGlobalChoice] = useState<GlobalChoice | null>(null);
   const [selectedCustomConnector, setSelectedCustomConnector] = useState<CustomConnector | null>(null);
 
   // Check what architecture features are available
@@ -584,25 +582,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'globalChoices' && hasResults('globalChoices') && (
-              <div>
-                {selectedGlobalChoice ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedGlobalChoice(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <GlobalChoiceDetailView globalChoice={selectedGlobalChoice} />
-                  </div>
-                ) : (
-                  <GlobalChoicesList
-                    globalChoices={result.globalChoices}
-                    onSelectChoice={setSelectedGlobalChoice}
-                  />
-                )}
-              </div>
+              <GlobalChoicesList
+                globalChoices={result.globalChoices}
+                onSelectChoice={() => {}} // Unused - list handles expansion internally
+              />
             )}
 
             {selectedTab === 'customConnectors' && hasResults('customConnectors') && (

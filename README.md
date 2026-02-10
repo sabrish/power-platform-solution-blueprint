@@ -103,24 +103,36 @@ Review your selection before generating the blueprint.
 ![Generator Confirmation](docs/screenshots/PPSB-2-Generator-Confirmation.png)
 
 ### Results Dashboard
-Interactive dashboard with ERD, entity details, automation analysis, and security roles.
+Interactive dashboard with summary metrics, ERD visualization, and component browser.
 
-![Generated Dashboard](docs/screenshots/PPSB-3-Generated%20Dashboard.png)
+![Dashboard](docs/screenshots/PPSB-3-Dashboard.png)
 
-### Analysis View
-Comprehensive analysis including performance risks, workflow migration recommendations, and complexity scores.
+### Component Details
+Browse and explore all discovered components with expandable details and inline documentation.
 
-![Analysis View](docs/screenshots/PPSB-4-Analysis.png)
+![Component Details](docs/screenshots/PPSB-4-Component-Details.png)
+
+### Solution Distribution Analysis
+Analyze component distribution across solutions with dependency mapping and shared component detection.
+
+![Solution Distribution Analysis](docs/screenshots/PPSB-5-Solution%20Distrubution%20Analysis.png)
+
+### External Dependencies Analysis
+Identify and assess all external API calls across flows, plugins, and web resources with risk scoring.
+
+![External Dependencies Analysis](docs/screenshots/PPSB-6-External%20Dependencies%20Analysis.png)
 
 ### Export Options
 Choose your export format - Markdown, JSON, HTML, or ZIP bundle.
 
-![Export Options](docs/screenshots/PPSB-5-Export%20Options.png)
+![Export Options](docs/screenshots/PPSB-6-Export%20Options.png)
 
 ### HTML Export
 Self-contained, interactive HTML documentation ready to share with stakeholders.
 
-![HTML Export](docs/screenshots/PPSB-6-Export%20html.png)
+![HTML Export Example 1](docs/screenshots/PPSB-7-Export%20html.png)
+
+![HTML Export Example 2](docs/screenshots/PPSB-8-Export%20html.png)
 
 ---
 
