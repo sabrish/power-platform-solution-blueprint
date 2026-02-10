@@ -9,6 +9,14 @@ interface RawGlobalOptionSet {
   Description?: { UserLocalizedLabel?: { Label: string } };
   IsManaged: boolean;
   IsCustomizable?: { Value: boolean };
+  // Options can be directly on the object OR nested under OptionSet
+  Options?: Array<{
+    Value: number;
+    Label?: { UserLocalizedLabel?: { Label: string } };
+    Description?: { UserLocalizedLabel?: { Label: string } };
+    Color?: string;
+    ExternalValue?: string;
+  }>;
   OptionSet?: {
     Options?: Array<{
       Value: number;
@@ -66,16 +74,25 @@ export class GlobalChoiceDiscovery {
       for (const id of ids) {
         try {
           // Query metadata by MetadataId - $filter not supported on GlobalOptionSetDefinitions
-          // Use direct path query instead: GlobalOptionSetDefinitions(MetadataId)
+          // Use direct path query (Options should be included by default)
           const cleanId = id.replace(/[{}]/g, '');
-          const response = await this.client.queryMetadata<RawGlobalOptionSet>(`GlobalOptionSetDefinitions(${cleanId})`, {});
+          const response = await this.client.queryMetadata<RawGlobalOptionSet>(
+            `GlobalOptionSetDefinitions(${cleanId})`,
+            {}
+          );
+
+          console.log(`[GlobalChoiceDiscovery] Fetched global choice ${cleanId}:`, response);
 
           // Direct path query returns single object, not array
           if (response.value && Array.isArray(response.value) && response.value.length > 0) {
-            globalChoices.push(this.mapToGlobalChoice(response.value[0]));
+            const mapped = this.mapToGlobalChoice(response.value[0]);
+            console.log(`[GlobalChoiceDiscovery] Mapped (array):`, mapped);
+            globalChoices.push(mapped);
           } else if (response.value && !Array.isArray(response.value)) {
             // Handle case where API returns single object instead of array
-            globalChoices.push(this.mapToGlobalChoice(response.value as any));
+            const mapped = this.mapToGlobalChoice(response.value as any);
+            console.log(`[GlobalChoiceDiscovery] Mapped (object):`, mapped);
+            globalChoices.push(mapped);
           }
         } catch (error) {
           console.warn(`Failed to fetch global choice ${id}:`, error);
@@ -96,8 +113,11 @@ export class GlobalChoiceDiscovery {
   private mapToGlobalChoice(raw: RawGlobalOptionSet): GlobalChoice {
     const options: GlobalChoiceOption[] = [];
 
-    if (raw.OptionSet?.Options) {
-      for (const opt of raw.OptionSet.Options) {
+    // Options can be in two places: raw.Options OR raw.OptionSet.Options
+    const optionsArray = raw.Options || raw.OptionSet?.Options;
+
+    if (optionsArray) {
+      for (const opt of optionsArray) {
         options.push({
           value: opt.Value,
           label: opt.Label?.UserLocalizedLabel?.Label || `Option ${opt.Value}`,
@@ -110,6 +130,8 @@ export class GlobalChoiceDiscovery {
 
     // Sort options by value
     options.sort((a, b) => a.value - b.value);
+
+    console.log(`[GlobalChoiceDiscovery] Mapped ${raw.Name}: ${options.length} options`);
 
     return {
       id: raw.MetadataId,

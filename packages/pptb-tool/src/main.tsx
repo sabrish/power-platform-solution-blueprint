@@ -22,13 +22,6 @@ if (!root) {
   throw new Error('Root element not found');
 }
 
-// Add skip link for accessibility
-const skipLink = document.createElement('a');
-skipLink.href = '#main-content';
-skipLink.className = 'skip-link';
-skipLink.textContent = 'Skip to main content';
-document.body.insertBefore(skipLink, document.body.firstChild);
-
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <FluentProvider theme={webLightTheme}>

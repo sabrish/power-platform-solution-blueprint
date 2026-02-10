@@ -1,4 +1,5 @@
 import { makeStyles, tokens, Text, Link } from '@fluentui/react-components';
+import { Open20Regular } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
   footer: {
@@ -9,11 +10,23 @@ const useStyles = makeStyles({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: tokens.spacingHorizontalS,
+    gap: tokens.spacingHorizontalM,
   },
   text: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase200,
+  },
+  iconLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalXS,
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase200,
+    textDecoration: 'none',
+    ':hover': {
+      color: tokens.colorBrandForeground1,
+      textDecoration: 'underline',
+    },
   },
 });
 
@@ -28,9 +41,10 @@ export function Footer() {
         href="https://github.com/sabrish/power-platform-solution-blueprint"
         target="_blank"
         rel="noopener noreferrer"
-        className={styles.text}
+        className={styles.iconLink}
       >
-        GitHub Repository
+        <Open20Regular />
+        <span>GitHub</span>
       </Link>
     </footer>
   );

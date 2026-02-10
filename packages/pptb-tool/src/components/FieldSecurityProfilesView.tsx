@@ -117,22 +117,8 @@ function FieldSecurityProfilesViewComponent({
 
   return (
     <div className={styles.container}>
-      <div style={{ marginBottom: tokens.spacingVerticalM }}>
-        <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Field Security Profiles</Title3>
-        <Text className={styles.description}>
-          Configure which users can read, create, or update specific secured fields.
-        </Text>
-      </div>
-
       {profiles.length > 0 && (
         <div className={styles.section}>
-          <div style={{ marginBottom: tokens.spacingVerticalS }}>
-            <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Field Security Profiles</Title3>
-            <Text className={styles.description}>
-              Field security profiles control who can read, create, or update specific secured fields.
-            </Text>
-          </div>
-
           <DataGrid
             items={profiles}
             columns={profileColumns}

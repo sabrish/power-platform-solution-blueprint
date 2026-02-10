@@ -101,10 +101,10 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
 
     const depthLabelMap: Record<number, string> = {
       0: 'None',
-      1: 'User',
-      2: 'Business Unit',
-      3: 'Parent: Child Business Units',
-      4: 'Organization',
+      1: 'Basic',
+      2: 'Local',
+      4: 'Deep',
+      8: 'Global',
     };
 
     const getDepthColor = (depth: number): string => {
@@ -115,9 +115,9 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
           return tokens.colorPaletteYellowBackground3;
         case 2:
           return tokens.colorPaletteLightGreenBackground3;
-        case 3:
-          return tokens.colorPaletteGreenBackground3;
         case 4:
+          return tokens.colorPaletteGreenBackground3;
+        case 8:
           return tokens.colorPaletteDarkGreenBackground2;
         default:
           return tokens.colorNeutralBackground3;
@@ -130,7 +130,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
           Entity-Level Permissions ({role.entityPermissions.filter(ep => ep.privileges.length > 0).length} entities)
         </Text>
         <div className={styles.legend}>
-          <strong>Legend:</strong> None (0) | User (1) | Business Unit (2) | Parent: Child BUs (3) | Organization (4)
+          <strong>Legend:</strong> None (0) | Basic (1) = User | Local (2) = Business Unit | Deep (4) = Parent+Child BUs | Global (8) = Organization
         </div>
         <table style={{ width: '100%', marginTop: tokens.spacingVerticalM, borderCollapse: 'collapse' }}>
           <thead>
@@ -167,7 +167,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                       const priv = privMap.get(type as any);
 
                       // If privilege doesn't exist at all, show empty cell
-                      if (!priv || priv.depth === undefined || priv.depth === null) {
+                      if (!priv) {
                         return (
                           <td
                             key={type}
@@ -182,12 +182,10 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                         );
                       }
 
-                      // Parse depth value
-                      const parsedDepth = typeof priv.depth === 'string' ? parseInt(priv.depth, 10) : Number(priv.depth);
-                      const depth = (!isNaN(parsedDepth) && parsedDepth >= 0 && parsedDepth <= 4) ? parsedDepth : 0;
-
+                      // Use depthValue directly (it's already a number: 0, 1, 2, 4, or 8)
+                      const depth = priv.depthValue ?? 0;
                       const backgroundColor = getDepthColor(depth);
-                      const label = depthLabelMap[depth];
+                      const label = depthLabelMap[depth] || `Unknown (${depth})`;
 
                       return (
                         <td
@@ -213,13 +211,6 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
 
   return (
     <div className={styles.container}>
-      <div style={{ marginBottom: tokens.spacingVerticalM }}>
-        <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>🔒 Security Roles</Title3>
-        <Text className={styles.description}>
-          Security roles and their permissions in the selected solution(s).
-        </Text>
-      </div>
-
       {securityRoles.length === 0 ? (
         <div style={{ textAlign: 'center', padding: tokens.spacingVerticalXXL }}>
           <Text>No security roles found in the selected solution(s).</Text>
