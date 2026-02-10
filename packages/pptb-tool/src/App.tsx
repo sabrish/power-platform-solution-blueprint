@@ -17,6 +17,7 @@ import { ProcessingScreen } from './components/ProcessingScreen';
 import { ResultsDashboard } from './components/ResultsDashboard';
 import { useBlueprint } from './hooks/useBlueprint';
 import type { ScopeSelection } from './types/scope';
+import { Footer } from './components/Footer';
 
 const useStyles = makeStyles({
   container: {
@@ -243,6 +244,8 @@ function App() {
           Generate Blueprint
         </Button>
       </div>
+
+      <Footer />
     </main>
   );
 }
