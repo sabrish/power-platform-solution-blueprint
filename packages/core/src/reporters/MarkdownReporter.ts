@@ -210,8 +210,9 @@ export class MarkdownReporter {
       sections.push('');
     }
 
-    // Diagrams
-    for (const diagram of erd.diagrams) {
+    // Diagram - Use only the first diagram (comprehensive view) to match UI behavior
+    if (erd.diagrams.length > 0) {
+      const diagram = erd.diagrams[0];
       sections.push(MarkdownFormatter.formatHeading(diagram.title, 3));
       sections.push('');
       if (diagram.description) {

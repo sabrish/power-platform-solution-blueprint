@@ -105,6 +105,7 @@ ${this.embeddedCSS()}
 
   /**
    * Generate ERD section
+   * Note: Only includes the first diagram (comprehensive view) to match the tool UI behavior
    */
   htmlErdSection(erd: ERDDefinition | undefined): string {
     if (!erd || erd.diagrams.length === 0) {
@@ -115,21 +116,22 @@ ${this.embeddedCSS()}
     }
 
     const legendHtml = this.generateLegendHtml(erd.legend);
-    const diagramsHtml = erd.diagrams.map((diagram, index) => {
-      return `<div class="erd-diagram">
+
+    // Use only the first diagram (comprehensive view with all entities) - matches UI behavior
+    const diagram = erd.diagrams[0];
+    const diagramHtml = `<div class="erd-diagram">
   <h3>${this.escapeHtml(diagram.title)}</h3>
   <p class="diagram-description">${this.escapeHtml(diagram.description)}</p>
-  <div class="mermaid" id="diagram-${index}">
+  <div class="mermaid" id="diagram-0">
 ${diagram.mermaidDiagram}
   </div>
   <p class="diagram-stats">Entities: ${diagram.entityCount} | Relationships: ${diagram.relationshipCount}</p>
 </div>`;
-    }).join('\n');
 
     return `<section id="erd" class="content-section">
   <h2>Entity Relationship Diagram</h2>
   ${legendHtml}
-  ${diagramsHtml}
+  ${diagramHtml}
 </section>`;
   }
 
