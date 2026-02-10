@@ -23,7 +23,8 @@ All API calls are standard OData queries to Microsoft Dataverse Web API using au
 
 ### Connection Mechanism
 - **Provider**: PPTB Desktop (Power Platform Toolbox)
-- **API**: `window.toolboxAPI.dataverse`
+- **API**: `window.dataverseAPI` (official PPTB Dataverse API)
+- **Type Definitions**: `@pptb/types` package (official PPTB types)
 - **Authentication**: User's existing Dataverse connection (OAuth)
 - **Permissions Required**: Read access to solution components and metadata
 
