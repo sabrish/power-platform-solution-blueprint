@@ -18,7 +18,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment:
-      name: npm-production
+      name: npm
       url: https://www.npmjs.com/package/@sabrish/power-platform-solution-blueprint
     steps:
       - name: Checkout code
