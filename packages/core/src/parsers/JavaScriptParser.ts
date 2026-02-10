@@ -7,7 +7,7 @@ export class JavaScriptParser {
   /**
    * Parse JavaScript content for external calls and patterns
    */
-  static parse(content: string, resourceName: string): JavaScriptAnalysis {
+  static parse(content: string, _resourceName: string): JavaScriptAnalysis {
     const externalCalls: ExternalCall[] = [];
     const frameworks: string[] = [];
     let usesXrm = false;
@@ -57,7 +57,6 @@ export class JavaScriptParser {
         complexity,
       };
     } catch (error) {
-      console.error(`Error parsing JavaScript resource ${resourceName}:`, error);
       return {
         externalCalls: [],
         usesXrm: false,

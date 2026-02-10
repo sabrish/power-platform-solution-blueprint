@@ -100,7 +100,6 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
       } else {
         const error = err instanceof Error ? err : new Error('Failed to generate blueprint');
         setError(error);
-        console.error('Error generating blueprint:', err);
       }
     } finally {
       setIsGenerating(false);

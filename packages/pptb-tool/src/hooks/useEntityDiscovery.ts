@@ -62,7 +62,6 @@ export function useEntityDiscovery(scope: ScopeSelection | null): UseEntityDisco
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch entities');
       setError(error);
-      console.error('Error fetching entities:', err);
     } finally {
       setLoading(false);
     }

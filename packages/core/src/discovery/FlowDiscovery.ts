@@ -40,20 +40,14 @@ export class FlowDiscovery {
       return [];
     }
 
-    console.log(`🌊 Fetching ${workflowIds.length} flow(s)...`);
-
     try {
       const batchSize = 20;
       const allResults: WorkflowRecord[] = [];
-
-      console.log(`📋 Querying ${workflowIds.length} Flows in batches of ${batchSize}...`);
 
       for (let i = 0; i < workflowIds.length; i += batchSize) {
         const batch = workflowIds.slice(i, i + batchSize);
         const filterClauses = batch.map((id) => `workflowid eq ${id}`);
         const filter = `(${filterClauses.join(' or ')}) and category eq 5`;
-
-        console.log(`📋 Batch ${Math.floor(i / batchSize) + 1}: Querying ${batch.length} Flows...`);
 
         const response = await this.client.query<WorkflowRecord>('workflows', {
           select: [
@@ -81,14 +75,11 @@ export class FlowDiscovery {
         }
       }
 
-      console.log(`📋 Total Flows retrieved: ${allResults.length}`);
-
       // Map to Flow objects
       const flows = allResults.map((record) => this.mapWorkflowToFlow(record));
 
       return flows;
     } catch (error) {
-      console.error('🌊 ERROR fetching flows:', error);
       throw error;
     }
   }
@@ -120,7 +111,6 @@ export class FlowDiscovery {
 
       return records.map((record) => this.mapWorkflowToFlow(record));
     } catch (error) {
-      console.error(`🌊 ERROR fetching flows for entity ${logicalName}:`, error);
       return [];
     }
   }

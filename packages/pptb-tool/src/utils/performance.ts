@@ -72,7 +72,7 @@ export function measurePerformance(name: string, fn: () => void): void {
   const startTime = performance.now();
   fn();
   const endTime = performance.now();
-  console.log(`[Performance] ${name}: ${(endTime - startTime).toFixed(2)}ms`);
+  console.log(`Performance: ${name} took ${(endTime - startTime).toFixed(2)}ms`);
 }
 
 /**
