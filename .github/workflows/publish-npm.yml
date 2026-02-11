@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           # registry-url configures npm for OIDC when id-token: write is present and NODE_AUTH_TOKEN is not set
 
@@ -51,6 +51,6 @@ jobs:
           echo "=== .npmrc contents ==="
           cat ~/.npmrc || echo "No .npmrc file"
 
-      - name: Publish to npm with provenance (Trusted Publishing via OIDC)
-        run: npm publish --provenance --access public
+      - name: Publish to npm (Trusted Publishing via OIDC)
+        run: npm publish --access public
         # No NODE_AUTH_TOKEN needed - uses OIDC trusted publishing
