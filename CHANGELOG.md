@@ -5,6 +5,51 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-02-11
+
+### Added
+- **Forms & Web Resources Discovery** - Complete form documentation with web resource registration
+  - Form discovery now correctly handles `rootcomponentbehavior` field:
+    - Entities with `rootcomponentbehavior=0` include all their forms implicitly
+    - Entities with `rootcomponentbehavior=1` only include forms explicitly in solutioncomponents
+  - Discovers all form types (Main, Quick Create, Quick View, Card)
+  - Tracks web resource (JavaScript) libraries registered on each form
+  - Documents event handlers for each form:
+    - OnLoad, OnSave, OnChange, TabStateChange events
+    - Library name, function name, and parameters
+    - Enabled/disabled status
+    - Attribute-specific handlers (e.g., OnChange for specific fields)
+
+### Enhanced
+- **HTML Export** - Added "Forms & Web Resources" tab to entity documentation
+  - Displays form name, type, and all registered web resources
+  - Shows event handlers table with Event, Library, Function, and Status columns
+  - OnChange events display the associated attribute name
+  - Event handler parameters displayed when present
+- **Markdown Export** - Added "Forms & Web Resources" section to entity schema documentation
+  - Form name and type as heading
+  - Web resources listed with monospace formatting
+  - Event handlers in markdown table format
+- **JSON Export** - Already includes complete form data (no changes needed)
+
+### Changed
+- **Code Quality** - Removed all debug console.logs that displayed GUIDs and component details
+- **Solution Component Discovery** - Now queries and tracks `rootcomponentbehavior` field for accurate form membership
+
+### Fixed
+- **Form Discovery Bug** - Forms were incorrectly excluded when entity had `rootcomponentbehavior=0`
+  - Previously only showed forms explicitly in solutioncomponents table
+  - Now correctly includes all forms for entities with "include all subcomponents" behavior
+  - Matches Power Platform solution behavior exactly
+- **Column Security Profiles** - Added graceful error handling when `columnsecurityprofiles` table doesn't exist
+  - Returns empty array instead of failing when table is not available in environment
+
+### Technical Details
+- Updated `ComponentInventoryWithSolutions` interface to include `entitiesWithAllSubcomponents: Set<string>`
+- Modified `SolutionComponentDiscovery.discoverComponents()` to query and track `rootcomponentbehavior`
+- Enhanced `BlueprintGenerator.processForms()` to accept and use `entitiesWithAllSubcomponents` parameter
+- Form filtering logic now checks both explicit solutioncomponents membership and implicit inclusion via rootcomponentbehavior
+
 ## [0.5.4] - 2026-02-11
 
 ### Changed
