@@ -82,6 +82,19 @@ export class SolutionComponentDiscovery {
         filter: solutionFilters,
       });
 
+      console.log(`[SOLUTION COMPONENTS] Raw query returned ${result.value.length} components`);
+
+      // Debug: Show breakdown by component type to see if forms are using different type
+      const componentTypeBreakdown = new Map<number, number>();
+      for (const component of result.value) {
+        const count = componentTypeBreakdown.get(component.componenttype) || 0;
+        componentTypeBreakdown.set(component.componenttype, count + 1);
+      }
+      console.log('[SOLUTION COMPONENTS] Component type breakdown:');
+      componentTypeBreakdown.forEach((count, type) => {
+        console.log(`  ComponentType ${type}: ${count} components`);
+      });
+
       // Group by component type (deduplicates across solutions)
       for (const component of result.value) {
         // Normalize GUID: remove braces and lowercase for consistent comparison
@@ -156,6 +169,7 @@ export class SolutionComponentDiscovery {
               break;
             case ComponentType.SystemForm:
               if (!inventory.formIds.includes(objectId)) {
+                console.log(`[SOLUTION COMPONENTS] Found SystemForm (type 60): ${objectId}`);
                 inventory.formIds.push(objectId);
               }
               break;
