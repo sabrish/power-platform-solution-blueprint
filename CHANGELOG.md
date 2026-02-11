@@ -5,6 +5,36 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-02-11
+
+### Fixed
+- **HTTP 414/400 "Request Too Long" errors** - Fixed query URL length issues across multiple discovery classes
+  - Added batching (batch size = 20) to 4 discovery classes: SecurityRoleDiscovery, FieldSecurityProfileDiscovery, FormDiscovery, SolutionComponentDiscovery
+  - Reduced privilege query batch size to 10 for conservative URL length management
+  - Properly clean GUIDs (remove braces) before building OData filters
+- **Metadata API query errors** - Fixed "query parameter not supported" error when selecting by publisher
+  - Removed unsupported `startswith()` function from EntityDefinitions metadata queries
+  - Removed unsupported `orderBy` parameter from metadata API calls
+  - Now fetches all custom entities and filters in memory (metadata API limitations)
+
+### Changed
+- **Publisher scope architecture** - Major refactoring for simplicity and maintainability
+  - Publisher scope now always uses solution IDs internally (same path as solution scope)
+  - Eliminated separate publisher-specific query paths
+  - Removed `getEntitiesByPublisher()` method (no longer needed)
+  - Reduced code by 78 lines while improving reliability
+- **Consistent UX** - Changed "Exclude system fields" checkbox to "Include system fields"
+  - Both checkboxes now use "Include" pattern for clarity
+  - Default: Include system entities ✓, Include system fields ✗
+- **Better progress messages** - Progress bar now shows component type being processed
+  - Was: "x of y entities processed" (always)
+  - Now: "x of y [plugins/flows/business rules/entities] processed" (dynamic)
+
+### Technical Details
+- All discovery classes now consistently use `batchSize = 20` (except privileges which uses 10)
+- GUIDs in OData filters: raw format without braces or quotes per Dataverse requirements
+- Normalized GUID comparison: lowercase without braces for consistent lookups
+
 ## [0.5.2] - 2026-02-10
 
 ### Changed
