@@ -225,6 +225,7 @@ ${items}
       const pluginCount = entityBp.plugins?.length || 0;
       const flowCount = entityBp.flows?.length || 0;
       const brCount = entityBp.businessRules?.length || 0;
+      const formsCount = entityBp.forms?.length || 0;
 
       // Check if entity has server-side automation for execution pipeline
       const hasExecutionPipeline = this.hasEntityExecutionPipeline(entityBp);
@@ -235,6 +236,7 @@ ${items}
     <h3>${this.escapeHtml(displayName)}</h3>
     <span class="entity-badges">
       ${attributeCount > 0 ? `<span class="badge badge-info">${attributeCount} fields</span>` : ''}
+      ${formsCount > 0 ? `<span class="badge badge-secondary">${formsCount} forms</span>` : ''}
       ${pluginCount > 0 ? `<span class="badge badge-success">${pluginCount} plugins</span>` : ''}
       ${flowCount > 0 ? `<span class="badge badge-primary">${flowCount} flows</span>` : ''}
       ${brCount > 0 ? `<span class="badge badge-warning">${brCount} rules</span>` : ''}
@@ -246,6 +248,7 @@ ${items}
       <div class="tabs-header">
         <button class="tab-button active" onclick="switchEntityTab('entity-${index}', 'overview')">Overview</button>
         <button class="tab-button" onclick="switchEntityTab('entity-${index}', 'schema')">Schema</button>
+        ${formsCount > 0 ? `<button class="tab-button" onclick="switchEntityTab('entity-${index}', 'forms')">Forms & Web Resources</button>` : ''}
         ${this.hasEntityAutomation(entityBp) ? `<button class="tab-button" onclick="switchEntityTab('entity-${index}', 'automation')">Automation</button>` : ''}
         ${hasExecutionPipeline ? `<button class="tab-button" onclick="switchEntityTab('entity-${index}', 'pipeline')">Execution Pipeline</button>` : ''}
       </div>
@@ -259,6 +262,11 @@ ${items}
       <div class="tab-content" id="entity-${index}-schema">
         ${this.generateEntitySchemaTab(entityBp)}
       </div>
+
+      ${formsCount > 0 ? `<!-- Forms Tab -->
+      <div class="tab-content" id="entity-${index}-forms">
+        ${this.generateEntityFormsTab(entityBp)}
+      </div>` : ''}
 
       ${this.hasEntityAutomation(entityBp) ? `<!-- Automation Tab -->
       <div class="tab-content" id="entity-${index}-automation">
@@ -505,6 +513,67 @@ ${rows}
     }
 
     return content;
+  }
+
+  /**
+   * Generate Forms & Web Resources tab content for entity
+   */
+  private generateEntityFormsTab(entityBp: EntityBlueprint): string {
+    if (!entityBp.forms || entityBp.forms.length === 0) {
+      return '<div class="empty-state">No forms found</div>';
+    }
+
+    const formsHtml = entityBp.forms.map(form => {
+      const webResourcesHtml = form.libraries.length > 0 ? `
+        <div class="entity-subsection" style="margin-top: 12px;">
+          <h5 style="font-size: 0.9em; margin-bottom: 8px;">Web Resources (${form.libraries.length})</h5>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            ${form.libraries.map(lib => `<span class="badge badge-info" style="font-family: monospace; font-size: 0.85em;">${this.escapeHtml(lib)}</span>`).join('')}
+          </div>
+        </div>` : '';
+
+      const eventHandlersHtml = form.eventHandlers.length > 0 ? `
+        <div class="entity-subsection" style="margin-top: 12px;">
+          <h5 style="font-size: 0.9em; margin-bottom: 8px;">Event Handlers (${form.eventHandlers.length})</h5>
+          <table class="data-table" style="font-size: 0.9em;">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Library</th>
+                <th>Function</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${form.eventHandlers.map(handler => `
+                <tr>
+                  <td>${this.escapeHtml(handler.event)}${handler.attribute ? ` <span class="badge badge-secondary" style="font-size: 0.8em;">${this.escapeHtml(handler.attribute)}</span>` : ''}</td>
+                  <td style="font-family: monospace;">${this.escapeHtml(handler.libraryName)}</td>
+                  <td style="font-family: monospace;">${this.escapeHtml(handler.functionName)}${handler.parameters ? ` <span style="color: #666; font-size: 0.85em;">(${this.escapeHtml(handler.parameters)})</span>` : ''}</td>
+                  <td><span class="badge ${handler.enabled ? 'badge-success' : 'badge-warning'}">${handler.enabled ? 'Enabled' : 'Disabled'}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>` : '';
+
+      const noContentHtml = form.libraries.length === 0 && form.eventHandlers.length === 0 ?
+        '<p style="color: #666; font-style: italic; margin-top: 12px;">No web resources or event handlers registered</p>' : '';
+
+      return `
+        <div style="border: 1px solid #e0e0e0; border-radius: 4px; padding: 16px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <h4 style="margin: 0; flex: 1;">${this.escapeHtml(form.name)}</h4>
+            <span class="badge badge-primary">${this.escapeHtml(form.typeName)}</span>
+          </div>
+          ${webResourcesHtml}
+          ${eventHandlersHtml}
+          ${noContentHtml}
+        </div>
+      `;
+    }).join('');
+
+    return `<div>${formsHtml}</div>`;
   }
 
   /**
