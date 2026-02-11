@@ -18,8 +18,8 @@ export interface PublisherScope {
   publisherNames: string[];
   publisherPrefixes: string[];
   mode: PublisherScopeMode;
-  solutionIds?: string[]; // Only when mode is 'specific-solutions'
-  solutionNames?: string[];
+  solutionIds: string[]; // Always present - filtered by publisher or user-selected
+  solutionNames: string[];
   includeSystem: boolean;
   excludeSystemFields: boolean;
 }

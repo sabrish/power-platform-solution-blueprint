@@ -426,44 +426,9 @@ export class BlueprintGenerator {
         : await entityDiscovery.getEntitiesByIds(inventory.entityIds);
 
       return { inventory, workflowInventory, entities };
-    } else if (this.scope.type === 'publisher' && this.scope.publisherPrefixes) {
-      // Publisher-based discovery
-      const entities = await entityDiscovery.getEntitiesByPublisher(this.scope.publisherPrefixes);
-
-      // For publisher-based, we don't have component inventory
-      // Return empty inventory (no attribute filtering for publisher-based)
-      const inventory: ComponentInventoryWithSolutions = {
-        entityIds: entities.map(e => e.MetadataId),
-        attributeIds: [],
-        pluginIds: [],
-        pluginPackageIds: [],
-        workflowIds: [],
-        webResourceIds: [],
-        canvasAppIds: [],
-        customPageIds: [],
-        connectionReferenceIds: [],
-        customApiIds: [],
-        environmentVariableIds: [],
-        globalChoiceIds: [],
-        customConnectorIds: [],
-        securityRoleIds: [],
-        fieldSecurityProfileIds: [],
-        componentToSolutions: new Map(),
-        solutionComponentMap: new Map(),
-        componentTypes: new Map(),
-      };
-
-      const workflowInventory: WorkflowInventory = {
-        flowIds: [],
-        businessRuleIds: [],
-        classicWorkflowIds: [],
-        businessProcessFlowIds: [],
-      };
-
-      return { inventory, workflowInventory, entities };
     }
 
-    throw new Error('Invalid scope configuration');
+    throw new Error('Invalid scope configuration: solutionIds required');
   }
 
   /**
@@ -588,9 +553,7 @@ export class BlueprintGenerator {
    * Get human-readable scope description
    */
   private getScopeDescription(): string {
-    if (this.scope.type === 'publisher' && this.scope.publisherPrefixes) {
-      return `Publishers: ${this.scope.publisherPrefixes.join(', ')}`;
-    } else if (this.scope.type === 'solution' && this.scope.solutionIds) {
+    if (this.scope.type === 'solution' && this.scope.solutionIds) {
       return `Solutions: ${this.scope.solutionIds.length} selected`;
     }
     return 'Unknown scope';

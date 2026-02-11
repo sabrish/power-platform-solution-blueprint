@@ -40,15 +40,8 @@ export function useEntityDiscovery(scope: ScopeSelection | null): UseEntityDisco
 
       let fetchedEntities: EntityMetadata[] = [];
 
-      if (scope.type === 'publisher') {
-        if (scope.mode === 'all-solutions') {
-          // Get all entities from selected publishers
-          fetchedEntities = await entityDiscovery.getEntitiesByPublisher(scope.publisherPrefixes);
-        } else if (scope.mode === 'specific-solutions' && scope.solutionIds) {
-          // Get entities from specific solutions
-          fetchedEntities = await entityDiscovery.getEntitiesBySolutions(scope.solutionIds);
-        }
-      } else if (scope.type === 'solution') {
+      // Both publisher and solution scopes now use solution IDs
+      if (scope.type === 'publisher' || scope.type === 'solution') {
         // Get entities from selected solutions
         fetchedEntities = await entityDiscovery.getEntitiesBySolutions(scope.solutionIds);
       }

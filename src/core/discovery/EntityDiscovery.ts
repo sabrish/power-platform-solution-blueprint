@@ -20,53 +20,6 @@ export class EntityDiscovery {
   }
 
   /**
-   * Get all entities that belong to specific publishers
-   * @param publisherPrefixes Array of publisher customization prefixes
-   * @returns Array of entities owned by the publishers
-   */
-  async getEntitiesByPublisher(publisherPrefixes: string[]): Promise<EntityMetadata[]> {
-    try {
-      // NOTE: Metadata API has very limited query support - no startswith(), no orderBy
-      // Must fetch all custom entities and filter in memory
-      const result = await this.client.queryMetadata<EntityMetadata>('EntityDefinitions', {
-        select: [
-          'LogicalName',
-          'SchemaName',
-          'DisplayName',
-          'EntitySetName',
-          'PrimaryIdAttribute',
-          'PrimaryNameAttribute',
-          'MetadataId',
-          'IsCustomEntity',
-          'IsCustomizable',
-          'IsManaged',
-          'Description',
-        ],
-        filter: 'IsCustomEntity eq true', // Only basic equality supported
-        // Note: orderBy not supported by metadata API - sort in memory instead
-      });
-
-      // Filter in memory to match entities that start with any of the prefixes
-      const filteredEntities = result.value.filter((entity) => {
-        const logicalName = entity.LogicalName.toLowerCase();
-        const schemaName = entity.SchemaName.toLowerCase();
-
-        return publisherPrefixes.some((prefix) => {
-          const prefixLower = prefix.toLowerCase();
-          return logicalName.startsWith(`${prefixLower}_`) || schemaName.startsWith(`${prefixLower}_`);
-        });
-      });
-
-      // Sort in memory since metadata API doesn't support orderBy
-      return filteredEntities.sort((a, b) => a.LogicalName.localeCompare(b.LogicalName));
-    } catch (error) {
-      throw new Error(
-        `Failed to retrieve entities by publisher: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
    * Get entities by their metadata IDs
    * @param entityIds Array of entity metadata IDs
    * @returns Array of entity metadata
