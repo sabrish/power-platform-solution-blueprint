@@ -5,14 +5,6 @@ import {
   SearchBox,
   makeStyles,
   tokens,
-  DataGrid,
-  DataGridHeader,
-  DataGridRow,
-  DataGridHeaderCell,
-  DataGridBody,
-  DataGridCell,
-  TableColumnDefinition,
-  createTableColumn,
   Button,
 } from '@fluentui/react-components';
 import { ArrowSort24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
@@ -37,6 +29,41 @@ const useStyles = makeStyles({
   tableContainer: {
     maxHeight: '600px',
     overflowY: 'auto',
+  },
+  tableHeader: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(250px, 2fr) minmax(150px, 1fr) auto auto',
+    gap: tokens.spacingHorizontalM,
+    padding: tokens.spacingVerticalS,
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderRadius: tokens.borderRadiusMedium,
+    fontWeight: tokens.fontWeightSemibold,
+    marginBottom: tokens.spacingVerticalS,
+  },
+  tableRow: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(250px, 2fr) minmax(150px, 1fr) auto auto',
+    gap: tokens.spacingHorizontalM,
+    alignItems: 'start',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+      boxShadow: tokens.shadow4,
+    },
+  },
+  tableRowExpanded: {
+    backgroundColor: tokens.colorBrandBackground2,
+  },
+  cellContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    minWidth: 0,
   },
   expandedRow: {
     backgroundColor: tokens.colorNeutralBackground2,
@@ -185,95 +212,6 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
     return parts.length > 0 ? parts.join(' | ') : '';
   };
 
-  const columns: TableColumnDefinition<AttributeMetadata>[] = [
-    createTableColumn<AttributeMetadata>({
-      columnId: 'displayName',
-      renderHeaderCell: () => (
-        <Button
-          appearance="transparent"
-          icon={<ArrowSort24Regular />}
-          onClick={() => handleSort('DisplayName')}
-        >
-          Display Name
-        </Button>
-      ),
-      renderCell: (item) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, cursor: 'pointer' }}
-             onClick={() => toggleExpand(item.MetadataId || item.LogicalName)}>
-          {expandedFieldId === (item.MetadataId || item.LogicalName) ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
-          <FieldTypeIcon attributeType={item.AttributeType} />
-          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <Text weight="semibold" className={styles.wrapText}>
-              {item.DisplayName?.UserLocalizedLabel?.Label || item.LogicalName}
-            </Text>
-            <Text className={`${styles.codeText} ${styles.wrapText}`} style={{ color: tokens.colorNeutralForeground3 }}>
-              {item.LogicalName}
-            </Text>
-          </div>
-        </div>
-      ),
-    }),
-    createTableColumn<AttributeMetadata>({
-      columnId: 'type',
-      renderHeaderCell: () => (
-        <Button
-          appearance="transparent"
-          icon={<ArrowSort24Regular />}
-          onClick={() => handleSort('AttributeType')}
-        >
-          Type
-        </Button>
-      ),
-      renderCell: (item) => (
-        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <Text className={styles.wrapText}>{item.AttributeType}</Text>
-          {getTypeDetails(item) && (
-            <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-              {getTypeDetails(item)}
-            </Text>
-          )}
-        </div>
-      ),
-    }),
-    createTableColumn<AttributeMetadata>({
-      columnId: 'required',
-      renderHeaderCell: () => (
-        <Button
-          appearance="transparent"
-          icon={<ArrowSort24Regular />}
-          onClick={() => handleSort('RequiredLevel')}
-        >
-          Required
-        </Button>
-      ),
-      renderCell: (item) => getRequiredLevelBadge(item.RequiredLevel.Value),
-    }),
-    createTableColumn<AttributeMetadata>({
-      columnId: 'flags',
-      renderHeaderCell: () => 'Flags',
-      renderCell: (item) => (
-        <div className={styles.badges}>
-          {item.IsPrimaryId && <Badge appearance="filled" color="brand" size="small">Primary ID</Badge>}
-          {item.IsPrimaryName && <Badge appearance="filled" color="success" size="small">Primary Name</Badge>}
-          {item.IsAuditEnabled?.Value && <Badge appearance="tint" size="small">Audit</Badge>}
-          {item.IsSecured && <Badge appearance="filled" color="warning" size="small">Secured</Badge>}
-          {item.IsCustomAttribute && <Badge appearance="outline" size="small">Custom</Badge>}
-        </div>
-      ),
-    }),
-    createTableColumn<AttributeMetadata>({
-      columnId: 'permissions',
-      renderHeaderCell: () => 'Permissions',
-      renderCell: (item) => (
-        <Text style={{ fontSize: tokens.fontSizeBase200 }}>
-          {item.IsValidForCreate ? 'C' : '-'}
-          {item.IsValidForUpdate ? 'U' : '-'}
-          {item.IsValidForRead ? 'R' : '-'}
-        </Text>
-      ),
-    }),
-  ];
-
   const renderExpandedDetails = (attr: AttributeMetadata) => (
     <div className={styles.expandedRow}>
       <div className={styles.detailsGrid}>
@@ -351,36 +289,87 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
       </div>
 
       <div className={styles.tableContainer}>
-        <DataGrid
-          items={filteredAndSortedAttributes}
-          columns={columns}
-          focusMode="composite"
-        >
-          <DataGridHeader>
-            <DataGridRow>
-              {({ renderHeaderCell }) => (
-                <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-              )}
-            </DataGridRow>
-          </DataGridHeader>
-          <DataGridBody<AttributeMetadata>>
-            {({ item, rowId }) => (
-              <DataGridRow<AttributeMetadata> key={rowId}>
-                {({ renderCell }) => (
-                  <DataGridCell>{renderCell(item)}</DataGridCell>
-                )}
-              </DataGridRow>
-            )}
-          </DataGridBody>
-        </DataGrid>
+        {/* Table Header */}
+        <div className={styles.tableHeader}>
+          <div className={styles.cellContent}>
+            <Button
+              appearance="transparent"
+              icon={<ArrowSort24Regular />}
+              onClick={() => handleSort('DisplayName')}
+              size="small"
+            >
+              Display Name
+            </Button>
+          </div>
+          <div className={styles.cellContent}>
+            <Button
+              appearance="transparent"
+              icon={<ArrowSort24Regular />}
+              onClick={() => handleSort('AttributeType')}
+              size="small"
+            >
+              Type
+            </Button>
+          </div>
+          <div className={styles.cellContent}>
+            <Button
+              appearance="transparent"
+              icon={<ArrowSort24Regular />}
+              onClick={() => handleSort('RequiredLevel')}
+              size="small"
+            >
+              Required
+            </Button>
+          </div>
+          <div>Flags</div>
+        </div>
 
-        {/* Render expanded details outside the grid */}
-        {expandedFieldId && filteredAndSortedAttributes.map((attr) => {
+        {/* Table Rows */}
+        {filteredAndSortedAttributes.map((attr) => {
           const fieldId = attr.MetadataId || attr.LogicalName;
-          if (fieldId === expandedFieldId) {
-            return <div key={`expanded-${fieldId}`}>{renderExpandedDetails(attr)}</div>;
-          }
-          return null;
+          const isExpanded = expandedFieldId === fieldId;
+
+          return (
+            <div key={fieldId}>
+              <div
+                className={`${styles.tableRow} ${isExpanded ? styles.tableRowExpanded : ''}`}
+                onClick={() => toggleExpand(fieldId)}
+              >
+                <div className={styles.cellContent}>
+                  {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+                  <FieldTypeIcon attributeType={attr.AttributeType} />
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <Text weight="semibold" className={styles.wrapText}>
+                      {attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName}
+                    </Text>
+                    <Text className={`${styles.codeText} ${styles.wrapText}`} style={{ color: tokens.colorNeutralForeground3 }}>
+                      {attr.LogicalName}
+                    </Text>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <Text className={styles.wrapText}>{attr.AttributeType}</Text>
+                  {getTypeDetails(attr) && (
+                    <Text className={styles.wrapText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                      {getTypeDetails(attr)}
+                    </Text>
+                  )}
+                </div>
+
+                <div>{getRequiredLevelBadge(attr.RequiredLevel.Value)}</div>
+
+                <div className={styles.badges}>
+                  {attr.IsPrimaryId && <Badge appearance="filled" color="brand" size="small">Primary ID</Badge>}
+                  {attr.IsPrimaryName && <Badge appearance="filled" color="success" size="small">Primary Name</Badge>}
+                  {attr.IsAuditEnabled?.Value && <Badge appearance="tint" size="small">Audit</Badge>}
+                  {attr.IsSecured && <Badge appearance="filled" color="warning" size="small">Secured</Badge>}
+                  {attr.IsCustomAttribute && <Badge appearance="outline" size="small">Custom</Badge>}
+                </div>
+              </div>
+              {isExpanded && renderExpandedDetails(attr)}
+            </div>
+          );
         })}
       </div>
     </div>

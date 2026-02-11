@@ -8,6 +8,7 @@ interface SolutionComponent {
   objectid: string;
   componenttype: number;
   _solutionid_value?: string;
+  rootcomponentbehavior?: number; // 0 = include all subcomponents, 1 = include root only
 }
 
 /**
@@ -46,6 +47,7 @@ export class SolutionComponentDiscovery {
         pluginPackageIds: [],
         workflowIds: [],
         webResourceIds: [],
+        formIds: [],
         canvasAppIds: [],
         customPageIds: [],
         connectionReferenceIds: [],
@@ -62,6 +64,9 @@ export class SolutionComponentDiscovery {
       const solutionComponentMap = new Map<string, Set<string>>();
       const componentTypes = new Map<string, number>();
 
+      // Track entities with rootcomponentbehavior = 0 (include all subcomponents)
+      const entitiesWithAllSubcomponents = new Set<string>();
+
       // Check if Default Solution is among the selected solutions
       const includesDefaultSolution = solutionUniqueNames?.some(name => name.toLowerCase() === 'default');
 
@@ -77,9 +82,10 @@ export class SolutionComponentDiscovery {
       }).join(' or ');
 
       const result = await this.client.query<SolutionComponent>('solutioncomponents', {
-        select: ['objectid', 'componenttype', '_solutionid_value'],
+        select: ['objectid', 'componenttype', '_solutionid_value', 'rootcomponentbehavior'],
         filter: solutionFilters,
       });
+
 
       // Group by component type (deduplicates across solutions)
       for (const component of result.value) {
@@ -111,6 +117,10 @@ export class SolutionComponentDiscovery {
             case ComponentType.Entity:
               if (!inventory.entityIds.includes(objectId)) {
                 inventory.entityIds.push(objectId);
+              }
+              // Check rootcomponentbehavior: 0 = include all subcomponents (forms, views, etc.)
+              if (component.rootcomponentbehavior === 0) {
+                entitiesWithAllSubcomponents.add(objectId);
               }
               break;
             case ComponentType.Attribute:
@@ -153,6 +163,11 @@ export class SolutionComponentDiscovery {
                 inventory.webResourceIds.push(objectId);
               }
               break;
+            case ComponentType.SystemForm:
+              if (!inventory.formIds.includes(objectId)) {
+                inventory.formIds.push(objectId);
+              }
+              break;
             case ComponentType.CanvasApp:
               if (!inventory.canvasAppIds.includes(objectId)) {
                 inventory.canvasAppIds.push(objectId);
@@ -191,6 +206,7 @@ export class SolutionComponentDiscovery {
         componentToSolutions,
         solutionComponentMap,
         componentTypes,
+        entitiesWithAllSubcomponents,
       } as ComponentInventoryWithSolutions;
     } catch (error) {
       throw new Error(
@@ -211,6 +227,7 @@ export class SolutionComponentDiscovery {
       pluginPackageIds: [],
       workflowIds: [],
       webResourceIds: [],
+      formIds: [],
       canvasAppIds: [],
       customPageIds: [],
       connectionReferenceIds: [],
@@ -293,6 +310,7 @@ export class SolutionComponentDiscovery {
         componentToSolutions: new Map(),
         solutionComponentMap: new Map(),
         componentTypes: new Map(),
+        entitiesWithAllSubcomponents: new Set(), // Default solution: no rootcomponentbehavior tracking
       } as ComponentInventoryWithSolutions;
     } catch (error) {
       throw new Error(

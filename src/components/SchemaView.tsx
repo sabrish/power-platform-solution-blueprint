@@ -14,6 +14,7 @@ import {
 import { Database24Regular } from '@fluentui/react-icons';
 import type { DetailedEntityMetadata, EntityBlueprint, ClassicWorkflow } from '../core';
 import { FieldsTable } from './FieldsTable';
+import { FormsTable } from './FormsTable';
 import { RelationshipsView } from './RelationshipsView';
 import { AlternateKeysView } from './AlternateKeysView';
 import { ExecutionPipelineView } from './ExecutionPipelineView';
@@ -92,6 +93,7 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
   const manyToOneCount = schema.ManyToOneRelationships?.length || 0;
   const manyToManyCount = schema.ManyToManyRelationships?.length || 0;
   const keysCount = schema.Keys?.length || 0;
+  const formsCount = blueprint?.forms.length || 0;
 
   // Count automation (plugins, flows, business rules)
   const pluginCount = blueprint?.plugins.length || 0;
@@ -196,6 +198,11 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
           <Tab value="keys">
             Keys ({keysCount + 1})
           </Tab>
+          {blueprint && formsCount > 0 && (
+            <Tab value="forms">
+              Forms & Web Resources ({formsCount})
+            </Tab>
+          )}
           {blueprint && totalAutomation > 0 && (
             <Tab value="execution-pipeline">
               Execution Pipeline ({totalAutomation})
@@ -222,6 +229,10 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
               keys={schema.Keys || []}
               primaryIdAttribute={schema.PrimaryIdAttribute}
             />
+          )}
+
+          {selectedTab === 'forms' && blueprint && (
+            <FormsTable forms={blueprint.forms} />
           )}
 
           {selectedTab === 'execution-pipeline' && blueprint && (
