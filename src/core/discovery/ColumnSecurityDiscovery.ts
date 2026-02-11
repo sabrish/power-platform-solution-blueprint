@@ -77,20 +77,26 @@ export class ColumnSecurityDiscovery {
 
   /**
    * Get column security profiles (security masking rules)
+   * Note: columnsecurityprofiles table may not exist in all Dataverse environments
    */
   async getColumnSecurityProfiles(): Promise<ColumnSecurityProfile[]> {
-    const result = await this.client.query<ColumnSecurityProfile>('columnsecurityprofiles', {
-      select: [
-        'columnsecurityprofileid',
-        'name',
-        'description',
-        'ismanaged',
-        'organizationid',
-      ],
-      orderBy: ['name'],
-    });
+    try {
+      const result = await this.client.query<ColumnSecurityProfile>('columnsecurityprofiles', {
+        select: [
+          'columnsecurityprofileid',
+          'name',
+          'description',
+          'ismanaged',
+          'organizationid',
+        ],
+        orderBy: ['name'],
+      });
 
-    return result.value;
+      return result.value;
+    } catch (error) {
+      console.warn('Column security profiles not available in this environment:', error instanceof Error ? error.message : 'Unknown error');
+      return []; // Return empty array if table doesn't exist
+    }
   }
 
   /**
