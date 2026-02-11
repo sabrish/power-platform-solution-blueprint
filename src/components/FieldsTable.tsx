@@ -364,24 +364,29 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
             </DataGridRow>
           </DataGridHeader>
           <DataGridBody<AttributeMetadata>>
-            {({ item, rowId }) => (
-              <DataGridRow<AttributeMetadata> key={rowId}>
-                {({ renderCell }) => (
-                  <DataGridCell>{renderCell(item)}</DataGridCell>
-                )}
-              </DataGridRow>
-            )}
+            {({ item, rowId }) => {
+              const fieldId = item.MetadataId || item.LogicalName;
+              const isExpanded = expandedFieldId === fieldId;
+
+              return (
+                <>
+                  <DataGridRow<AttributeMetadata> key={rowId}>
+                    {({ renderCell }) => (
+                      <DataGridCell>{renderCell(item)}</DataGridCell>
+                    )}
+                  </DataGridRow>
+                  {isExpanded && (
+                    <DataGridRow<AttributeMetadata> key={`${rowId}-expanded`}>
+                      <DataGridCell colSpan={columns.length} style={{ padding: 0 }}>
+                        {renderExpandedDetails(item)}
+                      </DataGridCell>
+                    </DataGridRow>
+                  )}
+                </>
+              );
+            }}
           </DataGridBody>
         </DataGrid>
-
-        {/* Render expanded details outside the grid */}
-        {expandedFieldId && filteredAndSortedAttributes.map((attr) => {
-          const fieldId = attr.MetadataId || attr.LogicalName;
-          if (fieldId === expandedFieldId) {
-            return <div key={`expanded-${fieldId}`}>{renderExpandedDetails(attr)}</div>;
-          }
-          return null;
-        })}
       </div>
     </div>
   );
