@@ -82,6 +82,24 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
 
   const percentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
 
+  // Get component type label based on phase
+  const getComponentLabel = (phase: ProgressInfo['phase']): string => {
+    switch (phase) {
+      case 'schema':
+        return 'entities';
+      case 'plugins':
+        return 'plugins';
+      case 'flows':
+        return 'flows';
+      case 'business-rules':
+        return 'business rules';
+      default:
+        return 'items';
+    }
+  };
+
+  const componentLabel = getComponentLabel(progress.phase);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -91,7 +109,7 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
       <div className={styles.progressSection}>
         <ProgressBar value={percentage / 100} />
         <Text className={styles.progressText}>
-          {progress.current} of {progress.total} entities processed ({Math.round(percentage)}%)
+          {progress.current} of {progress.total} {componentLabel} processed ({Math.round(percentage)}%)
         </Text>
       </div>
 

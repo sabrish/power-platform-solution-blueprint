@@ -99,6 +99,47 @@ To enable multi-connection support, add to `package.json`:
 }
 ```
 
+### Metadata API Limitations
+
+**⚠️ CRITICAL: The Dataverse metadata API (`EntityDefinitions`) has VERY limited query support!**
+
+**NOT Supported:**
+- ❌ `startswith()` function
+- ❌ `orderBy` parameter
+- ❌ Complex filters beyond basic equality
+- ❌ Most OData query functions
+
+**Supported:**
+- ✅ Basic equality filters: `IsCustomEntity eq true`
+- ✅ `$select` for specific fields
+- ✅ `$expand` for navigation properties
+
+**Pattern: Fetch All + Filter in Memory**
+```typescript
+// ✅ CORRECT - Metadata API pattern
+const result = await client.queryMetadata<EntityMetadata>('EntityDefinitions', {
+  select: ['LogicalName', 'SchemaName', 'DisplayName'],
+  filter: 'IsCustomEntity eq true', // Basic equality only
+  // NO orderBy - not supported
+});
+
+// Filter by prefix in memory
+const filteredEntities = result.value.filter(entity =>
+  entity.LogicalName.startsWith('prefix_')
+);
+
+// Sort in memory
+filteredEntities.sort((a, b) => a.LogicalName.localeCompare(b.LogicalName));
+
+// ❌ WRONG - Will fail with "query parameter not supported"
+const result = await client.queryMetadata<EntityMetadata>('EntityDefinitions', {
+  filter: `startswith(LogicalName, 'prefix_')`, // NOT supported
+  orderBy: ['LogicalName'], // NOT supported
+});
+```
+
+**Key Insight:** Regular entity queries (via `queryData()`) support full OData, but metadata queries have strict limitations.
+
 ## Project Structure
 
 ```
@@ -174,6 +215,7 @@ The app includes a professional scope selection screen with two main options:
 
 **Additional options:**
 - **Include system-owned entities** - Checkbox to include Microsoft entities (Account, Contact, etc.)
+- **Include system fields** - Checkbox to include common system fields (createdon, modifiedby, etc.)
 
 **Scope Selector Features:**
 - ✅ Loads publishers and solutions on mount
@@ -196,10 +238,10 @@ The app includes a professional scope selection screen with two main options:
 After scope selection, the app fetches and displays entities:
 
 **Core Business Logic (`src/core/`):**
-- `EntityDiscovery` class with three methods:
-  - `getEntitiesByPublisher(publisherPrefixes)` - Gets entities by publisher prefix
+- `EntityDiscovery` class with two methods:
   - `getEntitiesBySolutions(solutionIds)` - Gets entities from solution components
   - `getAllEntities(includeSystem)` - Gets all entities with optional system filter
+- **Note:** Publisher scope internally uses solution IDs (same path as solution scope)
 - Uses `queryMetadata()` for EntityDefinitions endpoint
 - Queries solution components to find entities in solutions
 
@@ -223,6 +265,7 @@ After scope selection, the app fetches and displays entities:
 3. **Use selective $select** - Only request fields you need
 4. **Strategic $expand** - Fetch related data when always needed
 5. **Track query counts** - Aim for < 50 queries per blueprint generation
+6. **ALWAYS batch large queries** - Use `batchSize = 20` (or 10 for conservative cases) to prevent HTTP 414/400 errors
 
 ### CRITICAL: GUID Handling Rules
 
@@ -258,9 +301,58 @@ inventory.pluginIds.push(objectId);
 
 **Why This Matters:**
 - Dataverse returns GUIDs with braces: `{guid-here}`
-- OData queries need quotes: `'guid-here'`
+- OData queries need raw GUIDs: `guid-here` (no quotes, no braces)
 - Comparisons need normalization: `guid-here` (no braces, lowercase)
 - Missing any of these = silent failures and 0 results
+
+### CRITICAL: HTTP 414/400 "Request Too Long" Prevention
+
+**⚠️ Large OData queries with OR filters can exceed URL/header limits!**
+
+**Rule 1: Always batch large queries**
+```typescript
+// ✅ CORRECT - Batch queries
+const batchSize = 20; // Standard for most cases
+const allResults: any[] = [];
+
+for (let i = 0; i < ids.length; i += batchSize) {
+  const batch = ids.slice(i, i + batchSize);
+  const filter = batch.map(id => {
+    const cleanId = id.replace(/[{}]/g, '');
+    return `fieldid eq ${cleanId}`;
+  }).join(' or ');
+  const result = await client.query(table, { select, filter });
+  allResults.push(...result.value);
+}
+
+// ❌ WRONG - Single query with 100+ items
+const filter = ids.map(id => `fieldid eq ${id}`).join(' or ');
+```
+
+**Rule 2: Use conservative batch sizes**
+- **Standard:** `batchSize = 20` (for most queries)
+- **Conservative:** `batchSize = 10` (for queries with long paths or many parameters)
+- **GUIDs are 36 characters** - 20 GUIDs ≈ 1.5KB in URL
+
+**Rule 3: Clean GUIDs before batching**
+```typescript
+// ✅ CORRECT - Clean each GUID
+const filter = batch.map(id => {
+  const cleanId = String(id).replace(/[{}]/g, '');
+  return `privilegeid eq ${cleanId}`;
+}).join(' or ');
+```
+
+**Common Failures:**
+- Security role privileges: 500-1000+ privileges per role → Must batch
+- Form queries: 100+ entities → Must batch
+- Field permissions: 100+ entities → Must batch
+- Workflow classification: 100+ workflows → Must batch
+
+**URL Length Limits:**
+- Typical server limit: 2,000-8,000 characters
+- HTTP 414: URL too long
+- HTTP 400: Request headers too long
 
 ### Implemented Optimizations
 
@@ -281,6 +373,100 @@ inventory.pluginIds.push(objectId);
 - [ ] Tested with 50+ items?
 
 **See DATAVERSE_OPTIMIZATION_GUIDE.md for detailed patterns and examples.**
+
+## Architectural Patterns & Best Practices
+
+### Publisher Scope Architecture
+
+**Key Learning:** Publisher scope and solution scope should use the same code path.
+
+**Why?** When users select "By Publisher," they ALWAYS end up with a list of solution IDs:
+- **"All solutions from publisher"** → System provides filtered list of solutions
+- **"Specific solutions"** → User selects specific solutions
+
+**Implementation:**
+```typescript
+// UI Layer (ScopeSelector.tsx)
+if (publisherScopeMode === 'all-solutions') {
+  // Use filtered solutions from selected publishers
+  solutionIds = filteredSolutions.map(s => s.solutionid);
+} else {
+  // Use user-selected solutions
+  solutionIds = selectedSolutionIds;
+}
+
+// Conversion Layer (useBlueprint.ts)
+if (scope.type === 'publisher') {
+  // Convert to solution scope - same path!
+  return {
+    type: 'solution',
+    solutionIds: scope.solutionIds,
+    includeSystem: scope.includeSystem,
+    excludeSystemFields: scope.excludeSystemFields,
+  };
+}
+```
+
+**Benefits:**
+- ✅ Single code path = less code, fewer bugs
+- ✅ Avoids metadata API limitations (no `startswith()` needed)
+- ✅ Uses existing optimized solution component queries
+- ✅ Reduced code by 78 lines in one refactoring
+
+**Anti-pattern:** Creating separate query methods for publisher scope when solution IDs are already available.
+
+### UX Consistency Patterns
+
+**Pattern: Consistent Checkbox Language**
+
+**Problem:** Mixing "Include" and "Exclude" patterns confuses users:
+- ✅ "Include system-owned entities"
+- ❌ "Exclude system fields"
+
+**Solution:** Use consistent "Include" pattern:
+- ✅ "Include system-owned entities"
+- ✅ "Include system fields"
+
+**Implementation:**
+```typescript
+// State uses positive naming
+const [includeSystem, setIncludeSystem] = useState(true);
+const [includeSystemFields, setIncludeSystemFields] = useState(false);
+
+// Convert to internal format if needed
+const scope = {
+  includeSystem,
+  excludeSystemFields: !includeSystemFields, // Invert for backward compatibility
+};
+```
+
+### Progress Reporting Patterns
+
+**Pattern: Context-Aware Progress Messages**
+
+**Problem:** Generic progress messages don't communicate what's actually happening:
+- ❌ "5 of 20 entities processed" (when processing plugins)
+
+**Solution:** Dynamic messages based on current phase:
+- ✅ "5 of 20 plugins processed"
+- ✅ "10 of 50 flows processed"
+- ✅ "3 of 15 business rules processed"
+
+**Implementation:**
+```typescript
+const getComponentLabel = (phase: ProgressPhase): string => {
+  switch (phase) {
+    case 'schema': return 'entities';
+    case 'plugins': return 'plugins';
+    case 'flows': return 'flows';
+    case 'business-rules': return 'business rules';
+    default: return 'items';
+  }
+};
+
+const componentLabel = getComponentLabel(progress.phase);
+const message = `${progress.current} of ${progress.total} ${componentLabel} processed`;
+```
 
 ## Important Notes
 

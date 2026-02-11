@@ -20,46 +20,6 @@ export class EntityDiscovery {
   }
 
   /**
-   * Get all entities that belong to specific publishers
-   * @param publisherPrefixes Array of publisher customization prefixes
-   * @returns Array of entities owned by the publishers
-   */
-  async getEntitiesByPublisher(publisherPrefixes: string[]): Promise<EntityMetadata[]> {
-    try {
-      // Build filter to match entities that start with any of the prefixes
-      const prefixFilters = publisherPrefixes
-        .map((prefix) => `(startswith(LogicalName,'${prefix}_') or startswith(SchemaName,'${prefix}_'))`)
-        .join(' or ');
-
-      const filter = `IsCustomEntity eq true and (${prefixFilters})`;
-
-      const result = await this.client.queryMetadata<EntityMetadata>('EntityDefinitions', {
-        select: [
-          'LogicalName',
-          'SchemaName',
-          'DisplayName',
-          'EntitySetName',
-          'PrimaryIdAttribute',
-          'PrimaryNameAttribute',
-          'MetadataId',
-          'IsCustomEntity',
-          'IsCustomizable',
-          'IsManaged',
-          'Description',
-        ],
-        filter,
-        orderBy: ['LogicalName'],
-      });
-
-      return result.value;
-    } catch (error) {
-      throw new Error(
-        `Failed to retrieve entities by publisher: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
    * Get entities by their metadata IDs
    * @param entityIds Array of entity metadata IDs
    * @returns Array of entity metadata

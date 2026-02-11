@@ -74,17 +74,25 @@ export class FieldSecurityProfileDiscovery {
   async getFieldPermissions(entityLogicalNames: string[]): Promise<FieldPermission[]> {
     if (entityLogicalNames.length === 0) return [];
 
-    // Build filter for entity names
-    const entityFilters = entityLogicalNames
-      .map(name => `entityname eq '${name}'`)
-      .join(' or ');
+    // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
+    // With 100+ entities, URL can exceed limits
+    const batchSize = 20;
+    const allPermissions: any[] = [];
 
-    const query = `fieldpermissions?$select=fieldpermissionid,entityname,attributelogicalname,canread,cancreate,canupdate,fieldsecurityprofileid&$expand=fieldsecurityprofileid($select=name)&$filter=${entityFilters}`;
+    for (let i = 0; i < entityLogicalNames.length; i += batchSize) {
+      const batch = entityLogicalNames.slice(i, i + batchSize);
+      const entityFilters = batch
+        .map(name => `entityname eq '${name}'`)
+        .join(' or ');
 
-    const result = await this.client.query<any>(query);
+      const query = `fieldpermissions?$select=fieldpermissionid,entityname,attributelogicalname,canread,cancreate,canupdate,fieldsecurityprofileid&$expand=fieldsecurityprofileid($select=name)&$filter=${entityFilters}`;
+
+      const result = await this.client.query<any>(query);
+      allPermissions.push(...result.value);
+    }
 
     // Flatten the expanded profile name
-    return result.value.map((fp: any) => ({
+    return allPermissions.map((fp: any) => ({
       fieldpermissionid: fp.fieldpermissionid,
       entityname: fp.entityname,
       attributelogicalname: fp.attributelogicalname,
