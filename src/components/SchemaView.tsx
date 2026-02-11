@@ -197,7 +197,7 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
           <Tab value="keys">
             Keys ({keysCount + 1})
           </Tab>
-          {blueprint && formsCount > 0 && (
+          {blueprint && (
             <Tab value="forms">
               Forms & Web Resources ({formsCount})
             </Tab>
@@ -230,9 +230,22 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
             />
           )}
 
-          {selectedTab === 'forms' && blueprint && blueprint.forms.length > 0 && (
+          {selectedTab === 'forms' && blueprint && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM }}>
-              {blueprint.forms.map((form) => (
+              {blueprint.forms.length === 0 ? (
+                <div style={{ padding: tokens.spacingVerticalXXXL, textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
+                  <Text size={500} weight="semibold">No Forms Found</Text>
+                  <Text style={{ marginTop: tokens.spacingVerticalS }}>
+                    No forms were discovered for this entity. This could mean:
+                  </Text>
+                  <ul style={{ marginTop: tokens.spacingVerticalS, textAlign: 'left', display: 'inline-block' }}>
+                    <li>The entity has no custom forms</li>
+                    <li>Forms are not included in the selected solution(s)</li>
+                    <li>Form discovery encountered an error (check console)</li>
+                  </ul>
+                </div>
+              ) : (
+                blueprint.forms.map((form) => (
                 <Card key={form.id} style={{ padding: tokens.spacingVerticalM }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalM }}>
@@ -283,7 +296,8 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
                     )}
                   </div>
                 </Card>
-              ))}
+              )))
+              }
             </div>
           )}
 
