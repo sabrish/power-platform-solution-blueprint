@@ -12,6 +12,7 @@ export interface ComponentInventory {
   pluginPackageIds: string[];
   workflowIds: string[];
   webResourceIds: string[];
+  formIds: string[];
   canvasAppIds: string[];
   customPageIds: string[];
   connectionReferenceIds: string[];
@@ -41,6 +42,7 @@ export interface ComponentInventoryWithSolutions extends ComponentInventory {
   componentToSolutions: Map<string, string[]>;  // componentId → solutionIds
   solutionComponentMap: Map<string, Set<string>>;  // solutionId → componentIds
   componentTypes: Map<string, number>;  // componentId → componentType
+  entitiesWithAllSubcomponents: Set<string>;  // entityIds with rootcomponentbehavior=0 (include all subcomponents)
 }
 
 /**
@@ -62,6 +64,7 @@ export enum ComponentType {
   GlobalOptionSet = 9,
   SecurityRole = 20,
   Workflow = 29,
+  SystemForm = 60,  // Forms (Main, Quick Create, Quick View, Card)
   WebResource = 61,
   FieldSecurityProfile = 70,
   // AppModule = 80,  // Model-Driven Apps (future implementation)

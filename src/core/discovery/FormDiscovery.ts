@@ -44,9 +44,10 @@ export class FormDiscovery {
         const filter = filterClauses.join(' or ');
 
         // Query forms for this batch
+        // Note: Dataverse doesn't support 'in' operator, use OR instead
         const result = await this.client.query<RawForm>('systemforms', {
           select: ['formid', 'name', 'type', 'objecttypecode', 'formxml'],
-          filter: `(${filter}) and type in (2,7,8,11)`, // Main, Quick Create, Quick View, Card forms
+          filter: `(${filter}) and (type eq 2 or type eq 7 or type eq 8 or type eq 11)`, // Main, Quick Create, Quick View, Card forms
         });
 
         allForms.push(...result.value);

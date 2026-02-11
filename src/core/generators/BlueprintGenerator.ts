@@ -171,7 +171,8 @@ export class BlueprintGenerator {
       const { attributeMaskingRules, columnSecurityProfiles } = await this.processColumnSecurity();
 
       // STEP 7: Process Forms and JavaScript Event Handlers
-      const forms = await this.processForms(entities.map((e) => e.LogicalName));
+      // Pass entities with rootcomponentbehavior info to determine form inclusion
+      const forms = await this.processForms(entities, inventory.formIds, inventory.entitiesWithAllSubcomponents);
       const formsByEntity = this.groupFormsByEntity(forms);
 
       // STEP 8: Populate automation and security in entity blueprints
@@ -1296,8 +1297,8 @@ export class BlueprintGenerator {
   /**
    * Process forms and JavaScript event handlers
    */
-  private async processForms(entityNames: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
-    if (entityNames.length === 0) {
+  private async processForms(entities: EntityMetadata[], formIds: string[], entitiesWithAllSubcomponents: Set<string>): Promise<import('../types/blueprint.js').FormDefinition[]> {
+    if (entities.length === 0) {
       return [];
     }
 
@@ -1307,12 +1308,43 @@ export class BlueprintGenerator {
         phase: 'discovering',
         entityName: '',
         current: 0,
-        total: entityNames.length,
+        total: entities.length,
         message: `Discovering forms and JavaScript handlers...`,
       });
 
+      const entityNames = entities.map(e => e.LogicalName);
       const formDiscovery = new FormDiscovery(this.client);
-      const forms = await formDiscovery.getFormsForEntities(entityNames);
+      const allForms = await formDiscovery.getFormsForEntities(entityNames);
+
+      // Build map of entity logical name to metadata ID
+      const entityLogicalNameToId = new Map<string, string>();
+      for (const entity of entities) {
+        if (entity.MetadataId) {
+          entityLogicalNameToId.set(entity.LogicalName.toLowerCase(), entity.MetadataId.toLowerCase().replace(/[{}]/g, ''));
+        }
+      }
+
+      // Filter forms based on rootcomponentbehavior:
+      // - If entity has rootcomponentbehavior=0: Include ALL forms for that entity
+      // - Otherwise: Only include forms explicitly in solutioncomponents
+      const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
+
+      const forms = allForms.filter(form => {
+        const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
+        const entityLogicalName = form.entity.toLowerCase();
+        const entityMetadataId = entityLogicalNameToId.get(entityLogicalName);
+
+        // Check if this form's entity has rootcomponentbehavior=0 (include all subcomponents)
+        const entityIncludesAllSubcomponents = entityMetadataId && entitiesWithAllSubcomponents.has(entityMetadataId);
+
+        if (entityIncludesAllSubcomponents) {
+          return true;
+        }
+
+        // Otherwise, check if form is explicitly in solutioncomponents
+        const inSolution = normalizedFormIds.has(normalizedFormId);
+        return inSolution;
+      });
 
       // Report completion
       this.reportProgress({
@@ -1320,7 +1352,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: forms.length,
         total: forms.length,
-        message: 'Forms and JavaScript handlers discovered',
+        message: `${forms.length} forms in solution(s)`,
       });
 
       return forms;
