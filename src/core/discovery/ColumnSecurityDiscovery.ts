@@ -50,20 +50,29 @@ export class ColumnSecurityDiscovery {
    * Get all attribute masking rules
    */
   async getAttributeMaskingRules(): Promise<AttributeMaskingRule[]> {
-    const result = await this.client.query<AttributeMaskingRule>('attributemaskingrules', {
-      select: [
-        'attributemaskingruleid',
-        'entitylogicalname',
-        'attributelogicalname',
-        'maskingtype',
-        'maskingformat',
-        'description',
-        'ismanaged',
-      ],
-      orderBy: ['entitylogicalname', 'attributelogicalname'],
-    });
+    try {
+      const result = await this.client.query<AttributeMaskingRule>('attributemaskingrules', {
+        select: [
+          'attributemaskingruleid',
+          // 'entitylogicalname', // Property not available in attributemaskingrules table
+          'attributelogicalname',
+          'maskingtype',
+          'maskingformat',
+          'description',
+          'ismanaged',
+        ],
+        // orderBy removed due to missing entitylogicalname property
+      });
 
-    return result.value;
+      // Set entitylogicalname to empty string for compatibility
+      return result.value.map(rule => ({
+        ...rule,
+        entitylogicalname: '', // Property not available from API
+      }));
+    } catch (error) {
+      console.warn('Failed to query attribute masking rules:', error instanceof Error ? error.message : 'Unknown error');
+      return []; // Return empty array if query fails
+    }
   }
 
   /**
