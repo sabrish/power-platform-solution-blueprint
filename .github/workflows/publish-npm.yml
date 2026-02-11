@@ -31,6 +31,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           # registry-url configures npm for OIDC when id-token: write is present and NODE_AUTH_TOKEN is not set
 
+      - name: Update npm to latest
+        run: npm install -g npm@latest
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
