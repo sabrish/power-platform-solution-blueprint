@@ -20,12 +20,14 @@ interface UseBlueprintResult {
 
 /**
  * Convert UI scope to Blueprint scope
+ * NOTE: Publisher scope now uses solution IDs (same as solution scope)
  */
 function convertScope(scope: ScopeSelection): BlueprintScope {
   if (scope.type === 'publisher') {
+    // Publisher scope now uses solution IDs - same path as solution scope
     return {
-      type: 'publisher',
-      publisherPrefixes: scope.publisherPrefixes,
+      type: 'solution',
+      solutionIds: scope.solutionIds,
       includeSystem: scope.includeSystem,
       excludeSystemFields: scope.excludeSystemFields,
     };

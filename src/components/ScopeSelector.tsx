@@ -250,21 +250,32 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     if (scopeType === 'publisher') {
       const selectedPubs = publishers.filter((p) => selectedPublisherIds.includes(p.publisherid));
 
+      // ALWAYS use solution IDs - we have them in both modes
+      let solutionIds: string[];
+      let solutionNames: string[];
+
+      if (publisherScopeMode === 'specific-solutions') {
+        // User selected specific solutions
+        const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
+        solutionIds = selectedSolutionIds;
+        solutionNames = selectedSols.map((s) => s.friendlyname);
+      } else {
+        // All solutions from selected publishers
+        solutionIds = filteredSolutions.map((s) => s.solutionid);
+        solutionNames = filteredSolutions.map((s) => s.friendlyname);
+      }
+
       scope = {
         type: 'publisher',
         publisherIds: selectedPublisherIds,
         publisherNames: selectedPubs.map((p) => p.friendlyname),
         publisherPrefixes: selectedPubs.map((p) => p.customizationprefix),
         mode: publisherScopeMode,
+        solutionIds,
+        solutionNames,
         includeSystem,
         excludeSystemFields,
       };
-
-      if (publisherScopeMode === 'specific-solutions') {
-        const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
-        scope.solutionIds = selectedSolutionIds;
-        scope.solutionNames = selectedSols.map((s) => s.friendlyname);
-      }
     } else {
       const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
       scope = {
