@@ -1314,14 +1314,37 @@ export class BlueprintGenerator {
       const formDiscovery = new FormDiscovery(this.client);
       const allForms = await formDiscovery.getFormsForEntities(entityNames);
 
+      console.log(`[FORMS DEBUG] Discovered ${allForms.length} total forms for ${entityNames.length} entities`);
+      console.log(`[FORMS DEBUG] Solution formIds count: ${formIds.length}`);
+
+      // If no formIds provided from solution components, return all forms for the entities
+      // This handles cases where forms might not be tracked as solution components
+      if (formIds.length === 0) {
+        console.log('[FORMS DEBUG] No formIds in solution components - returning all forms for entities');
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current: allForms.length,
+          total: allForms.length,
+          message: `${allForms.length} forms discovered (not filtered by solution)`,
+        });
+        return allForms;
+      }
+
       // Filter forms to only include those in the solution(s)
       // Normalize formIds for comparison (lowercase, no braces)
       const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
 
       const forms = allForms.filter(form => {
         const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
-        return normalizedFormIds.has(normalizedFormId);
+        const included = normalizedFormIds.has(normalizedFormId);
+        if (!included) {
+          console.log(`[FORMS DEBUG] Form "${form.name}" (${form.id}) not in solution - excluded`);
+        }
+        return included;
       });
+
+      console.log(`[FORMS DEBUG] After filtering: ${forms.length} forms in solution(s)`);
 
       // Report completion
       this.reportProgress({
