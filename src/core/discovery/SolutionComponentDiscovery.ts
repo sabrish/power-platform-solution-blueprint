@@ -86,18 +86,6 @@ export class SolutionComponentDiscovery {
         filter: solutionFilters,
       });
 
-      console.log(`[SOLUTION COMPONENTS] Raw query returned ${result.value.length} components`);
-
-      // Debug: Show breakdown by component type to see if forms are using different type
-      const componentTypeBreakdown = new Map<number, number>();
-      for (const component of result.value) {
-        const count = componentTypeBreakdown.get(component.componenttype) || 0;
-        componentTypeBreakdown.set(component.componenttype, count + 1);
-      }
-      console.log('[SOLUTION COMPONENTS] Component type breakdown:');
-      componentTypeBreakdown.forEach((count, type) => {
-        console.log(`  ComponentType ${type}: ${count} components`);
-      });
 
       // Group by component type (deduplicates across solutions)
       for (const component of result.value) {
@@ -133,7 +121,6 @@ export class SolutionComponentDiscovery {
               // Check rootcomponentbehavior: 0 = include all subcomponents (forms, views, etc.)
               if (component.rootcomponentbehavior === 0) {
                 entitiesWithAllSubcomponents.add(objectId);
-                console.log(`[SOLUTION COMPONENTS] Entity ${objectId} has rootcomponentbehavior=0 (include all subcomponents)`);
               }
               break;
             case ComponentType.Attribute:
@@ -178,7 +165,6 @@ export class SolutionComponentDiscovery {
               break;
             case ComponentType.SystemForm:
               if (!inventory.formIds.includes(objectId)) {
-                console.log(`[SOLUTION COMPONENTS] Found SystemForm (type 60): ${objectId}`);
                 inventory.formIds.push(objectId);
               }
               break;
@@ -214,19 +200,6 @@ export class SolutionComponentDiscovery {
               break;
           }
         }
-
-      // Debug logging for solution component discovery
-      console.log('[SOLUTION COMPONENTS] Discovery summary:');
-      console.log(`  - Total components: ${result.value.length}`);
-      console.log(`  - Entities: ${inventory.entityIds.length}`);
-      console.log(`  - Attributes: ${inventory.attributeIds.length}`);
-      console.log(`  - Forms (SystemForm): ${inventory.formIds.length}`);
-      console.log(`  - Web Resources: ${inventory.webResourceIds.length}`);
-      console.log(`  - Workflows: ${inventory.workflowIds.length}`);
-      console.log(`  - Plugins: ${inventory.pluginIds.length}`);
-      if (inventory.formIds.length > 0) {
-        console.log(`[SOLUTION COMPONENTS] Form IDs found:`, inventory.formIds.slice(0, 5).join(', ') + (inventory.formIds.length > 5 ? '...' : ''));
-      }
 
       return {
         ...inventory,
