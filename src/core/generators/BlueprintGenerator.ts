@@ -1317,45 +1317,23 @@ export class BlueprintGenerator {
       console.log(`[FORMS DEBUG] Discovered ${allForms.length} total forms for ${entityNames.length} entities`);
       console.log(`[FORMS DEBUG] Solution formIds count: ${formIds.length}`);
 
-      // If no formIds provided from solution components, return all forms for the entities
-      // This handles cases where forms might not be tracked as solution components
-      if (formIds.length === 0) {
-        console.log('[FORMS DEBUG] No formIds in solution components - returning all forms for entities');
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current: allForms.length,
-          total: allForms.length,
-          message: `${allForms.length} forms discovered (not filtered by solution)`,
-        });
-        return allForms;
-      }
-
-      // Filter forms to only include those in the solution(s)
-      // Normalize formIds for comparison (lowercase, no braces)
-      const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
-
-      const forms = allForms.filter(form => {
-        const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
-        const included = normalizedFormIds.has(normalizedFormId);
-        if (!included) {
-          console.log(`[FORMS DEBUG] Form "${form.name}" (${form.id}) not in solution - excluded`);
-        }
-        return included;
-      });
-
-      console.log(`[FORMS DEBUG] After filtering: ${forms.length} forms in solution(s)`);
+      // IMPORTANT: Forms are often not tracked as individual solution components in the
+      // solutioncomponents table. When you add an entity to a solution, its forms are
+      // implicitly included but may not be listed as separate components (ComponentType.SystemForm = 60).
+      // Therefore, we include ALL forms for entities that are in the selected solution(s).
+      // This matches how Power Platform solutions actually work.
+      console.log('[FORMS DEBUG] Including all forms for entities in solution (forms are implicitly part of entity)');
 
       // Report completion
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
-        current: forms.length,
-        total: forms.length,
-        message: `${forms.length} forms discovered in solution(s)`,
+        current: allForms.length,
+        total: allForms.length,
+        message: `${allForms.length} forms discovered for solution entities`,
       });
 
-      return forms;
+      return allForms;
     } catch (error) {
       console.error('Error processing forms:', error instanceof Error ? error.message : 'Unknown error');
       // Don't fail the entire generation if forms fail
