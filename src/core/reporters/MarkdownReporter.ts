@@ -1154,6 +1154,46 @@ export class MarkdownReporter {
       sections.push('');
     }
 
+    // Forms & Web Resources
+    if (entity.forms && entity.forms.length > 0) {
+      sections.push(MarkdownFormatter.formatHeading('Forms & Web Resources', 2));
+      sections.push('');
+      sections.push(`This entity has **${entity.forms.length}** form(s) with associated web resources and event handlers.`);
+      sections.push('');
+
+      for (const form of entity.forms) {
+        sections.push(MarkdownFormatter.formatHeading(form.name, 3));
+        sections.push('');
+        sections.push(`**Type:** ${form.typeName}`);
+        sections.push('');
+
+        // Web Resources
+        if (form.libraries.length > 0) {
+          sections.push(MarkdownFormatter.formatHeading('Web Resources', 4));
+          sections.push('');
+          sections.push(MarkdownFormatter.formatList(form.libraries.map(lib => `\`${lib}\``)));
+          sections.push('');
+        }
+
+        // Event Handlers
+        if (form.eventHandlers.length > 0) {
+          sections.push(MarkdownFormatter.formatHeading('Event Handlers', 4));
+          sections.push('');
+
+          const headers = ['Event', 'Library', 'Function', 'Status'];
+          const rows = form.eventHandlers.map(handler => [
+            handler.attribute ? `${handler.event} (${handler.attribute})` : handler.event,
+            `\`${handler.libraryName}\``,
+            handler.parameters ? `\`${handler.functionName}(${handler.parameters})\`` : `\`${handler.functionName}()\``,
+            handler.enabled ? 'Enabled' : 'Disabled',
+          ]);
+
+          sections.push(MarkdownFormatter.formatTable(headers, rows));
+          sections.push('');
+        }
+      }
+    }
+
     return sections.join('\n');
   }
 
