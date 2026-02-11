@@ -42,6 +42,7 @@ export interface ComponentInventoryWithSolutions extends ComponentInventory {
   componentToSolutions: Map<string, string[]>;  // componentId → solutionIds
   solutionComponentMap: Map<string, Set<string>>;  // solutionId → componentIds
   componentTypes: Map<string, number>;  // componentId → componentType
+  entitiesWithAllSubcomponents: Set<string>;  // entityIds with rootcomponentbehavior=0 (include all subcomponents)
 }
 
 /**

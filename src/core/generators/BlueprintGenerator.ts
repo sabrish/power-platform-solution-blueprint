@@ -171,8 +171,8 @@ export class BlueprintGenerator {
       const { attributeMaskingRules, columnSecurityProfiles } = await this.processColumnSecurity();
 
       // STEP 7: Process Forms and JavaScript Event Handlers
-      // Pass full entities array to distinguish custom vs system entities
-      const forms = await this.processForms(entities, inventory.formIds);
+      // Pass entities with rootcomponentbehavior info to determine form inclusion
+      const forms = await this.processForms(entities, inventory.formIds, inventory.entitiesWithAllSubcomponents);
       const formsByEntity = this.groupFormsByEntity(forms);
 
       // STEP 8: Populate automation and security in entity blueprints
@@ -1297,7 +1297,7 @@ export class BlueprintGenerator {
   /**
    * Process forms and JavaScript event handlers
    */
-  private async processForms(entities: EntityMetadata[], formIds: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
+  private async processForms(entities: EntityMetadata[], formIds: string[], entitiesWithAllSubcomponents: Set<string>): Promise<import('../types/blueprint.js').FormDefinition[]> {
     if (entities.length === 0) {
       return [];
     }
@@ -1316,24 +1316,45 @@ export class BlueprintGenerator {
       const formDiscovery = new FormDiscovery(this.client);
       const allForms = await formDiscovery.getFormsForEntities(entityNames);
 
+      // Build map of entity logical name to metadata ID
+      const entityLogicalNameToId = new Map<string, string>();
+      for (const entity of entities) {
+        if (entity.MetadataId) {
+          entityLogicalNameToId.set(entity.LogicalName.toLowerCase(), entity.MetadataId.toLowerCase().replace(/[{}]/g, ''));
+        }
+      }
+
       console.log(`[FORMS DEBUG] Discovered ${allForms.length} total forms for ${entities.length} entities`);
       console.log(`[FORMS DEBUG] Solution formIds count: ${formIds.length}`);
+      console.log(`[FORMS DEBUG] Entities with rootcomponentbehavior=0 (all subcomponents): ${entitiesWithAllSubcomponents.size}`);
 
       if (formIds.length > 0) {
         console.log('[FORMS DEBUG] FormIds from solution components:', formIds.slice(0, 5).join(', ') + (formIds.length > 5 ? '...' : ''));
       }
 
-      // Filter forms by solutioncomponents table (source of truth)
-      // This applies to ALL forms regardless of entity type
+      // Filter forms based on rootcomponentbehavior:
+      // - If entity has rootcomponentbehavior=0: Include ALL forms for that entity
+      // - Otherwise: Only include forms explicitly in solutioncomponents
       const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
 
-      console.log('[FORMS DEBUG] Filtering forms by solution components...');
+      console.log('[FORMS DEBUG] Filtering forms by rootcomponentbehavior and solution components...');
       const forms = allForms.filter(form => {
         const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
-        const inSolution = normalizedFormIds.has(normalizedFormId);
+        const entityLogicalName = form.entity.toLowerCase();
+        const entityMetadataId = entityLogicalNameToId.get(entityLogicalName);
 
+        // Check if this form's entity has rootcomponentbehavior=0 (include all subcomponents)
+        const entityIncludesAllSubcomponents = entityMetadataId && entitiesWithAllSubcomponents.has(entityMetadataId);
+
+        if (entityIncludesAllSubcomponents) {
+          console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) for entity "${form.entity}" - entity has rootcomponentbehavior=0 - included`);
+          return true;
+        }
+
+        // Otherwise, check if form is explicitly in solutioncomponents
+        const inSolution = normalizedFormIds.has(normalizedFormId);
         if (inSolution) {
-          console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) for entity "${form.entity}" - IN solution - included`);
+          console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) for entity "${form.entity}" - explicitly in solution - included`);
         } else {
           console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) for entity "${form.entity}" - not in solution - excluded`);
         }
