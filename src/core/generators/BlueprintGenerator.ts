@@ -171,7 +171,7 @@ export class BlueprintGenerator {
       const { attributeMaskingRules, columnSecurityProfiles } = await this.processColumnSecurity();
 
       // STEP 7: Process Forms and JavaScript Event Handlers
-      const forms = await this.processForms(entities.map((e) => e.LogicalName));
+      const forms = await this.processForms(entities.map((e) => e.LogicalName), inventory.formIds);
       const formsByEntity = this.groupFormsByEntity(forms);
 
       // STEP 8: Populate automation and security in entity blueprints
@@ -1296,7 +1296,7 @@ export class BlueprintGenerator {
   /**
    * Process forms and JavaScript event handlers
    */
-  private async processForms(entityNames: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
+  private async processForms(entityNames: string[], formIds: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
     if (entityNames.length === 0) {
       return [];
     }
@@ -1312,7 +1312,16 @@ export class BlueprintGenerator {
       });
 
       const formDiscovery = new FormDiscovery(this.client);
-      const forms = await formDiscovery.getFormsForEntities(entityNames);
+      const allForms = await formDiscovery.getFormsForEntities(entityNames);
+
+      // Filter forms to only include those in the solution(s)
+      // Normalize formIds for comparison (lowercase, no braces)
+      const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
+
+      const forms = allForms.filter(form => {
+        const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
+        return normalizedFormIds.has(normalizedFormId);
+      });
 
       // Report completion
       this.reportProgress({
@@ -1320,7 +1329,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: forms.length,
         total: forms.length,
-        message: 'Forms and JavaScript handlers discovered',
+        message: `${forms.length} forms discovered in solution(s)`,
       });
 
       return forms;
