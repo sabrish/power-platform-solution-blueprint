@@ -137,7 +137,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   const [publisherScopeMode, setPublisherScopeMode] = useState<PublisherScopeMode>('all-solutions');
   const [selectedSolutionIds, setSelectedSolutionIds] = useState<string[]>([]);
   const [includeSystem, setIncludeSystem] = useState(true);
-  const [excludeSystemFields, setExcludeSystemFields] = useState(true);
+  const [includeSystemFields, setIncludeSystemFields] = useState(false); // Default: exclude system fields
 
   // Load data on mount
   useEffect(() => {
@@ -250,21 +250,32 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     if (scopeType === 'publisher') {
       const selectedPubs = publishers.filter((p) => selectedPublisherIds.includes(p.publisherid));
 
+      // ALWAYS use solution IDs - we have them in both modes
+      let solutionIds: string[];
+      let solutionNames: string[];
+
+      if (publisherScopeMode === 'specific-solutions') {
+        // User selected specific solutions
+        const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
+        solutionIds = selectedSolutionIds;
+        solutionNames = selectedSols.map((s) => s.friendlyname);
+      } else {
+        // All solutions from selected publishers
+        solutionIds = filteredSolutions.map((s) => s.solutionid);
+        solutionNames = filteredSolutions.map((s) => s.friendlyname);
+      }
+
       scope = {
         type: 'publisher',
         publisherIds: selectedPublisherIds,
         publisherNames: selectedPubs.map((p) => p.friendlyname),
         publisherPrefixes: selectedPubs.map((p) => p.customizationprefix),
         mode: publisherScopeMode,
+        solutionIds,
+        solutionNames,
         includeSystem,
-        excludeSystemFields,
+        excludeSystemFields: !includeSystemFields, // Invert for internal use
       };
-
-      if (publisherScopeMode === 'specific-solutions') {
-        const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
-        scope.solutionIds = selectedSolutionIds;
-        scope.solutionNames = selectedSols.map((s) => s.friendlyname);
-      }
     } else {
       const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
       scope = {
@@ -272,7 +283,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         solutionIds: selectedSolutionIds,
         solutionNames: selectedSols.map((s) => s.friendlyname),
         includeSystem,
-        excludeSystemFields,
+        excludeSystemFields: !includeSystemFields, // Invert for internal use
       };
     }
 
@@ -512,13 +523,13 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
 
         <div style={{ marginTop: tokens.spacingVerticalM }}>
           <Tooltip
-            content="Exclude common system fields like createdon, createdby, modifiedon, modifiedby, ownerid, statecode, etc."
+            content="Include common system fields like createdon, createdby, modifiedon, modifiedby, ownerid, statecode, statuscode, etc."
             relationship="description"
           >
             <Checkbox
-              label="Exclude system fields (createdon, modifiedby, etc.)"
-              checked={excludeSystemFields}
-              onChange={(_, data) => setExcludeSystemFields(data.checked === true)}
+              label="Include system fields (createdon, modifiedby, etc.)"
+              checked={includeSystemFields}
+              onChange={(_, data) => setIncludeSystemFields(data.checked === true)}
             />
           </Tooltip>
         </div>
