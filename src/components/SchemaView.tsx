@@ -14,6 +14,7 @@ import {
 import { Database24Regular } from '@fluentui/react-icons';
 import type { DetailedEntityMetadata, EntityBlueprint, ClassicWorkflow } from '../core';
 import { FieldsTable } from './FieldsTable';
+import { FormsTable } from './FormsTable';
 import { RelationshipsView } from './RelationshipsView';
 import { AlternateKeysView } from './AlternateKeysView';
 import { ExecutionPipelineView } from './ExecutionPipelineView';
@@ -197,7 +198,7 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
           <Tab value="keys">
             Keys ({keysCount + 1})
           </Tab>
-          {blueprint && (
+          {blueprint && formsCount > 0 && (
             <Tab value="forms">
               Forms & Web Resources ({formsCount})
             </Tab>
@@ -231,74 +232,7 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
           )}
 
           {selectedTab === 'forms' && blueprint && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM }}>
-              {blueprint.forms.length === 0 ? (
-                <div style={{ padding: tokens.spacingVerticalXXXL, textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-                  <Text size={500} weight="semibold">No Forms Found</Text>
-                  <Text style={{ marginTop: tokens.spacingVerticalS }}>
-                    No forms were discovered for this entity. This could mean:
-                  </Text>
-                  <ul style={{ marginTop: tokens.spacingVerticalS, textAlign: 'left', display: 'inline-block' }}>
-                    <li>The entity has no custom forms</li>
-                    <li>Forms are not included in the selected solution(s)</li>
-                    <li>Form discovery encountered an error (check console)</li>
-                  </ul>
-                </div>
-              ) : (
-                blueprint.forms.map((form) => (
-                <Card key={form.id} style={{ padding: tokens.spacingVerticalM }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalM }}>
-                      <Text weight="semibold" size={400}>{form.name}</Text>
-                      <Badge appearance="tint" color="brand" size="small">{form.typeName}</Badge>
-                    </div>
-
-                    {form.libraries.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS, marginTop: tokens.spacingVerticalS }}>
-                        <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
-                          Web Resources ({form.libraries.length}):
-                        </Text>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: tokens.spacingHorizontalS }}>
-                          {form.libraries.map((lib, idx) => (
-                            <Badge key={idx} appearance="outline" color="important" size="small" style={{ fontFamily: 'Consolas, Monaco, monospace' }}>
-                              {lib}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {form.eventHandlers.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS, marginTop: tokens.spacingVerticalS }}>
-                        <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
-                          Event Handlers ({form.eventHandlers.length}):
-                        </Text>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXXS }}>
-                          {form.eventHandlers.slice(0, 5).map((handler, idx) => (
-                            <Text key={idx} size={200} style={{ fontFamily: 'Consolas, Monaco, monospace', color: tokens.colorNeutralForeground2 }}>
-                              {handler.event}: {handler.libraryName}.{handler.functionName}
-                              {handler.attribute && ` (${handler.attribute})`}
-                            </Text>
-                          ))}
-                          {form.eventHandlers.length > 5 && (
-                            <Text size={200} style={{ color: tokens.colorNeutralForeground3, fontStyle: 'italic' }}>
-                              ... and {form.eventHandlers.length - 5} more handlers
-                            </Text>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {form.libraries.length === 0 && form.eventHandlers.length === 0 && (
-                      <Text size={200} style={{ color: tokens.colorNeutralForeground3, fontStyle: 'italic' }}>
-                        No web resources registered
-                      </Text>
-                    )}
-                  </div>
-                </Card>
-              )))
-              }
-            </div>
+            <FormsTable forms={blueprint.forms} />
           )}
 
           {selectedTab === 'execution-pipeline' && blueprint && (

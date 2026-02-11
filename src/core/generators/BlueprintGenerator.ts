@@ -1317,23 +1317,50 @@ export class BlueprintGenerator {
       console.log(`[FORMS DEBUG] Discovered ${allForms.length} total forms for ${entityNames.length} entities`);
       console.log(`[FORMS DEBUG] Solution formIds count: ${formIds.length}`);
 
-      // IMPORTANT: Forms are often not tracked as individual solution components in the
-      // solutioncomponents table. When you add an entity to a solution, its forms are
-      // implicitly included but may not be listed as separate components (ComponentType.SystemForm = 60).
-      // Therefore, we include ALL forms for entities that are in the selected solution(s).
-      // This matches how Power Platform solutions actually work.
-      console.log('[FORMS DEBUG] Including all forms for entities in solution (forms are implicitly part of entity)');
+      if (formIds.length > 0) {
+        console.log('[FORMS DEBUG] FormIds from solution components:', formIds.slice(0, 5).join(', ') + (formIds.length > 5 ? '...' : ''));
+      }
+
+      // If no forms in solution components, return empty array
+      if (formIds.length === 0) {
+        console.log('[FORMS DEBUG] No forms in solution components - returning empty array');
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current: 0,
+          total: 0,
+          message: 'No forms in solution(s)',
+        });
+        return [];
+      }
+
+      // Filter forms to only include those explicitly in the solution(s)
+      const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
+
+      console.log('[FORMS DEBUG] Filtering forms by solution membership...');
+      const forms = allForms.filter(form => {
+        const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
+        const included = normalizedFormIds.has(normalizedFormId);
+        if (!included) {
+          console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) not in solution - excluded`);
+        } else {
+          console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) IN solution - included`);
+        }
+        return included;
+      });
+
+      console.log(`[FORMS DEBUG] After filtering: ${forms.length} forms in solution(s)`);
 
       // Report completion
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
-        current: allForms.length,
-        total: allForms.length,
-        message: `${allForms.length} forms discovered for solution entities`,
+        current: forms.length,
+        total: forms.length,
+        message: `${forms.length} forms in solution(s)`,
       });
 
-      return allForms;
+      return forms;
     } catch (error) {
       console.error('Error processing forms:', error instanceof Error ? error.message : 'Unknown error');
       // Don't fail the entire generation if forms fail

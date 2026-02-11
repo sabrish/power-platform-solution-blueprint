@@ -192,6 +192,19 @@ export class SolutionComponentDiscovery {
           }
         }
 
+      // Debug logging for solution component discovery
+      console.log('[SOLUTION COMPONENTS] Discovery summary:');
+      console.log(`  - Total components: ${result.value.length}`);
+      console.log(`  - Entities: ${inventory.entityIds.length}`);
+      console.log(`  - Attributes: ${inventory.attributeIds.length}`);
+      console.log(`  - Forms (SystemForm): ${inventory.formIds.length}`);
+      console.log(`  - Web Resources: ${inventory.webResourceIds.length}`);
+      console.log(`  - Workflows: ${inventory.workflowIds.length}`);
+      console.log(`  - Plugins: ${inventory.pluginIds.length}`);
+      if (inventory.formIds.length > 0) {
+        console.log(`[SOLUTION COMPONENTS] Form IDs found:`, inventory.formIds.slice(0, 5).join(', ') + (inventory.formIds.length > 5 ? '...' : ''));
+      }
+
       return {
         ...inventory,
         componentToSolutions,
