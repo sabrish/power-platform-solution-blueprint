@@ -332,20 +332,28 @@ export class SolutionComponentDiscovery {
         businessProcessFlowIds: [],
       };
 
-      // Query workflows to get their categories
-      // Build filter for workflow IDs (GUIDs need braces and quotes in OData)
-      const filters = workflowIds.map(id => {
-        const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
-        return `workflowid eq '${guidWithBraces}'`;
-      }).join(' or ');
+      // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
+      // Large solutions can have 100+ workflows
+      const batchSize = 20;
+      const allWorkflows: WorkflowRecord[] = [];
 
-      const result = await this.client.query<WorkflowRecord>('workflows', {
-        select: ['workflowid', 'category'],
-        filter: filters,
-      });
+      for (let i = 0; i < workflowIds.length; i += batchSize) {
+        const batch = workflowIds.slice(i, i + batchSize);
+        const filters = batch.map(id => {
+          const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+          return `workflowid eq '${guidWithBraces}'`;
+        }).join(' or ');
+
+        const result = await this.client.query<WorkflowRecord>('workflows', {
+          select: ['workflowid', 'category'],
+          filter: filters,
+        });
+
+        allWorkflows.push(...result.value);
+      }
 
       // Classify by category
-      for (const workflow of result.value) {
+      for (const workflow of allWorkflows) {
         const workflowId = workflow.workflowid.toLowerCase();
 
         switch (workflow.category) {
