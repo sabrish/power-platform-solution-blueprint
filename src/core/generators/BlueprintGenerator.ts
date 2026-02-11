@@ -171,7 +171,8 @@ export class BlueprintGenerator {
       const { attributeMaskingRules, columnSecurityProfiles } = await this.processColumnSecurity();
 
       // STEP 7: Process Forms and JavaScript Event Handlers
-      const forms = await this.processForms(entities.map((e) => e.LogicalName), inventory.formIds);
+      // Pass full entities array to distinguish custom vs system entities
+      const forms = await this.processForms(entities, inventory.formIds);
       const formsByEntity = this.groupFormsByEntity(forms);
 
       // STEP 8: Populate automation and security in entity blueprints
@@ -1296,8 +1297,8 @@ export class BlueprintGenerator {
   /**
    * Process forms and JavaScript event handlers
    */
-  private async processForms(entityNames: string[], formIds: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
-    if (entityNames.length === 0) {
+  private async processForms(entities: EntityMetadata[], formIds: string[]): Promise<import('../types/blueprint.js').FormDefinition[]> {
+    if (entities.length === 0) {
       return [];
     }
 
@@ -1307,46 +1308,54 @@ export class BlueprintGenerator {
         phase: 'discovering',
         entityName: '',
         current: 0,
-        total: entityNames.length,
+        total: entities.length,
         message: `Discovering forms and JavaScript handlers...`,
       });
 
+      const entityNames = entities.map(e => e.LogicalName);
       const formDiscovery = new FormDiscovery(this.client);
       const allForms = await formDiscovery.getFormsForEntities(entityNames);
 
-      console.log(`[FORMS DEBUG] Discovered ${allForms.length} total forms for ${entityNames.length} entities`);
+      // Build set of custom entity logical names (IsCustomEntity = true)
+      const customEntityNames = new Set(
+        entities
+          .filter(e => e.IsCustomEntity === true)
+          .map(e => e.LogicalName.toLowerCase())
+      );
+
+      console.log(`[FORMS DEBUG] Discovered ${allForms.length} total forms for ${entities.length} entities`);
+      console.log(`[FORMS DEBUG] Custom entities: ${customEntityNames.size}, System entities: ${entities.length - customEntityNames.size}`);
       console.log(`[FORMS DEBUG] Solution formIds count: ${formIds.length}`);
 
       if (formIds.length > 0) {
         console.log('[FORMS DEBUG] FormIds from solution components:', formIds.slice(0, 5).join(', ') + (formIds.length > 5 ? '...' : ''));
       }
 
-      // If no forms in solution components, return empty array
-      if (formIds.length === 0) {
-        console.log('[FORMS DEBUG] No forms in solution components - returning empty array');
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current: 0,
-          total: 0,
-          message: 'No forms in solution(s)',
-        });
-        return [];
-      }
-
-      // Filter forms to only include those explicitly in the solution(s)
+      // Filter forms based on entity type:
+      // - Custom entities: Include ALL forms (forms are implicitly part of custom entities)
+      // - System entities: Include ONLY forms in solutioncomponents
       const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
 
-      console.log('[FORMS DEBUG] Filtering forms by solution membership...');
+      console.log('[FORMS DEBUG] Filtering forms by entity type and solution membership...');
       const forms = allForms.filter(form => {
+        const entityLogicalName = form.entity.toLowerCase();
+        const isCustomEntity = customEntityNames.has(entityLogicalName);
         const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
-        const included = normalizedFormIds.has(normalizedFormId);
-        if (!included) {
-          console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) not in solution - excluded`);
+
+        if (isCustomEntity) {
+          // Custom entity: Include ALL forms
+          console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) - CUSTOM entity "${form.entity}" - included`);
+          return true;
         } else {
-          console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) IN solution - included`);
+          // System entity: Only include if in solutioncomponents
+          const inSolution = normalizedFormIds.has(normalizedFormId);
+          if (inSolution) {
+            console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) - SYSTEM entity "${form.entity}" - IN solution - included`);
+          } else {
+            console.log(`[FORMS DEBUG] Form "${form.name}" (${normalizedFormId}) - SYSTEM entity "${form.entity}" - not in solution - excluded`);
+          }
+          return inSolution;
         }
-        return included;
       });
 
       console.log(`[FORMS DEBUG] After filtering: ${forms.length} forms in solution(s)`);
