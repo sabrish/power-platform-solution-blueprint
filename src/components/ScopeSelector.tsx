@@ -137,7 +137,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   const [publisherScopeMode, setPublisherScopeMode] = useState<PublisherScopeMode>('all-solutions');
   const [selectedSolutionIds, setSelectedSolutionIds] = useState<string[]>([]);
   const [includeSystem, setIncludeSystem] = useState(true);
-  const [excludeSystemFields, setExcludeSystemFields] = useState(true);
+  const [includeSystemFields, setIncludeSystemFields] = useState(false); // Default: exclude system fields
 
   // Load data on mount
   useEffect(() => {
@@ -274,7 +274,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         solutionIds,
         solutionNames,
         includeSystem,
-        excludeSystemFields,
+        excludeSystemFields: !includeSystemFields, // Invert for internal use
       };
     } else {
       const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
@@ -283,7 +283,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         solutionIds: selectedSolutionIds,
         solutionNames: selectedSols.map((s) => s.friendlyname),
         includeSystem,
-        excludeSystemFields,
+        excludeSystemFields: !includeSystemFields, // Invert for internal use
       };
     }
 
@@ -523,13 +523,13 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
 
         <div style={{ marginTop: tokens.spacingVerticalM }}>
           <Tooltip
-            content="Exclude common system fields like createdon, createdby, modifiedon, modifiedby, ownerid, statecode, etc."
+            content="Include common system fields like createdon, createdby, modifiedon, modifiedby, ownerid, statecode, statuscode, etc."
             relationship="description"
           >
             <Checkbox
-              label="Exclude system fields (createdon, modifiedby, etc.)"
-              checked={excludeSystemFields}
-              onChange={(_, data) => setExcludeSystemFields(data.checked === true)}
+              label="Include system fields (createdon, modifiedby, etc.)"
+              checked={includeSystemFields}
+              onChange={(_, data) => setIncludeSystemFields(data.checked === true)}
             />
           </Tooltip>
         </div>
