@@ -46,6 +46,7 @@ export class SolutionComponentDiscovery {
         pluginPackageIds: [],
         workflowIds: [],
         webResourceIds: [],
+        formIds: [],
         canvasAppIds: [],
         customPageIds: [],
         connectionReferenceIds: [],
@@ -153,6 +154,11 @@ export class SolutionComponentDiscovery {
                 inventory.webResourceIds.push(objectId);
               }
               break;
+            case ComponentType.SystemForm:
+              if (!inventory.formIds.includes(objectId)) {
+                inventory.formIds.push(objectId);
+              }
+              break;
             case ComponentType.CanvasApp:
               if (!inventory.canvasAppIds.includes(objectId)) {
                 inventory.canvasAppIds.push(objectId);
@@ -211,6 +217,7 @@ export class SolutionComponentDiscovery {
       pluginPackageIds: [],
       workflowIds: [],
       webResourceIds: [],
+      formIds: [],
       canvasAppIds: [],
       customPageIds: [],
       connectionReferenceIds: [],
