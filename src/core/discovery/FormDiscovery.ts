@@ -33,18 +33,27 @@ export class FormDiscovery {
     }
 
     try {
-      // Build filter for entity names
-      const filterClauses = entityNames.map((name) => `objecttypecode eq '${name}'`);
-      const filter = filterClauses.join(' or ');
+      // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
+      // With 100+ entities, URL can exceed limits
+      const batchSize = 20;
+      const allForms: RawForm[] = [];
 
-      // Query forms
-      const result = await this.client.query<RawForm>('systemforms', {
-        select: ['formid', 'name', 'type', 'objecttypecode', 'formxml'],
-        filter: `(${filter}) and type in (2,7,8,11)`, // Main, Quick Create, Quick View, Card forms
-      });
+      for (let i = 0; i < entityNames.length; i += batchSize) {
+        const batch = entityNames.slice(i, i + batchSize);
+        const filterClauses = batch.map((name) => `objecttypecode eq '${name}'`);
+        const filter = filterClauses.join(' or ');
+
+        // Query forms for this batch
+        const result = await this.client.query<RawForm>('systemforms', {
+          select: ['formid', 'name', 'type', 'objecttypecode', 'formxml'],
+          filter: `(${filter}) and type in (2,7,8,11)`, // Main, Quick Create, Quick View, Card forms
+        });
+
+        allForms.push(...result.value);
+      }
 
       // Parse each form
-      return result.value.map((raw) => this.parseForm(raw));
+      return allForms.map((raw) => this.parseForm(raw));
     } catch (error) {
       throw new Error(
         `Failed to retrieve forms: ${error instanceof Error ? error.message : 'Unknown error'}`

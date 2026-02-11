@@ -198,15 +198,23 @@ export class SecurityRoleDiscovery {
       return [];
     }
 
-    // Step 2: Query privileges entity to get name and accessright for all privilege IDs
+    // Step 2: Query privileges entity in batches to avoid HTTP 414 (URL too long) errors
+    // Security roles can have hundreds of privileges, which would exceed URL limits
     const privilegeIds = rolePrivsResult.value.map((rp: any) => rp.privilegeid);
-    const privilegeFilter = privilegeIds.map(id => `privilegeid eq ${id}`).join(' or ');
-    const privilegesQuery = `privileges?$filter=${privilegeFilter}&$select=privilegeid,name,accessright`;
-    const privilegesResult = await this.client.query<any>(privilegesQuery);
+    const batchSize = 20; // Consistent with other discovery classes
+    const allPrivileges: any[] = [];
+
+    for (let i = 0; i < privilegeIds.length; i += batchSize) {
+      const batch = privilegeIds.slice(i, i + batchSize);
+      const privilegeFilter = batch.map(id => `privilegeid eq ${id}`).join(' or ');
+      const privilegesQuery = `privileges?$filter=${privilegeFilter}&$select=privilegeid,name,accessright`;
+      const privilegesResult = await this.client.query<any>(privilegesQuery);
+      allPrivileges.push(...privilegesResult.value);
+    }
 
     // Create a map of privilegeid -> privilege details for fast lookup
     const privilegeMap = new Map<string, any>();
-    for (const priv of privilegesResult.value) {
+    for (const priv of allPrivileges) {
       privilegeMap.set(priv.privilegeid.toLowerCase(), priv);
     }
 
