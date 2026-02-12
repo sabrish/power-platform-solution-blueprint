@@ -1,6 +1,6 @@
 {
   "name": "@sabrish/power-platform-solution-blueprint",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "displayName": "Power Platform Solution Blueprint Generator",
   "description": "Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.",
   "main": "index.html",

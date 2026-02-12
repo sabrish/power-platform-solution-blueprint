@@ -5,6 +5,20 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-02-12
+
+### Fixed
+- **npm-shrinkwrap.json Compatibility** - Regenerated npm-shrinkwrap.json using npm instead of pnpm
+  - Previous version was generated with pnpm, creating `.pnpm` directory paths incompatible with npm
+  - Caused `Cannot read properties of null (reading 'matches')` error during npm install
+  - Now generated using native npm, ensuring full compatibility with npm install workflows
+  - Fixes installation issues when testing with `npm pack` and `npm install --production --no-optional`
+
+### Added
+- **Documentation** - Added `NPM_SHRINKWRAP_GENERATION.md` with step-by-step instructions for regenerating npm-shrinkwrap.json
+  - Required whenever dependencies are updated
+  - Maintains compatibility with both pnpm (development) and npm (PPTB Desktop installation)
+
 ## [0.6.1] - 2026-02-11
 
 ### Added
