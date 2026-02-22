@@ -913,6 +913,7 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(plugin.name)}</td>
   <td>${this.escapeHtml(plugin.entity || 'N/A')}</td>
+  <td><span class="badge badge-${plugin.state === 'Enabled' ? 'success' : 'error'}">${plugin.state}</span></td>
   <td>${this.escapeHtml(plugin.message || 'N/A')}</td>
   <td>${this.escapeHtml(plugin.stageName || 'N/A')}</td>
   <td>${this.escapeHtml(plugin.modeName || 'N/A')}</td>
@@ -929,10 +930,11 @@ ${rows}
         <tr>
           <th onclick="sortTable('plugins-table', 0)">Name <span class="sort-indicator"></span></th>
           <th onclick="sortTable('plugins-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 2)">Message <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 3)">Stage <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 4)">Mode <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 5)">Rank <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 2)">State <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 3)">Message <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 4)">Stage <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 5)">Mode <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 6)">Rank <span class="sort-indicator"></span></th>
           <th>Images</th>
         </tr>
       </thead>
