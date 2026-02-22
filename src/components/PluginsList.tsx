@@ -9,6 +9,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -191,7 +192,9 @@ export function PluginsList({
         {plugin.description && (
           <div className={styles.section}>
             <Text className={styles.detailLabel}>Description</Text>
-            <Text className={styles.wrapText}>{plugin.description}</Text>
+            <Text>
+              <TruncatedText text={plugin.description} />
+            </Text>
           </div>
         )}
 
@@ -271,16 +274,16 @@ export function PluginsList({
               </div>
               <Text className={styles.rank}>{plugin.rank}</Text>
               <div className={styles.nameColumn}>
-                <Text weight="semibold" className={styles.wrapText}>
-                  {plugin.name}
+                <Text weight="semibold">
+                  <TruncatedText text={plugin.name} />
                 </Text>
-                <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                  {plugin.assemblyName}
+                <Text className={styles.codeText}>
+                  <TruncatedText text={plugin.assemblyName} />
                 </Text>
               </div>
               {!entityLogicalName && (
-                <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                  {plugin.entity}
+                <Text className={styles.codeText}>
+                  <TruncatedText text={plugin.entity} />
                 </Text>
               )}
               <Badge appearance="outline">{plugin.message}</Badge>
