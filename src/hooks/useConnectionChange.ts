@@ -15,11 +15,11 @@ export function useConnectionChange(onConnectionChange: () => void) {
     const handleEvent = (event: any, payload: any) => {
       console.log('[PPSB] Event received:', event, payload);
 
-      // Check if this is a connection-related event
+      // The actual event name is in payload.event, not the first parameter
       if (
-        event === 'connection:created' ||
-        event === 'connection:updated' ||
-        event === 'connection:deleted'
+        payload?.event === 'connection:created' ||
+        payload?.event === 'connection:updated' ||
+        payload?.event === 'connection:deleted'
       ) {
         console.log('[PPSB] Connection change detected, triggering reset');
         onConnectionChange();
