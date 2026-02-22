@@ -471,9 +471,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           {/* Tab Content */}
           <div style={{ marginTop: tokens.spacingVerticalL }}>
             {selectedTab === 'entities' && (
-              <div style={{ display: 'flex', width: '100%', height: '600px' }}>
-                <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} />
-              </div>
+              <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} />
             )}
 
             {selectedTab === 'plugins' && hasResults('plugins') && (
