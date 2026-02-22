@@ -23,11 +23,16 @@ import { ThemeToggle } from './components/ThemeToggle';
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
-    maxWidth: '1200px',
+    width: '95%',
+    maxWidth: '1600px',
     margin: '0 auto',
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
+    '@media (max-width: 768px)': {
+      width: '100%',
+      padding: tokens.spacingVerticalL,
+    },
   },
   header: {
     marginBottom: tokens.spacingVerticalL,
