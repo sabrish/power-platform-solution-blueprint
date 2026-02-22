@@ -12,13 +12,16 @@ export function useConnectionChange(onConnectionChange: () => void) {
     }
 
     // Event handler that filters for connection-related events
-    const handleEvent = (event: any) => {
+    const handleEvent = (event: any, payload: any) => {
+      console.log('[PPSB] Event received:', event, payload);
+
       // Check if this is a connection-related event
       if (
         event === 'connection:created' ||
         event === 'connection:updated' ||
         event === 'connection:deleted'
       ) {
+        console.log('[PPSB] Connection change detected, triggering reset');
         onConnectionChange();
       }
     };
