@@ -11,8 +11,9 @@ export function useConnectionChange(onConnectionChange: () => void) {
       return;
     }
 
-    const handleConnectionEvent = (event: string) => {
-      // Only handle connection-related events
+    // Event handler that filters for connection-related events
+    const handleEvent = (event: any) => {
+      // Check if this is a connection-related event
       if (
         event === 'connection:created' ||
         event === 'connection:updated' ||
@@ -23,12 +24,12 @@ export function useConnectionChange(onConnectionChange: () => void) {
     };
 
     // Subscribe to PPTB events
-    window.toolboxAPI.events.on(handleConnectionEvent);
+    window.toolboxAPI.events.on(handleEvent);
 
     // Cleanup subscription on unmount
     return () => {
       if (window.toolboxAPI?.events) {
-        window.toolboxAPI.events.off(handleConnectionEvent);
+        window.toolboxAPI.events.off(handleEvent);
       }
     };
   }, [onConnectionChange]);
