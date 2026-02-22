@@ -123,6 +123,7 @@ function App() {
 
   // Reset app to scope selector when connection changes
   const handleConnectionChange = useCallback(() => {
+    console.log('[PPSB] Connection change handler called, resetting app state');
     reset(); // Clear blueprint state first
     setSelectedScope(null);
     setShowConfirmation(false);
