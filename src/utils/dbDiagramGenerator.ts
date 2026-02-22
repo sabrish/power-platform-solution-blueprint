@@ -78,10 +78,20 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
 
   // Build set of entities actually in the export (excluding system entities)
   const exportedEntities = new Set<string>();
+  // Build map of entity -> set of attribute names (to validate relationships)
+  const entityAttributes = new Map<string, Set<string>>();
+
   for (const entityBlueprint of result.entities) {
     const tableName = entityBlueprint.entity.LogicalName.toLowerCase();
     if (!isSystemEntity(tableName)) {
       exportedEntities.add(tableName);
+
+      // Build attribute set for this entity
+      const attributes = new Set<string>();
+      for (const attr of entityBlueprint.entity.Attributes || []) {
+        attributes.add(attr.LogicalName.toLowerCase());
+      }
+      entityAttributes.set(tableName, attributes);
     }
   }
 
@@ -156,6 +166,14 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
       // Skip if either entity is not in the export
       if (!exportedEntities.has(rel.ReferencingEntity.toLowerCase()) ||
           !exportedEntities.has(rel.ReferencedEntity.toLowerCase())) {
+        continue;
+      }
+
+      // Skip if either attribute doesn't exist in the entity definition
+      const referencingAttrs = entityAttributes.get(rel.ReferencingEntity.toLowerCase());
+      const referencedAttrs = entityAttributes.get(rel.ReferencedEntity.toLowerCase());
+      if (!referencingAttrs?.has(rel.ReferencingAttribute.toLowerCase()) ||
+          !referencedAttrs?.has(rel.ReferencedAttribute.toLowerCase())) {
         continue;
       }
 
