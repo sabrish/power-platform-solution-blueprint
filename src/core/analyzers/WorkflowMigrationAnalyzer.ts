@@ -15,6 +15,7 @@ export class WorkflowMigrationAnalyzer {
     const effort = this.estimateEffort(complexity);
     const approach = this.generateApproach(workflow, features);
     const challenges = this.identifyChallenges(features);
+    const advisory = this.generateAdvisory(workflow);
 
     return {
       complexity,
@@ -23,6 +24,7 @@ export class WorkflowMigrationAnalyzer {
       challenges,
       features,
       documentationLink: 'https://learn.microsoft.com/en-us/power-automate/migrate-from-classic-workflows',
+      advisory,
     };
   }
 
@@ -261,5 +263,18 @@ export class WorkflowMigrationAnalyzer {
     }
 
     return challenges;
+  }
+
+  /**
+   * Generate migration advisory based on workflow mode
+   */
+  private generateAdvisory(workflow: ClassicWorkflow): string {
+    // Real-time (synchronous) workflows - mode 1
+    if (workflow.mode === 1 || workflow.modeName === 'RealTime') {
+      return 'Advisory: Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.';
+    }
+
+    // Background (async) workflows - mode 0
+    return 'Advisory: This async workflow can be migrated to Power Automate cloud flows. Classic workflows are deprecated, and migration is recommended to ensure continued support and access to modern features.';
   }
 }

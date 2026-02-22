@@ -8,6 +8,8 @@ import {
   Body1,
   Caption1,
   Divider,
+  MessageBar,
+  MessageBarBody,
 } from '@fluentui/react-components';
 import {
   Warning20Regular,
@@ -16,6 +18,7 @@ import {
   Clock20Regular,
   DocumentBulletList20Regular,
   Open20Regular,
+  Info20Regular,
 } from '@fluentui/react-icons';
 import type { ClassicWorkflow, MigrationFeature } from '../core';
 import { formatDate } from '../utils/dateFormat';
@@ -124,6 +127,17 @@ export function ClassicWorkflowDetailView({ workflow }: ClassicWorkflowDetailVie
             }
           />
         </Card>
+      )}
+
+      {/* Migration Advisory */}
+      {recommendation?.advisory && (
+        <MessageBar
+          intent={workflow.mode === 1 ? 'warning' : 'info'}
+          icon={<Info20Regular />}
+          style={{ marginBottom: '24px' }}
+        >
+          <MessageBarBody>{recommendation.advisory}</MessageBarBody>
+        </MessageBar>
       )}
 
       {/* Workflow Details */}
