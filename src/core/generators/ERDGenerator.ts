@@ -285,6 +285,16 @@ export class ERDGenerator {
     // Create set of entity logical names in this diagram for filtering
     const entityLogicalNames = new Set(entities.map(bp => bp.entity.LogicalName.toLowerCase()));
 
+    // Build map of entity -> set of attribute names (to validate relationships)
+    const entityAttributes = new Map<string, Set<string>>();
+    for (const { entity } of entities) {
+      const attributes = new Set<string>();
+      for (const attr of entity.Attributes || []) {
+        attributes.add(attr.LogicalName.toLowerCase());
+      }
+      entityAttributes.set(entity.LogicalName.toLowerCase(), attributes);
+    }
+
     // Track processed relationships to avoid duplicates
     const processedRelationships = new Set<string>();
     let relationshipCount = 0;
@@ -309,6 +319,14 @@ export class ERDGenerator {
 
           // Only include if child entity is also in this diagram
           if (!entityLogicalNames.has(rel.ReferencingEntity.toLowerCase())) {
+            continue;
+          }
+
+          // Skip if either attribute doesn't exist in the entity definition
+          const referencingAttrs = entityAttributes.get(rel.ReferencingEntity.toLowerCase());
+          const referencedAttrs = entityAttributes.get(rel.ReferencedEntity.toLowerCase());
+          if (!referencingAttrs?.has(rel.ReferencingAttribute.toLowerCase()) ||
+              !referencedAttrs?.has(rel.ReferencedAttribute.toLowerCase())) {
             continue;
           }
 
