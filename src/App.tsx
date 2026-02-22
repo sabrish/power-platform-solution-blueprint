@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Button,
   Title1,
@@ -16,23 +16,42 @@ import { ScopeSelector } from './components/ScopeSelector';
 import { ProcessingScreen } from './components/ProcessingScreen';
 import { ResultsDashboard } from './components/ResultsDashboard';
 import { useBlueprint } from './hooks/useBlueprint';
+import { useConnectionChange } from './hooks/useConnectionChange';
 import type { ScopeSelection } from './types/scope';
 import { Footer } from './components/Footer';
+import { ThemeToggle } from './components/ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
-    maxWidth: '1200px',
+    width: '95%',
+    maxWidth: '1600px',
     margin: '0 auto',
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
+    '@media (max-width: 768px)': {
+      width: '100%',
+      padding: tokens.spacingVerticalL,
+    },
   },
   header: {
     marginBottom: tokens.spacingVerticalL,
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+    position: 'relative',
+  },
+  headerTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalS,
+    flex: 1,
   },
   subtitle: {
     color: tokens.colorNeutralForeground3,
@@ -98,9 +117,19 @@ function App() {
   const [selectedScope, setSelectedScope] = useState<ScopeSelection | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const { generate, result, progress, isGenerating, error, cancel, blueprintGenerator } = useBlueprint(
+  const { generate, result, progress, isGenerating, error, cancel, reset, blueprintGenerator } = useBlueprint(
     selectedScope!
   );
+
+  // Reset app to scope selector when connection changes
+  const handleConnectionChange = useCallback(() => {
+    console.log('[PPSB] Connection change handler called, resetting app state');
+    reset(); // Clear blueprint state first
+    setSelectedScope(null);
+    setShowConfirmation(false);
+  }, [reset]);
+
+  useConnectionChange(handleConnectionChange);
 
   const handleScopeSelected = (scope: ScopeSelection) => {
     setSelectedScope(scope);
@@ -195,10 +224,15 @@ function App() {
   return (
     <main id="main-content" className={styles.container} role="main" aria-label="Power Platform Solution Blueprint">
       <header className={styles.header}>
-        <Title1>Power Platform Solution Blueprint</Title1>
-        <Subtitle1 className={styles.subtitle}>
-          Complete architectural blueprints for your Power Platform systems
-        </Subtitle1>
+        <div className={styles.headerTop}>
+          <div className={styles.headerContent}>
+            <Title1>Power Platform Solution Blueprint</Title1>
+            <Subtitle1 className={styles.subtitle}>
+              Complete architectural blueprints for your Power Platform systems
+            </Subtitle1>
+          </div>
+          <ThemeToggle />
+        </div>
       </header>
 
       {error && (

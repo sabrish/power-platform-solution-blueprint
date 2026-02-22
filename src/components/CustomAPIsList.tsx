@@ -15,6 +15,7 @@ import {
 } from '@fluentui/react-components';
 import { Code20Regular, ArrowSync20Regular, ArrowRight20Regular } from '@fluentui/react-icons';
 import type { CustomAPI } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 interface CustomAPIsListProps {
   customAPIs: CustomAPI[];
@@ -55,12 +56,12 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderHeaderCell: () => 'Unique Name',
       renderCell: (item) => (
         <TableCellLayout media={<Code20Regular />}>
-          <div style={{ fontWeight: 500, fontFamily: 'monospace', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-            {item.uniqueName}
+          <div style={{ fontWeight: 500, fontFamily: 'monospace' }}>
+            <TruncatedText text={item.uniqueName} />
           </div>
           {item.description && (
-            <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-              {item.description}
+            <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3 }}>
+              <TruncatedText text={item.description} />
             </div>
           )}
         </TableCellLayout>
@@ -72,7 +73,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderHeaderCell: () => 'Type',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="filled" color={item.isFunction ? 'brand' : 'danger'}>
+          <Badge appearance="filled" shape="rounded" color={item.isFunction ? 'brand' : 'danger'}>
             {item.isFunction ? (
               <>
                 <ArrowRight20Regular /> Function
@@ -100,7 +101,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
             }
             relationship="description"
           >
-            <Badge appearance="filled" color={getBindingColor(item.bindingType)}>
+            <Badge appearance="filled" shape="rounded" color={getBindingColor(item.bindingType)}>
               {item.bindingType}
             </Badge>
           </Tooltip>
@@ -129,10 +130,10 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderCell: (item) => (
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <Badge appearance="tint" size="small">
+            <Badge appearance="tint" shape="rounded" size="small">
               {item.requestParameters.length} in
             </Badge>
-            <Badge appearance="tint" size="small" color="success">
+            <Badge appearance="tint" shape="rounded" size="small" color="success">
               {item.responseProperties.length} out
             </Badge>
           </div>
@@ -144,7 +145,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderHeaderCell: () => 'Execution Privilege',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="outline" size="small">
+          <Badge appearance="outline" shape="rounded" size="small">
             {item.executionPrivilege}
           </Badge>
         </TableCellLayout>
@@ -157,12 +158,12 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
             {item.isPrivate && (
-              <Badge appearance="outline" size="small" color="danger">
+              <Badge appearance="outline" shape="rounded" size="small" color="important">
                 Private
               </Badge>
             )}
             {item.isManaged && (
-              <Badge appearance="outline" size="small" color="warning">
+              <Badge appearance="outline" shape="rounded" size="small" color="warning">
                 Managed
               </Badge>
             )}

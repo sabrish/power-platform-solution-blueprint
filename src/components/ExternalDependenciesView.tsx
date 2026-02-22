@@ -52,8 +52,6 @@ const useStyles = makeStyles({
     minWidth: '200px',
   },
   tableContainer: {
-    maxHeight: '600px',
-    overflowY: 'auto',
   },
   expandedRow: {
     backgroundColor: tokens.colorNeutralBackground2,
@@ -335,17 +333,17 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                   return (
                     <div style={{ display: 'flex', gap: tokens.spacingHorizontalXS, flexWrap: 'wrap' }}>
                       {criticalCount > 0 && (
-                        <Badge appearance="filled" color="danger">
+                        <Badge appearance="filled" shape="rounded" color="important">
                           {criticalCount} Critical
                         </Badge>
                       )}
                       {highCount > 0 && (
-                        <Badge appearance="filled" color="warning">
+                        <Badge appearance="filled" shape="rounded" color="warning">
                           {highCount} High
                         </Badge>
                       )}
                       {criticalCount === 0 && highCount === 0 && item.riskFactors.length > 0 && (
-                        <Badge appearance="outline">{item.riskFactors.length} factors</Badge>
+                        <Badge appearance="outline" shape="rounded">{item.riskFactors.length} factors</Badge>
                       )}
                     </div>
                   );
@@ -354,7 +352,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
 
               {/* Called From */}
               <div className={styles.cellContent}>
-                <Badge appearance="tint" color="brand">
+                <Badge appearance="tint" shape="rounded" color="brand">
                   {item.callCount}
                 </Badge>
               </div>
@@ -433,10 +431,10 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                   {item.detectedIn.map((source: any, index: number) => (
                     <Card key={index} className={styles.sourceCard}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, marginBottom: tokens.spacingVerticalXXS }}>
-                        <Badge appearance="outline" color="brand">
+                        <Badge appearance="outline" shape="rounded" color="brand">
                           {source.type}
                         </Badge>
-                        <Badge appearance="tint" color={source.mode === 'Sync' ? 'warning' : 'success'}>
+                        <Badge appearance="tint" shape="rounded" color={source.mode === 'Sync' ? 'warning' : 'success'}>
                           {source.mode}
                         </Badge>
                       </div>

@@ -31,14 +31,14 @@ export function CustomConnectorDetailView({ customConnector }: CustomConnectorDe
           </Body1>
         )}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <Badge appearance="filled" color={customConnector.isManaged ? 'warning' : 'success'} size="large">
+          <Badge appearance="filled" shape="rounded" color={customConnector.isManaged ? 'warning' : 'success'} size="large">
             {customConnector.isManaged ? '🔒 Managed' : '✓ Unmanaged'}
           </Badge>
-          <Badge appearance="tint" color="brand" size="large">
+          <Badge appearance="tint" shape="rounded" color="brand" size="large">
             {customConnector.connectorType}
           </Badge>
           {!customConnector.isCustomizable && (
-            <Badge appearance="filled" color="danger" size="large">
+            <Badge appearance="filled" shape="rounded" color="important" size="large">
               Not Customizable
             </Badge>
           )}
@@ -79,7 +79,7 @@ export function CustomConnectorDetailView({ customConnector }: CustomConnectorDe
             header={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <strong>Capabilities</strong>
-                <Badge appearance="tint" size="small">
+                <Badge appearance="tint" shape="rounded" size="small">
                   {customConnector.capabilities.length}
                 </Badge>
               </div>
@@ -104,7 +104,7 @@ export function CustomConnectorDetailView({ customConnector }: CustomConnectorDe
             header={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <strong>Connection Parameters</strong>
-                <Badge appearance="tint" size="small">
+                <Badge appearance="tint" shape="rounded" size="small">
                   {customConnector.connectionParameters.length}
                 </Badge>
               </div>

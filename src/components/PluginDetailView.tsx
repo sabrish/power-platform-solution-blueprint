@@ -295,7 +295,7 @@ export function PluginDetailView({ plugin, onClose }: PluginDetailViewProps) {
         <Card>
           <Title3>Impersonation</Title3>
           <div className={styles.section}>
-            <Badge appearance="filled" color="warning" className={styles.warningBadge}>
+            <Badge appearance="filled" shape="rounded" color="warning" className={styles.warningBadge}>
               ⚠️ This plugin runs with elevated permissions
             </Badge>
             <div className={styles.infoRow}>

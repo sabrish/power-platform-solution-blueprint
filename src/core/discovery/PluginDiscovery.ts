@@ -14,6 +14,7 @@ interface RawPluginStep {
   description: string | null;
   asyncautodelete: boolean;
   configuration: string | null;
+  statecode: number;
   sdkmessageid?: {
     name: string;
   };
@@ -93,6 +94,7 @@ export class PluginDiscovery {
             'description',
             'asyncautodelete',
             'configuration',
+            'statecode',
             '_impersonatinguserid_value',
           ],
           filter,
@@ -145,6 +147,8 @@ export class PluginDiscovery {
           postImage: images.postImage,
           impersonatingUserId: raw._impersonatinguserid_value || null,
           impersonatingUserName: raw['_impersonatinguserid_value@OData.Community.Display.V1.FormattedValue'] || null,
+          stateCode: raw.statecode,
+          state: this.getStateName(raw.statecode),
         };
 
         pluginSteps.push(pluginStep);
@@ -269,6 +273,13 @@ export class PluginDiscovery {
       default:
         return 'Unknown';
     }
+  }
+
+  /**
+   * Get human-readable state name
+   */
+  getStateName(stateCode: number): 'Enabled' | 'Disabled' {
+    return stateCode === 0 ? 'Enabled' : 'Disabled';
   }
 
   /**

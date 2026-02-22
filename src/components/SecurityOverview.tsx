@@ -58,8 +58,6 @@ const useStyles = makeStyles({
   },
   entityPermissionsTable: {
     marginTop: tokens.spacingVerticalM,
-    maxHeight: '400px',
-    overflowY: 'auto',
   },
 });
 
@@ -101,8 +99,8 @@ function SecurityOverviewComponent({
       renderCell: (role) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Text weight="semibold">{role.name}</Text>
-          {role.hasSystemAdminPrivileges && <Badge appearance="filled" color="warning">Admin</Badge>}
-          {role.ismanaged && <Badge appearance="outline">Managed</Badge>}
+          {role.hasSystemAdminPrivileges && <Badge appearance="filled" shape="rounded" color="warning">Admin</Badge>}
+          {role.ismanaged && <Badge appearance="outline" shape="rounded">Managed</Badge>}
         </div>
       ),
     }),
@@ -114,7 +112,7 @@ function SecurityOverviewComponent({
     createTableColumn<SecurityRoleDetail>({
       columnId: 'entities',
       renderHeaderCell: () => 'Entities',
-      renderCell: (role) => <Badge appearance="filled">{role.totalEntities}</Badge>,
+      renderCell: (role) => <Badge appearance="filled" shape="rounded">{role.totalEntities}</Badge>,
     }),
     ...specialPermissions.map(perm =>
       createTableColumn<SecurityRoleDetail>({
@@ -161,13 +159,13 @@ function SecurityOverviewComponent({
       renderHeaderCell: () => 'Masking Type',
       renderCell: (rule) => {
         const type = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
-        return <Badge appearance="outline">{type}</Badge>;
+        return <Badge appearance="outline" shape="rounded">{type}</Badge>;
       },
     }),
     createTableColumn<AttributeMaskingRule>({
       columnId: 'managed',
       renderHeaderCell: () => 'Managed',
-      renderCell: (rule) => rule.ismanaged ? <Badge appearance="outline">Managed</Badge> : '',
+      renderCell: (rule) => rule.ismanaged ? <Badge appearance="outline" shape="rounded">Managed</Badge> : '',
     }),
   ], []);
 
@@ -185,7 +183,7 @@ function SecurityOverviewComponent({
     createTableColumn<ColumnSecurityProfile>({
       columnId: 'managed',
       renderHeaderCell: () => 'Managed',
-      renderCell: (profile) => profile.ismanaged ? <Badge appearance="outline">Managed</Badge> : '',
+      renderCell: (profile) => profile.ismanaged ? <Badge appearance="outline" shape="rounded">Managed</Badge> : '',
     }),
   ], []);
 
@@ -309,9 +307,9 @@ function SecurityOverviewComponent({
                   <AccordionHeader>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                       <Text weight="semibold">{role.name}</Text>
-                      <Badge appearance="filled">{role.totalEntities} entities</Badge>
-                      {role.hasSystemAdminPrivileges && <Badge appearance="filled" color="warning">System Admin</Badge>}
-                      {role.ismanaged && <Badge appearance="outline">Managed</Badge>}
+                      <Badge appearance="filled" shape="rounded">{role.totalEntities} entities</Badge>
+                      {role.hasSystemAdminPrivileges && <Badge appearance="filled" shape="rounded" color="warning">System Admin</Badge>}
+                      {role.ismanaged && <Badge appearance="outline" shape="rounded">Managed</Badge>}
                     </div>
                   </AccordionHeader>
                   <AccordionPanel>

@@ -50,8 +50,6 @@ const useStyles = makeStyles({
   },
   entityPermissionsTable: {
     marginTop: tokens.spacingVerticalM,
-    maxHeight: '400px',
-    overflowY: 'auto',
   },
 });
 
@@ -342,7 +340,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                 <AccordionItem key={role.roleid} value={role.roleid}>
                   <AccordionHeader>
                     {role.name}
-                    <Badge appearance="filled" className={styles.badge}>
+                    <Badge appearance="filled" shape="rounded" className={styles.badge}>
                       {role.businessunitname}
                     </Badge>
                   </AccordionHeader>

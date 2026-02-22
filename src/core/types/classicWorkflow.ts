@@ -41,6 +41,7 @@ export interface MigrationRecommendation {
   challenges: string[]; // Known issues
   features: MigrationFeature[]; // Detected features
   documentationLink: string; // Microsoft docs
+  advisory?: string; // Migration advisory based on workflow mode (async vs real-time)
 }
 
 /**

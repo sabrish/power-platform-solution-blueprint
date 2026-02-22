@@ -219,7 +219,7 @@ export function FormsTable({ forms }: FormsTableProps) {
 
               {/* Form Type */}
               <div className={styles.cellContent}>
-                <Badge appearance="tint" color="brand" size="small">
+                <Badge appearance="tint" shape="rounded" color="brand" size="small">
                   {form.typeName}
                 </Badge>
               </div>

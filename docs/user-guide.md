@@ -42,7 +42,7 @@ After running PPSB, you'll have:
 - Custom APIs, environment variables, connection references
 - Security roles with permission matrices
 - External dependency analysis with risk assessment
-- Cross-entity automation mapping
+- Cross-entity automation mapping *(Coming Soon - preview with sample data)*
 - Solution distribution breakdown
 
 ---
@@ -196,7 +196,7 @@ PPSB goes through multiple phases:
 
 #### Phase 5: Analysis (10-30 seconds)
 - Generates ERD with publisher color-coding
-- Maps cross-entity automation
+- Maps cross-entity automation *(preview - full implementation coming soon)*
 - Analyzes external dependencies
 - Scores entity complexity
 - Identifies performance risks
@@ -316,11 +316,15 @@ Click tabs to explore different aspects:
 - Called from (flows, plugins, web resources)
 - Confidence levels
 
-#### Cross-Entity Automation Tab
-- Automation that affects multiple entities
-- Source → Target entity mapping
-- Automation type (plugin, flow, etc.)
-- Synchronous warning indicators
+#### Cross-Entity Automation Tab (Coming Soon)
+*This tab displays a preview with sample data showing planned functionality:*
+- Advanced automation analysis with plugin decompilation
+- Workflow XAML parsing for cross-entity detection
+- Business rule condition and action analysis
+- Source → Target entity mapping with operation types
+- Synchronous operation warnings for performance impact
+
+*Full implementation will include plugin assembly decompilation (ILSpy), classic workflow XAML parsing, and comprehensive business rule analysis. Currently shows sample data to demonstrate future capabilities.*
 
 ### Entity Detail View
 
@@ -484,7 +488,7 @@ Deep dive into exported documentation structure.
 │   ├── AttributeMasking.md      # Attribute masking rules
 │   └── ColumnSecurity.md        # Column security profiles
 ├── ExternalDependencies.md      # External API analysis
-└── CrossEntityAutomation.md     # Cross-entity automation mapping
+└── CrossEntityAutomation.md     # Cross-entity automation (Coming Soon preview)
 ```
 
 ### JSON Structure
@@ -615,7 +619,7 @@ Real-world scenarios and how to use PPSB.
 2. Review "External Dependencies" tab
 3. Filter for synchronous plugins
 4. Identify plugins with external calls (blocks user transactions)
-5. Check "Cross-Entity Automation" for complex chains
+5. Check "Cross-Entity Automation" tab *(coming soon - will show complex automation chains)*
 6. Prioritize refactoring:
    - Move external calls to async
    - Break execution chains

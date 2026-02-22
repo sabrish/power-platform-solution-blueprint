@@ -124,15 +124,15 @@ export function FlowDetailView({ flow, onClose }: FlowDetailViewProps) {
       {/* Status Badges */}
       <div className={styles.badges}>
         <Badge {...stateBadgeProps}>{flow.state}</Badge>
-        <Badge appearance="tint" color="brand">
+        <Badge appearance="tint" shape="rounded" color="brand">
           {flow.definition.triggerType}
         </Badge>
         {flow.definition.triggerEvent !== 'Unknown' && flow.definition.triggerEvent !== flow.definition.triggerType && (
-          <Badge appearance="outline">
+          <Badge appearance="outline" shape="rounded">
             {flow.definition.triggerEvent}
           </Badge>
         )}
-        <Badge appearance="outline">{flow.scopeName}</Badge>
+        <Badge appearance="outline" shape="rounded">{flow.scopeName}</Badge>
       </div>
 
       {/* Metadata */}
@@ -209,7 +209,7 @@ export function FlowDetailView({ flow, onClose }: FlowDetailViewProps) {
               <div key={idx} className={styles.externalCallItem}>
                 <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center' }}>
                   <Text weight="semibold">{call.actionName}</Text>
-                  <Badge appearance="outline" size="small">
+                  <Badge appearance="outline" shape="rounded" size="small">
                     {call.method || 'UNKNOWN'}
                   </Badge>
                   <Badge
