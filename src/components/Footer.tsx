@@ -1,5 +1,6 @@
 import { makeStyles, tokens, Text, Link } from '@fluentui/react-components';
 import { Open20Regular } from '@fluentui/react-icons';
+import packageJson from '../../package.json';
 
 const useStyles = makeStyles({
   footer: {
@@ -35,7 +36,7 @@ export function Footer() {
 
   return (
     <footer className={styles.footer}>
-      <Text className={styles.text}>Power Platform Solution Blueprint (PPSB) v0.5</Text>
+      <Text className={styles.text}>Power Platform Solution Blueprint (PPSB) v{packageJson.version}</Text>
       <Text className={styles.text}>•</Text>
       <Text className={styles.text}>
         by{' '}
