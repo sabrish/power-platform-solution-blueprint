@@ -3,9 +3,33 @@ import type { BlueprintResult } from '../core';
 /**
  * Check if a relationship is a system relationship that should be filtered
  */
-function isSystemRelationship(schemaName: string, referencingAttribute?: string): boolean {
+function isSystemRelationship(
+  schemaName: string,
+  referencingAttribute?: string,
+  referencedEntity?: string,
+  referencingEntity?: string
+): boolean {
   const lowerSchemaName = schemaName.toLowerCase();
   const lowerAttribute = referencingAttribute?.toLowerCase() || '';
+  const lowerReferencedEntity = referencedEntity?.toLowerCase() || '';
+  const lowerReferencingEntity = referencingEntity?.toLowerCase() || '';
+
+  // Common system entities to filter
+  const systemEntities = [
+    'systemuser',
+    'team',
+    'businessunit',
+    'organization',
+    'transactioncurrency',
+    'owner',
+  ];
+
+  // Filter if relationship involves a system entity
+  if (systemEntities.some(entity =>
+    lowerReferencedEntity === entity || lowerReferencingEntity === entity
+  )) {
+    return true;
+  }
 
   const systemPatterns = [
     'createdby',
@@ -96,7 +120,12 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
     const manyToOneRels = entity.ManyToOneRelationships || [];
     for (const rel of manyToOneRels) {
       // Skip system relationships
-      if (isSystemRelationship(rel.SchemaName, rel.ReferencingAttribute)) {
+      if (isSystemRelationship(
+        rel.SchemaName,
+        rel.ReferencingAttribute,
+        rel.ReferencedEntity,
+        rel.ReferencingEntity
+      )) {
         continue;
       }
 
@@ -112,7 +141,12 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
     const manyToManyRels = entity.ManyToManyRelationships || [];
     for (const rel of manyToManyRels) {
       // Skip system relationships
-      if (isSystemRelationship(rel.SchemaName)) {
+      if (isSystemRelationship(
+        rel.SchemaName,
+        undefined,
+        rel.Entity1LogicalName,
+        rel.Entity2LogicalName
+      )) {
         continue;
       }
 

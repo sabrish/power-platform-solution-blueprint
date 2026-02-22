@@ -111,9 +111,33 @@ export class ERDGenerator {
    * Check if a relationship is a system relationship that should be filtered from ERD
    * System relationships like createdby, modifiedby, currency crowd the diagram
    */
-  private isSystemRelationship(schemaName: string, referencingAttribute?: string): boolean {
+  private isSystemRelationship(
+    schemaName: string,
+    referencingAttribute?: string,
+    referencedEntity?: string,
+    referencingEntity?: string
+  ): boolean {
     const lowerSchemaName = schemaName.toLowerCase();
     const lowerAttribute = referencingAttribute?.toLowerCase() || '';
+    const lowerReferencedEntity = referencedEntity?.toLowerCase() || '';
+    const lowerReferencingEntity = referencingEntity?.toLowerCase() || '';
+
+    // Common system entities to filter
+    const systemEntities = [
+      'systemuser',
+      'team',
+      'businessunit',
+      'organization',
+      'transactioncurrency',
+      'owner', // polymorphic owner field
+    ];
+
+    // Filter if relationship involves a system entity
+    if (systemEntities.some(entity =>
+      lowerReferencedEntity === entity || lowerReferencingEntity === entity
+    )) {
+      return true;
+    }
 
     // Common system relationship patterns
     const systemPatterns = [
@@ -249,7 +273,12 @@ export class ERDGenerator {
       if (entity.OneToManyRelationships) {
         for (const rel of entity.OneToManyRelationships) {
           // Skip system relationships (createdby, modifiedby, currency, etc.)
-          if (this.isSystemRelationship(rel.SchemaName, rel.ReferencingAttribute)) {
+          if (this.isSystemRelationship(
+            rel.SchemaName,
+            rel.ReferencingAttribute,
+            rel.ReferencedEntity,
+            rel.ReferencingEntity
+          )) {
             continue;
           }
 
@@ -275,7 +304,12 @@ export class ERDGenerator {
       if (entity.ManyToManyRelationships) {
         for (const rel of entity.ManyToManyRelationships) {
           // Skip system relationships (createdby, modifiedby, currency, etc.)
-          if (this.isSystemRelationship(rel.SchemaName)) {
+          if (this.isSystemRelationship(
+            rel.SchemaName,
+            undefined,
+            rel.Entity1LogicalName,
+            rel.Entity2LogicalName
+          )) {
             continue;
           }
 
