@@ -18,6 +18,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { GlobalChoice, GlobalChoiceOption } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -327,11 +328,11 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                   </div>
                   <div className={styles.nameColumn}>
-                    <Text weight="semibold" className={styles.wrapText}>
-                      {choice.displayName}
+                    <Text weight="semibold">
+                      <TruncatedText text={choice.displayName} />
                     </Text>
-                    <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                      {choice.name}
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={choice.name} />
                     </Text>
                   </div>
                   <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>

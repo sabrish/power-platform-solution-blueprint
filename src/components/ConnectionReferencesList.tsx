@@ -3,6 +3,7 @@ import { DataGrid, DataGridBody, DataGridRow, DataGridHeader, DataGridHeaderCell
   TableColumnDefinition, createTableColumn, Badge, tokens } from '@fluentui/react-components';
 import { PlugConnected20Regular } from '@fluentui/react-icons';
 import type { ConnectionReference } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 interface ConnectionReferencesListProps {
   connectionReferences: ConnectionReference[];
@@ -19,15 +20,23 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
       renderHeaderCell: () => 'Name',
       renderCell: (item) => (
         <TableCellLayout media={<PlugConnected20Regular />}>
-          <div style={{ fontWeight: 500 }}>{item.displayName}</div>
-          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>{item.name}</div>
+          <div style={{ fontWeight: 500 }}>
+            <TruncatedText text={item.displayName} />
+          </div>
+          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>
+            <TruncatedText text={item.name} />
+          </div>
         </TableCellLayout>
       ),
     }),
     createTableColumn<ConnectionReference>({
       columnId: 'connector',
       renderHeaderCell: () => 'Connector',
-      renderCell: (item) => <TableCellLayout>{item.connectorDisplayName || 'Unknown'}</TableCellLayout>,
+      renderCell: (item) => (
+        <TableCellLayout>
+          <TruncatedText text={item.connectorDisplayName || 'Unknown'} />
+        </TableCellLayout>
+      ),
     }),
     createTableColumn<ConnectionReference>({
       columnId: 'status',
