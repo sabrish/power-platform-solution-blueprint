@@ -1,6 +1,26 @@
 import type { BlueprintResult } from '../core';
 
 /**
+ * Common system entities that clutter diagrams
+ */
+const SYSTEM_ENTITIES = [
+  'systemuser',
+  'team',
+  'businessunit',
+  'organization',
+  'transactioncurrency',
+  'owner',
+];
+
+/**
+ * Check if an entity is a system entity that should be excluded from dbdiagram.io
+ */
+function isSystemEntity(entityLogicalName: string): boolean {
+  const lowerName = entityLogicalName.toLowerCase();
+  return SYSTEM_ENTITIES.includes(lowerName);
+}
+
+/**
  * Check if a relationship is a system relationship that should be filtered
  */
 function isSystemRelationship(
@@ -14,18 +34,8 @@ function isSystemRelationship(
   const lowerReferencedEntity = referencedEntity?.toLowerCase() || '';
   const lowerReferencingEntity = referencingEntity?.toLowerCase() || '';
 
-  // Common system entities to filter
-  const systemEntities = [
-    'systemuser',
-    'team',
-    'businessunit',
-    'organization',
-    'transactioncurrency',
-    'owner',
-  ];
-
   // Filter if relationship involves a system entity
-  if (systemEntities.some(entity =>
+  if (SYSTEM_ENTITIES.some(entity =>
     lowerReferencedEntity === entity || lowerReferencingEntity === entity
   )) {
     return true;
@@ -66,10 +76,15 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
   // Track processed relationships to avoid duplicates
   const processedRelationships = new Set<string>();
 
-  // Process each entity
+  // Process each entity (skip system entities)
   for (const entityBlueprint of result.entities) {
     const entity = entityBlueprint.entity;
     const tableName = entity.LogicalName;
+
+    // Skip system entities (systemuser, team, businessunit, etc.)
+    if (isSystemEntity(tableName)) {
+      continue;
+    }
 
     lines.push(`Table ${tableName} {`);
 
