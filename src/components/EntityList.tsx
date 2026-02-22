@@ -81,14 +81,16 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase400,
     color: tokens.colorNeutralForeground1,
     minWidth: 0,
-    flex: '0 1 auto',
+    maxWidth: '250px',
+    flexShrink: 0,
   },
   entityLogicalName: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase300,
     fontFamily: 'Consolas, Monaco, monospace',
     minWidth: 0,
-    flex: '0 1 auto',
+    maxWidth: '200px',
+    flexShrink: 0,
   },
   entityDescription: {
     color: tokens.colorNeutralForeground2,
