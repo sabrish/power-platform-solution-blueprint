@@ -108,6 +108,35 @@ export class ERDGenerator {
   }
 
   /**
+   * Check if a relationship is a system relationship that should be filtered from ERD
+   * System relationships like createdby, modifiedby, currency crowd the diagram
+   */
+  private isSystemRelationship(schemaName: string, referencingAttribute?: string): boolean {
+    const lowerSchemaName = schemaName.toLowerCase();
+    const lowerAttribute = referencingAttribute?.toLowerCase() || '';
+
+    // Common system relationship patterns
+    const systemPatterns = [
+      'createdby',
+      'modifiedby',
+      'createdonbehalfby',
+      'modifiedonbehalfby',
+      'ownerid',
+      'owninguser',
+      'owningteam',
+      'owningbusinessunit',
+      'transactioncurrencyid',
+      'transactioncurrency',
+      '_transactioncurrency',
+    ];
+
+    // Check if schema name or attribute matches any system pattern
+    return systemPatterns.some(pattern =>
+      lowerSchemaName.includes(pattern) || lowerAttribute.includes(pattern)
+    );
+  }
+
+  /**
    * Generate Core Entities diagram - Top N most connected entities
    */
   private generateCoreEntitiesDiagram(
@@ -219,6 +248,11 @@ export class ERDGenerator {
       // OneToMany (this entity is parent): Parent "1" --> "*" Child
       if (entity.OneToManyRelationships) {
         for (const rel of entity.OneToManyRelationships) {
+          // Skip system relationships (createdby, modifiedby, currency, etc.)
+          if (this.isSystemRelationship(rel.SchemaName, rel.ReferencingAttribute)) {
+            continue;
+          }
+
           // Only include if child entity is also in this diagram
           if (!entityLogicalNames.has(rel.ReferencingEntity.toLowerCase())) {
             continue;
@@ -240,6 +274,11 @@ export class ERDGenerator {
       // ManyToMany relationships: Entity1 "*" --> "*" Entity2
       if (entity.ManyToManyRelationships) {
         for (const rel of entity.ManyToManyRelationships) {
+          // Skip system relationships (createdby, modifiedby, currency, etc.)
+          if (this.isSystemRelationship(rel.SchemaName)) {
+            continue;
+          }
+
           // Only include if both entities are in this diagram
           if (!entityLogicalNames.has(rel.Entity1LogicalName.toLowerCase()) ||
               !entityLogicalNames.has(rel.Entity2LogicalName.toLowerCase())) {
