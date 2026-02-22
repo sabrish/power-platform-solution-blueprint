@@ -15,6 +15,7 @@ import {
 } from '@fluentui/react-components';
 import { Code20Regular, ArrowSync20Regular, ArrowRight20Regular } from '@fluentui/react-icons';
 import type { CustomAPI } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 interface CustomAPIsListProps {
   customAPIs: CustomAPI[];
@@ -55,12 +56,12 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderHeaderCell: () => 'Unique Name',
       renderCell: (item) => (
         <TableCellLayout media={<Code20Regular />}>
-          <div style={{ fontWeight: 500, fontFamily: 'monospace', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-            {item.uniqueName}
+          <div style={{ fontWeight: 500, fontFamily: 'monospace' }}>
+            <TruncatedText text={item.uniqueName} />
           </div>
           {item.description && (
-            <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-              {item.description}
+            <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3 }}>
+              <TruncatedText text={item.description} />
             </div>
           )}
         </TableCellLayout>
