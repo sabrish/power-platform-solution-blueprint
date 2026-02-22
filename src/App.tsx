@@ -18,6 +18,7 @@ import { ResultsDashboard } from './components/ResultsDashboard';
 import { useBlueprint } from './hooks/useBlueprint';
 import type { ScopeSelection } from './types/scope';
 import { Footer } from './components/Footer';
+import { ThemeToggle } from './components/ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
@@ -33,6 +34,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+    position: 'relative',
+  },
+  headerTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalS,
+    flex: 1,
   },
   subtitle: {
     color: tokens.colorNeutralForeground3,
@@ -195,10 +208,15 @@ function App() {
   return (
     <main id="main-content" className={styles.container} role="main" aria-label="Power Platform Solution Blueprint">
       <header className={styles.header}>
-        <Title1>Power Platform Solution Blueprint</Title1>
-        <Subtitle1 className={styles.subtitle}>
-          Complete architectural blueprints for your Power Platform systems
-        </Subtitle1>
+        <div className={styles.headerTop}>
+          <div className={styles.headerContent}>
+            <Title1>Power Platform Solution Blueprint</Title1>
+            <Subtitle1 className={styles.subtitle}>
+              Complete architectural blueprints for your Power Platform systems
+            </Subtitle1>
+          </div>
+          <ThemeToggle />
+        </div>
       </header>
 
       {error && (

@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { FluentProvider, webLightTheme } from '@fluentui/react-components';
+import { FluentProvider } from '@fluentui/react-components';
 import App from './App';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import './styles/accessibility.css';
 import './styles/design-system.css';
 
@@ -16,6 +17,16 @@ window.addEventListener('mousedown', () => {
   document.body.classList.remove('keyboard-nav');
 });
 
+function AppWithTheme() {
+  const { theme } = useTheme();
+
+  return (
+    <FluentProvider theme={theme}>
+      <App />
+    </FluentProvider>
+  );
+}
+
 const root = document.getElementById('root');
 
 if (!root) {
@@ -24,8 +35,8 @@ if (!root) {
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <FluentProvider theme={webLightTheme}>
-      <App />
-    </FluentProvider>
+    <ThemeProvider>
+      <AppWithTheme />
+    </ThemeProvider>
   </React.StrictMode>
 );
