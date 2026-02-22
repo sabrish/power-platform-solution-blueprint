@@ -11,6 +11,7 @@ import {
   createTableColumn,
   Badge,
   Tooltip,
+  Link,
   tokens,
 } from '@fluentui/react-components';
 import { Warning20Regular, FlashFlow20Regular, Cloud20Regular } from '@fluentui/react-icons';
@@ -209,8 +210,11 @@ export function ClassicWorkflowsList({ workflows, onSelectWorkflow }: ClassicWor
         </div>
         <div style={{ fontSize: '13px', color: tokens.colorNeutralForeground2 }}>
           Classic workflows are legacy technology. Microsoft recommends creating new automation with Power
-          Automate cloud flows and migrating existing workflows. Click on a workflow below to see detailed
-          migration guidance.
+          Automate cloud flows and migrating existing workflows.{' '}
+          <Link href="https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows" target="_blank" rel="noopener noreferrer">
+            Learn more
+          </Link>
+          . Click on a workflow below to see detailed migration guidance.
         </div>
       </div>
 

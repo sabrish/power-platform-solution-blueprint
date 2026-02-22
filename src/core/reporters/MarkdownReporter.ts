@@ -571,7 +571,7 @@ export class MarkdownReporter {
 
     sections.push(MarkdownFormatter.formatHeading('All Classic Workflows', 1));
     sections.push('');
-    sections.push('⚠️ **Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows.**');
+    sections.push('⚠️ **Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows.** [Learn more](https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows)');
     sections.push('');
     sections.push(`**Total Classic Workflows:** ${result.summary.totalClassicWorkflows}`);
     sections.push('');
