@@ -50,8 +50,6 @@ const useStyles = makeStyles({
   },
   diagramCard: {
     padding: tokens.spacingVerticalL,
-    overflow: 'auto',
-    maxHeight: '800px',
   },
   diagramControls: {
     display: 'flex',
@@ -98,8 +96,6 @@ const useStyles = makeStyles({
     minWidth: '300px',
   },
   tableContainer: {
-    maxHeight: '500px',
-    overflowY: 'auto',
   },
   complexityBadge: {
     minWidth: '60px',

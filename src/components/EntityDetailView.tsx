@@ -90,8 +90,6 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase300,
   },
   tableContainer: {
-    maxHeight: '600px',
-    overflowY: 'auto',
   },
   iconCell: {
     display: 'flex',
