@@ -14,6 +14,7 @@ import {
 } from '@fluentui/react-components';
 import { Settings20Regular } from '@fluentui/react-icons';
 import type { EnvironmentVariable } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 interface EnvironmentVariablesListProps {
   environmentVariables: EnvironmentVariable[];
@@ -50,11 +51,11 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderHeaderCell: () => 'Name',
       renderCell: (item) => (
         <TableCellLayout media={<Settings20Regular />}>
-          <div style={{ fontWeight: 500, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-            {item.displayName}
+          <div style={{ fontWeight: 500 }}>
+            <TruncatedText text={item.displayName} />
           </div>
-          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-            {item.schemaName}
+          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>
+            <TruncatedText text={item.schemaName} />
           </div>
         </TableCellLayout>
       ),
@@ -64,7 +65,7 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderHeaderCell: () => 'Type',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="filled" color={getTypeColor(item.typeName)}>
+          <Badge appearance="filled" shape="rounded" color={getTypeColor(item.typeName)}>
             {item.typeName}
           </Badge>
         </TableCellLayout>
@@ -75,9 +76,13 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderHeaderCell: () => 'Current Value',
       renderCell: (item) => (
         <TableCellLayout>
-          <span style={{ fontFamily: 'monospace', fontSize: '13px', wordWrap: 'break-word', overflowWrap: 'break-word', display: 'block' }}>
-            {item.currentValue || <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>}
-          </span>
+          {item.currentValue ? (
+            <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+              <TruncatedText text={item.currentValue} />
+            </span>
+          ) : (
+            <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>
+          )}
         </TableCellLayout>
       ),
     }),
@@ -98,8 +103,8 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderCell: (item) => (
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '4px' }}>
-            {item.isRequired && <Badge appearance="filled" color="danger" size="small">Required</Badge>}
-            {item.isManaged && <Badge appearance="outline" size="small">Managed</Badge>}
+            {item.isRequired && <Badge appearance="filled" shape="rounded" color="important" size="small">Required</Badge>}
+            {item.isManaged && <Badge appearance="outline" shape="rounded" size="small">Managed</Badge>}
           </div>
         </TableCellLayout>
       ),

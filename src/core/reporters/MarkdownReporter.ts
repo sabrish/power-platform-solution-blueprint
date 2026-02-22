@@ -17,7 +17,6 @@ import type {
   BusinessRule,
   WebResource,
   PerformanceRisk,
-  CrossEntityLink,
   ExternalEndpoint,
   ERDDefinition,
   EntityQuickLink,
@@ -53,9 +52,8 @@ export class MarkdownReporter {
       files.set('summary/external-integrations.md', this.generateExternalIntegrations(result));
     }
 
-    if (result.crossEntityLinks && result.crossEntityLinks.length > 0) {
-      files.set('summary/cross-entity-automation.md', this.generateCrossEntityAutomation(result));
-    }
+    // Always generate cross-entity automation (shows "Coming Soon" if not available)
+    files.set('summary/cross-entity-automation.md', this.generateCrossEntityAutomation(result));
 
     if (result.solutionDistribution && result.solutionDistribution.length > 0) {
       files.set('summary/solution-distribution.md', this.generateSolutionDistribution(result));
@@ -294,8 +292,8 @@ export class MarkdownReporter {
       MarkdownFormatter.formatLink('All Connection References', 'summary/all-connection-references.md'),
       MarkdownFormatter.formatLink('All Business Process Flows', 'summary/all-business-process-flows.md'),
       MarkdownFormatter.formatLink('External Integrations', 'summary/external-integrations.md'),
-      MarkdownFormatter.formatLink('Cross-Entity Automation', 'summary/cross-entity-automation.md'),
       MarkdownFormatter.formatLink('Solution Distribution', 'summary/solution-distribution.md'),
+      MarkdownFormatter.formatLink('Cross-Entity Automation (Coming Soon)', 'summary/cross-entity-automation.md'),
     ]));
     sections.push('');
 
@@ -437,10 +435,11 @@ export class MarkdownReporter {
         sections.push(MarkdownFormatter.formatHeading(entityName, 3));
         sections.push('');
 
-        const headers = ['Name', 'Message', 'Stage', 'Mode', 'Rank', 'External', 'Solution', 'Description'];
+        const headers = ['Name', 'Message', 'State', 'Stage', 'Mode', 'Rank', 'External', 'Solution', 'Description'];
         const rows = plugins.map(plugin => [
           plugin.name,
           plugin.message,
+          MarkdownFormatter.formatBadge(plugin.state, plugin.state === 'Enabled' ? 'success' : 'error'),
           plugin.stageName,
           plugin.modeName,
           plugin.rank.toString(),
@@ -571,7 +570,7 @@ export class MarkdownReporter {
 
     sections.push(MarkdownFormatter.formatHeading('All Classic Workflows', 1));
     sections.push('');
-    sections.push('⚠️ **Classic workflows are deprecated and require migration to Power Automate.**');
+    sections.push('⚠️ **Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows.** [Learn more](https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows)');
     sections.push('');
     sections.push(`**Total Classic Workflows:** ${result.summary.totalClassicWorkflows}`);
     sections.push('');
@@ -871,45 +870,46 @@ export class MarkdownReporter {
   /**
    * Generate summary/cross-entity-automation.md
    */
-  private generateCrossEntityAutomation(result: BlueprintResult): string {
+  private generateCrossEntityAutomation(_result: BlueprintResult): string {
     const sections: string[] = [];
 
-    sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation', 1));
+    sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation (Coming Soon)', 1));
     sections.push('');
 
-    if (!result.crossEntityLinks || result.crossEntityLinks.length === 0) {
-      sections.push('> **Note:** Cross-entity automation analysis is coming in a future update.');
-      return sections.join('\n');
-    }
-
-    sections.push(`**Total Cross-Entity Links:** ${result.crossEntityLinks.length}`);
+    // Coming Soon Banner
+    sections.push('## 💡 Coming Soon: Advanced Cross-Entity Analysis');
+    sections.push('');
+    sections.push('This feature is currently in development and will provide comprehensive analysis of automation that operates across multiple entities.');
+    sections.push('');
+    sections.push('**Planned capabilities:**');
+    sections.push('- Plugin assembly decompilation (ILSpy integration) for cross-entity operations');
+    sections.push('- Classic workflow XAML parsing to identify entity relationships');
+    sections.push('- Business rule condition and action analysis');
+    sections.push('- Synchronous operation detection for performance impact');
+    sections.push('- Complete data flow mapping between entities');
+    sections.push('');
+    sections.push('Check [our GitHub repository](https://github.com/sabrish/power-platform-solution-blueprint) for updates.');
     sections.push('');
 
-    // Group by automation type
-    const byType = new Map<string, CrossEntityLink[]>();
-    for (const link of result.crossEntityLinks) {
-      if (!byType.has(link.automationType)) {
-        byType.set(link.automationType, []);
-      }
-      byType.get(link.automationType)!.push(link);
-    }
+    // Sample Data Section
+    sections.push('---');
+    sections.push('');
+    sections.push('## Sample Data');
+    sections.push('');
+    sections.push('_The table below demonstrates what this feature will look like when completed:_');
+    sections.push('');
 
-    for (const [type, links] of byType) {
-      sections.push(MarkdownFormatter.formatHeading(type, 2));
-      sections.push('');
+    const headers = ['Source Entity', 'Target Entity', 'Type', 'Automation', 'Operation', 'Mode'];
+    const sampleRows = [
+      ['Contact', 'Account', 'Flow', 'Update Account when Contact Changes', 'Update', 'Async'],
+      ['Opportunity', 'Quote', 'Plugin', 'Generate Quote from Opportunity', 'Create', 'Sync ⚠️'],
+      ['Case', 'Email', 'Flow', 'Send Email on Case Resolution', 'Create', 'Async'],
+    ];
 
-      const headers = ['Source Entity', 'Target Entity', 'Automation', 'Operation', 'Mode'];
-      const rows = links.map(link => [
-        link.sourceEntityDisplayName,
-        link.targetEntityDisplayName,
-        link.automationName,
-        link.operation,
-        link.isAsynchronous ? 'Async' : 'Sync',
-      ]);
-
-      sections.push(MarkdownFormatter.formatTable(headers, rows));
-      sections.push('');
-    }
+    sections.push(MarkdownFormatter.formatTable(headers, sampleRows));
+    sections.push('');
+    sections.push('_⚠️ Synchronous cross-entity operations may impact performance_');
+    sections.push('');
 
     return sections.join('\n');
   }
@@ -1213,10 +1213,11 @@ export class MarkdownReporter {
       sections.push(MarkdownFormatter.formatHeading('Plugins', 2));
       sections.push('');
 
-      const headers = ['Name', 'Message', 'Stage', 'Mode', 'Rank', 'Assembly'];
+      const headers = ['Name', 'Message', 'State', 'Stage', 'Mode', 'Rank', 'Assembly'];
       const rows = entity.plugins.map(plugin => [
         plugin.name,
         plugin.message,
+        MarkdownFormatter.formatBadge(plugin.state, plugin.state === 'Enabled' ? 'success' : 'error'),
         plugin.stageName,
         plugin.modeName,
         plugin.rank.toString(),
@@ -1728,6 +1729,27 @@ export class MarkdownReporter {
     sections.push('⚠️ **Classic workflows are deprecated and will be retired by Microsoft.**');
     sections.push('');
     sections.push(`**Total Classic Workflows:** ${result.classicWorkflows.length}`);
+    sections.push('');
+
+    // Group by workflow mode (async vs real-time)
+    const asyncWorkflows = result.classicWorkflows.filter(wf => wf.mode === 0 || wf.modeName === 'Background');
+    const realtimeWorkflows = result.classicWorkflows.filter(wf => wf.mode === 1 || wf.modeName === 'RealTime');
+
+    if (asyncWorkflows.length > 0) {
+      sections.push(MarkdownFormatter.formatHeading(`Async Workflows (${asyncWorkflows.length})`, 3));
+      sections.push('');
+      sections.push('> ℹ️ **Advisory:** These async workflows can be migrated to Power Automate cloud flows. Classic workflows are deprecated, and migration is recommended to ensure continued support and access to modern features.');
+      sections.push('');
+    }
+
+    if (realtimeWorkflows.length > 0) {
+      sections.push(MarkdownFormatter.formatHeading(`Real-time Workflows (${realtimeWorkflows.length})`, 3));
+      sections.push('');
+      sections.push('> ⚠️ **Advisory:** Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.');
+      sections.push('');
+    }
+
+    sections.push(MarkdownFormatter.formatHorizontalRule());
     sections.push('');
 
     // Group by complexity

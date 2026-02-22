@@ -35,6 +35,7 @@ import {
 import type { ERDDefinition, EntityQuickLink, BlueprintResult } from '../core';
 import { renderMermaid, initMermaid } from '../utils/mermaidRenderer';
 import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -49,7 +50,6 @@ const useStyles = makeStyles({
   },
   diagramCard: {
     padding: tokens.spacingVerticalL,
-    overflowX: 'auto',
   },
   diagramControls: {
     display: 'flex',
@@ -57,10 +57,9 @@ const useStyles = makeStyles({
     flexWrap: 'wrap',
   },
   diagramContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    display: 'inline-block',
     minHeight: '400px',
+    minWidth: '100%',
     padding: tokens.spacingVerticalL,
   },
   legendSection: {
@@ -97,8 +96,6 @@ const useStyles = makeStyles({
     minWidth: '300px',
   },
   tableContainer: {
-    maxHeight: '500px',
-    overflowY: 'auto',
   },
   complexityBadge: {
     minWidth: '60px',
@@ -171,25 +168,29 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     createTableColumn<EntityQuickLink>({
       columnId: 'displayName',
       renderHeaderCell: () => 'Entity Name',
-      renderCell: (item: EntityQuickLink) => <Text weight="semibold">{item.displayName}</Text>,
+      renderCell: (item: EntityQuickLink) => (
+        <div style={{ fontWeight: tokens.fontWeightSemibold, overflow: 'hidden', maxWidth: '100%' }}>
+          <TruncatedText text={item.displayName} />
+        </div>
+      ),
       compare: (a, b) => a.displayName.localeCompare(b.displayName),
     }),
     createTableColumn<EntityQuickLink>({
       columnId: 'logicalName',
       renderHeaderCell: () => 'Logical Name',
       renderCell: (item) => (
-        <Text style={{ fontFamily: 'Consolas, Monaco, monospace', fontSize: tokens.fontSizeBase200 }}>
-          {item.logicalName}
-        </Text>
+        <div style={{ fontFamily: 'Consolas, Monaco, monospace', fontSize: tokens.fontSizeBase200, overflow: 'hidden', maxWidth: '100%' }}>
+          <TruncatedText text={item.logicalName} />
+        </div>
       ),
     }),
     createTableColumn<EntityQuickLink>({
       columnId: 'publisher',
       renderHeaderCell: () => 'Publisher',
       renderCell: (item) => (
-        <Badge appearance="outline" color="brand">
-          {item.publisherPrefix}
-        </Badge>
+        <div style={{ overflow: 'hidden', maxWidth: '100%' }}>
+          <TruncatedText text={item.publisherPrefix} maxWidth="150px" />
+        </div>
       ),
     }),
     createTableColumn<EntityQuickLink>({
@@ -362,7 +363,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               <div className={styles.legendHeader}>
                 <div className={styles.legendColor} style={{ backgroundColor: pub.color }} />
                 <Text weight="semibold">{pub.publisherName}</Text>
-                <Badge appearance="outline">{pub.entityCount}</Badge>
+                <Badge appearance="outline" shape="rounded">{pub.entityCount}</Badge>
               </div>
               <div className={styles.legendEntities}>
                 {pub.entities.slice(0, 5).join(', ')}

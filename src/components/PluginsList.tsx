@@ -9,6 +9,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -27,7 +28,7 @@ const useStyles = makeStyles({
   },
   pluginRow: {
     display: 'grid',
-    gridTemplateColumns: '24px 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
+    gridTemplateColumns: '24px 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
     gap: tokens.spacingHorizontalM,
     alignItems: 'start',
     padding: tokens.spacingVerticalM,
@@ -191,7 +192,9 @@ export function PluginsList({
         {plugin.description && (
           <div className={styles.section}>
             <Text className={styles.detailLabel}>Description</Text>
-            <Text className={styles.wrapText}>{plugin.description}</Text>
+            <Text>
+              <TruncatedText text={plugin.description} />
+            </Text>
           </div>
         )}
 
@@ -271,21 +274,23 @@ export function PluginsList({
               </div>
               <Text className={styles.rank}>{plugin.rank}</Text>
               <div className={styles.nameColumn}>
-                <Text weight="semibold" className={styles.wrapText}>
-                  {plugin.name}
+                <Text weight="semibold">
+                  <TruncatedText text={plugin.name} />
                 </Text>
-                <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                  {plugin.assemblyName}
+                <Text className={styles.codeText}>
+                  <TruncatedText text={plugin.assemblyName} />
                 </Text>
               </div>
               {!entityLogicalName && (
-                <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                  {plugin.entity}
+                <Text className={styles.codeText}>
+                  <TruncatedText text={plugin.entity} />
                 </Text>
               )}
-              <Badge appearance="outline">{plugin.message}</Badge>
+              <Badge appearance="outline" shape="rounded" size="medium">{plugin.message}</Badge>
               <Badge
                 appearance="filled"
+                size="medium"
+                shape="rounded"
                 style={{
                   backgroundColor: getStageBadgeColor(plugin.stage),
                   color: 'white',
@@ -293,8 +298,11 @@ export function PluginsList({
               >
                 {plugin.stageName}
               </Badge>
-              <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'}>
+              <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium" shape="rounded">
                 {plugin.modeName}
+              </Badge>
+              <Badge appearance="filled" shape="rounded" color={plugin.state === 'Enabled' ? 'success' : 'important'} size="medium">
+                {plugin.state}
               </Badge>
             </div>
             {isExpanded && renderPluginDetails(plugin)}

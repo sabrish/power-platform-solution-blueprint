@@ -10,6 +10,7 @@ import {
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { Flow } from '../core';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -157,13 +158,13 @@ export function FlowsList({
   const getStateBadgeProps = (state: Flow['state']) => {
     switch (state) {
       case 'Active':
-        return { appearance: 'filled' as const, color: 'success' as const };
+        return { appearance: 'filled' as const, color: 'success' as const, shape: 'rounded' as const };
       case 'Draft':
-        return { appearance: 'filled' as const, color: 'warning' as const };
+        return { appearance: 'filled' as const, color: 'warning' as const, shape: 'rounded' as const };
       case 'Suspended':
-        return { appearance: 'filled' as const, color: 'danger' as const };
+        return { appearance: 'filled' as const, color: 'important' as const, shape: 'rounded' as const };
       default:
-        return { appearance: 'outline' as const, color: 'subtle' as const };
+        return { appearance: 'outline' as const, color: 'subtle' as const, shape: 'rounded' as const };
     }
   };
 
@@ -204,16 +205,16 @@ export function FlowsList({
         </div>
 
         <div className={styles.badges}>
-          <Badge appearance="tint" color="brand">
+          <Badge appearance="tint" shape="rounded" color="brand">
             {flow.definition.triggerType}
           </Badge>
           {flow.definition.triggerEvent !== 'Unknown' && flow.definition.triggerEvent !== flow.definition.triggerType && (
-            <Badge appearance="outline">
+            <Badge appearance="outline" shape="rounded">
               {flow.definition.triggerEvent}
             </Badge>
           )}
           {flow.hasExternalCalls && (
-            <Badge appearance="tint" color="important">
+            <Badge appearance="tint" shape="rounded" color="important">
               External Calls
             </Badge>
           )}
@@ -239,7 +240,7 @@ export function FlowsList({
               <div key={idx} className={styles.externalCallItem}>
                 <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Text weight="semibold">{call.actionName}</Text>
-                  <Badge appearance="outline" size="small">
+                  <Badge appearance="outline" shape="rounded" size="small">
                     {call.method || 'UNKNOWN'}
                   </Badge>
                   <Badge
@@ -250,7 +251,9 @@ export function FlowsList({
                     {call.confidence}
                   </Badge>
                 </div>
-                <Text className={styles.codeText} style={{ wordBreak: 'break-all' }}>{call.url}</Text>
+                <Text className={styles.codeText}>
+                  <TruncatedText text={call.url} />
+                </Text>
                 <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                   Domain: {call.domain}
                 </Text>
@@ -317,17 +320,17 @@ export function FlowsList({
                   {flow.name}
                 </Text>
                 {flow.description && (
-                  <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                    {flow.description}
+                  <Text className={styles.codeText}>
+                    <TruncatedText text={flow.description} />
                   </Text>
                 )}
               </div>
               {!entityLogicalName && flow.entity && (
-                <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                  {flow.entity}
+                <Text className={styles.codeText}>
+                  <TruncatedText text={flow.entity} />
                 </Text>
               )}
-              <Badge appearance="tint" color="brand" size="small">
+              <Badge appearance="tint" shape="rounded" color="brand" size="small">
                 {flow.definition.triggerType}
               </Badge>
               <Badge {...stateBadgeProps}>{flow.state}</Badge>

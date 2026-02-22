@@ -88,7 +88,7 @@ export function BusinessProcessFlowsList({
       },
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="tint" color="brand">
+          <Badge appearance="tint" shape="rounded" color="brand">
             {item.definition.stages.length} stages
           </Badge>
         </TableCellLayout>
@@ -122,11 +122,11 @@ export function BusinessProcessFlowsList({
       renderCell: (item) => (
         <TableCellLayout>
           {item.definition.crossEntityFlow ? (
-            <Badge appearance="filled" color="important">
+            <Badge appearance="filled" shape="rounded" color="important">
               Yes
             </Badge>
           ) : (
-            <Badge appearance="outline" color="subtle">
+            <Badge appearance="outline" shape="rounded" color="subtle">
               No
             </Badge>
           )}
@@ -139,7 +139,7 @@ export function BusinessProcessFlowsList({
       renderHeaderCell: () => 'State',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="filled" color={getStateColor(item.state)}>
+          <Badge appearance="filled" shape="rounded" color={getStateColor(item.state)}>
             {item.state}
           </Badge>
         </TableCellLayout>

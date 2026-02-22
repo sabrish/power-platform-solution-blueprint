@@ -9,6 +9,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { BusinessRule } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -158,8 +159,8 @@ export function BusinessRulesList({
 
   const getStateBadgeProps = (state: BusinessRule['state']) => {
     return state === 'Active'
-      ? { appearance: 'filled' as const, color: 'success' as const }
-      : { appearance: 'filled' as const, color: 'warning' as const };
+      ? { appearance: 'filled' as const, color: 'success' as const, shape: 'rounded' as const }
+      : { appearance: 'filled' as const, color: 'warning' as const, shape: 'rounded' as const };
   };
 
   const getScopeBadgeColor = (scope: BusinessRule['scope']): 'brand' | 'important' | 'informative' => {
@@ -223,10 +224,10 @@ export function BusinessRulesList({
         )}
 
         <div className={styles.badges}>
-          <Badge appearance="tint" color={getScopeBadgeColor(rule.scope)}>
+          <Badge appearance="tint" shape="rounded" color={getScopeBadgeColor(rule.scope)}>
             {rule.scopeName}
           </Badge>
-          <Badge appearance="tint" color={
+          <Badge appearance="tint" shape="rounded" color={
             rule.definition.executionContext === 'Client' ? 'brand' :
             rule.definition.executionContext === 'Server' ? 'important' : 'informative'
           }>
@@ -262,7 +263,7 @@ export function BusinessRulesList({
                 className={styles.actionItem}
                 style={{ backgroundColor: getActionColor(action.type) }}
               >
-                <Badge appearance="filled" size="small">{action.type}</Badge>
+                <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
                 <Text>
                   <span className={styles.codeText}>{action.field}</span>
                   {action.value && <> = <strong>{action.value}</strong></>}
@@ -275,7 +276,7 @@ export function BusinessRulesList({
 
         {rule.definition.parseError && (
           <div className={styles.section}>
-            <Badge appearance="filled" color="danger">Parse Error</Badge>
+            <Badge appearance="filled" shape="rounded" color="important">Parse Error</Badge>
             <Text style={{ color: tokens.colorPaletteRedForeground1, marginTop: tokens.spacingVerticalXS }}>
               {rule.definition.parseError}
             </Text>
@@ -320,21 +321,21 @@ export function BusinessRulesList({
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <div className={styles.nameColumn}>
-                <Text weight="semibold" className={styles.wrapText}>
-                  {rule.name}
+                <Text weight="semibold">
+                  <TruncatedText text={rule.name} />
                 </Text>
                 {rule.description && (
-                  <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                    {rule.description}
+                  <Text className={styles.codeText}>
+                    <TruncatedText text={rule.description} />
                   </Text>
                 )}
               </div>
               {!entityLogicalName && (
-                <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                  {rule.entity}
+                <Text className={styles.codeText}>
+                  <TruncatedText text={rule.entity} />
                 </Text>
               )}
-              <Badge appearance="tint" color={getScopeBadgeColor(rule.scope)} size="small">
+              <Badge appearance="tint" shape="rounded" color={getScopeBadgeColor(rule.scope)} size="small">
                 {rule.scopeName}
               </Badge>
               <Badge {...stateBadgeProps}>{rule.state}</Badge>

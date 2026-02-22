@@ -125,13 +125,13 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
   const getStepTypeBadge = (type: string) => {
     switch (type) {
       case 'Plugin':
-        return <Badge appearance="tint" color="brand" size="small">Plugin</Badge>;
+        return <Badge appearance="tint" shape="rounded" color="brand" size="small">Plugin</Badge>;
       case 'Flow':
-        return <Badge appearance="tint" color="informative" size="small">Flow</Badge>;
+        return <Badge appearance="tint" shape="rounded" color="informative" size="small">Flow</Badge>;
       case 'BusinessRule':
-        return <Badge appearance="tint" color="success" size="small">Business Rule</Badge>;
+        return <Badge appearance="tint" shape="rounded" color="success" size="small">Business Rule</Badge>;
       case 'JavaScript':
-        return <Badge appearance="tint" color="warning" size="small">JavaScript</Badge>;
+        return <Badge appearance="tint" shape="rounded" color="warning" size="small">JavaScript</Badge>;
       default:
         return null;
     }
@@ -176,11 +176,11 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
 
       <div className={styles.badges}>
         {getStepTypeBadge(step.type)}
-        {step.mode === 'Sync' && <Badge appearance="filled" color="danger" size="small">Sync</Badge>}
-        {step.mode === 'Async' && <Badge appearance="filled" color="success" size="small">Async</Badge>}
+        {step.mode === 'Sync' && <Badge appearance="filled" shape="rounded" color="important" size="small">Sync</Badge>}
+        {step.mode === 'Async' && <Badge appearance="filled" shape="rounded" color="success" size="small">Async</Badge>}
         {step.hasExternalCall && (
           <Tooltip content={`External: ${step.externalEndpoints?.join(', ')}`} relationship="description">
-            <Badge appearance="filled" color="warning" size="small" icon={<Globe20Regular />}>
+            <Badge appearance="filled" shape="rounded" color="warning" size="small" icon={<Globe20Regular />}>
               External
             </Badge>
           </Tooltip>
@@ -214,7 +214,7 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <Text size={500} weight="semibold">Client-Side Execution</Text>
-            <Badge appearance="tint" size="small">{pipeline.clientSide.length} steps</Badge>
+            <Badge appearance="tint" shape="rounded" size="small">{pipeline.clientSide.length} steps</Badge>
             <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
               Executes in browser before server request
             </Text>
@@ -230,7 +230,7 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <Text size={500} weight="semibold">Server-Side Synchronous</Text>
-              <Badge appearance="tint" color="danger" size="small">{totalSyncSteps} steps</Badge>
+              <Badge appearance="tint" shape="rounded" color="important" size="small">{totalSyncSteps} steps</Badge>
               <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
                 Blocks user transaction
               </Text>
@@ -302,7 +302,7 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <Text size={500} weight="semibold">Server-Side Asynchronous</Text>
-              <Badge appearance="tint" color="success" size="small">{pipeline.serverSideAsync.length} steps</Badge>
+              <Badge appearance="tint" shape="rounded" color="success" size="small">{pipeline.serverSideAsync.length} steps</Badge>
               <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
                 Executes after transaction completes
               </Text>

@@ -18,6 +18,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { GlobalChoice, GlobalChoiceOption } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -180,7 +181,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
           </div>
           <div className={styles.detailItem}>
             <Text className={styles.detailLabel}>Status</Text>
-            <Badge appearance="filled" color={choice.isManaged ? 'warning' : 'success'}>
+            <Badge appearance="filled" shape="rounded" color={choice.isManaged ? 'warning' : 'success'}>
               {choice.isManaged ? 'Managed' : 'Unmanaged'}
             </Badge>
           </div>
@@ -225,7 +226,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                   <TableRow key={option.value}>
                     <TableCell>
                       <TableCellLayout>
-                        <Badge appearance="tint" size="small">
+                        <Badge appearance="tint" shape="rounded" size="small">
                           {option.value}
                         </Badge>
                       </TableCellLayout>
@@ -327,21 +328,21 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                   </div>
                   <div className={styles.nameColumn}>
-                    <Text weight="semibold" className={styles.wrapText}>
-                      {choice.displayName}
+                    <Text weight="semibold">
+                      <TruncatedText text={choice.displayName} />
                     </Text>
-                    <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                      {choice.name}
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={choice.name} />
                     </Text>
                   </div>
                   <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                     {choice.totalOptions} options
                   </Text>
-                  <Badge appearance="filled" color={choice.isManaged ? 'warning' : 'success'} size="small">
+                  <Badge appearance="filled" shape="rounded" color={choice.isManaged ? 'warning' : 'success'} size="small">
                     {choice.isManaged ? 'Managed' : 'Unmanaged'}
                   </Badge>
                   {!choice.isCustomizable && (
-                    <Badge appearance="outline" color="danger" size="small">
+                    <Badge appearance="outline" shape="rounded" color="important" size="small">
                       Not Customizable
                     </Badge>
                   )}

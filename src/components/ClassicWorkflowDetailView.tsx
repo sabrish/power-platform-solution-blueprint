@@ -8,6 +8,8 @@ import {
   Body1,
   Caption1,
   Divider,
+  MessageBar,
+  MessageBarBody,
 } from '@fluentui/react-components';
 import {
   Warning20Regular,
@@ -16,6 +18,7 @@ import {
   Clock20Regular,
   DocumentBulletList20Regular,
   Open20Regular,
+  Info20Regular,
 } from '@fluentui/react-icons';
 import type { ClassicWorkflow, MigrationFeature } from '../core';
 import { formatDate } from '../utils/dateFormat';
@@ -82,7 +85,7 @@ export function ClassicWorkflowDetailView({ workflow }: ClassicWorkflowDetailVie
           >
             {workflow.state}
           </Badge>
-          <Badge appearance="filled" color={workflow.mode === 1 ? 'warning' : 'informative'}>
+          <Badge appearance="filled" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'}>
             {workflow.mode === 1 ? (
               <>
                 <FlashFlow20Regular /> RealTime
@@ -93,8 +96,8 @@ export function ClassicWorkflowDetailView({ workflow }: ClassicWorkflowDetailVie
               </>
             )}
           </Badge>
-          <Badge appearance="outline">{workflow.scopeName}</Badge>
-          <Badge appearance="outline">{workflow.entityDisplayName || workflow.entity}</Badge>
+          <Badge appearance="outline" shape="rounded">{workflow.scopeName}</Badge>
+          <Badge appearance="outline" shape="rounded">{workflow.entityDisplayName || workflow.entity}</Badge>
         </div>
       </div>
 
@@ -124,6 +127,17 @@ export function ClassicWorkflowDetailView({ workflow }: ClassicWorkflowDetailVie
             }
           />
         </Card>
+      )}
+
+      {/* Migration Advisory */}
+      {recommendation?.advisory && (
+        <MessageBar
+          intent={workflow.mode === 1 ? 'warning' : 'info'}
+          icon={<Info20Regular />}
+          style={{ marginBottom: '24px' }}
+        >
+          <MessageBarBody>{recommendation.advisory}</MessageBarBody>
+        </MessageBar>
       )}
 
       {/* Workflow Details */}

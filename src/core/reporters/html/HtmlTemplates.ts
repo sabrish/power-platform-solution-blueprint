@@ -67,7 +67,7 @@ ${this.embeddedCSS()}
     <li><a href="#connection-references">🔗 Connection References</a></li>
     <li><a href="#security">🔒 Security</a></li>
     <li><a href="#external-dependencies">🌍 External Dependencies</a></li>
-    <li><a href="#cross-entity">🔀 Cross-Entity Automation</a></li>
+    <li><a href="#cross-entity">🔀 Cross-Entity Automation (Coming Soon)</a></li>
   </ul>
   <div class="nav-footer">
     <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">🖨️ Print</button>
@@ -913,6 +913,7 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(plugin.name)}</td>
   <td>${this.escapeHtml(plugin.entity || 'N/A')}</td>
+  <td><span class="badge badge-${plugin.state === 'Enabled' ? 'success' : 'error'}">${plugin.state}</span></td>
   <td>${this.escapeHtml(plugin.message || 'N/A')}</td>
   <td>${this.escapeHtml(plugin.stageName || 'N/A')}</td>
   <td>${this.escapeHtml(plugin.modeName || 'N/A')}</td>
@@ -929,10 +930,11 @@ ${rows}
         <tr>
           <th onclick="sortTable('plugins-table', 0)">Name <span class="sort-indicator"></span></th>
           <th onclick="sortTable('plugins-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 2)">Message <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 3)">Stage <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 4)">Mode <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 5)">Rank <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 2)">State <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 3)">Message <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 4)">Stage <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 5)">Mode <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('plugins-table', 6)">Rank <span class="sort-indicator"></span></th>
           <th>Images</th>
         </tr>
       </thead>
@@ -1047,10 +1049,14 @@ ${rows}
   htmlClassicWorkflowsTable(workflows: ClassicWorkflow[]): string {
     if (workflows.length === 0) {
       return `<section id="classic-workflows" class="content-section">
-  <h2>Classic Workflows (Deprecated)</h2>
+  <h2>Classic Workflows (Legacy)</h2>
   <div class="empty-state">No classic workflows found</div>
 </section>`;
     }
+
+    // Group by mode
+    const asyncWorkflows = workflows.filter(wf => wf.mode === 0 || wf.modeName === 'Background');
+    const realtimeWorkflows = workflows.filter(wf => wf.mode === 1 || wf.modeName === 'RealTime');
 
     const rows = workflows.map(workflow => {
       const entityDisplay = workflow.entityDisplayName || workflow.entity;
@@ -1067,11 +1073,27 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="classic-workflows" class="content-section">
-  <h2>Classic Workflows - Migration Required (${workflows.length})</h2>
+    // Build advisory section
+    let advisorySection = '';
+    if (asyncWorkflows.length > 0) {
+      advisorySection += `
+  <div class="alert alert-info">
+    <strong>ℹ️ Async Workflows (${asyncWorkflows.length}):</strong> These async workflows can be migrated to Power Automate cloud flows. Classic workflows are legacy technology. Microsoft recommends migrating to Power Automate for continued support and access to modern features.
+  </div>`;
+    }
+    if (realtimeWorkflows.length > 0) {
+      advisorySection += `
   <div class="alert alert-warning">
-    <strong>⚠️ Migration Required:</strong> Classic workflows are deprecated and will be removed. Please migrate to Power Automate cloud flows.
+    <strong>⚠️ Real-time Workflows (${realtimeWorkflows.length}):</strong> Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.
+  </div>`;
+    }
+
+    return `<section id="classic-workflows" class="content-section">
+  <h2>Classic Workflows - Migration Recommended (${workflows.length})</h2>
+  <div class="alert alert-warning">
+    <strong>⚠️ Legacy Technology:</strong> Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows. <a href="https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows" target="_blank" rel="noopener noreferrer">Learn more</a>
   </div>
+  ${advisorySection}
   <div class="table-container">
     <table class="data-table sortable" id="classic-workflows-table">
       <thead>
@@ -1376,30 +1398,54 @@ ${rows}
   /**
    * Generate cross-entity automation section
    */
-  htmlCrossEntitySection(links: CrossEntityLink[] | undefined): string {
-    if (!links || links.length === 0) {
-      return `<section id="cross-entity" class="content-section">
-  <h2>Cross-Entity Automation</h2>
-  <div class="empty-state">
-    <strong>Note:</strong> Cross-entity automation analysis is coming in a future update.
-  </div>
-</section>`;
-    }
-
-    const rows = links.map(link => {
-      return `<tr>
-  <td>${this.escapeHtml(link.sourceEntityDisplayName)}</td>
-  <td>${this.escapeHtml(link.targetEntityDisplayName)}</td>
-  <td>${this.escapeHtml(link.automationType)}</td>
-  <td>${this.escapeHtml(link.automationName)}</td>
-  <td>${this.escapeHtml(link.operation)}</td>
-  <td>${link.isAsynchronous ? 'Async' : 'Sync'}</td>
+  htmlCrossEntitySection(_links: CrossEntityLink[] | undefined): string {
+    // Always show Coming Soon banner with sample data
+    const sampleRows = `<tr>
+  <td>Contact</td>
+  <td>Account</td>
+  <td><span class="badge badge-success">Flow</span></td>
+  <td>Update Account when Contact Changes</td>
+  <td>Update</td>
+  <td><span class="badge badge-success">Async</span></td>
+</tr>
+<tr>
+  <td>Opportunity</td>
+  <td>Quote</td>
+  <td><span class="badge badge-brand">Plugin</span></td>
+  <td>Generate Quote from Opportunity</td>
+  <td>Create</td>
+  <td><span class="badge badge-warning">Sync ⚠️</span></td>
+</tr>
+<tr>
+  <td>Case</td>
+  <td>Email</td>
+  <td><span class="badge badge-success">Flow</span></td>
+  <td>Send Email on Case Resolution</td>
+  <td>Create</td>
+  <td><span class="badge badge-success">Async</span></td>
 </tr>`;
-    }).join('\n');
 
     return `<section id="cross-entity" class="content-section">
-  <h2>Cross-Entity Automation (${links.length})</h2>
-  <p class="section-description">Automation that operates on multiple entities (e.g., when Contact changes, update related Account)</p>
+  <h2>💡 Cross-Entity Automation - Coming Soon</h2>
+
+  <div style="padding: 20px; background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px; margin-bottom: 20px;">
+    <h3 style="margin-top: 0;">Advanced Cross-Entity Analysis in Development</h3>
+    <p>This feature is currently being developed and will provide comprehensive analysis of automation that operates across multiple entities.</p>
+    <p><strong>Planned capabilities:</strong></p>
+    <ul>
+      <li>Plugin assembly decompilation (ILSpy integration) for cross-entity operations</li>
+      <li>Classic workflow XAML parsing to identify entity relationships</li>
+      <li>Business rule condition and action analysis</li>
+      <li>Synchronous operation detection for performance impact</li>
+      <li>Complete data flow mapping between entities</li>
+    </ul>
+    <p>Check <a href="https://github.com/sabrish/power-platform-solution-blueprint" target="_blank" rel="noopener noreferrer">our GitHub repository</a> for updates.</p>
+  </div>
+
+  <div style="padding: 12px; background-color: #f5f5f5; border-radius: 4px; margin-bottom: 16px; font-style: italic;">
+    <strong>💡 Sample Data Below</strong> - This demonstrates what the feature will look like when completed
+  </div>
+
   <div class="table-container">
     <table class="data-table sortable" id="cross-entity-table">
       <thead>
@@ -1413,10 +1459,12 @@ ${rows}
         </tr>
       </thead>
       <tbody>
-${rows}
+${sampleRows}
       </tbody>
     </table>
   </div>
+
+  <p style="margin-top: 16px; color: #666; font-style: italic;">⚠️ Synchronous cross-entity operations may impact performance</p>
 </section>`;
   }
 

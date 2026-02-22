@@ -46,16 +46,30 @@ import { ExportDialog } from './ExportDialog';
 import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
 import { Footer } from './Footer';
+import { ThemeToggle } from './ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
-    maxWidth: '1400px',
+    width: '95%',
+    maxWidth: '1800px',
     margin: '0 auto',
+    '@media (min-width: 1920px)': {
+      width: '90%',
+      maxWidth: '2200px',
+    },
+    '@media (min-width: 3840px)': {
+      width: '85%',
+      maxWidth: '3200px',
+    },
   },
-  backButton: {
+  topBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: tokens.spacingVerticalL,
   },
+  backButton: {},
   header: {
     marginBottom: tokens.spacingVerticalL,
     display: 'flex',
@@ -93,8 +107,8 @@ const useStyles = makeStyles({
   },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-    gap: tokens.spacingHorizontalXS,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gap: tokens.spacingHorizontalS,
     marginTop: tokens.spacingVerticalS,
   },
   summaryCard: {
@@ -161,7 +175,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
 
   // Check what architecture features are available
   const hasERD = !!result.erd;
-  const hasCrossEntity = !!(result.crossEntityLinks && result.crossEntityLinks.length > 0);
   const hasExternalDeps = !!(result.externalEndpoints && result.externalEndpoints.length > 0);
   const hasSolutionDist = !!(result.solutionDistribution && result.solutionDistribution.length > 0);
 
@@ -284,15 +297,18 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
 
   return (
     <div className={styles.container}>
-      {/* Back Button */}
-      <Button
-        className={styles.backButton}
-        appearance="subtle"
-        icon={<ArrowLeft24Regular />}
-        onClick={onStartOver}
-      >
-        Generate New Blueprint
-      </Button>
+      {/* Top Bar: Back Button and Theme Toggle */}
+      <div className={styles.topBar}>
+        <Button
+          className={styles.backButton}
+          appearance="subtle"
+          icon={<ArrowLeft24Regular />}
+          onClick={onStartOver}
+        >
+          Generate New Blueprint
+        </Button>
+        <ThemeToggle />
+      </div>
 
       {/* SECTION 1: Header */}
       <div className={styles.header}>
@@ -331,10 +347,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             <Tab value="erd">📐 Entity Relationship Diagram</Tab>
           )}
 
-          {hasCrossEntity && (
-            <Tab value="crossEntity">🔗 Cross-Entity Automation</Tab>
-          )}
-
           {hasExternalDeps && (
             <Tab value="externalDeps">🌐 External Dependencies</Tab>
           )}
@@ -342,6 +354,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           {hasSolutionDist && (
             <Tab value="solutionDist">📦 Solution Distribution</Tab>
           )}
+
+          <Tab value="crossEntity">🔗 Cross-Entity Automation (Coming Soon)</Tab>
         </TabList>
       </div>
 
@@ -454,9 +468,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           {/* Tab Content */}
           <div style={{ marginTop: tokens.spacingVerticalL }}>
             {selectedTab === 'entities' && (
-              <div style={{ display: 'flex', width: '100%', height: '600px' }}>
-                <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} />
-              </div>
+              <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} />
             )}
 
             {selectedTab === 'plugins' && hasResults('plugins') && (
@@ -646,13 +658,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         </div>
       )}
 
-      {/* Cross-Entity Automation Tab Content */}
-      {mainTab === 'crossEntity' && hasCrossEntity && (
-        <div className={styles.tabContent}>
-          <CrossEntityMapView links={result.crossEntityLinks!} />
-        </div>
-      )}
-
       {/* External Dependencies Tab Content */}
       {mainTab === 'externalDeps' && hasExternalDeps && (
         <div className={styles.tabContent}>
@@ -664,6 +669,13 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       {mainTab === 'solutionDist' && hasSolutionDist && (
         <div className={styles.tabContent}>
           <SolutionDistributionView distributions={result.solutionDistribution!} />
+        </div>
+      )}
+
+      {/* Cross-Entity Automation Tab Content */}
+      {mainTab === 'crossEntity' && (
+        <div className={styles.tabContent}>
+          <CrossEntityMapView links={result.crossEntityLinks || []} />
         </div>
       )}
 

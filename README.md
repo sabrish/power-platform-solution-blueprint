@@ -2,8 +2,8 @@
 
 > Complete architectural blueprints for your Power Platform solutions.
 
-![Version](https://img.shields.io/badge/version-0.6.2-blue)
-![Status](https://img.shields.io/badge/status-initial%20release-green)
+![Version](https://img.shields.io/badge/version-0.7.0-blue)
+![Status](https://img.shields.io/badge/status-active%20development-green)
 
 Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.
 
@@ -44,7 +44,7 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 
 - **Entity Relationship Diagram (ERD)**: Mermaid diagram with publisher color-coding and relationship types
 - **Execution Pipeline**: Visual representation of client → sync → async automation flow per entity
-- **Cross-Entity Automation**: Map automation that creates/updates records across entity boundaries
+- **Cross-Entity Automation** *(Coming Soon)*: Advanced analysis mapping automation across entity boundaries with plugin decompilation and workflow parsing
 - **External Dependencies**: Detect and risk-assess all external API calls (flows, plugins, web resources)
 - **Solution Distribution**: Component breakdown across solutions with dependency mapping
 - **Entity Complexity**: Scoring based on field count, automation density, and relationship complexity

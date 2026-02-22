@@ -189,6 +189,29 @@ pnpm dev             # Run dev server (for browser testing)
 pnpm typecheck       # Type check all packages
 ```
 
+## Commit Message Convention
+
+**IMPORTANT:** This project uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for all commit messages.
+
+Format: `<type>[optional scope]: <description>`
+
+Common types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style/formatting
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Adding/updating tests
+- `chore`: Maintenance tasks
+
+Examples:
+- `feat(ui): add dark mode support`
+- `fix(ui): prevent table column overflow`
+- `docs: add conventional commits guide`
+
+📖 **See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines**
+
 ## Testing in PPTB Desktop
 
 1. Build the project: `pnpm build`

@@ -1,6 +1,7 @@
 import type { EntityBlueprint, ERDDefinition, ERDDiagram, PublisherLegend, EntityQuickLink } from '../types/blueprint.js';
 import type { Publisher } from '../types.js';
 import { getPublisherColors } from '../utils/ColorGenerator.js';
+import { isSystemEntity, isSystemRelationship } from '../../utils/systemFilters.js';
 
 /**
  * Generates Entity Relationship Diagrams (ERD) using Mermaid Class Diagram syntax
@@ -14,42 +15,47 @@ export class ERDGenerator {
    * Creates multiple focused diagrams instead of one large unreadable diagram
    */
   generateMermaidERD(entities: EntityBlueprint[], publishers: Publisher[]): ERDDefinition {
+    // Filter out system entities from diagram generation
+    const filteredEntities = entities.filter(bp =>
+      !isSystemEntity(bp.entity.LogicalName)
+    );
+
     // Build publisher map (entity prefix -> publisher info)
-    const publisherMap = this.buildPublisherMap(entities, publishers);
+    const publisherMap = this.buildPublisherMap(filteredEntities, publishers);
 
     // Generate entity quick links with stats
-    const entityQuickLinks = this.generateEntityQuickLinks(entities, publisherMap);
+    const entityQuickLinks = this.generateEntityQuickLinks(filteredEntities, publisherMap);
 
     // Generate multiple focused diagrams
     const diagrams: ERDDiagram[] = [];
     const warnings: string[] = [];
 
     // Check total entity count and add warnings if needed
-    if (entities.length > 50) {
+    if (filteredEntities.length > 50) {
       warnings.push('System has 50+ entities - diagrams are split by publisher for readability');
     }
 
     // 1. Core Entities Diagram - Top 15 most connected entities
-    const coreEntitiesDiagram = this.generateCoreEntitiesDiagram(entities, publisherMap);
+    const coreEntitiesDiagram = this.generateCoreEntitiesDiagram(filteredEntities, publisherMap);
     if (coreEntitiesDiagram) {
       diagrams.push(coreEntitiesDiagram);
     }
 
     // 2. Diagrams by Publisher - One per publisher
-    const publisherDiagrams = this.generatePublisherDiagrams(entities, publisherMap);
+    const publisherDiagrams = this.generatePublisherDiagrams(filteredEntities, publisherMap);
     diagrams.push(...publisherDiagrams);
 
     // Generate legend
     const legend = this.generateLegend(publisherMap);
 
     // Count total relationships
-    const totalRelationships = this.countTotalRelationships(entities);
+    const totalRelationships = this.countTotalRelationships(filteredEntities);
 
     return {
       diagrams,
       legend,
       entityQuickLinks,
-      totalEntities: entities.length,
+      totalEntities: filteredEntities.length,
       totalRelationships,
       warnings: warnings.length > 0 ? warnings : undefined,
     };
@@ -106,6 +112,7 @@ export class ERDGenerator {
     const match = schemaName.match(/^([a-z]+)_/i);
     return match ? match[1] : '';
   }
+
 
   /**
    * Generate Core Entities diagram - Top N most connected entities
@@ -207,6 +214,16 @@ export class ERDGenerator {
     // Create set of entity logical names in this diagram for filtering
     const entityLogicalNames = new Set(entities.map(bp => bp.entity.LogicalName.toLowerCase()));
 
+    // Build map of entity -> set of attribute names (to validate relationships)
+    const entityAttributes = new Map<string, Set<string>>();
+    for (const { entity } of entities) {
+      const attributes = new Set<string>();
+      for (const attr of entity.Attributes || []) {
+        attributes.add(attr.LogicalName.toLowerCase());
+      }
+      entityAttributes.set(entity.LogicalName.toLowerCase(), attributes);
+    }
+
     // Track processed relationships to avoid duplicates
     const processedRelationships = new Set<string>();
     let relationshipCount = 0;
@@ -219,8 +236,26 @@ export class ERDGenerator {
       // OneToMany (this entity is parent): Parent "1" --> "*" Child
       if (entity.OneToManyRelationships) {
         for (const rel of entity.OneToManyRelationships) {
+          // Skip system relationships (createdby, modifiedby, currency, etc.)
+          if (isSystemRelationship(
+            rel.SchemaName,
+            rel.ReferencingAttribute,
+            rel.ReferencedEntity,
+            rel.ReferencingEntity
+          )) {
+            continue;
+          }
+
           // Only include if child entity is also in this diagram
           if (!entityLogicalNames.has(rel.ReferencingEntity.toLowerCase())) {
+            continue;
+          }
+
+          // Skip if either attribute doesn't exist in the entity definition
+          const referencingAttrs = entityAttributes.get(rel.ReferencingEntity.toLowerCase());
+          const referencedAttrs = entityAttributes.get(rel.ReferencedEntity.toLowerCase());
+          if (!referencingAttrs?.has(rel.ReferencingAttribute.toLowerCase()) ||
+              !referencedAttrs?.has(rel.ReferencedAttribute.toLowerCase())) {
             continue;
           }
 
@@ -240,6 +275,16 @@ export class ERDGenerator {
       // ManyToMany relationships: Entity1 "*" --> "*" Entity2
       if (entity.ManyToManyRelationships) {
         for (const rel of entity.ManyToManyRelationships) {
+          // Skip system relationships (createdby, modifiedby, currency, etc.)
+          if (isSystemRelationship(
+            rel.SchemaName,
+            undefined,
+            rel.Entity1LogicalName,
+            rel.Entity2LogicalName
+          )) {
+            continue;
+          }
+
           // Only include if both entities are in this diagram
           if (!entityLogicalNames.has(rel.Entity1LogicalName.toLowerCase()) ||
               !entityLogicalNames.has(rel.Entity2LogicalName.toLowerCase())) {

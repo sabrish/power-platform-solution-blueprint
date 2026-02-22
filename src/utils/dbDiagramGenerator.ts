@@ -1,4 +1,5 @@
 import type { BlueprintResult } from '../core';
+import { isSystemEntity, isSystemRelationship } from './systemFilters.js';
 
 /**
  * Generates dbdiagram.io compatible code from a BlueprintResult
@@ -16,16 +17,40 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
   // Track processed relationships to avoid duplicates
   const processedRelationships = new Set<string>();
 
-  // Process each entity
+  // Build set of entities actually in the export (excluding system entities)
+  const exportedEntities = new Set<string>();
+  // Build map of entity -> set of attribute names (to validate relationships)
+  const entityAttributes = new Map<string, Set<string>>();
+
+  for (const entityBlueprint of result.entities) {
+    const tableName = entityBlueprint.entity.LogicalName.toLowerCase();
+    if (!isSystemEntity(tableName)) {
+      exportedEntities.add(tableName);
+
+      // Build attribute set for this entity
+      const attributes = new Set<string>();
+      for (const attr of entityBlueprint.entity.Attributes || []) {
+        attributes.add(attr.LogicalName.toLowerCase());
+      }
+      entityAttributes.set(tableName, attributes);
+    }
+  }
+
+  // Process each entity (skip system entities)
   for (const entityBlueprint of result.entities) {
     const entity = entityBlueprint.entity;
     const tableName = entity.LogicalName;
 
+    // Skip system entities (systemuser, team, businessunit, etc.)
+    if (isSystemEntity(tableName)) {
+      continue;
+    }
+
     lines.push(`Table ${tableName} {`);
 
-    // Add table note with display name
+    // Add table note with display name (escape single quotes)
     const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || tableName;
-    lines.push(`  Note: '${displayName}'`);
+    lines.push(`  Note: '${displayName.replace(/'/g, "\\'")}'`);
     lines.push('');
 
     // Add attributes
@@ -69,6 +94,30 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
     // Many-to-One relationships (this entity references another)
     const manyToOneRels = entity.ManyToOneRelationships || [];
     for (const rel of manyToOneRels) {
+      // Skip system relationships
+      if (isSystemRelationship(
+        rel.SchemaName,
+        rel.ReferencingAttribute,
+        rel.ReferencedEntity,
+        rel.ReferencingEntity
+      )) {
+        continue;
+      }
+
+      // Skip if either entity is not in the export
+      if (!exportedEntities.has(rel.ReferencingEntity.toLowerCase()) ||
+          !exportedEntities.has(rel.ReferencedEntity.toLowerCase())) {
+        continue;
+      }
+
+      // Skip if either attribute doesn't exist in the entity definition
+      const referencingAttrs = entityAttributes.get(rel.ReferencingEntity.toLowerCase());
+      const referencedAttrs = entityAttributes.get(rel.ReferencedEntity.toLowerCase());
+      if (!referencingAttrs?.has(rel.ReferencingAttribute.toLowerCase()) ||
+          !referencedAttrs?.has(rel.ReferencedAttribute.toLowerCase())) {
+        continue;
+      }
+
       const relKey = `${rel.ReferencingEntity}.${rel.ReferencingAttribute}->${rel.ReferencedEntity}.${rel.ReferencedAttribute}`;
       if (!processedRelationships.has(relKey)) {
         processedRelationships.add(relKey);
@@ -77,17 +126,33 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
       }
     }
 
-    // Many-to-Many relationships
+    // Many-to-Many relationships - documented as comments since they exist via intersection tables
     const manyToManyRels = entity.ManyToManyRelationships || [];
     for (const rel of manyToManyRels) {
+      // Skip system relationships
+      if (isSystemRelationship(
+        rel.SchemaName,
+        undefined,
+        rel.Entity1LogicalName,
+        rel.Entity2LogicalName
+      )) {
+        continue;
+      }
+
+      // Skip if either entity is not in the export
+      if (!exportedEntities.has(rel.Entity1LogicalName.toLowerCase()) ||
+          !exportedEntities.has(rel.Entity2LogicalName.toLowerCase())) {
+        continue;
+      }
+
       // Create a relationship key to avoid duplicates (both entities will have this relationship)
       const entities = [rel.Entity1LogicalName, rel.Entity2LogicalName].sort();
       const relKey = `${entities[0]}<>${entities[1]}:${rel.IntersectEntityName}`;
 
       if (!processedRelationships.has(relKey)) {
         processedRelationships.add(relKey);
-        // Many-to-many: Entity1 <> Entity2
-        lines.push(`Ref: ${rel.Entity1LogicalName}.${entity.PrimaryIdAttribute} <> ${rel.Entity2LogicalName}.${entity.PrimaryIdAttribute} [note: 'via ${rel.IntersectEntityName}']`);
+        // Document M:N as comment - actual relationship exists via intersection table
+        lines.push(`// M:N: ${rel.Entity1LogicalName} <> ${rel.Entity2LogicalName} (via ${rel.IntersectEntityName})`);
       }
     }
   }

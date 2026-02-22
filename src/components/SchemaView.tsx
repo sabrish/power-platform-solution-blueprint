@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   Title2,
@@ -13,6 +13,7 @@ import {
 } from '@fluentui/react-components';
 import { Database24Regular } from '@fluentui/react-icons';
 import type { DetailedEntityMetadata, EntityBlueprint, ClassicWorkflow } from '../core';
+import { isSystemRelationship } from '../utils/systemFilters';
 import { FieldsTable } from './FieldsTable';
 import { FormsTable } from './FormsTable';
 import { RelationshipsView } from './RelationshipsView';
@@ -76,24 +77,105 @@ export interface SchemaViewProps {
   schema?: DetailedEntityMetadata;
   blueprint?: EntityBlueprint;
   classicWorkflows?: ClassicWorkflow[];
+  entitiesInScope?: string[]; // Logical names of entities in current selection
 }
 
-export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [] }: SchemaViewProps) {
+export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [], entitiesInScope }: SchemaViewProps) {
   const styles = useStyles();
   const [selectedTab, setSelectedTab] = useState<string>('fields');
 
   // Use schema from blueprint if available, otherwise use direct schema prop
   const schema = blueprint?.entity || schemaProp!;
 
+  // Normalize entity names in scope for case-insensitive comparison
+  const entitiesInScopeSet = useMemo(() => {
+    if (!entitiesInScope) return null;
+    return new Set(entitiesInScope.map(name => name.toLowerCase()));
+  }, [entitiesInScope]);
+
   const displayName = schema.DisplayName?.UserLocalizedLabel?.Label || schema.LogicalName;
   const description = schema.Description?.UserLocalizedLabel?.Label;
 
   const attributeCount = schema.Attributes?.length || 0;
-  const oneToManyCount = schema.OneToManyRelationships?.length || 0;
-  const manyToOneCount = schema.ManyToOneRelationships?.length || 0;
-  const manyToManyCount = schema.ManyToManyRelationships?.length || 0;
   const keysCount = schema.Keys?.length || 0;
   const formsCount = blueprint?.forms.length || 0;
+
+  // Filter out system relationships and relationships to entities not in scope
+  const filteredOneToMany = useMemo(() => {
+    return (schema.OneToManyRelationships || []).filter(rel => {
+      // Filter system relationships
+      if (isSystemRelationship(
+        rel.SchemaName,
+        rel.ReferencingAttribute,
+        rel.ReferencedEntity,
+        rel.ReferencingEntity
+      )) {
+        return false;
+      }
+
+      // If scope is provided, only include relationships to entities in scope
+      if (entitiesInScopeSet) {
+        const referencingEntity = rel.ReferencingEntity?.toLowerCase();
+        return referencingEntity && entitiesInScopeSet.has(referencingEntity);
+      }
+
+      return true;
+    });
+  }, [schema.OneToManyRelationships, entitiesInScopeSet]);
+
+  const filteredManyToOne = useMemo(() => {
+    return (schema.ManyToOneRelationships || []).filter(rel => {
+      // Filter system relationships
+      if (isSystemRelationship(
+        rel.SchemaName,
+        rel.ReferencingAttribute,
+        rel.ReferencedEntity,
+        rel.ReferencingEntity
+      )) {
+        return false;
+      }
+
+      // If scope is provided, only include relationships to entities in scope
+      if (entitiesInScopeSet) {
+        const referencedEntity = rel.ReferencedEntity?.toLowerCase();
+        return referencedEntity && entitiesInScopeSet.has(referencedEntity);
+      }
+
+      return true;
+    });
+  }, [schema.ManyToOneRelationships, entitiesInScopeSet]);
+
+  const filteredManyToMany = useMemo(() => {
+    return (schema.ManyToManyRelationships || []).filter(rel => {
+      // Filter system relationships
+      if (isSystemRelationship(
+        rel.SchemaName,
+        undefined,
+        rel.Entity1LogicalName,
+        rel.Entity2LogicalName
+      )) {
+        return false;
+      }
+
+      // If scope is provided, only include relationships where the other entity is in scope
+      if (entitiesInScopeSet) {
+        const currentEntityName = schema.LogicalName.toLowerCase();
+        const entity1 = rel.Entity1LogicalName?.toLowerCase();
+        const entity2 = rel.Entity2LogicalName?.toLowerCase();
+
+        // Determine which entity is the "other" entity
+        const otherEntity = entity1 === currentEntityName ? entity2 : entity1;
+        return otherEntity && entitiesInScopeSet.has(otherEntity);
+      }
+
+      return true;
+    });
+  }, [schema.ManyToManyRelationships, schema.LogicalName, entitiesInScopeSet]);
+
+  // Counts using filtered relationships
+  const oneToManyCount = filteredOneToMany.length;
+  const manyToOneCount = filteredManyToOne.length;
+  const manyToManyCount = filteredManyToMany.length;
 
   // Count automation (plugins, flows, business rules)
   const pluginCount = blueprint?.plugins.length || 0;
@@ -149,32 +231,32 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
         {/* Badges */}
         <div className={styles.badges}>
           {schema.IsCustomEntity && (
-            <Badge appearance="filled" color="brand">
+            <Badge appearance="filled" shape="rounded" color="brand">
               ✨ Custom Entity
             </Badge>
           )}
           {schema.IsManaged && (
-            <Badge appearance="filled" color="warning">
+            <Badge appearance="filled" shape="rounded" color="warning">
               🔒 Managed
             </Badge>
           )}
           {schema.IsActivity && (
-            <Badge appearance="tint" color="important">
+            <Badge appearance="tint" shape="rounded" color="important">
               Activity
             </Badge>
           )}
           {schema.IsAuditEnabled?.Value && (
-            <Badge appearance="tint" color="success">
+            <Badge appearance="tint" shape="rounded" color="success">
               Audit Enabled
             </Badge>
           )}
           {schema.ChangeTrackingEnabled && (
-            <Badge appearance="tint" color="brand">
+            <Badge appearance="tint" shape="rounded" color="brand">
               Change Tracking
             </Badge>
           )}
           {schema.IsCustomizable?.Value === false && (
-            <Badge appearance="outline" color="subtle">
+            <Badge appearance="outline" shape="rounded" color="subtle">
               Not Customizable
             </Badge>
           )}
@@ -217,9 +299,9 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
 
           {selectedTab === 'relationships' && (
             <RelationshipsView
-              oneToMany={schema.OneToManyRelationships || []}
-              manyToOne={schema.ManyToOneRelationships || []}
-              manyToMany={schema.ManyToManyRelationships || []}
+              oneToMany={filteredOneToMany}
+              manyToOne={filteredManyToOne}
+              manyToMany={filteredManyToMany}
               currentEntityName={schema.LogicalName}
             />
           )}

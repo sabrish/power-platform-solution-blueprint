@@ -9,6 +9,7 @@ import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '
 import type { EntityBlueprint, ClassicWorkflow } from '../core';
 import { SchemaView } from './SchemaView';
 import { filterDescription } from '../utils/descriptionFilter';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -36,9 +37,6 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
-    overflowY: 'auto',
-    flex: 1,
-    minHeight: 0,
   },
   entityRow: {
     display: 'flex',
@@ -79,21 +77,23 @@ const useStyles = makeStyles({
     fontWeight: tokens.fontWeightSemibold,
     fontSize: tokens.fontSizeBase400,
     color: tokens.colorNeutralForeground1,
+    minWidth: 0,
+    maxWidth: '250px',
     flexShrink: 0,
   },
   entityLogicalName: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase300,
     fontFamily: 'Consolas, Monaco, monospace',
+    minWidth: 0,
+    maxWidth: '200px',
     flexShrink: 0,
   },
   entityDescription: {
     color: tokens.colorNeutralForeground2,
     fontSize: tokens.fontSizeBase300,
     flex: 1,
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
+    minWidth: 0,
   },
   entityStats: {
     display: 'flex',
@@ -146,8 +146,6 @@ const useStyles = makeStyles({
     hyphens: 'auto',
   },
   tableContainer: {
-    maxHeight: '400px',
-    overflowY: 'auto',
     marginTop: tokens.spacingVerticalM,
   },
   badges: {
@@ -176,6 +174,11 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
   const styles = useStyles();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEntityId, setExpandedEntityId] = useState<string | null>(null);
+
+  // Get list of all entity logical names in scope
+  const entitiesInScope = useMemo(() => {
+    return blueprints.map(bp => bp.entity.LogicalName);
+  }, [blueprints]);
 
   // Filter and sort blueprints
   const filteredBlueprints = useMemo(() => {
@@ -210,7 +213,7 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
   const renderEntityDetails = (blueprint: EntityBlueprint) => {
     return (
       <div className={styles.expandedDetails}>
-        <SchemaView blueprint={blueprint} classicWorkflows={classicWorkflows} />
+        <SchemaView blueprint={blueprint} classicWorkflows={classicWorkflows} entitiesInScope={entitiesInScope} />
       </div>
     );
   };
@@ -260,13 +263,15 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
                   </div>
                   <Database24Regular className={styles.entityIcon} />
                   <div className={styles.entityInfo}>
-                    <Text className={styles.entityName}>{displayName}</Text>
+                    <Text className={styles.entityName}>
+                      <TruncatedText text={displayName} />
+                    </Text>
                     <Text className={styles.entityLogicalName}>
-                      {entity.LogicalName}
+                      <TruncatedText text={entity.LogicalName} />
                     </Text>
                     {description && (
                       <Text className={styles.entityDescription}>
-                        {description}
+                        <TruncatedText text={description} />
                       </Text>
                     )}
                     <div className={styles.entityStats}>
