@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Button,
   Title1,
@@ -16,6 +16,7 @@ import { ScopeSelector } from './components/ScopeSelector';
 import { ProcessingScreen } from './components/ProcessingScreen';
 import { ResultsDashboard } from './components/ResultsDashboard';
 import { useBlueprint } from './hooks/useBlueprint';
+import { useConnectionChange } from './hooks/useConnectionChange';
 import type { ScopeSelection } from './types/scope';
 import { Footer } from './components/Footer';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -119,6 +120,14 @@ function App() {
   const { generate, result, progress, isGenerating, error, cancel, blueprintGenerator } = useBlueprint(
     selectedScope!
   );
+
+  // Reset app to scope selector when connection changes
+  const handleConnectionChange = useCallback(() => {
+    setSelectedScope(null);
+    setShowConfirmation(false);
+  }, []);
+
+  useConnectionChange(handleConnectionChange);
 
   const handleScopeSelected = (scope: ScopeSelection) => {
     setSelectedScope(scope);
