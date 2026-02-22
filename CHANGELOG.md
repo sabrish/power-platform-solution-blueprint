@@ -5,6 +5,44 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-02-22
+
+### Added
+- **Component Browser Relationship Filtering** - Entity detail view now filters relationships intelligently
+  - Filters out system relationships (createdby, modifiedby, ownerid, owninguser, etc.)
+  - Filters relationships to system entities (systemuser, team, businessunit, organization, transactioncurrency)
+  - Shows only relationships where both entities are in the selected solution scope
+  - Consistent filtering with ERD and dbdiagram.io exports
+  - Uses same `isSystemRelationship()` logic across all views
+
+- **Cross-Entity Automation Preview** - New "Coming Soon" placeholder with sample data
+  - Always visible tab showing planned feature capabilities
+  - Demonstrates future functionality with sample cross-entity operations
+  - Lists planned features: plugin decompilation (ILSpy), workflow XAML parsing, business rule analysis
+  - Includes GitHub repository link for tracking development progress
+  - Sample data: Contact→Account (Flow), Opportunity→Quote (Plugin), Case→Email (Flow)
+
+### Changed
+- **Tab Organization** - Improved tab ordering for better user experience
+  - Moved "Cross-Entity Automation (Coming Soon)" to last position
+  - Order: Dashboard → ERD → External Dependencies → Solution Distribution → Cross-Entity Automation
+  - Added "(Coming Soon)" label to tab name for clarity
+  - Consistent positioning across UI and all export formats (HTML, Markdown)
+
+- **Cross-Entity Automation Status** - Changed from limited implementation to transparent development preview
+  - Removed unreliable plugin name pattern matching
+  - Removed placeholder business rule and classic workflow detection
+  - Now shows clear "Coming Soon" banner explaining planned capabilities
+  - Provides realistic sample data demonstrating future functionality
+
+### Enhanced
+- **Export Consistency** - All export formats reflect new structure
+  - HTML export: Cross-Entity Automation section repositioned as last section
+  - HTML navigation: Updated link label to include "(Coming Soon)"
+  - Markdown export: Cross-Entity Automation moved to last position in README navigation
+  - Markdown export: Section heading and link updated with "(Coming Soon)" label
+  - All exports always include cross-entity section (not conditionally generated)
+
 ## [0.6.2] - 2026-02-12
 
 ### Fixed
