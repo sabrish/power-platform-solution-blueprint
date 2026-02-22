@@ -131,7 +131,7 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
                     {solution.solutionName}
                   </Text>
                   {solution.isManaged && (
-                    <Badge appearance="filled" color="informative">
+                    <Badge appearance="filled" shape="rounded" color="informative">
                       Managed
                     </Badge>
                   )}
@@ -241,12 +241,12 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
                   <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
                     <Text weight="semibold">{solution.solutionName}</Text>
                     {hasDependencies && (
-                      <Badge appearance="outline" color="warning">
+                      <Badge appearance="outline" shape="rounded" color="warning">
                         {solution.dependencies.length} dependencies
                       </Badge>
                     )}
                     {hasSharedComponents && (
-                      <Badge appearance="outline" color="informative">
+                      <Badge appearance="outline" shape="rounded" color="informative">
                         {solution.sharedComponents.length} shared
                       </Badge>
                     )}
@@ -282,7 +282,7 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
                         {solution.sharedComponents.map((shared: any, index: number) => (
                           <Card key={index} style={{ marginTop: tokens.spacingVerticalS, padding: tokens.spacingVerticalS }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
-                              <Badge appearance="outline">{shared.componentType}</Badge>
+                              <Badge appearance="outline" shape="rounded">{shared.componentType}</Badge>
                               <Text weight="semibold">{shared.componentName}</Text>
                             </div>
                             <Text style={{ fontSize: tokens.fontSizeBase200, marginTop: tokens.spacingVerticalXXS }}>

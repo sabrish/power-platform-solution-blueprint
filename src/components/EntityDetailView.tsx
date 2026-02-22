@@ -188,11 +188,11 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
     switch (requiredLevel) {
       case 'ApplicationRequired':
       case 'SystemRequired':
-        return <Badge appearance="filled" color="important">Required</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="important">Required</Badge>;
       case 'Recommended':
-        return <Badge appearance="filled" color="warning">Recommended</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="warning">Recommended</Badge>;
       default:
-        return <Badge appearance="outline" color="subtle">Optional</Badge>;
+        return <Badge appearance="outline" shape="rounded" color="subtle">Optional</Badge>;
     }
   };
 
@@ -272,9 +272,9 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
         return (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             {isAudited ? (
-              <Badge appearance="filled" color="success">Enabled</Badge>
+              <Badge appearance="filled" shape="rounded" color="success">Enabled</Badge>
             ) : (
-              <Badge appearance="outline" color="subtle">Disabled</Badge>
+              <Badge appearance="outline" shape="rounded" color="subtle">Disabled</Badge>
             )}
           </div>
         );
@@ -290,9 +290,9 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
         return (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             {isSearchable ? (
-              <Badge appearance="filled" color="brand">Yes</Badge>
+              <Badge appearance="filled" shape="rounded" color="brand">Yes</Badge>
             ) : (
-              <Badge appearance="outline" color="subtle">No</Badge>
+              <Badge appearance="outline" shape="rounded" color="subtle">No</Badge>
             )}
           </div>
         );
@@ -340,17 +340,17 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
         {/* Badges */}
         <div className={styles.badges}>
           {entity.IsCustomEntity && (
-            <Badge appearance="filled" color="brand">
+            <Badge appearance="filled" shape="rounded" color="brand">
               ✨ Custom Entity
             </Badge>
           )}
           {entity.IsManaged && (
-            <Badge appearance="filled" color="warning">
+            <Badge appearance="filled" shape="rounded" color="warning">
               🔒 Managed
             </Badge>
           )}
           {entity.IsCustomizable?.Value === false && (
-            <Badge appearance="outline" color="subtle">
+            <Badge appearance="outline" shape="rounded" color="subtle">
               Not Customizable
             </Badge>
           )}

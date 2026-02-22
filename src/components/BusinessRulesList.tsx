@@ -224,10 +224,10 @@ export function BusinessRulesList({
         )}
 
         <div className={styles.badges}>
-          <Badge appearance="tint" color={getScopeBadgeColor(rule.scope)}>
+          <Badge appearance="tint" shape="rounded" color={getScopeBadgeColor(rule.scope)}>
             {rule.scopeName}
           </Badge>
-          <Badge appearance="tint" color={
+          <Badge appearance="tint" shape="rounded" color={
             rule.definition.executionContext === 'Client' ? 'brand' :
             rule.definition.executionContext === 'Server' ? 'important' : 'informative'
           }>
@@ -263,7 +263,7 @@ export function BusinessRulesList({
                 className={styles.actionItem}
                 style={{ backgroundColor: getActionColor(action.type) }}
               >
-                <Badge appearance="filled" size="small">{action.type}</Badge>
+                <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
                 <Text>
                   <span className={styles.codeText}>{action.field}</span>
                   {action.value && <> = <strong>{action.value}</strong></>}
@@ -276,7 +276,7 @@ export function BusinessRulesList({
 
         {rule.definition.parseError && (
           <div className={styles.section}>
-            <Badge appearance="filled" color="important">Parse Error</Badge>
+            <Badge appearance="filled" shape="rounded" color="important">Parse Error</Badge>
             <Text style={{ color: tokens.colorPaletteRedForeground1, marginTop: tokens.spacingVerticalXS }}>
               {rule.definition.parseError}
             </Text>
@@ -335,7 +335,7 @@ export function BusinessRulesList({
                   <TruncatedText text={rule.entity} />
                 </Text>
               )}
-              <Badge appearance="tint" color={getScopeBadgeColor(rule.scope)} size="small">
+              <Badge appearance="tint" shape="rounded" color={getScopeBadgeColor(rule.scope)} size="small">
                 {rule.scopeName}
               </Badge>
               <Badge {...stateBadgeProps}>{rule.state}</Badge>

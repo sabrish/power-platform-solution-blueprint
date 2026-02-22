@@ -234,7 +234,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
           </div>
           <div className={styles.detailItem}>
             <Text className={styles.detailLabel}>Type</Text>
-            <Badge appearance="tint" color={getTypeBadgeColor(resource.typeName)}>
+            <Badge appearance="tint" shape="rounded" color={getTypeBadgeColor(resource.typeName)}>
               {resource.typeName}
             </Badge>
           </div>
@@ -275,7 +275,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                 </div>
                 <div className={styles.detailItem}>
                   <Text className={styles.detailLabel}>Complexity</Text>
-                  <Badge appearance="filled" color={getComplexityBadgeColor(resource.analysis.complexity)}>
+                  <Badge appearance="filled" shape="rounded" color={getComplexityBadgeColor(resource.analysis.complexity)}>
                     {resource.analysis.complexity}
                   </Badge>
                 </div>
@@ -323,7 +323,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                     <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center', flexWrap: 'wrap' }}>
                       <Text weight="semibold">{call.actionName}</Text>
                       {call.method && (
-                        <Badge appearance="outline" size="small">
+                        <Badge appearance="outline" shape="rounded" size="small">
                           {call.method}
                         </Badge>
                       )}
@@ -435,7 +435,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                       <TruncatedText text={resource.name} />
                     </Text>
                   </div>
-                  <Badge appearance="tint" color={getTypeBadgeColor(resource.typeName)} size="small">
+                  <Badge appearance="tint" shape="rounded" color={getTypeBadgeColor(resource.typeName)} size="small">
                     {resource.typeName}
                   </Badge>
                   <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
@@ -452,7 +452,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                     </Text>
                   )}
                   {resource.analysis && (
-                    <Badge appearance="filled" color={getComplexityBadgeColor(resource.analysis.complexity)} size="small">
+                    <Badge appearance="filled" shape="rounded" color={getComplexityBadgeColor(resource.analysis.complexity)} size="small">
                       {resource.analysis.complexity}
                     </Badge>
                   )}

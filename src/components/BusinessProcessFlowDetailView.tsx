@@ -45,16 +45,16 @@ export function BusinessProcessFlowDetailView({ bpf }: BusinessProcessFlowDetail
             {bpf.state}
           </Badge>
           {bpf.isManaged && (
-            <Badge appearance="filled" color="warning">
+            <Badge appearance="filled" shape="rounded" color="warning">
               🔒 Managed
             </Badge>
           )}
           {bpf.definition.crossEntityFlow && (
-            <Badge appearance="filled" color="important">
+            <Badge appearance="filled" shape="rounded" color="important">
               Cross-Entity Flow
             </Badge>
           )}
-          <Badge appearance="outline">{bpf.primaryEntityDisplayName || bpf.primaryEntity}</Badge>
+          <Badge appearance="outline" shape="rounded">{bpf.primaryEntityDisplayName || bpf.primaryEntity}</Badge>
         </div>
       </div>
 

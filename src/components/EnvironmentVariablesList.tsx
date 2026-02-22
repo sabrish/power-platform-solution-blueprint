@@ -65,7 +65,7 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderHeaderCell: () => 'Type',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="filled" color={getTypeColor(item.typeName)}>
+          <Badge appearance="filled" shape="rounded" color={getTypeColor(item.typeName)}>
             {item.typeName}
           </Badge>
         </TableCellLayout>
@@ -103,8 +103,8 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderCell: (item) => (
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '4px' }}>
-            {item.isRequired && <Badge appearance="filled" color="important" size="small">Required</Badge>}
-            {item.isManaged && <Badge appearance="outline" size="small">Managed</Badge>}
+            {item.isRequired && <Badge appearance="filled" shape="rounded" color="important" size="small">Required</Badge>}
+            {item.isManaged && <Badge appearance="outline" shape="rounded" size="small">Managed</Badge>}
           </div>
         </TableCellLayout>
       ),

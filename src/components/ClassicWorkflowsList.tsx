@@ -148,7 +148,7 @@ export function ClassicWorkflowsList({ workflows, onSelectWorkflow }: ClassicWor
       renderHeaderCell: () => 'Mode',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="filled" color={getModeColor(item.mode)}>
+          <Badge appearance="filled" shape="rounded" color={getModeColor(item.mode)}>
             {item.mode === 1 ? (
               <>
                 <FlashFlow20Regular /> RealTime

@@ -29,7 +29,7 @@ export function CustomConnectorsList({ customConnectors, onSelectConnector }: Cu
       renderHeaderCell: () => 'Type',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="tint">{item.connectorType}</Badge>
+          <Badge appearance="tint" shape="rounded">{item.connectorType}</Badge>
         </TableCellLayout>
       ),
     }),
@@ -39,11 +39,11 @@ export function CustomConnectorsList({ customConnectors, onSelectConnector }: Cu
       renderCell: (item) => (
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <Badge appearance="filled" color={item.isManaged ? 'warning' : 'success'}>
+            <Badge appearance="filled" shape="rounded" color={item.isManaged ? 'warning' : 'success'}>
               {item.isManaged ? 'Managed' : 'Unmanaged'}
             </Badge>
             {!item.isCustomizable && (
-              <Badge appearance="outline" color="important" size="small">
+              <Badge appearance="outline" shape="rounded" color="important" size="small">
                 Not Customizable
               </Badge>
             )}

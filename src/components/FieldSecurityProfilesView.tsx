@@ -87,13 +87,13 @@ function FieldSecurityProfilesViewComponent({
       renderHeaderCell: () => 'Masking Type',
       renderCell: (rule) => {
         const type = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
-        return <Badge appearance="outline">{type}</Badge>;
+        return <Badge appearance="outline" shape="rounded">{type}</Badge>;
       },
     }),
     createTableColumn<AttributeMaskingRule>({
       columnId: 'managed',
       renderHeaderCell: () => 'Managed',
-      renderCell: (rule) => rule.ismanaged ? <Badge appearance="outline">Managed</Badge> : '',
+      renderCell: (rule) => rule.ismanaged ? <Badge appearance="outline" shape="rounded">Managed</Badge> : '',
     }),
   ], []);
 
@@ -111,7 +111,7 @@ function FieldSecurityProfilesViewComponent({
     createTableColumn<ColumnSecurityProfile>({
       columnId: 'managed',
       renderHeaderCell: () => 'Managed',
-      renderCell: (profile) => profile.ismanaged ? <Badge appearance="outline">Managed</Badge> : '',
+      renderCell: (profile) => profile.ismanaged ? <Badge appearance="outline" shape="rounded">Managed</Badge> : '',
     }),
   ], []);
 

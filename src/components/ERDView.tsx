@@ -367,7 +367,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               <div className={styles.legendHeader}>
                 <div className={styles.legendColor} style={{ backgroundColor: pub.color }} />
                 <Text weight="semibold">{pub.publisherName}</Text>
-                <Badge appearance="outline">{pub.entityCount}</Badge>
+                <Badge appearance="outline" shape="rounded">{pub.entityCount}</Badge>
               </div>
               <div className={styles.legendEntities}>
                 {pub.entities.slice(0, 5).join(', ')}

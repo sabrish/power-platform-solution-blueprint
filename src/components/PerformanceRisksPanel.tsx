@@ -104,13 +104,13 @@ export function PerformanceRisksPanel({ risks }: PerformanceRisksPanelProps) {
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'Critical':
-        return <Badge appearance="filled" color="important" size="large">Critical</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="important" size="large">Critical</Badge>;
       case 'High':
-        return <Badge appearance="filled" color="warning" size="large">High</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="warning" size="large">High</Badge>;
       case 'Medium':
-        return <Badge appearance="tint" color="warning" size="large">Medium</Badge>;
+        return <Badge appearance="tint" shape="rounded" color="warning" size="large">Medium</Badge>;
       case 'Low':
-        return <Badge appearance="tint" color="informative" size="large">Low</Badge>;
+        return <Badge appearance="tint" shape="rounded" color="informative" size="large">Low</Badge>;
       default:
         return null;
     }
@@ -142,10 +142,10 @@ export function PerformanceRisksPanel({ risks }: PerformanceRisksPanelProps) {
         <Warning20Regular style={{ fontSize: '24px', color: tokens.colorPaletteDarkOrangeForeground1 }} />
         <Text size={500} weight="semibold">Performance Risks Detected</Text>
         <div className={styles.summary}>
-          {criticalCount > 0 && <Badge appearance="filled" color="important">{criticalCount} Critical</Badge>}
-          {highCount > 0 && <Badge appearance="filled" color="warning">{highCount} High</Badge>}
-          {mediumCount > 0 && <Badge appearance="tint" color="warning">{mediumCount} Medium</Badge>}
-          {lowCount > 0 && <Badge appearance="tint" color="informative">{lowCount} Low</Badge>}
+          {criticalCount > 0 && <Badge appearance="filled" shape="rounded" color="important">{criticalCount} Critical</Badge>}
+          {highCount > 0 && <Badge appearance="filled" shape="rounded" color="warning">{highCount} High</Badge>}
+          {mediumCount > 0 && <Badge appearance="tint" shape="rounded" color="warning">{mediumCount} Medium</Badge>}
+          {lowCount > 0 && <Badge appearance="tint" shape="rounded" color="informative">{lowCount} Low</Badge>}
         </div>
       </div>
 
@@ -161,10 +161,10 @@ export function PerformanceRisksPanel({ risks }: PerformanceRisksPanelProps) {
             <div className={styles.riskContent}>
               <div className={styles.stepInfo}>
                 <Text>Affected step:</Text>
-                <Badge appearance="outline" size="small">{risk.step.type}</Badge>
+                <Badge appearance="outline" shape="rounded" size="small">{risk.step.type}</Badge>
                 <Text weight="semibold">{risk.step.name}</Text>
                 {risk.step.stage && <Text>• Stage {risk.step.stage}</Text>}
-                {risk.step.mode && <Badge appearance="tint" size="small">{risk.step.mode}</Badge>}
+                {risk.step.mode && <Badge appearance="tint" shape="rounded" size="small">{risk.step.mode}</Badge>}
               </div>
 
               <div className={styles.recommendation}>

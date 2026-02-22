@@ -73,7 +73,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderHeaderCell: () => 'Type',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="filled" color={item.isFunction ? 'brand' : 'danger'}>
+          <Badge appearance="filled" shape="rounded" color={item.isFunction ? 'brand' : 'danger'}>
             {item.isFunction ? (
               <>
                 <ArrowRight20Regular /> Function
@@ -101,7 +101,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
             }
             relationship="description"
           >
-            <Badge appearance="filled" color={getBindingColor(item.bindingType)}>
+            <Badge appearance="filled" shape="rounded" color={getBindingColor(item.bindingType)}>
               {item.bindingType}
             </Badge>
           </Tooltip>
@@ -130,10 +130,10 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderCell: (item) => (
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <Badge appearance="tint" size="small">
+            <Badge appearance="tint" shape="rounded" size="small">
               {item.requestParameters.length} in
             </Badge>
-            <Badge appearance="tint" size="small" color="success">
+            <Badge appearance="tint" shape="rounded" size="small" color="success">
               {item.responseProperties.length} out
             </Badge>
           </div>
@@ -145,7 +145,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       renderHeaderCell: () => 'Execution Privilege',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="outline" size="small">
+          <Badge appearance="outline" shape="rounded" size="small">
             {item.executionPrivilege}
           </Badge>
         </TableCellLayout>
@@ -158,12 +158,12 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
             {item.isPrivate && (
-              <Badge appearance="outline" size="small" color="important">
+              <Badge appearance="outline" shape="rounded" size="small" color="important">
                 Private
               </Badge>
             )}
             {item.isManaged && (
-              <Badge appearance="outline" size="small" color="warning">
+              <Badge appearance="outline" shape="rounded" size="small" color="warning">
                 Managed
               </Badge>
             )}
