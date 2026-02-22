@@ -19,16 +19,27 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   };
 
+  // Safely read from localStorage (SSR/test-safe)
+  const getSavedThemeMode = (): ThemeMode => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return 'system';
+    }
+    try {
+      const savedMode = localStorage.getItem('ppsb-theme-mode') as ThemeMode;
+      return savedMode && ['light', 'dark', 'system'].includes(savedMode) ? savedMode : 'system';
+    } catch {
+      return 'system';
+    }
+  };
+
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     // Load saved preference from localStorage or default to 'system'
-    const savedMode = localStorage.getItem('ppsb-theme-mode') as ThemeMode;
-    return savedMode && ['light', 'dark', 'system'].includes(savedMode) ? savedMode : 'system';
+    return getSavedThemeMode();
   });
 
   const [effectiveTheme, setEffectiveTheme] = useState<Theme>(() => {
     // Initialize based on saved preference to prevent theme flash
-    const savedMode = localStorage.getItem('ppsb-theme-mode') as ThemeMode;
-    const initialMode = savedMode && ['light', 'dark', 'system'].includes(savedMode) ? savedMode : 'system';
+    const initialMode = getSavedThemeMode();
 
     if (initialMode === 'system') {
       const systemTheme = getSystemTheme();
@@ -48,7 +59,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [themeMode]);
 
   useEffect(() => {
-    // Listen for system theme changes
+    // Listen for system theme changes (browser-only)
+    if (typeof window === 'undefined') return;
+
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     const handleChange = (e: MediaQueryListEvent) => {
@@ -63,7 +76,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const changeTheme = (mode: ThemeMode) => {
     setThemeMode(mode);
-    localStorage.setItem('ppsb-theme-mode', mode);
+    // Safely write to localStorage (SSR/test-safe)
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('ppsb-theme-mode', mode);
+      } catch {
+        // Ignore localStorage errors (e.g., quota exceeded, privacy mode)
+      }
+    }
   };
 
   const getCurrentThemeName = (): 'light' | 'dark' => {
