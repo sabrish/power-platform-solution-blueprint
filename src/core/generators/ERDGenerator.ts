@@ -3,6 +3,18 @@ import type { Publisher } from '../types.js';
 import { getPublisherColors } from '../utils/ColorGenerator.js';
 
 /**
+ * Common system entities that clutter diagrams
+ */
+const SYSTEM_ENTITIES = [
+  'systemuser',
+  'team',
+  'businessunit',
+  'organization',
+  'transactioncurrency',
+  'owner',
+];
+
+/**
  * Generates Entity Relationship Diagrams (ERD) using Mermaid Class Diagram syntax
  * Class diagrams provide better layout control and cleaner hierarchical views
  */
@@ -14,42 +26,47 @@ export class ERDGenerator {
    * Creates multiple focused diagrams instead of one large unreadable diagram
    */
   generateMermaidERD(entities: EntityBlueprint[], publishers: Publisher[]): ERDDefinition {
+    // Filter out system entities from diagram generation
+    const filteredEntities = entities.filter(bp =>
+      !this.isSystemEntity(bp.entity.LogicalName)
+    );
+
     // Build publisher map (entity prefix -> publisher info)
-    const publisherMap = this.buildPublisherMap(entities, publishers);
+    const publisherMap = this.buildPublisherMap(filteredEntities, publishers);
 
     // Generate entity quick links with stats
-    const entityQuickLinks = this.generateEntityQuickLinks(entities, publisherMap);
+    const entityQuickLinks = this.generateEntityQuickLinks(filteredEntities, publisherMap);
 
     // Generate multiple focused diagrams
     const diagrams: ERDDiagram[] = [];
     const warnings: string[] = [];
 
     // Check total entity count and add warnings if needed
-    if (entities.length > 50) {
+    if (filteredEntities.length > 50) {
       warnings.push('System has 50+ entities - diagrams are split by publisher for readability');
     }
 
     // 1. Core Entities Diagram - Top 15 most connected entities
-    const coreEntitiesDiagram = this.generateCoreEntitiesDiagram(entities, publisherMap);
+    const coreEntitiesDiagram = this.generateCoreEntitiesDiagram(filteredEntities, publisherMap);
     if (coreEntitiesDiagram) {
       diagrams.push(coreEntitiesDiagram);
     }
 
     // 2. Diagrams by Publisher - One per publisher
-    const publisherDiagrams = this.generatePublisherDiagrams(entities, publisherMap);
+    const publisherDiagrams = this.generatePublisherDiagrams(filteredEntities, publisherMap);
     diagrams.push(...publisherDiagrams);
 
     // Generate legend
     const legend = this.generateLegend(publisherMap);
 
     // Count total relationships
-    const totalRelationships = this.countTotalRelationships(entities);
+    const totalRelationships = this.countTotalRelationships(filteredEntities);
 
     return {
       diagrams,
       legend,
       entityQuickLinks,
-      totalEntities: entities.length,
+      totalEntities: filteredEntities.length,
       totalRelationships,
       warnings: warnings.length > 0 ? warnings : undefined,
     };
@@ -105,6 +122,14 @@ export class ERDGenerator {
   private extractPublisherPrefix(schemaName: string): string {
     const match = schemaName.match(/^([a-z]+)_/i);
     return match ? match[1] : '';
+  }
+
+  /**
+   * Check if an entity is a system entity that should be excluded from ERD
+   */
+  private isSystemEntity(entityLogicalName: string): boolean {
+    const lowerName = entityLogicalName.toLowerCase();
+    return SYSTEM_ENTITIES.includes(lowerName);
   }
 
   /**
