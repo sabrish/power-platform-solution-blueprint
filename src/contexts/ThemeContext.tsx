@@ -60,18 +60,30 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Listen for system theme changes (browser-only)
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined;
+    }
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    const handleChange = (e: MediaQueryListEvent) => {
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
       if (themeMode === 'system') {
         setEffectiveTheme(e.matches ? webDarkTheme : webLightTheme);
       }
     };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    // Modern browsers use addEventListener, older browsers use addListener
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else if (mediaQuery.addListener) {
+      // Fallback for older browsers (Safari < 14, etc.)
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener?.(handleChange);
+    }
+
+    // If neither method is available, return undefined
+    return undefined;
   }, [themeMode]);
 
   const changeTheme = (mode: ThemeMode) => {
