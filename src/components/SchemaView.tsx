@@ -13,6 +13,7 @@ import {
 } from '@fluentui/react-components';
 import { Database24Regular } from '@fluentui/react-icons';
 import type { DetailedEntityMetadata, EntityBlueprint, ClassicWorkflow } from '../core';
+import { isSystemRelationship } from '../utils/systemFilters';
 import { FieldsTable } from './FieldsTable';
 import { FormsTable } from './FormsTable';
 import { RelationshipsView } from './RelationshipsView';
@@ -98,56 +99,6 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
   const attributeCount = schema.Attributes?.length || 0;
   const keysCount = schema.Keys?.length || 0;
   const formsCount = blueprint?.forms.length || 0;
-
-  // Helper function to check if a relationship is a system relationship
-  const isSystemRelationship = (
-    schemaName: string,
-    referencingAttribute?: string,
-    referencedEntity?: string,
-    referencingEntity?: string
-  ): boolean => {
-    const lowerSchemaName = schemaName.toLowerCase();
-    const lowerAttribute = referencingAttribute?.toLowerCase() || '';
-    const lowerReferencedEntity = referencedEntity?.toLowerCase() || '';
-    const lowerReferencingEntity = referencingEntity?.toLowerCase() || '';
-
-    // Common system entities to filter
-    const systemEntities = [
-      'systemuser',
-      'team',
-      'businessunit',
-      'organization',
-      'transactioncurrency',
-      'owner', // polymorphic owner field
-    ];
-
-    // Filter if relationship involves a system entity
-    if (systemEntities.some(entity =>
-      lowerReferencedEntity === entity || lowerReferencingEntity === entity
-    )) {
-      return true;
-    }
-
-    // Common system relationship patterns
-    const systemPatterns = [
-      'createdby',
-      'modifiedby',
-      'createdonbehalfby',
-      'modifiedonbehalfby',
-      'ownerid',
-      'owninguser',
-      'owningteam',
-      'owningbusinessunit',
-      'transactioncurrencyid',
-      'transactioncurrency',
-      '_transactioncurrency',
-    ];
-
-    // Check if schema name or attribute matches any system pattern
-    return systemPatterns.some(pattern =>
-      lowerSchemaName.includes(pattern) || lowerAttribute.includes(pattern)
-    );
-  };
 
   // Filter out system relationships and relationships to entities not in scope
   const filteredOneToMany = useMemo(() => {

@@ -1,18 +1,7 @@
 import type { EntityBlueprint, ERDDefinition, ERDDiagram, PublisherLegend, EntityQuickLink } from '../types/blueprint.js';
 import type { Publisher } from '../types.js';
 import { getPublisherColors } from '../utils/ColorGenerator.js';
-
-/**
- * Common system entities that clutter diagrams
- */
-const SYSTEM_ENTITIES = [
-  'systemuser',
-  'team',
-  'businessunit',
-  'organization',
-  'transactioncurrency',
-  'owner',
-];
+import { isSystemEntity, isSystemRelationship } from '../../utils/systemFilters.js';
 
 /**
  * Generates Entity Relationship Diagrams (ERD) using Mermaid Class Diagram syntax
@@ -28,7 +17,7 @@ export class ERDGenerator {
   generateMermaidERD(entities: EntityBlueprint[], publishers: Publisher[]): ERDDefinition {
     // Filter out system entities from diagram generation
     const filteredEntities = entities.filter(bp =>
-      !this.isSystemEntity(bp.entity.LogicalName)
+      !isSystemEntity(bp.entity.LogicalName)
     );
 
     // Build publisher map (entity prefix -> publisher info)
@@ -124,66 +113,6 @@ export class ERDGenerator {
     return match ? match[1] : '';
   }
 
-  /**
-   * Check if an entity is a system entity that should be excluded from ERD
-   */
-  private isSystemEntity(entityLogicalName: string): boolean {
-    const lowerName = entityLogicalName.toLowerCase();
-    return SYSTEM_ENTITIES.includes(lowerName);
-  }
-
-  /**
-   * Check if a relationship is a system relationship that should be filtered from ERD
-   * System relationships like createdby, modifiedby, currency crowd the diagram
-   */
-  private isSystemRelationship(
-    schemaName: string,
-    referencingAttribute?: string,
-    referencedEntity?: string,
-    referencingEntity?: string
-  ): boolean {
-    const lowerSchemaName = schemaName.toLowerCase();
-    const lowerAttribute = referencingAttribute?.toLowerCase() || '';
-    const lowerReferencedEntity = referencedEntity?.toLowerCase() || '';
-    const lowerReferencingEntity = referencingEntity?.toLowerCase() || '';
-
-    // Common system entities to filter
-    const systemEntities = [
-      'systemuser',
-      'team',
-      'businessunit',
-      'organization',
-      'transactioncurrency',
-      'owner', // polymorphic owner field
-    ];
-
-    // Filter if relationship involves a system entity
-    if (systemEntities.some(entity =>
-      lowerReferencedEntity === entity || lowerReferencingEntity === entity
-    )) {
-      return true;
-    }
-
-    // Common system relationship patterns
-    const systemPatterns = [
-      'createdby',
-      'modifiedby',
-      'createdonbehalfby',
-      'modifiedonbehalfby',
-      'ownerid',
-      'owninguser',
-      'owningteam',
-      'owningbusinessunit',
-      'transactioncurrencyid',
-      'transactioncurrency',
-      '_transactioncurrency',
-    ];
-
-    // Check if schema name or attribute matches any system pattern
-    return systemPatterns.some(pattern =>
-      lowerSchemaName.includes(pattern) || lowerAttribute.includes(pattern)
-    );
-  }
 
   /**
    * Generate Core Entities diagram - Top N most connected entities
@@ -308,7 +237,7 @@ export class ERDGenerator {
       if (entity.OneToManyRelationships) {
         for (const rel of entity.OneToManyRelationships) {
           // Skip system relationships (createdby, modifiedby, currency, etc.)
-          if (this.isSystemRelationship(
+          if (isSystemRelationship(
             rel.SchemaName,
             rel.ReferencingAttribute,
             rel.ReferencedEntity,
@@ -347,7 +276,7 @@ export class ERDGenerator {
       if (entity.ManyToManyRelationships) {
         for (const rel of entity.ManyToManyRelationships) {
           // Skip system relationships (createdby, modifiedby, currency, etc.)
-          if (this.isSystemRelationship(
+          if (isSystemRelationship(
             rel.SchemaName,
             undefined,
             rel.Entity1LogicalName,

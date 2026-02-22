@@ -26,8 +26,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
 
   const [effectiveTheme, setEffectiveTheme] = useState<Theme>(() => {
-    const systemTheme = getSystemTheme();
-    return systemTheme === 'dark' ? webDarkTheme : webLightTheme;
+    // Initialize based on saved preference to prevent theme flash
+    const savedMode = localStorage.getItem('ppsb-theme-mode') as ThemeMode;
+    const initialMode = savedMode && ['light', 'dark', 'system'].includes(savedMode) ? savedMode : 'system';
+
+    if (initialMode === 'system') {
+      const systemTheme = getSystemTheme();
+      return systemTheme === 'dark' ? webDarkTheme : webLightTheme;
+    }
+    return initialMode === 'dark' ? webDarkTheme : webLightTheme;
   });
 
   useEffect(() => {
