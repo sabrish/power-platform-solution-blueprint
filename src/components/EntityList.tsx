@@ -175,6 +175,11 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEntityId, setExpandedEntityId] = useState<string | null>(null);
 
+  // Get list of all entity logical names in scope
+  const entitiesInScope = useMemo(() => {
+    return blueprints.map(bp => bp.entity.LogicalName);
+  }, [blueprints]);
+
   // Filter and sort blueprints
   const filteredBlueprints = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
@@ -208,7 +213,7 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
   const renderEntityDetails = (blueprint: EntityBlueprint) => {
     return (
       <div className={styles.expandedDetails}>
-        <SchemaView blueprint={blueprint} classicWorkflows={classicWorkflows} />
+        <SchemaView blueprint={blueprint} classicWorkflows={classicWorkflows} entitiesInScope={entitiesInScope} />
       </div>
     );
   };
