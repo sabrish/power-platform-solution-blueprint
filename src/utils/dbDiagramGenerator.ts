@@ -76,6 +76,15 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
   // Track processed relationships to avoid duplicates
   const processedRelationships = new Set<string>();
 
+  // Build set of entities actually in the export (excluding system entities)
+  const exportedEntities = new Set<string>();
+  for (const entityBlueprint of result.entities) {
+    const tableName = entityBlueprint.entity.LogicalName.toLowerCase();
+    if (!isSystemEntity(tableName)) {
+      exportedEntities.add(tableName);
+    }
+  }
+
   // Process each entity (skip system entities)
   for (const entityBlueprint of result.entities) {
     const entity = entityBlueprint.entity;
@@ -144,6 +153,12 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
         continue;
       }
 
+      // Skip if either entity is not in the export
+      if (!exportedEntities.has(rel.ReferencingEntity.toLowerCase()) ||
+          !exportedEntities.has(rel.ReferencedEntity.toLowerCase())) {
+        continue;
+      }
+
       const relKey = `${rel.ReferencingEntity}.${rel.ReferencingAttribute}->${rel.ReferencedEntity}.${rel.ReferencedAttribute}`;
       if (!processedRelationships.has(relKey)) {
         processedRelationships.add(relKey);
@@ -162,6 +177,12 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
         rel.Entity1LogicalName,
         rel.Entity2LogicalName
       )) {
+        continue;
+      }
+
+      // Skip if either entity is not in the export
+      if (!exportedEntities.has(rel.Entity1LogicalName.toLowerCase()) ||
+          !exportedEntities.has(rel.Entity2LogicalName.toLowerCase())) {
         continue;
       }
 
