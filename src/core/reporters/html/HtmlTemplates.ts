@@ -1396,30 +1396,54 @@ ${rows}
   /**
    * Generate cross-entity automation section
    */
-  htmlCrossEntitySection(links: CrossEntityLink[] | undefined): string {
-    if (!links || links.length === 0) {
-      return `<section id="cross-entity" class="content-section">
-  <h2>Cross-Entity Automation</h2>
-  <div class="empty-state">
-    <strong>Note:</strong> Cross-entity automation analysis is coming in a future update.
-  </div>
-</section>`;
-    }
-
-    const rows = links.map(link => {
-      return `<tr>
-  <td>${this.escapeHtml(link.sourceEntityDisplayName)}</td>
-  <td>${this.escapeHtml(link.targetEntityDisplayName)}</td>
-  <td>${this.escapeHtml(link.automationType)}</td>
-  <td>${this.escapeHtml(link.automationName)}</td>
-  <td>${this.escapeHtml(link.operation)}</td>
-  <td>${link.isAsynchronous ? 'Async' : 'Sync'}</td>
+  htmlCrossEntitySection(_links: CrossEntityLink[] | undefined): string {
+    // Always show Coming Soon banner with sample data
+    const sampleRows = `<tr>
+  <td>Contact</td>
+  <td>Account</td>
+  <td><span class="badge badge-success">Flow</span></td>
+  <td>Update Account when Contact Changes</td>
+  <td>Update</td>
+  <td><span class="badge badge-success">Async</span></td>
+</tr>
+<tr>
+  <td>Opportunity</td>
+  <td>Quote</td>
+  <td><span class="badge badge-brand">Plugin</span></td>
+  <td>Generate Quote from Opportunity</td>
+  <td>Create</td>
+  <td><span class="badge badge-warning">Sync ⚠️</span></td>
+</tr>
+<tr>
+  <td>Case</td>
+  <td>Email</td>
+  <td><span class="badge badge-success">Flow</span></td>
+  <td>Send Email on Case Resolution</td>
+  <td>Create</td>
+  <td><span class="badge badge-success">Async</span></td>
 </tr>`;
-    }).join('\n');
 
     return `<section id="cross-entity" class="content-section">
-  <h2>Cross-Entity Automation (${links.length})</h2>
-  <p class="section-description">Automation that operates on multiple entities (e.g., when Contact changes, update related Account)</p>
+  <h2>💡 Cross-Entity Automation - Coming Soon</h2>
+
+  <div style="padding: 20px; background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px; margin-bottom: 20px;">
+    <h3 style="margin-top: 0;">Advanced Cross-Entity Analysis in Development</h3>
+    <p>This feature is currently being developed and will provide comprehensive analysis of automation that operates across multiple entities.</p>
+    <p><strong>Planned capabilities:</strong></p>
+    <ul>
+      <li>Plugin assembly decompilation (ILSpy integration) for cross-entity operations</li>
+      <li>Classic workflow XAML parsing to identify entity relationships</li>
+      <li>Business rule condition and action analysis</li>
+      <li>Synchronous operation detection for performance impact</li>
+      <li>Complete data flow mapping between entities</li>
+    </ul>
+    <p>Check <a href="https://github.com/sabrish/power-platform-solution-blueprint" target="_blank" rel="noopener noreferrer">our GitHub repository</a> for updates.</p>
+  </div>
+
+  <div style="padding: 12px; background-color: #f5f5f5; border-radius: 4px; margin-bottom: 16px; font-style: italic;">
+    <strong>💡 Sample Data Below</strong> - This demonstrates what the feature will look like when completed
+  </div>
+
   <div class="table-container">
     <table class="data-table sortable" id="cross-entity-table">
       <thead>
@@ -1433,10 +1457,12 @@ ${rows}
         </tr>
       </thead>
       <tbody>
-${rows}
+${sampleRows}
       </tbody>
     </table>
   </div>
+
+  <p style="margin-top: 16px; color: #666; font-style: italic;">⚠️ Synchronous cross-entity operations may impact performance</p>
 </section>`;
   }
 
