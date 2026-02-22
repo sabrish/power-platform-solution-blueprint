@@ -86,6 +86,8 @@ export interface PluginStep {
   postImage: ImageDefinition | null;
   impersonatingUserId: string | null;
   impersonatingUserName: string | null;
+  stateCode: number;
+  state: 'Enabled' | 'Disabled';
 }
 
 /**
