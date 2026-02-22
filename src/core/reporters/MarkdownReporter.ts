@@ -435,10 +435,11 @@ export class MarkdownReporter {
         sections.push(MarkdownFormatter.formatHeading(entityName, 3));
         sections.push('');
 
-        const headers = ['Name', 'Message', 'Stage', 'Mode', 'Rank', 'External', 'Solution', 'Description'];
+        const headers = ['Name', 'Message', 'State', 'Stage', 'Mode', 'Rank', 'External', 'Solution', 'Description'];
         const rows = plugins.map(plugin => [
           plugin.name,
           plugin.message,
+          MarkdownFormatter.formatBadge(plugin.state, plugin.state === 'Enabled' ? 'success' : 'error'),
           plugin.stageName,
           plugin.modeName,
           plugin.rank.toString(),
@@ -1212,10 +1213,11 @@ export class MarkdownReporter {
       sections.push(MarkdownFormatter.formatHeading('Plugins', 2));
       sections.push('');
 
-      const headers = ['Name', 'Message', 'Stage', 'Mode', 'Rank', 'Assembly'];
+      const headers = ['Name', 'Message', 'State', 'Stage', 'Mode', 'Rank', 'Assembly'];
       const rows = entity.plugins.map(plugin => [
         plugin.name,
         plugin.message,
+        MarkdownFormatter.formatBadge(plugin.state, plugin.state === 'Enabled' ? 'success' : 'error'),
         plugin.stageName,
         plugin.modeName,
         plugin.rank.toString(),
