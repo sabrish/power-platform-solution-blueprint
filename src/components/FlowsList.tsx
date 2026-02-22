@@ -158,13 +158,13 @@ export function FlowsList({
   const getStateBadgeProps = (state: Flow['state']) => {
     switch (state) {
       case 'Active':
-        return { appearance: 'filled' as const, color: 'success' as const };
+        return { appearance: 'filled' as const, color: 'success' as const, shape: 'rounded' as const };
       case 'Draft':
-        return { appearance: 'filled' as const, color: 'warning' as const };
+        return { appearance: 'filled' as const, color: 'warning' as const, shape: 'rounded' as const };
       case 'Suspended':
-        return { appearance: 'filled' as const, color: 'danger' as const };
+        return { appearance: 'filled' as const, color: 'important' as const, shape: 'rounded' as const };
       default:
-        return { appearance: 'outline' as const, color: 'subtle' as const };
+        return { appearance: 'outline' as const, color: 'subtle' as const, shape: 'rounded' as const };
     }
   };
 

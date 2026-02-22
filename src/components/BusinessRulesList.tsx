@@ -159,8 +159,8 @@ export function BusinessRulesList({
 
   const getStateBadgeProps = (state: BusinessRule['state']) => {
     return state === 'Active'
-      ? { appearance: 'filled' as const, color: 'success' as const }
-      : { appearance: 'filled' as const, color: 'warning' as const };
+      ? { appearance: 'filled' as const, color: 'success' as const, shape: 'rounded' as const }
+      : { appearance: 'filled' as const, color: 'warning' as const, shape: 'rounded' as const };
   };
 
   const getScopeBadgeColor = (scope: BusinessRule['scope']): 'brand' | 'important' | 'informative' => {
