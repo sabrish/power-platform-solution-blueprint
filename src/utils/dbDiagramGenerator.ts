@@ -1,6 +1,32 @@
 import type { BlueprintResult } from '../core';
 
 /**
+ * Check if a relationship is a system relationship that should be filtered
+ */
+function isSystemRelationship(schemaName: string, referencingAttribute?: string): boolean {
+  const lowerSchemaName = schemaName.toLowerCase();
+  const lowerAttribute = referencingAttribute?.toLowerCase() || '';
+
+  const systemPatterns = [
+    'createdby',
+    'modifiedby',
+    'createdonbehalfby',
+    'modifiedonbehalfby',
+    'ownerid',
+    'owninguser',
+    'owningteam',
+    'owningbusinessunit',
+    'transactioncurrencyid',
+    'transactioncurrency',
+    '_transactioncurrency',
+  ];
+
+  return systemPatterns.some(pattern =>
+    lowerSchemaName.includes(pattern) || lowerAttribute.includes(pattern)
+  );
+}
+
+/**
  * Generates dbdiagram.io compatible code from a BlueprintResult
  * Format: https://dbdiagram.io/d
  */
@@ -23,9 +49,9 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
 
     lines.push(`Table ${tableName} {`);
 
-    // Add table note with display name
+    // Add table note with display name (escape single quotes)
     const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || tableName;
-    lines.push(`  Note: '${displayName}'`);
+    lines.push(`  Note: '${displayName.replace(/'/g, "\\'")}'`);
     lines.push('');
 
     // Add attributes
@@ -69,6 +95,11 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
     // Many-to-One relationships (this entity references another)
     const manyToOneRels = entity.ManyToOneRelationships || [];
     for (const rel of manyToOneRels) {
+      // Skip system relationships
+      if (isSystemRelationship(rel.SchemaName, rel.ReferencingAttribute)) {
+        continue;
+      }
+
       const relKey = `${rel.ReferencingEntity}.${rel.ReferencingAttribute}->${rel.ReferencedEntity}.${rel.ReferencedAttribute}`;
       if (!processedRelationships.has(relKey)) {
         processedRelationships.add(relKey);
@@ -77,17 +108,22 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
       }
     }
 
-    // Many-to-Many relationships
+    // Many-to-Many relationships - documented as comments since they exist via intersection tables
     const manyToManyRels = entity.ManyToManyRelationships || [];
     for (const rel of manyToManyRels) {
+      // Skip system relationships
+      if (isSystemRelationship(rel.SchemaName)) {
+        continue;
+      }
+
       // Create a relationship key to avoid duplicates (both entities will have this relationship)
       const entities = [rel.Entity1LogicalName, rel.Entity2LogicalName].sort();
       const relKey = `${entities[0]}<>${entities[1]}:${rel.IntersectEntityName}`;
 
       if (!processedRelationships.has(relKey)) {
         processedRelationships.add(relKey);
-        // Many-to-many: Entity1 <> Entity2
-        lines.push(`Ref: ${rel.Entity1LogicalName}.${entity.PrimaryIdAttribute} <> ${rel.Entity2LogicalName}.${entity.PrimaryIdAttribute} [note: 'via ${rel.IntersectEntityName}']`);
+        // Document M:N as comment - actual relationship exists via intersection table
+        lines.push(`// M:N: ${rel.Entity1LogicalName} <> ${rel.Entity2LogicalName} (via ${rel.IntersectEntityName})`);
       }
     }
   }
