@@ -286,7 +286,7 @@ export function PluginsList({
                   <TruncatedText text={plugin.entity} />
                 </Text>
               )}
-              <Badge appearance="outline" size="medium">{plugin.message}</Badge>
+              <Badge appearance="outline" size="medium" shape="rounded">{plugin.message}</Badge>
               <Badge
                 appearance="filled"
                 size="medium"
@@ -298,7 +298,7 @@ export function PluginsList({
               >
                 {plugin.stageName}
               </Badge>
-              <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium">
+              <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium" shape="rounded">
                 {plugin.modeName}
               </Badge>
               <Badge appearance="filled" color={plugin.state === 'Enabled' ? 'success' : 'important'} size="medium" shape="rounded">
