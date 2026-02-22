@@ -9,6 +9,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { OneToManyRelationship, ManyToOneRelationship, ManyToManyRelationship } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -231,9 +232,15 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
                     <div className={styles.chevron}>
                       {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                     </div>
-                    <Text weight="semibold" className={styles.wrapText}>{rel.SchemaName}</Text>
-                    <Text className={`${styles.codeText} ${styles.wrapText}`}>{rel.ReferencingEntity}</Text>
-                    <Text className={`${styles.codeText} ${styles.wrapText}`}>{rel.ReferencingAttribute}</Text>
+                    <Text weight="semibold">
+                      <TruncatedText text={rel.SchemaName} />
+                    </Text>
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={rel.ReferencingEntity} />
+                    </Text>
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={rel.ReferencingAttribute} />
+                    </Text>
                     {getCascadeBadge(rel.CascadeConfiguration?.Delete)}
                     {rel.IsCustomRelationship && <Badge appearance="tint" color="brand" size="small">Custom</Badge>}
                   </div>
@@ -267,9 +274,15 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
                     <div className={styles.chevron}>
                       {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                     </div>
-                    <Text weight="semibold" className={styles.wrapText}>{rel.SchemaName}</Text>
-                    <Text className={`${styles.codeText} ${styles.wrapText}`}>{rel.ReferencedEntity}</Text>
-                    <Text className={`${styles.codeText} ${styles.wrapText}`}>{rel.ReferencingAttribute}</Text>
+                    <Text weight="semibold">
+                      <TruncatedText text={rel.SchemaName} />
+                    </Text>
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={rel.ReferencedEntity} />
+                    </Text>
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={rel.ReferencingAttribute} />
+                    </Text>
                     {getCascadeBadge(rel.CascadeConfiguration?.Delete)}
                     {rel.IsCustomRelationship && <Badge appearance="tint" color="brand" size="small">Custom</Badge>}
                   </div>
@@ -297,9 +310,15 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
               return (
                 <div key={id}>
                   <div className={styles.relationshipRow} style={{ gridTemplateColumns: 'minmax(200px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr) auto' }}>
-                    <Text weight="semibold" className={styles.wrapText}>{rel.SchemaName}</Text>
-                    <Text className={`${styles.codeText} ${styles.wrapText}`}>{relatedEntity}</Text>
-                    <Text className={`${styles.codeText} ${styles.wrapText}`}>{rel.IntersectEntityName}</Text>
+                    <Text weight="semibold">
+                      <TruncatedText text={rel.SchemaName} />
+                    </Text>
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={relatedEntity} />
+                    </Text>
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={rel.IntersectEntityName} />
+                    </Text>
                     {rel.IsCustomRelationship && <Badge appearance="tint" color="brand" size="small">Custom</Badge>}
                   </div>
                 </div>
