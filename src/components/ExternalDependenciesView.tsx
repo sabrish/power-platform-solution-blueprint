@@ -335,7 +335,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                   return (
                     <div style={{ display: 'flex', gap: tokens.spacingHorizontalXS, flexWrap: 'wrap' }}>
                       {criticalCount > 0 && (
-                        <Badge appearance="filled" color="danger">
+                        <Badge appearance="filled" color="important">
                           {criticalCount} Critical
                         </Badge>
                       )}

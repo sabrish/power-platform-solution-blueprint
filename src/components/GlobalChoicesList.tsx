@@ -342,7 +342,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                     {choice.isManaged ? 'Managed' : 'Unmanaged'}
                   </Badge>
                   {!choice.isCustomizable && (
-                    <Badge appearance="outline" color="danger" size="small">
+                    <Badge appearance="outline" color="important" size="small">
                       Not Customizable
                     </Badge>
                   )}

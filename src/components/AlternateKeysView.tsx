@@ -75,7 +75,7 @@ export function AlternateKeysView({ keys, primaryIdAttribute }: AlternateKeysVie
       case 'InProgress':
         return <Badge appearance="filled" color="warning">Creating</Badge>;
       case 'Failed':
-        return <Badge appearance="filled" color="danger">Failed</Badge>;
+        return <Badge appearance="filled" color="important">Failed</Badge>;
       default:
         return <Badge appearance="outline">Unknown</Badge>;
     }

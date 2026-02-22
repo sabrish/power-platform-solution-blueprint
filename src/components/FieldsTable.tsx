@@ -180,7 +180,7 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
     switch (requiredLevel) {
       case 'ApplicationRequired':
       case 'SystemRequired':
-        return <Badge appearance="filled" color="danger" size="small">Required</Badge>;
+        return <Badge appearance="filled" color="important" size="small">Required</Badge>;
       case 'Recommended':
         return <Badge appearance="filled" color="warning" size="small">Recommended</Badge>;
       default:

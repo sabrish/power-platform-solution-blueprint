@@ -42,7 +42,7 @@ export function GlobalChoiceDetailView({ globalChoice }: GlobalChoiceDetailViewP
             {globalChoice.isManaged ? '🔒 Managed' : '✓ Unmanaged'}
           </Badge>
           {!globalChoice.isCustomizable && (
-            <Badge appearance="filled" color="danger" size="large">
+            <Badge appearance="filled" color="important" size="large">
               Not Customizable
             </Badge>
           )}
