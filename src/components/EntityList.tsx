@@ -37,9 +37,6 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
-    overflowY: 'auto',
-    flex: 1,
-    minHeight: 0,
   },
   entityRow: {
     display: 'flex',
