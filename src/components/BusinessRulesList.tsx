@@ -9,6 +9,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { BusinessRule } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -320,18 +321,18 @@ export function BusinessRulesList({
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <div className={styles.nameColumn}>
-                <Text weight="semibold" className={styles.wrapText}>
-                  {rule.name}
+                <Text weight="semibold">
+                  <TruncatedText text={rule.name} />
                 </Text>
                 {rule.description && (
-                  <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                    {rule.description}
+                  <Text className={styles.codeText}>
+                    <TruncatedText text={rule.description} />
                   </Text>
                 )}
               </div>
               {!entityLogicalName && (
-                <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                  {rule.entity}
+                <Text className={styles.codeText}>
+                  <TruncatedText text={rule.entity} />
                 </Text>
               )}
               <Badge appearance="tint" color={getScopeBadgeColor(rule.scope)} size="small">

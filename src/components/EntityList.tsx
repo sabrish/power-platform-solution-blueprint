@@ -9,6 +9,7 @@ import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '
 import type { EntityBlueprint, ClassicWorkflow } from '../core';
 import { SchemaView } from './SchemaView';
 import { filterDescription } from '../utils/descriptionFilter';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -79,21 +80,21 @@ const useStyles = makeStyles({
     fontWeight: tokens.fontWeightSemibold,
     fontSize: tokens.fontSizeBase400,
     color: tokens.colorNeutralForeground1,
-    flexShrink: 0,
+    minWidth: 0,
+    flex: '0 1 auto',
   },
   entityLogicalName: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase300,
     fontFamily: 'Consolas, Monaco, monospace',
-    flexShrink: 0,
+    minWidth: 0,
+    flex: '0 1 auto',
   },
   entityDescription: {
     color: tokens.colorNeutralForeground2,
     fontSize: tokens.fontSizeBase300,
     flex: 1,
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
+    minWidth: 0,
   },
   entityStats: {
     display: 'flex',
@@ -260,13 +261,15 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
                   </div>
                   <Database24Regular className={styles.entityIcon} />
                   <div className={styles.entityInfo}>
-                    <Text className={styles.entityName}>{displayName}</Text>
+                    <Text className={styles.entityName}>
+                      <TruncatedText text={displayName} />
+                    </Text>
                     <Text className={styles.entityLogicalName}>
-                      {entity.LogicalName}
+                      <TruncatedText text={entity.LogicalName} />
                     </Text>
                     {description && (
                       <Text className={styles.entityDescription}>
-                        {description}
+                        <TruncatedText text={description} />
                       </Text>
                     )}
                     <div className={styles.entityStats}>

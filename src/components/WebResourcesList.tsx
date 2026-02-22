@@ -14,6 +14,7 @@ import {
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { WebResource } from '../core';
 import { CodeViewer } from './CodeViewer';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -256,7 +257,9 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
         {resource.description && (
           <div className={styles.section}>
             <Text className={styles.detailLabel}>Description</Text>
-            <Text className={styles.wrapText}>{resource.description}</Text>
+            <Text>
+              <TruncatedText text={resource.description} />
+            </Text>
           </div>
         )}
 
@@ -332,7 +335,9 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                         {call.confidence}
                       </Badge>
                     </div>
-                    <Text className={styles.codeText} style={{ wordBreak: 'break-all' }}>{call.url}</Text>
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={call.url} />
+                    </Text>
                     <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                       Domain: {call.domain}
                     </Text>
@@ -423,11 +428,11 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                   </div>
                   <div className={styles.nameColumn}>
-                    <Text weight="semibold" className={styles.wrapText}>
-                      {resource.displayName}
+                    <Text weight="semibold">
+                      <TruncatedText text={resource.displayName} />
                     </Text>
-                    <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                      {resource.name}
+                    <Text className={styles.codeText}>
+                      <TruncatedText text={resource.name} />
                     </Text>
                   </div>
                   <Badge appearance="tint" color={getTypeBadgeColor(resource.typeName)} size="small">

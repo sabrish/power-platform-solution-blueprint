@@ -10,6 +10,7 @@ import {
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { Flow } from '../core';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
+import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -250,7 +251,9 @@ export function FlowsList({
                     {call.confidence}
                   </Badge>
                 </div>
-                <Text className={styles.codeText} style={{ wordBreak: 'break-all' }}>{call.url}</Text>
+                <Text className={styles.codeText}>
+                  <TruncatedText text={call.url} />
+                </Text>
                 <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                   Domain: {call.domain}
                 </Text>
@@ -317,14 +320,14 @@ export function FlowsList({
                   {flow.name}
                 </Text>
                 {flow.description && (
-                  <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                    {flow.description}
+                  <Text className={styles.codeText}>
+                    <TruncatedText text={flow.description} />
                   </Text>
                 )}
               </div>
               {!entityLogicalName && flow.entity && (
-                <Text className={`${styles.wrapText} ${styles.codeText}`}>
-                  {flow.entity}
+                <Text className={styles.codeText}>
+                  <TruncatedText text={flow.entity} />
                 </Text>
               )}
               <Badge appearance="tint" color="brand" size="small">
