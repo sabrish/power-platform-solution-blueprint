@@ -571,7 +571,7 @@ export class MarkdownReporter {
 
     sections.push(MarkdownFormatter.formatHeading('All Classic Workflows', 1));
     sections.push('');
-    sections.push('⚠️ **Classic workflows are deprecated and require migration to Power Automate.**');
+    sections.push('⚠️ **Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows.**');
     sections.push('');
     sections.push(`**Total Classic Workflows:** ${result.summary.totalClassicWorkflows}`);
     sections.push('');
