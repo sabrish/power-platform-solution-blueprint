@@ -15,6 +15,7 @@ interface UseBlueprintResult {
   isGenerating: boolean;
   error: Error | null;
   cancel: () => void;
+  reset: () => void;
   blueprintGenerator: BlueprintGenerator | null;
 }
 
@@ -116,6 +117,18 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
     }
   }, []);
 
+  const reset = useCallback(() => {
+    setResult(null);
+    setError(null);
+    setProgress(null);
+    setIsGenerating(false);
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    generatorRef.current = null;
+  }, []);
+
   return {
     generate,
     result,
@@ -123,6 +136,7 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
     isGenerating,
     error,
     cancel,
+    reset,
     blueprintGenerator: generatorRef.current,
   };
 }
