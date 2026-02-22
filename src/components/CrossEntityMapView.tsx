@@ -1,12 +1,8 @@
-import { useState, useMemo } from 'react';
 import {
   Text,
   Title3,
   Card,
   Badge,
-  SearchBox,
-  Dropdown,
-  Option,
   makeStyles,
   tokens,
   DataGrid,
@@ -17,8 +13,9 @@ import {
   DataGridCell,
   TableColumnDefinition,
   createTableColumn,
+  Link,
 } from '@fluentui/react-components';
-import { ArrowRight24Regular, Warning24Regular } from '@fluentui/react-icons';
+import { ArrowRight24Regular, Warning24Regular, Lightbulb24Regular } from '@fluentui/react-icons';
 import type { CrossEntityLink } from '../core';
 
 const useStyles = makeStyles({
@@ -27,17 +24,21 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalL,
   },
-  controls: {
+  comingSoonBanner: {
+    padding: tokens.spacingVerticalL,
+    backgroundColor: tokens.colorBrandBackground2,
+    borderLeft: `4px solid ${tokens.colorBrandForeground1}`,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  bannerHeader: {
     display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
     alignItems: 'center',
+    gap: tokens.spacingHorizontalM,
+    marginBottom: tokens.spacingVerticalS,
   },
-  searchBox: {
-    minWidth: '300px',
-  },
-  dropdown: {
-    minWidth: '200px',
+  bannerIcon: {
+    color: tokens.colorBrandForeground1,
+    fontSize: '32px',
   },
   tableContainer: {
   },
@@ -73,73 +74,70 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     marginBottom: tokens.spacingVerticalL,
   },
+  sampleDataNote: {
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderRadius: tokens.borderRadiusMedium,
+    fontStyle: 'italic',
+    marginBottom: tokens.spacingVerticalM,
+  },
 });
 
 export interface CrossEntityMapViewProps {
   links: CrossEntityLink[];
 }
 
-export function CrossEntityMapView({ links }: CrossEntityMapViewProps) {
+export function CrossEntityMapView({ links: _links }: CrossEntityMapViewProps) {
   const styles = useStyles();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [automationTypeFilter, setAutomationTypeFilter] = useState<string>('all');
-  const [operationFilter, setOperationFilter] = useState<string>('all');
-  const [modeFilter, setModeFilter] = useState<string>('all');
 
-  // Calculate statistics
-  const stats = useMemo(() => {
-    const syncLinks = links.filter((l) => !l.isAsynchronous);
-    const asyncLinks = links.filter((l) => l.isAsynchronous);
-    const uniqueSourceEntities = new Set(links.map((l) => l.sourceEntity)).size;
-    const uniqueTargetEntities = new Set(links.map((l) => l.targetEntity)).size;
-    const byAutomationType = links.reduce((acc, l) => {
-      acc[l.automationType] = (acc[l.automationType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  // Sample data to demonstrate the feature
+  const sampleLinks: CrossEntityLink[] = [
+    {
+      automationId: 'sample-flow-1',
+      sourceEntity: 'contact',
+      sourceEntityDisplayName: 'Contact',
+      targetEntity: 'account',
+      targetEntityDisplayName: 'Account',
+      automationType: 'Flow',
+      automationName: 'Update Account when Contact Changes',
+      operation: 'Update',
+      isAsynchronous: true,
+      description: 'When a contact is updated, automatically update related account information',
+    },
+    {
+      automationId: 'sample-plugin-1',
+      sourceEntity: 'opportunity',
+      sourceEntityDisplayName: 'Opportunity',
+      targetEntity: 'quote',
+      targetEntityDisplayName: 'Quote',
+      automationType: 'Plugin',
+      automationName: 'Generate Quote from Opportunity',
+      operation: 'Create',
+      isAsynchronous: false,
+      description: 'Synchronously create a quote when opportunity reaches certain stage',
+    },
+    {
+      automationId: 'sample-flow-2',
+      sourceEntity: 'case',
+      sourceEntityDisplayName: 'Case',
+      targetEntity: 'email',
+      targetEntityDisplayName: 'Email',
+      automationType: 'Flow',
+      automationName: 'Send Email on Case Resolution',
+      operation: 'Create',
+      isAsynchronous: true,
+      description: 'Create and send email activity when case is resolved',
+    },
+  ];
 
-    return {
-      total: links.length,
-      synchronous: syncLinks.length,
-      asynchronous: asyncLinks.length,
-      uniqueSourceEntities,
-      uniqueTargetEntities,
-      byAutomationType,
-    };
-  }, [links]);
-
-  // Filter links
-  const filteredLinks = useMemo(() => {
-    return links.filter((link) => {
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          link.sourceEntity.toLowerCase().includes(query) ||
-          link.sourceEntityDisplayName.toLowerCase().includes(query) ||
-          link.targetEntity.toLowerCase().includes(query) ||
-          link.targetEntityDisplayName.toLowerCase().includes(query) ||
-          link.automationName.toLowerCase().includes(query);
-
-        if (!matchesSearch) return false;
-      }
-
-      // Automation type filter
-      if (automationTypeFilter !== 'all' && link.automationType !== automationTypeFilter) {
-        return false;
-      }
-
-      // Operation filter
-      if (operationFilter !== 'all' && link.operation !== operationFilter) {
-        return false;
-      }
-
-      // Mode filter
-      if (modeFilter === 'sync' && link.isAsynchronous) return false;
-      if (modeFilter === 'async' && !link.isAsynchronous) return false;
-
-      return true;
-    });
-  }, [links, searchQuery, automationTypeFilter, operationFilter, modeFilter]);
+  // Sample statistics
+  const sampleStats = {
+    total: 3,
+    synchronous: 1,
+    asynchronous: 2,
+    uniqueSourceEntities: 3,
+    uniqueTargetEntities: 3,
+  };
 
   // Table columns
   const columns: TableColumnDefinition<CrossEntityLink>[] = [
@@ -238,16 +236,47 @@ export function CrossEntityMapView({ links }: CrossEntityMapViewProps) {
 
   return (
     <div className={styles.container}>
-      {/* Statistics Section */}
+      {/* Coming Soon Banner */}
+      <div className={styles.comingSoonBanner}>
+        <div className={styles.bannerHeader}>
+          <Lightbulb24Regular className={styles.bannerIcon} />
+          <Title3>Coming Soon: Advanced Cross-Entity Automation Analysis</Title3>
+        </div>
+        <Text>
+          We're building a comprehensive cross-entity automation analyzer that will:
+        </Text>
+        <ul style={{ marginTop: tokens.spacingVerticalS, marginBottom: tokens.spacingVerticalS }}>
+          <li>Analyze plugins using assembly decompilation (ILSpy integration)</li>
+          <li>Parse classic workflow XAML for cross-entity operations</li>
+          <li>Deep-dive into business rule conditions and actions</li>
+          <li>Identify synchronous operations that may impact performance</li>
+          <li>Map data flow between entities in your solution</li>
+        </ul>
+        <Text>
+          This feature requires deep code analysis and is currently in development. Check{' '}
+          <Link href="https://github.com/sabrish/power-platform-solution-blueprint" target="_blank" rel="noopener noreferrer">
+            our GitHub repository
+          </Link>{' '}
+          for updates.
+        </Text>
+      </div>
+
+      {/* Sample Data Section */}
+      <div className={styles.sampleDataNote}>
+        <Text weight="semibold">💡 Sample Data Below</Text>
+        <Text> - This demonstrates what the feature will look like when completed</Text>
+      </div>
+
+      {/* Sample Statistics Section */}
       <div className={styles.statsGrid}>
         <Card className={styles.statsCard}>
           <Text weight="semibold">Total Cross-Entity Links</Text>
-          <Text style={{ fontSize: tokens.fontSizeHero700 }}>{stats.total}</Text>
+          <Text style={{ fontSize: tokens.fontSizeHero700 }}>{sampleStats.total}</Text>
         </Card>
         <Card className={styles.statsCard}>
           <Text weight="semibold">Synchronous Operations</Text>
           <Text style={{ fontSize: tokens.fontSizeHero700, color: tokens.colorPaletteRedForeground1 }}>
-            {stats.synchronous}
+            {sampleStats.synchronous}
           </Text>
           <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
             May impact performance
@@ -256,13 +285,13 @@ export function CrossEntityMapView({ links }: CrossEntityMapViewProps) {
         <Card className={styles.statsCard}>
           <Text weight="semibold">Asynchronous Operations</Text>
           <Text style={{ fontSize: tokens.fontSizeHero700, color: tokens.colorPaletteGreenForeground1 }}>
-            {stats.asynchronous}
+            {sampleStats.asynchronous}
           </Text>
         </Card>
         <Card className={styles.statsCard}>
           <Text weight="semibold">Entities Affected</Text>
           <Text style={{ fontSize: tokens.fontSizeHero700 }}>
-            {stats.uniqueSourceEntities} → {stats.uniqueTargetEntities}
+            {sampleStats.uniqueSourceEntities} → {sampleStats.uniqueTargetEntities}
           </Text>
           <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
             Source → Target
@@ -270,61 +299,10 @@ export function CrossEntityMapView({ links }: CrossEntityMapViewProps) {
         </Card>
       </div>
 
-      {/* Controls Section */}
-      <Title3>Cross-Entity Automation Links</Title3>
-      <div className={styles.controls}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search entities or automation..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value)}
-        />
-
-        <Dropdown
-          className={styles.dropdown}
-          placeholder="Automation Type"
-          value={automationTypeFilter === 'all' ? 'All Types' : automationTypeFilter}
-          onOptionSelect={(_, data) => setAutomationTypeFilter(data.optionValue || 'all')}
-        >
-          <Option value="all">All Types</Option>
-          <Option value="Flow">Flow</Option>
-          <Option value="Plugin">Plugin</Option>
-          <Option value="BusinessRule">Business Rule</Option>
-          <Option value="ClassicWorkflow">Classic Workflow</Option>
-        </Dropdown>
-
-        <Dropdown
-          className={styles.dropdown}
-          placeholder="Operation"
-          value={operationFilter === 'all' ? 'All Operations' : operationFilter}
-          onOptionSelect={(_, data) => setOperationFilter(data.optionValue || 'all')}
-        >
-          <Option value="all">All Operations</Option>
-          <Option value="Create">Create</Option>
-          <Option value="Update">Update</Option>
-          <Option value="Delete">Delete</Option>
-          <Option value="Read">Read</Option>
-        </Dropdown>
-
-        <Dropdown
-          className={styles.dropdown}
-          placeholder="Mode"
-          value={modeFilter === 'all' ? 'All Modes' : modeFilter === 'sync' ? 'Synchronous' : 'Asynchronous'}
-          onOptionSelect={(_, data) => setModeFilter(data.optionValue || 'all')}
-        >
-          <Option value="all">All Modes</Option>
-          <Option value="sync">Synchronous</Option>
-          <Option value="async">Asynchronous</Option>
-        </Dropdown>
-      </div>
-
-      <Text>
-        Showing {filteredLinks.length} of {links.length} cross-entity links
-      </Text>
-
-      {/* Table Section */}
+      {/* Sample Table Section */}
+      <Title3>Sample Cross-Entity Automation Links</Title3>
       <div className={styles.tableContainer}>
-        <DataGrid items={filteredLinks} columns={columns} sortable resizableColumns>
+        <DataGrid items={sampleLinks} columns={columns} sortable resizableColumns>
           <DataGridHeader>
             <DataGridRow>
               {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}

@@ -175,7 +175,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
 
   // Check what architecture features are available
   const hasERD = !!result.erd;
-  const hasCrossEntity = !!(result.crossEntityLinks && result.crossEntityLinks.length > 0);
   const hasExternalDeps = !!(result.externalEndpoints && result.externalEndpoints.length > 0);
   const hasSolutionDist = !!(result.solutionDistribution && result.solutionDistribution.length > 0);
 
@@ -348,9 +347,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             <Tab value="erd">📐 Entity Relationship Diagram</Tab>
           )}
 
-          {hasCrossEntity && (
-            <Tab value="crossEntity">🔗 Cross-Entity Automation</Tab>
-          )}
+          <Tab value="crossEntity">🔗 Cross-Entity Automation</Tab>
 
           {hasExternalDeps && (
             <Tab value="externalDeps">🌐 External Dependencies</Tab>
@@ -662,9 +659,9 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       )}
 
       {/* Cross-Entity Automation Tab Content */}
-      {mainTab === 'crossEntity' && hasCrossEntity && (
+      {mainTab === 'crossEntity' && (
         <div className={styles.tabContent}>
-          <CrossEntityMapView links={result.crossEntityLinks!} />
+          <CrossEntityMapView links={result.crossEntityLinks || []} />
         </div>
       )}
 
