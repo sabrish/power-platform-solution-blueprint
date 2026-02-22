@@ -347,8 +347,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             <Tab value="erd">📐 Entity Relationship Diagram</Tab>
           )}
 
-          <Tab value="crossEntity">🔗 Cross-Entity Automation</Tab>
-
           {hasExternalDeps && (
             <Tab value="externalDeps">🌐 External Dependencies</Tab>
           )}
@@ -356,6 +354,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           {hasSolutionDist && (
             <Tab value="solutionDist">📦 Solution Distribution</Tab>
           )}
+
+          <Tab value="crossEntity">🔗 Cross-Entity Automation (Coming Soon)</Tab>
         </TabList>
       </div>
 
@@ -658,13 +658,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         </div>
       )}
 
-      {/* Cross-Entity Automation Tab Content */}
-      {mainTab === 'crossEntity' && (
-        <div className={styles.tabContent}>
-          <CrossEntityMapView links={result.crossEntityLinks || []} />
-        </div>
-      )}
-
       {/* External Dependencies Tab Content */}
       {mainTab === 'externalDeps' && hasExternalDeps && (
         <div className={styles.tabContent}>
@@ -676,6 +669,13 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       {mainTab === 'solutionDist' && hasSolutionDist && (
         <div className={styles.tabContent}>
           <SolutionDistributionView distributions={result.solutionDistribution!} />
+        </div>
+      )}
+
+      {/* Cross-Entity Automation Tab Content */}
+      {mainTab === 'crossEntity' && (
+        <div className={styles.tabContent}>
+          <CrossEntityMapView links={result.crossEntityLinks || []} />
         </div>
       )}
 
