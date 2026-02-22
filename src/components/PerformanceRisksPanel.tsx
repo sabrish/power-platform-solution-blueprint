@@ -104,7 +104,7 @@ export function PerformanceRisksPanel({ risks }: PerformanceRisksPanelProps) {
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'Critical':
-        return <Badge appearance="filled" color="danger" size="large">Critical</Badge>;
+        return <Badge appearance="filled" color="important" size="large">Critical</Badge>;
       case 'High':
         return <Badge appearance="filled" color="warning" size="large">High</Badge>;
       case 'Medium':
@@ -142,7 +142,7 @@ export function PerformanceRisksPanel({ risks }: PerformanceRisksPanelProps) {
         <Warning20Regular style={{ fontSize: '24px', color: tokens.colorPaletteDarkOrangeForeground1 }} />
         <Text size={500} weight="semibold">Performance Risks Detected</Text>
         <div className={styles.summary}>
-          {criticalCount > 0 && <Badge appearance="filled" color="danger">{criticalCount} Critical</Badge>}
+          {criticalCount > 0 && <Badge appearance="filled" color="important">{criticalCount} Critical</Badge>}
           {highCount > 0 && <Badge appearance="filled" color="warning">{highCount} High</Badge>}
           {mediumCount > 0 && <Badge appearance="tint" color="warning">{mediumCount} Medium</Badge>}
           {lowCount > 0 && <Badge appearance="tint" color="informative">{lowCount} Low</Badge>}

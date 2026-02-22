@@ -103,7 +103,7 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderCell: (item) => (
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '4px' }}>
-            {item.isRequired && <Badge appearance="filled" color="danger" size="small">Required</Badge>}
+            {item.isRequired && <Badge appearance="filled" color="important" size="small">Required</Badge>}
             {item.isManaged && <Badge appearance="outline" size="small">Managed</Badge>}
           </div>
         </TableCellLayout>

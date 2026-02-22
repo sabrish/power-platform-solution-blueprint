@@ -74,7 +74,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
                       Optional
                     </Badge>
                   ) : (
-                    <Badge appearance="filled" size="small" color="danger">
+                    <Badge appearance="filled" size="small" color="important">
                       Required
                     </Badge>
                   )}
@@ -138,7 +138,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
             {api.bindingType} Binding
           </Badge>
           {api.isPrivate && (
-            <Badge appearance="filled" color="danger" size="large">
+            <Badge appearance="filled" color="important" size="large">
               <LockClosed20Regular /> Private
             </Badge>
           )}

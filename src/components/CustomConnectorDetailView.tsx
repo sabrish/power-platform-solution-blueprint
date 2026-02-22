@@ -38,7 +38,7 @@ export function CustomConnectorDetailView({ customConnector }: CustomConnectorDe
             {customConnector.connectorType}
           </Badge>
           {!customConnector.isCustomizable && (
-            <Badge appearance="filled" color="danger" size="large">
+            <Badge appearance="filled" color="important" size="large">
               Not Customizable
             </Badge>
           )}

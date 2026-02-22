@@ -176,7 +176,7 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
 
       <div className={styles.badges}>
         {getStepTypeBadge(step.type)}
-        {step.mode === 'Sync' && <Badge appearance="filled" color="danger" size="small">Sync</Badge>}
+        {step.mode === 'Sync' && <Badge appearance="filled" color="important" size="small">Sync</Badge>}
         {step.mode === 'Async' && <Badge appearance="filled" color="success" size="small">Async</Badge>}
         {step.hasExternalCall && (
           <Tooltip content={`External: ${step.externalEndpoints?.join(', ')}`} relationship="description">
@@ -230,7 +230,7 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <Text size={500} weight="semibold">Server-Side Synchronous</Text>
-              <Badge appearance="tint" color="danger" size="small">{totalSyncSteps} steps</Badge>
+              <Badge appearance="tint" color="important" size="small">{totalSyncSteps} steps</Badge>
               <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
                 Blocks user transaction
               </Text>

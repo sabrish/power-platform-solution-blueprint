@@ -109,7 +109,7 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
   const getCascadeBadge = (value?: string) => {
     switch (value) {
       case 'Cascade':
-        return <Badge appearance="filled" color="danger">Cascade</Badge>;
+        return <Badge appearance="filled" color="important">Cascade</Badge>;
       case 'Active':
         return <Badge appearance="filled" color="warning">Active</Badge>;
       case 'UserOwned':
@@ -117,7 +117,7 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
       case 'RemoveLink':
         return <Badge appearance="filled" color="warning">Remove Link</Badge>;
       case 'Restrict':
-        return <Badge appearance="filled" color="danger">Restrict</Badge>;
+        return <Badge appearance="filled" color="important">Restrict</Badge>;
       case 'NoCascade':
         return <Badge appearance="outline">No Cascade</Badge>;
       default:

@@ -158,7 +158,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
         <TableCellLayout>
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
             {item.isPrivate && (
-              <Badge appearance="outline" size="small" color="danger">
+              <Badge appearance="outline" size="small" color="important">
                 Private
               </Badge>
             )}

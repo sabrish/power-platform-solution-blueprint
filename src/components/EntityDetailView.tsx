@@ -188,7 +188,7 @@ export function EntityDetailView({ entity }: EntityDetailViewProps) {
     switch (requiredLevel) {
       case 'ApplicationRequired':
       case 'SystemRequired':
-        return <Badge appearance="filled" color="danger">Required</Badge>;
+        return <Badge appearance="filled" color="important">Required</Badge>;
       case 'Recommended':
         return <Badge appearance="filled" color="warning">Recommended</Badge>;
       default:

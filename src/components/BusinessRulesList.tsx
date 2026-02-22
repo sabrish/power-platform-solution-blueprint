@@ -276,7 +276,7 @@ export function BusinessRulesList({
 
         {rule.definition.parseError && (
           <div className={styles.section}>
-            <Badge appearance="filled" color="danger">Parse Error</Badge>
+            <Badge appearance="filled" color="important">Parse Error</Badge>
             <Text style={{ color: tokens.colorPaletteRedForeground1, marginTop: tokens.spacingVerticalXS }}>
               {rule.definition.parseError}
             </Text>

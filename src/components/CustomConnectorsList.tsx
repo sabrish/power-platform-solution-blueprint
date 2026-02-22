@@ -43,7 +43,7 @@ export function CustomConnectorsList({ customConnectors, onSelectConnector }: Cu
               {item.isManaged ? 'Managed' : 'Unmanaged'}
             </Badge>
             {!item.isCustomizable && (
-              <Badge appearance="outline" color="danger" size="small">
+              <Badge appearance="outline" color="important" size="small">
                 Not Customizable
               </Badge>
             )}

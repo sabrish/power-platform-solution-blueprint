@@ -46,7 +46,7 @@ export function EnvironmentVariableDetailView({ envVar }: EnvironmentVariableDet
           <Badge appearance="filled" size="large" style={{ backgroundColor: getTypeColor(envVar.typeName) }}>
             {envVar.typeName}
           </Badge>
-          {envVar.isRequired && <Badge appearance="filled" color="danger" size="large">Required</Badge>}
+          {envVar.isRequired && <Badge appearance="filled" color="important" size="large">Required</Badge>}
           {envVar.isManaged && <Badge appearance="filled" color="warning" size="large">Managed</Badge>}
         </div>
       </div>
