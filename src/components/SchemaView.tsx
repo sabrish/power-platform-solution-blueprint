@@ -149,32 +149,32 @@ export function SchemaView({ schema: schemaProp, blueprint, classicWorkflows = [
         {/* Badges */}
         <div className={styles.badges}>
           {schema.IsCustomEntity && (
-            <Badge appearance="filled" color="brand">
+            <Badge appearance="filled" shape="rounded" color="brand">
               ✨ Custom Entity
             </Badge>
           )}
           {schema.IsManaged && (
-            <Badge appearance="filled" color="warning">
+            <Badge appearance="filled" shape="rounded" color="warning">
               🔒 Managed
             </Badge>
           )}
           {schema.IsActivity && (
-            <Badge appearance="tint" color="important">
+            <Badge appearance="tint" shape="rounded" color="important">
               Activity
             </Badge>
           )}
           {schema.IsAuditEnabled?.Value && (
-            <Badge appearance="tint" color="success">
+            <Badge appearance="tint" shape="rounded" color="success">
               Audit Enabled
             </Badge>
           )}
           {schema.ChangeTrackingEnabled && (
-            <Badge appearance="tint" color="brand">
+            <Badge appearance="tint" shape="rounded" color="brand">
               Change Tracking
             </Badge>
           )}
           {schema.IsCustomizable?.Value === false && (
-            <Badge appearance="outline" color="subtle">
+            <Badge appearance="outline" shape="rounded" color="subtle">
               Not Customizable
             </Badge>
           )}

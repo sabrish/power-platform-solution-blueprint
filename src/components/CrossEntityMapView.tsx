@@ -220,7 +220,7 @@ export function CrossEntityMapView({ links }: CrossEntityMapViewProps) {
       renderHeaderCell: () => 'Mode',
       renderCell: (item) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
-          <Badge appearance="tint" color={item.isAsynchronous ? 'success' : 'warning'}>
+          <Badge appearance="tint" shape="rounded" color={item.isAsynchronous ? 'success' : 'warning'}>
             {item.isAsynchronous ? 'Async' : 'Sync'}
           </Badge>
           {!item.isAsynchronous && (

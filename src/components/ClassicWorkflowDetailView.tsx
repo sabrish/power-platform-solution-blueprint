@@ -85,7 +85,7 @@ export function ClassicWorkflowDetailView({ workflow }: ClassicWorkflowDetailVie
           >
             {workflow.state}
           </Badge>
-          <Badge appearance="filled" color={workflow.mode === 1 ? 'warning' : 'informative'}>
+          <Badge appearance="filled" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'}>
             {workflow.mode === 1 ? (
               <>
                 <FlashFlow20Regular /> RealTime
@@ -96,8 +96,8 @@ export function ClassicWorkflowDetailView({ workflow }: ClassicWorkflowDetailVie
               </>
             )}
           </Badge>
-          <Badge appearance="outline">{workflow.scopeName}</Badge>
-          <Badge appearance="outline">{workflow.entityDisplayName || workflow.entity}</Badge>
+          <Badge appearance="outline" shape="rounded">{workflow.scopeName}</Badge>
+          <Badge appearance="outline" shape="rounded">{workflow.entityDisplayName || workflow.entity}</Badge>
         </div>
       </div>
 

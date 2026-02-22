@@ -109,19 +109,19 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
   const getCascadeBadge = (value?: string) => {
     switch (value) {
       case 'Cascade':
-        return <Badge appearance="filled" color="important">Cascade</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="important">Cascade</Badge>;
       case 'Active':
-        return <Badge appearance="filled" color="warning">Active</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="warning">Active</Badge>;
       case 'UserOwned':
-        return <Badge appearance="filled" color="important">User Owned</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="important">User Owned</Badge>;
       case 'RemoveLink':
-        return <Badge appearance="filled" color="warning">Remove Link</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="warning">Remove Link</Badge>;
       case 'Restrict':
-        return <Badge appearance="filled" color="important">Restrict</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="important">Restrict</Badge>;
       case 'NoCascade':
-        return <Badge appearance="outline">No Cascade</Badge>;
+        return <Badge appearance="outline" shape="rounded">No Cascade</Badge>;
       default:
-        return <Badge appearance="outline">{value || 'None'}</Badge>;
+        return <Badge appearance="outline" shape="rounded">{value || 'None'}</Badge>;
     }
   };
 
@@ -242,7 +242,7 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
                       <TruncatedText text={rel.ReferencingAttribute} />
                     </Text>
                     {getCascadeBadge(rel.CascadeConfiguration?.Delete)}
-                    {rel.IsCustomRelationship && <Badge appearance="tint" color="brand" size="small">Custom</Badge>}
+                    {rel.IsCustomRelationship && <Badge appearance="tint" shape="rounded" color="brand" size="small">Custom</Badge>}
                   </div>
                   {isExpanded && renderOneToManyDetails(rel)}
                 </div>
@@ -284,7 +284,7 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
                       <TruncatedText text={rel.ReferencingAttribute} />
                     </Text>
                     {getCascadeBadge(rel.CascadeConfiguration?.Delete)}
-                    {rel.IsCustomRelationship && <Badge appearance="tint" color="brand" size="small">Custom</Badge>}
+                    {rel.IsCustomRelationship && <Badge appearance="tint" shape="rounded" color="brand" size="small">Custom</Badge>}
                   </div>
                   {isExpanded && renderOneToManyDetails(rel)}
                 </div>
@@ -319,7 +319,7 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
                     <Text className={styles.codeText}>
                       <TruncatedText text={rel.IntersectEntityName} />
                     </Text>
-                    {rel.IsCustomRelationship && <Badge appearance="tint" color="brand" size="small">Custom</Badge>}
+                    {rel.IsCustomRelationship && <Badge appearance="tint" shape="rounded" color="brand" size="small">Custom</Badge>}
                   </div>
                 </div>
               );

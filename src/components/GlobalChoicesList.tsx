@@ -181,7 +181,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
           </div>
           <div className={styles.detailItem}>
             <Text className={styles.detailLabel}>Status</Text>
-            <Badge appearance="filled" color={choice.isManaged ? 'warning' : 'success'}>
+            <Badge appearance="filled" shape="rounded" color={choice.isManaged ? 'warning' : 'success'}>
               {choice.isManaged ? 'Managed' : 'Unmanaged'}
             </Badge>
           </div>
@@ -226,7 +226,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                   <TableRow key={option.value}>
                     <TableCell>
                       <TableCellLayout>
-                        <Badge appearance="tint" size="small">
+                        <Badge appearance="tint" shape="rounded" size="small">
                           {option.value}
                         </Badge>
                       </TableCellLayout>
@@ -338,11 +338,11 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                   <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                     {choice.totalOptions} options
                   </Text>
-                  <Badge appearance="filled" color={choice.isManaged ? 'warning' : 'success'} size="small">
+                  <Badge appearance="filled" shape="rounded" color={choice.isManaged ? 'warning' : 'success'} size="small">
                     {choice.isManaged ? 'Managed' : 'Unmanaged'}
                   </Badge>
                   {!choice.isCustomizable && (
-                    <Badge appearance="outline" color="important" size="small">
+                    <Badge appearance="outline" shape="rounded" color="important" size="small">
                       Not Customizable
                     </Badge>
                   )}

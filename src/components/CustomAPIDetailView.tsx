@@ -62,7 +62,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
               </TableCell>
               <TableCell>
                 <TableCellLayout>
-                  <Badge appearance="tint" size="small">
+                  <Badge appearance="tint" shape="rounded" size="small">
                     {param.typeName}
                   </Badge>
                 </TableCellLayout>
@@ -70,11 +70,11 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
               <TableCell>
                 <TableCellLayout>
                   {param.isOptional ? (
-                    <Badge appearance="outline" size="small" color="subtle">
+                    <Badge appearance="outline" shape="rounded" size="small" color="subtle">
                       Optional
                     </Badge>
                   ) : (
-                    <Badge appearance="filled" size="small" color="important">
+                    <Badge appearance="filled" shape="rounded" size="small" color="important">
                       Required
                     </Badge>
                   )}
@@ -119,7 +119,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
           </Body1>
         )}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <Badge appearance="filled" color={api.isFunction ? 'brand' : 'danger'} size="large">
+          <Badge appearance="filled" shape="rounded" color={api.isFunction ? 'brand' : 'danger'} size="large">
             {api.isFunction ? (
               <>
                 <ArrowRight20Regular /> Function (Read-Only)
@@ -138,12 +138,12 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
             {api.bindingType} Binding
           </Badge>
           {api.isPrivate && (
-            <Badge appearance="filled" color="important" size="large">
+            <Badge appearance="filled" shape="rounded" color="important" size="large">
               <LockClosed20Regular /> Private
             </Badge>
           )}
           {api.isManaged && (
-            <Badge appearance="filled" color="warning" size="large">
+            <Badge appearance="filled" shape="rounded" color="warning" size="large">
               🔒 Managed
             </Badge>
           )}
@@ -205,7 +205,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
           header={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <strong>Request Parameters (Input)</strong>
-              <Badge appearance="tint" size="small">
+              <Badge appearance="tint" shape="rounded" size="small">
                 {api.requestParameters.length}
               </Badge>
             </div>
@@ -226,7 +226,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
           header={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <strong>Response Properties (Output)</strong>
-              <Badge appearance="tint" size="small" color="success">
+              <Badge appearance="tint" shape="rounded" size="small" color="success">
                 {api.responseProperties.length}
               </Badge>
             </div>

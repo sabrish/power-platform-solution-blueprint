@@ -70,14 +70,14 @@ export function AlternateKeysView({ keys, primaryIdAttribute }: AlternateKeysVie
   const getIndexStatusBadge = (status?: string) => {
     switch (status) {
       case 'Active':
-        return <Badge appearance="filled" color="success">Active</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="success">Active</Badge>;
       case 'Creating':
       case 'InProgress':
-        return <Badge appearance="filled" color="warning">Creating</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="warning">Creating</Badge>;
       case 'Failed':
-        return <Badge appearance="filled" color="important">Failed</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="important">Failed</Badge>;
       default:
-        return <Badge appearance="outline">Unknown</Badge>;
+        return <Badge appearance="outline" shape="rounded">Unknown</Badge>;
     }
   };
 

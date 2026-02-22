@@ -16,10 +16,10 @@ export function ConnectionReferenceDetailView({ connectionRef }: ConnectionRefer
         </div>
         {connectionRef.description && <Body1 style={{ color: tokens.colorNeutralForeground2, marginBottom: '12px' }}>{connectionRef.description}</Body1>}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <Badge appearance="filled" color={connectionRef.connectionId ? 'success' : 'danger'} size="large">
+          <Badge appearance="filled" shape="rounded" color={connectionRef.connectionId ? 'success' : 'danger'} size="large">
             {connectionRef.connectionId ? '✓ Connected' : '✗ Not Connected'}
           </Badge>
-          {connectionRef.isManaged && <Badge appearance="filled" color="warning" size="large">Managed</Badge>}
+          {connectionRef.isManaged && <Badge appearance="filled" shape="rounded" color="warning" size="large">Managed</Badge>}
         </div>
       </div>
 

@@ -38,15 +38,15 @@ export function GlobalChoiceDetailView({ globalChoice }: GlobalChoiceDetailViewP
           </Body1>
         )}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <Badge appearance="filled" color={globalChoice.isManaged ? 'warning' : 'success'} size="large">
+          <Badge appearance="filled" shape="rounded" color={globalChoice.isManaged ? 'warning' : 'success'} size="large">
             {globalChoice.isManaged ? '🔒 Managed' : '✓ Unmanaged'}
           </Badge>
           {!globalChoice.isCustomizable && (
-            <Badge appearance="filled" color="important" size="large">
+            <Badge appearance="filled" shape="rounded" color="important" size="large">
               Not Customizable
             </Badge>
           )}
-          <Badge appearance="tint" size="large">
+          <Badge appearance="tint" shape="rounded" size="large">
             {globalChoice.totalOptions} Options
           </Badge>
         </div>
@@ -85,7 +85,7 @@ export function GlobalChoiceDetailView({ globalChoice }: GlobalChoiceDetailViewP
           header={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <strong>Options</strong>
-              <Badge appearance="tint" size="small">
+              <Badge appearance="tint" shape="rounded" size="small">
                 {globalChoice.options.length}
               </Badge>
             </div>
@@ -111,7 +111,7 @@ export function GlobalChoiceDetailView({ globalChoice }: GlobalChoiceDetailViewP
                   <TableRow key={option.value}>
                     <TableCell>
                       <TableCellLayout>
-                        <Badge appearance="tint" size="small">
+                        <Badge appearance="tint" shape="rounded" size="small">
                           {option.value}
                         </Badge>
                       </TableCellLayout>

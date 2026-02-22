@@ -43,11 +43,11 @@ export function EnvironmentVariableDetailView({ envVar }: EnvironmentVariableDet
           </Body1>
         )}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <Badge appearance="filled" size="large" style={{ backgroundColor: getTypeColor(envVar.typeName) }}>
+          <Badge appearance="filled" shape="rounded" size="large" style={{ backgroundColor: getTypeColor(envVar.typeName) }}>
             {envVar.typeName}
           </Badge>
-          {envVar.isRequired && <Badge appearance="filled" color="important" size="large">Required</Badge>}
-          {envVar.isManaged && <Badge appearance="filled" color="warning" size="large">Managed</Badge>}
+          {envVar.isRequired && <Badge appearance="filled" shape="rounded" color="important" size="large">Required</Badge>}
+          {envVar.isManaged && <Badge appearance="filled" shape="rounded" color="warning" size="large">Managed</Badge>}
         </div>
       </div>
 

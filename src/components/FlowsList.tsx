@@ -205,16 +205,16 @@ export function FlowsList({
         </div>
 
         <div className={styles.badges}>
-          <Badge appearance="tint" color="brand">
+          <Badge appearance="tint" shape="rounded" color="brand">
             {flow.definition.triggerType}
           </Badge>
           {flow.definition.triggerEvent !== 'Unknown' && flow.definition.triggerEvent !== flow.definition.triggerType && (
-            <Badge appearance="outline">
+            <Badge appearance="outline" shape="rounded">
               {flow.definition.triggerEvent}
             </Badge>
           )}
           {flow.hasExternalCalls && (
-            <Badge appearance="tint" color="important">
+            <Badge appearance="tint" shape="rounded" color="important">
               External Calls
             </Badge>
           )}
@@ -240,7 +240,7 @@ export function FlowsList({
               <div key={idx} className={styles.externalCallItem}>
                 <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Text weight="semibold">{call.actionName}</Text>
-                  <Badge appearance="outline" size="small">
+                  <Badge appearance="outline" shape="rounded" size="small">
                     {call.method || 'UNKNOWN'}
                   </Badge>
                   <Badge
@@ -330,7 +330,7 @@ export function FlowsList({
                   <TruncatedText text={flow.entity} />
                 </Text>
               )}
-              <Badge appearance="tint" color="brand" size="small">
+              <Badge appearance="tint" shape="rounded" color="brand" size="small">
                 {flow.definition.triggerType}
               </Badge>
               <Badge {...stateBadgeProps}>{flow.state}</Badge>

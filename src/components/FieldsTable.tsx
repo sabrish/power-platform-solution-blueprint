@@ -180,11 +180,11 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
     switch (requiredLevel) {
       case 'ApplicationRequired':
       case 'SystemRequired':
-        return <Badge appearance="filled" color="important" size="small">Required</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="important" size="small">Required</Badge>;
       case 'Recommended':
-        return <Badge appearance="filled" color="warning" size="small">Recommended</Badge>;
+        return <Badge appearance="filled" shape="rounded" color="warning" size="small">Recommended</Badge>;
       default:
-        return <Badge appearance="outline" color="subtle" size="small">Optional</Badge>;
+        return <Badge appearance="outline" shape="rounded" color="subtle" size="small">Optional</Badge>;
     }
   };
 
@@ -360,11 +360,11 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
                 <div>{getRequiredLevelBadge(attr.RequiredLevel.Value)}</div>
 
                 <div className={styles.badges}>
-                  {attr.IsPrimaryId && <Badge appearance="filled" color="brand" size="small">Primary ID</Badge>}
-                  {attr.IsPrimaryName && <Badge appearance="filled" color="success" size="small">Primary Name</Badge>}
-                  {attr.IsAuditEnabled?.Value && <Badge appearance="tint" size="small">Audit</Badge>}
-                  {attr.IsSecured && <Badge appearance="filled" color="warning" size="small">Secured</Badge>}
-                  {attr.IsCustomAttribute && <Badge appearance="outline" size="small">Custom</Badge>}
+                  {attr.IsPrimaryId && <Badge appearance="filled" shape="rounded" color="brand" size="small">Primary ID</Badge>}
+                  {attr.IsPrimaryName && <Badge appearance="filled" shape="rounded" color="success" size="small">Primary Name</Badge>}
+                  {attr.IsAuditEnabled?.Value && <Badge appearance="tint" shape="rounded" size="small">Audit</Badge>}
+                  {attr.IsSecured && <Badge appearance="filled" shape="rounded" color="warning" size="small">Secured</Badge>}
+                  {attr.IsCustomAttribute && <Badge appearance="outline" shape="rounded" size="small">Custom</Badge>}
                 </div>
               </div>
               {isExpanded && renderExpandedDetails(attr)}

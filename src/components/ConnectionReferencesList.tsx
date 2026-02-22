@@ -43,7 +43,7 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
       renderHeaderCell: () => 'Status',
       renderCell: (item) => (
         <TableCellLayout>
-          <Badge appearance="filled" color={item.connectionId ? 'success' : 'danger'}>
+          <Badge appearance="filled" shape="rounded" color={item.connectionId ? 'success' : 'danger'}>
             {item.connectionId ? 'Connected' : 'Not Connected'}
           </Badge>
         </TableCellLayout>
