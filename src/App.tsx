@@ -117,15 +117,16 @@ function App() {
   const [selectedScope, setSelectedScope] = useState<ScopeSelection | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const { generate, result, progress, isGenerating, error, cancel, blueprintGenerator } = useBlueprint(
+  const { generate, result, progress, isGenerating, error, cancel, reset, blueprintGenerator } = useBlueprint(
     selectedScope!
   );
 
   // Reset app to scope selector when connection changes
   const handleConnectionChange = useCallback(() => {
+    reset(); // Clear blueprint state first
     setSelectedScope(null);
     setShowConfirmation(false);
-  }, []);
+  }, [reset]);
 
   useConnectionChange(handleConnectionChange);
 
