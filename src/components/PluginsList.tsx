@@ -299,7 +299,7 @@ export function PluginsList({
               <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'}>
                 {plugin.modeName}
               </Badge>
-              <Badge appearance="filled" color={plugin.state === 'Enabled' ? 'success' : 'danger'}>
+              <Badge appearance="filled" color={plugin.state === 'Enabled' ? 'success' : 'important'}>
                 {plugin.state}
               </Badge>
             </div>
