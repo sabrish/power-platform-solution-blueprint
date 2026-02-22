@@ -67,7 +67,7 @@ ${this.embeddedCSS()}
     <li><a href="#connection-references">🔗 Connection References</a></li>
     <li><a href="#security">🔒 Security</a></li>
     <li><a href="#external-dependencies">🌍 External Dependencies</a></li>
-    <li><a href="#cross-entity">🔀 Cross-Entity Automation</a></li>
+    <li><a href="#cross-entity">🔀 Cross-Entity Automation (Coming Soon)</a></li>
   </ul>
   <div class="nav-footer">
     <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">🖨️ Print</button>

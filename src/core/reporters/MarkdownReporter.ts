@@ -292,8 +292,8 @@ export class MarkdownReporter {
       MarkdownFormatter.formatLink('All Connection References', 'summary/all-connection-references.md'),
       MarkdownFormatter.formatLink('All Business Process Flows', 'summary/all-business-process-flows.md'),
       MarkdownFormatter.formatLink('External Integrations', 'summary/external-integrations.md'),
-      MarkdownFormatter.formatLink('Cross-Entity Automation', 'summary/cross-entity-automation.md'),
       MarkdownFormatter.formatLink('Solution Distribution', 'summary/solution-distribution.md'),
+      MarkdownFormatter.formatLink('Cross-Entity Automation (Coming Soon)', 'summary/cross-entity-automation.md'),
     ]));
     sections.push('');
 
@@ -872,7 +872,7 @@ export class MarkdownReporter {
   private generateCrossEntityAutomation(_result: BlueprintResult): string {
     const sections: string[] = [];
 
-    sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation', 1));
+    sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation (Coming Soon)', 1));
     sections.push('');
 
     // Coming Soon Banner
