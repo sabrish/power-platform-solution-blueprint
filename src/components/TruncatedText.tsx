@@ -1,3 +1,4 @@
+import { type CSSProperties } from 'react';
 import { Tooltip, makeStyles } from '@fluentui/react-components';
 
 const useStyles = makeStyles({
@@ -13,7 +14,7 @@ const useStyles = makeStyles({
 interface TruncatedTextProps {
   text: string;
   maxWidth?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }
 
 /**
