@@ -50,7 +50,8 @@ const useStyles = makeStyles({
   },
   diagramCard: {
     padding: tokens.spacingVerticalL,
-    overflowX: 'auto',
+    overflow: 'auto',
+    maxHeight: '800px',
   },
   diagramControls: {
     display: 'flex',
@@ -58,10 +59,9 @@ const useStyles = makeStyles({
     flexWrap: 'wrap',
   },
   diagramContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    display: 'inline-block',
     minHeight: '400px',
+    minWidth: '100%',
     padding: tokens.spacingVerticalL,
   },
   legendSection: {
