@@ -208,9 +208,9 @@ export function ClassicWorkflowsList({ workflows, onSelectWorkflow }: ClassicWor
           <strong>Classic Workflows Detected</strong>
         </div>
         <div style={{ fontSize: '13px', color: tokens.colorNeutralForeground2 }}>
-          Classic workflows are deprecated and will be removed in a future update. Migration to Power
-          Automate cloud flows is recommended. Click on a workflow below to see detailed migration
-          guidance.
+          Classic workflows are legacy technology. Microsoft recommends creating new automation with Power
+          Automate cloud flows and migrating existing workflows. Click on a workflow below to see detailed
+          migration guidance.
         </div>
       </div>
 
