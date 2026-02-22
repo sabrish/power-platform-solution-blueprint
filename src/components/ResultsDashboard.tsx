@@ -51,8 +51,17 @@ import { ThemeToggle } from './ThemeToggle';
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
-    maxWidth: '1400px',
+    width: '95%',
+    maxWidth: '1800px',
     margin: '0 auto',
+    '@media (min-width: 1920px)': {
+      width: '90%',
+      maxWidth: '2200px',
+    },
+    '@media (min-width: 3840px)': {
+      width: '85%',
+      maxWidth: '3200px',
+    },
   },
   topBar: {
     display: 'flex',
@@ -98,8 +107,8 @@ const useStyles = makeStyles({
   },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-    gap: tokens.spacingHorizontalXS,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gap: tokens.spacingHorizontalS,
     marginTop: tokens.spacingVerticalS,
   },
   summaryCard: {
