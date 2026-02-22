@@ -28,6 +28,7 @@ import {
 } from '../core';
 import type { ScopeType, ScopeSelection, PublisherScopeMode } from '../types/scope';
 import { Footer } from './Footer';
+import { ThemeToggle } from './ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
@@ -43,6 +44,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+    position: 'relative',
+  },
+  headerTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalS,
+    flex: 1,
   },
   subtitle: {
     color: tokens.colorNeutralForeground3,
@@ -305,8 +318,13 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Title1>Power Platform Solution Blueprint</Title1>
-        <Subtitle1 className={styles.subtitle}>Select what you'd like to document</Subtitle1>
+        <div className={styles.headerTop}>
+          <div className={styles.headerContent}>
+            <Title1>Power Platform Solution Blueprint</Title1>
+            <Subtitle1 className={styles.subtitle}>Select what you'd like to document</Subtitle1>
+          </div>
+          <ThemeToggle />
+        </div>
       </div>
 
       {error && (

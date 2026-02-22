@@ -46,6 +46,7 @@ import { ExportDialog } from './ExportDialog';
 import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
 import { Footer } from './Footer';
+import { ThemeToggle } from './ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
@@ -53,9 +54,13 @@ const useStyles = makeStyles({
     maxWidth: '1400px',
     margin: '0 auto',
   },
-  backButton: {
+  topBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: tokens.spacingVerticalL,
   },
+  backButton: {},
   header: {
     marginBottom: tokens.spacingVerticalL,
     display: 'flex',
@@ -284,15 +289,18 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
 
   return (
     <div className={styles.container}>
-      {/* Back Button */}
-      <Button
-        className={styles.backButton}
-        appearance="subtle"
-        icon={<ArrowLeft24Regular />}
-        onClick={onStartOver}
-      >
-        Generate New Blueprint
-      </Button>
+      {/* Top Bar: Back Button and Theme Toggle */}
+      <div className={styles.topBar}>
+        <Button
+          className={styles.backButton}
+          appearance="subtle"
+          icon={<ArrowLeft24Regular />}
+          onClick={onStartOver}
+        >
+          Generate New Blueprint
+        </Button>
+        <ThemeToggle />
+      </div>
 
       {/* SECTION 1: Header */}
       <div className={styles.header}>
