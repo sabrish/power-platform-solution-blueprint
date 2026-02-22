@@ -1047,7 +1047,7 @@ ${rows}
   htmlClassicWorkflowsTable(workflows: ClassicWorkflow[]): string {
     if (workflows.length === 0) {
       return `<section id="classic-workflows" class="content-section">
-  <h2>Classic Workflows (Deprecated)</h2>
+  <h2>Classic Workflows (Legacy)</h2>
   <div class="empty-state">No classic workflows found</div>
 </section>`;
     }
@@ -1076,7 +1076,7 @@ ${rows}
     if (asyncWorkflows.length > 0) {
       advisorySection += `
   <div class="alert alert-info">
-    <strong>ℹ️ Async Workflows (${asyncWorkflows.length}):</strong> These async workflows can be migrated to Power Automate cloud flows. Classic workflows are deprecated, and migration is recommended to ensure continued support and access to modern features.
+    <strong>ℹ️ Async Workflows (${asyncWorkflows.length}):</strong> These async workflows can be migrated to Power Automate cloud flows. Classic workflows are legacy technology. Microsoft recommends migrating to Power Automate for continued support and access to modern features.
   </div>`;
     }
     if (realtimeWorkflows.length > 0) {
@@ -1087,9 +1087,9 @@ ${rows}
     }
 
     return `<section id="classic-workflows" class="content-section">
-  <h2>Classic Workflows - Migration Required (${workflows.length})</h2>
+  <h2>Classic Workflows - Migration Recommended (${workflows.length})</h2>
   <div class="alert alert-warning">
-    <strong>⚠️ Migration Required:</strong> Classic workflows are deprecated and will be removed. Please migrate to Power Automate cloud flows.
+    <strong>⚠️ Legacy Technology:</strong> Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows. <a href="https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows" target="_blank" rel="noopener noreferrer">Learn more</a>
   </div>
   ${advisorySection}
   <div class="table-container">
