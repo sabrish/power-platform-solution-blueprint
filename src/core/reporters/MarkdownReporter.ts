@@ -1730,6 +1730,27 @@ export class MarkdownReporter {
     sections.push(`**Total Classic Workflows:** ${result.classicWorkflows.length}`);
     sections.push('');
 
+    // Group by workflow mode (async vs real-time)
+    const asyncWorkflows = result.classicWorkflows.filter(wf => wf.mode === 0 || wf.modeName === 'Background');
+    const realtimeWorkflows = result.classicWorkflows.filter(wf => wf.mode === 1 || wf.modeName === 'RealTime');
+
+    if (asyncWorkflows.length > 0) {
+      sections.push(MarkdownFormatter.formatHeading(`Async Workflows (${asyncWorkflows.length})`, 3));
+      sections.push('');
+      sections.push('> ℹ️ **Advisory:** These async workflows can be migrated to Power Automate cloud flows. Classic workflows are deprecated, and migration is recommended to ensure continued support and access to modern features.');
+      sections.push('');
+    }
+
+    if (realtimeWorkflows.length > 0) {
+      sections.push(MarkdownFormatter.formatHeading(`Real-time Workflows (${realtimeWorkflows.length})`, 3));
+      sections.push('');
+      sections.push('> ⚠️ **Advisory:** Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.');
+      sections.push('');
+    }
+
+    sections.push(MarkdownFormatter.formatHorizontalRule());
+    sections.push('');
+
     // Group by complexity
     const byComplexity = new Map<string, ClassicWorkflow[]>();
     for (const workflow of result.classicWorkflows) {

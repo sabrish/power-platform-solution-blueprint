@@ -1052,6 +1052,10 @@ ${rows}
 </section>`;
     }
 
+    // Group by mode
+    const asyncWorkflows = workflows.filter(wf => wf.mode === 0 || wf.modeName === 'Background');
+    const realtimeWorkflows = workflows.filter(wf => wf.mode === 1 || wf.modeName === 'RealTime');
+
     const rows = workflows.map(workflow => {
       const entityDisplay = workflow.entityDisplayName || workflow.entity;
       const complexity = workflow.migrationRecommendation?.complexity || 'Unknown';
@@ -1067,11 +1071,27 @@ ${rows}
 </tr>`;
     }).join('\n');
 
+    // Build advisory section
+    let advisorySection = '';
+    if (asyncWorkflows.length > 0) {
+      advisorySection += `
+  <div class="alert alert-info">
+    <strong>ℹ️ Async Workflows (${asyncWorkflows.length}):</strong> These async workflows can be migrated to Power Automate cloud flows. Classic workflows are deprecated, and migration is recommended to ensure continued support and access to modern features.
+  </div>`;
+    }
+    if (realtimeWorkflows.length > 0) {
+      advisorySection += `
+  <div class="alert alert-warning">
+    <strong>⚠️ Real-time Workflows (${realtimeWorkflows.length}):</strong> Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.
+  </div>`;
+    }
+
     return `<section id="classic-workflows" class="content-section">
   <h2>Classic Workflows - Migration Required (${workflows.length})</h2>
   <div class="alert alert-warning">
     <strong>⚠️ Migration Required:</strong> Classic workflows are deprecated and will be removed. Please migrate to Power Automate cloud flows.
   </div>
+  ${advisorySection}
   <div class="table-container">
     <table class="data-table sortable" id="classic-workflows-table">
       <thead>
