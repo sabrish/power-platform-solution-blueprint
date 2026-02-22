@@ -52,8 +52,6 @@ const useStyles = makeStyles({
     minWidth: '200px',
   },
   tableContainer: {
-    maxHeight: '600px',
-    overflowY: 'auto',
   },
   expandedRow: {
     backgroundColor: tokens.colorNeutralBackground2,

@@ -40,8 +40,6 @@ const useStyles = makeStyles({
     minWidth: '200px',
   },
   tableContainer: {
-    maxHeight: '700px',
-    overflowY: 'auto',
   },
   entityCell: {
     display: 'flex',

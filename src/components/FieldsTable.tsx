@@ -27,8 +27,6 @@ const useStyles = makeStyles({
     minWidth: '300px',
   },
   tableContainer: {
-    maxHeight: '600px',
-    overflowY: 'auto',
   },
   tableHeader: {
     display: 'grid',

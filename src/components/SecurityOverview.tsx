@@ -58,8 +58,6 @@ const useStyles = makeStyles({
   },
   entityPermissionsTable: {
     marginTop: tokens.spacingVerticalM,
-    maxHeight: '400px',
-    overflowY: 'auto',
   },
 });
 

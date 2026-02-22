@@ -149,8 +149,6 @@ const useStyles = makeStyles({
     hyphens: 'auto',
   },
   tableContainer: {
-    maxHeight: '400px',
-    overflowY: 'auto',
     marginTop: tokens.spacingVerticalM,
   },
   badges: {
