@@ -132,8 +132,8 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
         </div>
         <table style={{ width: '100%', marginTop: tokens.spacingVerticalM, borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ backgroundColor: tokens.colorNeutralBackground2 }}>
-              <th style={{ padding: tokens.spacingVerticalS, textAlign: 'left', borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
+            <tr>
+              <th style={{ padding: tokens.spacingVerticalS, textAlign: 'left', borderBottom: `1px solid ${tokens.colorNeutralStroke2}`, backgroundColor: tokens.colorNeutralBackground2, color: tokens.colorNeutralForeground1 }}>
                 Entity
               </th>
               {privilegeTypes.map((type) => (
@@ -144,6 +144,8 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                     textAlign: 'center',
                     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
                     minWidth: '80px',
+                    backgroundColor: tokens.colorNeutralBackground2,
+                    color: tokens.colorNeutralForeground1,
                   }}
                 >
                   {type}
@@ -253,7 +255,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ backgroundColor: tokens.colorNeutralBackground2 }}>
+                  <tr>
                     <th
                       style={{
                         padding: tokens.spacingVerticalS,
@@ -263,6 +265,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                         position: 'sticky',
                         left: 0,
                         backgroundColor: tokens.colorNeutralBackground2,
+                        color: tokens.colorNeutralForeground1,
                         zIndex: 1,
                       }}
                     >
@@ -277,6 +280,8 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                           borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
                           minWidth: '120px',
                           fontSize: tokens.fontSizeBase100,
+                          backgroundColor: tokens.colorNeutralBackground2,
+                          color: tokens.colorNeutralForeground1,
                         }}
                       >
                         {perm.label}
