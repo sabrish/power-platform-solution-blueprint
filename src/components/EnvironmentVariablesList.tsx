@@ -77,9 +77,9 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderCell: (item) => (
         <TableCellLayout>
           {item.currentValue ? (
-            <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '13px' }}>
               <TruncatedText text={item.currentValue} />
-            </span>
+            </div>
           ) : (
             <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>
           )}
@@ -91,9 +91,13 @@ export function EnvironmentVariablesList({ environmentVariables, onSelectVariabl
       renderHeaderCell: () => 'Default Value',
       renderCell: (item) => (
         <TableCellLayout>
-          <span style={{ fontFamily: 'monospace', fontSize: '13px', wordWrap: 'break-word', overflowWrap: 'break-word', display: 'block' }}>
-            {item.defaultValue || <span style={{ color: tokens.colorNeutralForeground3 }}>None</span>}
-          </span>
+          {item.defaultValue ? (
+            <div style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+              <TruncatedText text={item.defaultValue} />
+            </div>
+          ) : (
+            <span style={{ color: tokens.colorNeutralForeground3 }}>None</span>
+          )}
         </TableCellLayout>
       ),
     }),

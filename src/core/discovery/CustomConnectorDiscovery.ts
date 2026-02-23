@@ -46,8 +46,8 @@ export class CustomConnectorDiscovery {
       for (let i = 0; i < connectorIds.length; i += batchSize) {
         const batch = connectorIds.slice(i, i + batchSize);
         const filterClauses = batch.map(id => {
-          const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
-          return `connectorid eq ${guidWithBraces}`;
+          const cleanGuid = id.replace(/[{}]/g, '');
+          return `connectorid eq ${cleanGuid}`;
         });
         const filter = filterClauses.join(' or ');
 
