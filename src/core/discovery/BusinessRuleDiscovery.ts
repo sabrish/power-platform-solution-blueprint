@@ -116,8 +116,8 @@ export class BusinessRuleDiscovery {
    * Map workflow record to BusinessRule object
    */
   private mapRecordToBusinessRule(record: BusinessRuleRecord): BusinessRule {
-    // Parse business rule definition from XAML
-    const definition = BusinessRuleParser.parse(record.xaml || '');
+    // Parse business rule definition — tries clientdata (JSON) first, falls back to XAML
+    const definition = BusinessRuleParser.parse(record.xaml ?? null, record.clientdata ?? null);
 
     // Determine state
     let state: BusinessRule['state'] = 'Draft';
