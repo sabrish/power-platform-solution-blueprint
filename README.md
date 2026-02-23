@@ -2,7 +2,7 @@
 
 > Complete architectural blueprints for your Power Platform solutions.
 
-![Version](https://img.shields.io/badge/version-0.7.0-blue)
+![Version](https://img.shields.io/badge/version-0.7.2-blue)
 ![Status](https://img.shields.io/badge/status-active%20development-green)
 
 Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.

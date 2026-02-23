@@ -62,8 +62,6 @@ const useStyles = makeStyles({
     marginTop: tokens.spacingVerticalS,
   },
   countItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
     fontSize: tokens.fontSizeBase200,
   },
   detailsSection: {
@@ -175,38 +173,32 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
               <div className={styles.countsGrid}>
                 {solution.componentCounts.entities > 0 && (
                   <div className={styles.countItem}>
-                    <Text>Entities</Text>
-                    <Text weight="semibold">{solution.componentCounts.entities}</Text>
+                    <Text>Entities: <Text weight="semibold">{solution.componentCounts.entities}</Text></Text>
                   </div>
                 )}
                 {solution.componentCounts.plugins > 0 && (
                   <div className={styles.countItem}>
-                    <Text>Plugins</Text>
-                    <Text weight="semibold">{solution.componentCounts.plugins}</Text>
+                    <Text>Plugins: <Text weight="semibold">{solution.componentCounts.plugins}</Text></Text>
                   </div>
                 )}
                 {solution.componentCounts.flows > 0 && (
                   <div className={styles.countItem}>
-                    <Text>Flows</Text>
-                    <Text weight="semibold">{solution.componentCounts.flows}</Text>
+                    <Text>Flows: <Text weight="semibold">{solution.componentCounts.flows}</Text></Text>
                   </div>
                 )}
                 {solution.componentCounts.businessRules > 0 && (
                   <div className={styles.countItem}>
-                    <Text>Business Rules</Text>
-                    <Text weight="semibold">{solution.componentCounts.businessRules}</Text>
+                    <Text>Business Rules: <Text weight="semibold">{solution.componentCounts.businessRules}</Text></Text>
                   </div>
                 )}
                 {solution.componentCounts.webResources > 0 && (
                   <div className={styles.countItem}>
-                    <Text>Web Resources</Text>
-                    <Text weight="semibold">{solution.componentCounts.webResources}</Text>
+                    <Text>Web Resources: <Text weight="semibold">{solution.componentCounts.webResources}</Text></Text>
                   </div>
                 )}
                 {solution.componentCounts.customAPIs > 0 && (
                   <div className={styles.countItem}>
-                    <Text>Custom APIs</Text>
-                    <Text weight="semibold">{solution.componentCounts.customAPIs}</Text>
+                    <Text>Custom APIs: <Text weight="semibold">{solution.componentCounts.customAPIs}</Text></Text>
                   </div>
                 )}
               </div>

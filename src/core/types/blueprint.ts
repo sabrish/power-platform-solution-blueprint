@@ -484,6 +484,7 @@ export interface BlueprintSummary {
 export interface BlueprintMetadata {
   generatedAt: Date;
   environment: string;
+  solutionNames?: string[];
   scope: {
     type: string;
     description: string;

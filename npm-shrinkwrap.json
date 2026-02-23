@@ -1,12 +1,12 @@
 {
   "name": "@sabrish/power-platform-solution-blueprint",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@sabrish/power-platform-solution-blueprint",
-      "version": "0.7.1",
+      "version": "0.7.2",
       "license": "MIT",
       "dependencies": {
         "@fluentui/react-components": "^9.47.0",
@@ -2861,9 +2861,9 @@
       ]
     },
     "node_modules/@swc/helpers": {
-      "version": "0.5.18",
-      "resolved": "https://registry.npmjs.org/@swc/helpers/-/helpers-0.5.18.tgz",
-      "integrity": "sha512-TXTnIcNJQEKwThMMqBXsZ4VGAza6bvN4pa41Rkqoio6QBKMvo+5lexeTMScGCIxtzgQJzElcvIltani+adC5PQ==",
+      "version": "0.5.19",
+      "resolved": "https://registry.npmjs.org/@swc/helpers/-/helpers-0.5.19.tgz",
+      "integrity": "sha512-QamiFeIK3txNjgUTNppE6MiG3p7TdninpZu0E0PbqVh1a9FNLT2FRhisaa4NcaX52XVhA5l7Pk58Ft7Sqi/2sA==",
       "license": "Apache-2.0",
       "dependencies": {
         "tslib": "^2.8.0"
@@ -3345,9 +3345,9 @@
       }
     },
     "node_modules/caniuse-lite": {
-      "version": "1.0.30001772",
-      "resolved": "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001772.tgz",
-      "integrity": "sha512-mIwLZICj+ntVTw4BT2zfp+yu/AqV6GMKfJVJMx3MwPxs+uk/uj2GLl2dH8LQbjiLDX66amCga5nKFyDgRR43kg==",
+      "version": "1.0.30001774",
+      "resolved": "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001774.tgz",
+      "integrity": "sha512-DDdwPGz99nmIEv216hKSgLD+D4ikHQHjBC/seF98N9CPqRX4M5mSxT9eTV6oyisnJcuzxtZy4n17yKKQYmYQOA==",
       "dev": true,
       "funding": [
         {
@@ -4291,9 +4291,9 @@
       }
     },
     "node_modules/katex": {
-      "version": "0.16.29",
-      "resolved": "https://registry.npmjs.org/katex/-/katex-0.16.29.tgz",
-      "integrity": "sha512-ef+wYUDehNgScWoA0ZhEngsNqUv9uIj4ftd/PapQmT+E85lXI6Wx6BvJO48v80Vhj3t/IjEoZWw9/ZPe8kHwHg==",
+      "version": "0.16.33",
+      "resolved": "https://registry.npmjs.org/katex/-/katex-0.16.33.tgz",
+      "integrity": "sha512-q3N5u+1sY9Bu7T4nlXoiRBXWfwSefNGoKeOwekV+gw0cAXQlz2Ww6BLcmBxVDeXBMUDQv6fK5bcNaJLxob3ZQA==",
       "funding": [
         "https://opencollective.com/katex",
         "https://github.com/sponsors/katex"

@@ -2,7 +2,6 @@ import {
   Card,
   CardHeader,
   Badge,
-  Button,
   tokens,
   Title3,
   Body1,
@@ -16,11 +15,9 @@ import {
   FlashFlow20Regular,
   Cloud20Regular,
   Clock20Regular,
-  DocumentBulletList20Regular,
-  Open20Regular,
   Info20Regular,
 } from '@fluentui/react-icons';
-import type { ClassicWorkflow, MigrationFeature } from '../core';
+import type { ClassicWorkflow } from '../core';
 import { formatDate } from '../utils/dateFormat';
 
 interface ClassicWorkflowDetailViewProps {
@@ -182,95 +179,6 @@ export function ClassicWorkflowDetailView({ workflow }: ClassicWorkflowDetailVie
         </div>
       </Card>
 
-      {/* Migration Approach */}
-      {recommendation && (
-        <>
-          <Card style={{ marginBottom: '24px' }}>
-            <CardHeader
-              header={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <DocumentBulletList20Regular />
-                  <strong>Migration Approach</strong>
-                </div>
-              }
-            />
-            <div style={{ padding: '16px' }}>
-              <Body1 style={{ whiteSpace: 'pre-line', fontFamily: 'monospace', fontSize: '13px' }}>
-                {recommendation.approach}
-              </Body1>
-            </div>
-          </Card>
-
-          {/* Detected Features */}
-          <Card style={{ marginBottom: '24px' }}>
-            <CardHeader header={<strong>Detected Features & Migration Path</strong>} />
-            <div style={{ padding: '16px' }}>
-              {recommendation.features.map((feature: MigrationFeature, index: number) => (
-                <div
-                  key={index}
-                  style={{
-                    marginBottom: '16px',
-                    paddingBottom: '16px',
-                    borderBottom:
-                      index < recommendation.features.length - 1
-                        ? `1px solid ${tokens.colorNeutralStroke2}`
-                        : undefined,
-                  }}
-                >
-                  <div style={{ fontWeight: 600, marginBottom: '4px' }}>{feature.feature}</div>
-                  <div style={{ fontSize: '13px', color: tokens.colorNeutralForeground2, marginBottom: '4px' }}>
-                    <strong>Recommendation:</strong> {feature.recommendation}
-                  </div>
-                  <div style={{ fontSize: '13px', color: tokens.colorNeutralForeground3 }}>
-                    <strong>Migration Path:</strong> {feature.migrationPath}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Challenges */}
-          {recommendation.challenges.length > 0 && (
-            <Card style={{ marginBottom: '24px' }}>
-              <CardHeader
-                header={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Warning20Regular />
-                    <strong>Migration Challenges</strong>
-                  </div>
-                }
-              />
-              <div style={{ padding: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {recommendation.challenges.map((challenge: string, index: number) => (
-                    <li key={index} style={{ marginBottom: '8px' }}>
-                      <Body1>{challenge}</Body1>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Card>
-          )}
-
-          {/* Documentation Link */}
-          <Card>
-            <CardHeader header={<strong>Migration Resources</strong>} />
-            <div style={{ padding: '16px' }}>
-              <Body1 style={{ marginBottom: '12px' }}>
-                For detailed guidance on migrating from classic workflows to Power Automate cloud flows:
-              </Body1>
-              <Button
-                appearance="primary"
-                icon={<Open20Regular />}
-                iconPosition="after"
-                onClick={() => window.open(recommendation.documentationLink, '_blank')}
-              >
-                View Migration Documentation
-              </Button>
-            </div>
-          </Card>
-        </>
-      )}
     </div>
   );
 }

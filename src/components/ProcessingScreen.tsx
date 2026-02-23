@@ -10,7 +10,6 @@ import {
 import { ArrowClockwise24Regular } from '@fluentui/react-icons';
 import type { ProgressInfo } from '../core';
 import { Footer } from './Footer';
-import { ThemeToggle } from './ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
@@ -19,6 +18,7 @@ const useStyles = makeStyles({
     maxWidth: '1200px',
     margin: '0 auto',
     minHeight: '100vh',
+    boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalXL,
@@ -29,12 +29,6 @@ const useStyles = makeStyles({
   },
   header: {
     textAlign: 'center',
-    position: 'relative',
-  },
-  themeToggleContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
   },
   progressSection: {
     display: 'flex',
@@ -116,9 +110,6 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
     <div className={styles.container}>
       <div className={styles.header}>
         <Title2>Generating Solution Blueprint</Title2>
-        <div className={styles.themeToggleContainer}>
-          <ThemeToggle />
-        </div>
       </div>
 
       <div className={styles.progressSection}>

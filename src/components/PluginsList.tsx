@@ -94,6 +94,7 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalXXS,
+    minWidth: 0,
   },
   detailLabel: {
     fontSize: tokens.fontSizeBase200,
@@ -101,6 +102,8 @@ const useStyles = makeStyles({
   },
   detailValue: {
     fontWeight: tokens.fontWeightSemibold,
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
   },
   section: {
     marginTop: tokens.spacingVerticalM,

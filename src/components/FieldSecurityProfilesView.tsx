@@ -84,11 +84,8 @@ function FieldSecurityProfilesViewComponent({
     }),
     createTableColumn<AttributeMaskingRule>({
       columnId: 'maskingType',
-      renderHeaderCell: () => 'Masking Type',
-      renderCell: (rule) => {
-        const type = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
-        return <Badge appearance="outline" shape="rounded">{type}</Badge>;
-      },
+      renderHeaderCell: () => 'Masking Rule',
+      renderCell: (rule) => <Badge appearance="outline" shape="rounded">{rule.maskingRuleName}</Badge>,
     }),
     createTableColumn<AttributeMaskingRule>({
       columnId: 'managed',

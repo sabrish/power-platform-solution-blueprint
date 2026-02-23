@@ -76,8 +76,12 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
+      // Get environment URL from tool context
+      const toolContext = await window.toolboxAPI.getToolContext();
+      const environmentUrl = toolContext?.connectionUrl || '';
+
       // Create client and generator
-      const client = new PptbDataverseClient(window.dataverseAPI);
+      const client = new PptbDataverseClient(window.dataverseAPI, environmentUrl);
       const blueprintScope = convertScope(scope);
 
       const generator = new BlueprintGenerator(client, blueprintScope, {

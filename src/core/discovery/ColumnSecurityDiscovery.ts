@@ -1,16 +1,32 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 
 /**
- * Attribute Masking Rule
+ * Raw API response from attributemaskingrules
+ * Schema: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/reference/entities/attributemaskingrule
+ */
+interface RawAttributeMaskingRule {
+  attributemaskingruleid: string;
+  entityname: string;           // 'Name of the Entity for attribute'
+  attributelogicalname: string; // 'Logical name of the column'
+  uniquename: string;           // 'The unique name of the masking rule for attribute'
+  ismanaged: boolean;
+  _maskingruleid_value?: string;
+  '_maskingruleid_value@OData.Community.Display.V1.FormattedValue'?: string; // maskingrule.name
+}
+
+/**
+ * Attribute Masking Rule (Secured Masking Column)
+ * Schema: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/reference/entities/attributemaskingrule
+ * Note: maskingtype does not exist on this entity. The masking definition lives on the
+ * referenced maskingrule record (name/displayname/regularexpression).
  */
 export interface AttributeMaskingRule {
   attributemaskingruleid: string;
-  name?: string; // Optional - may not exist in all Dataverse versions
-  entitylogicalname: string;
-  attributelogicalname: string;
-  maskingtype: number; // 1 = Full, 2 = Partial, 3 = Email, 4 = Custom
-  maskingformat?: string;
-  description?: string;
+  entityname: string;           // Entity the masked column belongs to
+  entitylogicalname: string;    // Alias for entityname (kept for consumer compatibility)
+  attributelogicalname: string; // Column being masked
+  uniquename: string;           // Unique name of this assignment
+  maskingRuleName: string;      // Name of the referenced maskingrule record
   ismanaged: boolean;
 }
 
@@ -48,35 +64,42 @@ export class ColumnSecurityDiscovery {
 
   /**
    * Get all attribute masking rules
+   * Fields per official schema: attributemaskingruleid, entityname, attributelogicalname,
+   * uniquename, maskingruleid (lookup → maskingrule), ismanaged
    */
   async getAttributeMaskingRules(): Promise<AttributeMaskingRule[]> {
     try {
-      const result = await this.client.query<AttributeMaskingRule>('attributemaskingrules', {
+      const result = await this.client.query<RawAttributeMaskingRule>('attributemaskingrules', {
         select: [
           'attributemaskingruleid',
-          // 'entitylogicalname', // Property not available in attributemaskingrules table
           'attributelogicalname',
-          'maskingtype',
-          'maskingformat',
-          'description',
+          'entityname',
+          'uniquename',
           'ismanaged',
+          '_maskingruleid_value', // OData will also return the FormattedValue annotation
         ],
-        // orderBy removed due to missing entitylogicalname property
+        orderBy: ['entityname', 'attributelogicalname'],
       });
 
-      // Set entitylogicalname to empty string for compatibility
-      return result.value.map(rule => ({
-        ...rule,
-        entitylogicalname: '', // Property not available from API
+      return result.value.map((raw) => ({
+        attributemaskingruleid: raw.attributemaskingruleid,
+        entityname: raw.entityname || '',
+        entitylogicalname: raw.entityname || '', // alias for consumer compatibility
+        attributelogicalname: raw.attributelogicalname,
+        uniquename: raw.uniquename || '',
+        maskingRuleName:
+          raw['_maskingruleid_value@OData.Community.Display.V1.FormattedValue'] ||
+          raw._maskingruleid_value ||
+          'Unknown',
+        ismanaged: raw.ismanaged,
       }));
-    } catch (error) {
-      console.warn('Failed to query attribute masking rules:', error instanceof Error ? error.message : 'Unknown error');
-      return []; // Return empty array if query fails
+    } catch {
+      return [];
     }
   }
 
   /**
-   * Get column security profiles (security masking rules)
+   * Get column security profiles
    * Note: columnsecurityprofiles table may not exist in all Dataverse environments
    */
   async getColumnSecurityProfiles(): Promise<ColumnSecurityProfile[]> {
@@ -93,9 +116,8 @@ export class ColumnSecurityDiscovery {
       });
 
       return result.value;
-    } catch (error) {
-      console.warn('Column security profiles not available in this environment:', error instanceof Error ? error.message : 'Unknown error');
-      return []; // Return empty array if table doesn't exist
+    } catch {
+      return [];
     }
   }
 
@@ -120,23 +142,5 @@ export class ColumnSecurityDiscovery {
     });
 
     return result.value;
-  }
-
-  /**
-   * Get masking type display name
-   */
-  getMaskingTypeDisplayName(maskingType: number): string {
-    switch (maskingType) {
-      case 1:
-        return 'Full';
-      case 2:
-        return 'Partial';
-      case 3:
-        return 'Email';
-      case 4:
-        return 'Custom';
-      default:
-        return 'Unknown';
-    }
   }
 }
