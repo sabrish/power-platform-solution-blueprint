@@ -12,7 +12,7 @@ export class ERDGenerator {
 
   /**
    * Generate Mermaid Class Diagram ERD with publisher-based color coding
-   * Creates multiple focused diagrams instead of one large unreadable diagram
+   * Creates a single diagram containing all entities
    */
   generateMermaidERD(entities: EntityBlueprint[], publishers: Publisher[]): ERDDefinition {
     // Filter out system entities from diagram generation
@@ -26,24 +26,19 @@ export class ERDGenerator {
     // Generate entity quick links with stats
     const entityQuickLinks = this.generateEntityQuickLinks(filteredEntities, publisherMap);
 
-    // Generate multiple focused diagrams
+    // Generate a single diagram with all entities
     const diagrams: ERDDiagram[] = [];
-    const warnings: string[] = [];
 
-    // Check total entity count and add warnings if needed
-    if (filteredEntities.length > 50) {
-      warnings.push('System has 50+ entities - diagrams are split by publisher for readability');
+    if (filteredEntities.length > 0) {
+      const allEntitiesDiagram = this.generateClassDiagramForEntities(
+        filteredEntities,
+        publisherMap,
+        'all-entities',
+        'All Entities',
+        `${filteredEntities.length} entities with relationships colour-coded by publisher`
+      );
+      diagrams.push(allEntitiesDiagram);
     }
-
-    // 1. Core Entities Diagram - Top 15 most connected entities
-    const coreEntitiesDiagram = this.generateCoreEntitiesDiagram(filteredEntities, publisherMap);
-    if (coreEntitiesDiagram) {
-      diagrams.push(coreEntitiesDiagram);
-    }
-
-    // 2. Diagrams by Publisher - One per publisher
-    const publisherDiagrams = this.generatePublisherDiagrams(filteredEntities, publisherMap);
-    diagrams.push(...publisherDiagrams);
 
     // Generate legend
     const legend = this.generateLegend(publisherMap);
@@ -57,7 +52,6 @@ export class ERDGenerator {
       entityQuickLinks,
       totalEntities: filteredEntities.length,
       totalRelationships,
-      warnings: warnings.length > 0 ? warnings : undefined,
     };
   }
 
@@ -113,85 +107,6 @@ export class ERDGenerator {
     return match ? match[1] : '';
   }
 
-
-  /**
-   * Generate Core Entities diagram - Top N most connected entities
-   */
-  private generateCoreEntitiesDiagram(
-    entities: EntityBlueprint[],
-    publisherMap: Map<string, { prefix: string; name: string; color: string; entities: string[] }>
-  ): ERDDiagram | null {
-    // Calculate relationship count for each entity
-    const entityStats = entities.map(bp => ({
-      entity: bp.entity,
-      blueprint: bp,
-      relationshipCount:
-        (bp.entity.OneToManyRelationships?.length || 0) +
-        (bp.entity.ManyToOneRelationships?.length || 0) +
-        (bp.entity.ManyToManyRelationships?.length || 0),
-    }));
-
-    // Sort by relationship count (descending) and take top 15
-    const topEntities = entityStats
-      .sort((a, b) => b.relationshipCount - a.relationshipCount)
-      .slice(0, 15)
-      .map(s => s.blueprint);
-
-    if (topEntities.length === 0) {
-      return null;
-    }
-
-    // Generate diagram for these entities
-    const diagram = this.generateClassDiagramForEntities(
-      topEntities,
-      publisherMap,
-      'core-entities',
-      'Core Entities',
-      `Top ${topEntities.length} most connected entities (showing only relationships between these entities)`
-    );
-
-    return diagram;
-  }
-
-  /**
-   * Generate diagrams split by publisher
-   */
-  private generatePublisherDiagrams(
-    entities: EntityBlueprint[],
-    publisherMap: Map<string, { prefix: string; name: string; color: string; entities: string[] }>
-  ): ERDDiagram[] {
-    const diagrams: ERDDiagram[] = [];
-
-    // Group entities by publisher
-    const entitiesByPublisher = new Map<string, EntityBlueprint[]>();
-    for (const bp of entities) {
-      const prefix = this.extractPublisherPrefix(bp.entity.SchemaName);
-      const normalizedPrefix = prefix.toLowerCase();
-
-      if (!entitiesByPublisher.has(normalizedPrefix)) {
-        entitiesByPublisher.set(normalizedPrefix, []);
-      }
-      entitiesByPublisher.get(normalizedPrefix)!.push(bp);
-    }
-
-    // Generate one diagram per publisher
-    for (const [prefix, publisherEntities] of entitiesByPublisher) {
-      const publisherInfo = publisherMap.get(prefix);
-      if (!publisherInfo || publisherEntities.length === 0) continue;
-
-      const diagram = this.generateClassDiagramForEntities(
-        publisherEntities,
-        publisherMap,
-        `publisher-${prefix || 'microsoft'}`,
-        `${publisherInfo.name} Entities`,
-        `${publisherEntities.length} entities published by ${publisherInfo.name}`
-      );
-
-      diagrams.push(diagram);
-    }
-
-    return diagrams;
-  }
 
   /**
    * Generate Mermaid Class Diagram for a specific set of entities
