@@ -16,6 +16,7 @@ import {
 } from '@fluentui/react-components';
 import { Warning20Regular, FlashFlow20Regular, Cloud20Regular } from '@fluentui/react-icons';
 import type { ClassicWorkflow } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 interface ClassicWorkflowsListProps {
   workflows: ClassicWorkflow[];
@@ -126,10 +127,12 @@ export function ClassicWorkflowsList({ workflows, onSelectWorkflow }: ClassicWor
       renderHeaderCell: () => 'Workflow Name',
       renderCell: (item) => (
         <TableCellLayout>
-          <div style={{ fontWeight: 500 }}>{item.name}</div>
+          <div style={{ fontWeight: 500 }}>
+            <TruncatedText text={item.name} />
+          </div>
           {item.description && (
             <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3 }}>
-              {item.description}
+              <TruncatedText text={item.description} />
             </div>
           )}
         </TableCellLayout>
@@ -140,7 +143,9 @@ export function ClassicWorkflowsList({ workflows, onSelectWorkflow }: ClassicWor
       compare: (a, b) => (a.entityDisplayName || a.entity).localeCompare(b.entityDisplayName || b.entity),
       renderHeaderCell: () => 'Entity',
       renderCell: (item) => (
-        <TableCellLayout>{item.entityDisplayName || item.entity}</TableCellLayout>
+        <TableCellLayout>
+          <TruncatedText text={item.entityDisplayName || item.entity} />
+        </TableCellLayout>
       ),
     }),
     createTableColumn<ClassicWorkflow>({
