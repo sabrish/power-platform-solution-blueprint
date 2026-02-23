@@ -18,6 +18,10 @@ import { SolutionDistributionAnalyzer } from '../analyzers/SolutionDistributionA
 import { SecurityRoleDiscovery } from '../discovery/SecurityRoleDiscovery.js';
 import { FieldSecurityProfileDiscovery } from '../discovery/FieldSecurityProfileDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
+import { JsonReporter } from '../reporters/JsonReporter.js';
+import { MarkdownReporter } from '../reporters/MarkdownReporter.js';
+import { HtmlReporter } from '../reporters/HtmlReporter.js';
+import { ZipPackager } from '../exporters/ZipPackager.js';
 import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
 import type { ComponentInventory, ComponentInventoryWithSolutions, WorkflowInventory } from '../types/components.js';
 import type {
@@ -227,6 +231,7 @@ export class BlueprintGenerator {
         metadata: {
           generatedAt: startTime,
           environment: this.client.getEnvironmentUrl(),
+          solutionNames: this.solutions.length > 0 ? this.solutions.map(s => s.friendlyname || s.uniquename) : undefined,
           scope: { type: this.scope.type, description: this.getScopeDescription() },
           entityCount: entities.length,
         },
@@ -336,6 +341,7 @@ export class BlueprintGenerator {
         metadata: {
           generatedAt: startTime,
           environment: this.client.getEnvironmentUrl(),
+          solutionNames: this.solutions.length > 0 ? this.solutions.map(s => s.friendlyname || s.uniquename) : undefined,
           scope: {
             type: this.scope.type,
             description: this.getScopeDescription(),
@@ -1426,7 +1432,6 @@ export class BlueprintGenerator {
    * @returns JSON string with metadata wrapper
    */
   async exportAsJson(): Promise<string> {
-    const { JsonReporter } = await import('../reporters/JsonReporter.js');
     const reporter = new JsonReporter();
     return reporter.generate(this.latestResult!);
   }
@@ -1436,7 +1441,6 @@ export class BlueprintGenerator {
    * @returns MarkdownExport with file map and structure
    */
   async exportAsMarkdown(): Promise<import('../types/blueprint.js').MarkdownExport> {
-    const { MarkdownReporter } = await import('../reporters/MarkdownReporter.js');
     const reporter = new MarkdownReporter();
     return reporter.generate(this.latestResult!);
   }
@@ -1446,7 +1450,6 @@ export class BlueprintGenerator {
    * @returns HTML string (single-page document)
    */
   async exportAsHtml(): Promise<string> {
-    const { HtmlReporter } = await import('../reporters/HtmlReporter.js');
     const reporter = new HtmlReporter();
     return reporter.generate(this.latestResult!);
   }
@@ -1457,7 +1460,6 @@ export class BlueprintGenerator {
    * @returns ZIP file as Blob for browser download
    */
   async exportAsZip(formats: string[]): Promise<Blob> {
-    const { ZipPackager } = await import('../exporters/ZipPackager.js');
     const packager = new ZipPackager();
 
     let json: string | undefined;
