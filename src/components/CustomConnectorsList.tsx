@@ -3,6 +3,7 @@ import { DataGrid, DataGridBody, DataGridRow, DataGridHeader, DataGridHeaderCell
   TableColumnDefinition, createTableColumn, Badge, tokens } from '@fluentui/react-components';
 import { PlugDisconnected20Regular } from '@fluentui/react-icons';
 import type { CustomConnector } from '../core';
+import { TruncatedText } from './TruncatedText';
 
 interface CustomConnectorsListProps {
   customConnectors: CustomConnector[];
@@ -19,8 +20,12 @@ export function CustomConnectorsList({ customConnectors, onSelectConnector }: Cu
       renderHeaderCell: () => 'Name',
       renderCell: (item) => (
         <TableCellLayout media={<PlugDisconnected20Regular />}>
-          <div style={{ fontWeight: 500 }}>{item.displayName}</div>
-          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>{item.name}</div>
+          <div style={{ fontWeight: 500 }}>
+            <TruncatedText text={item.displayName} />
+          </div>
+          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>
+            <TruncatedText text={item.name} />
+          </div>
         </TableCellLayout>
       ),
     }),
