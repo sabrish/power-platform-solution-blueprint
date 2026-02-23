@@ -84,7 +84,6 @@ export class ClassicWorkflowDiscovery {
             '_ownerid_value',
           ],
           filter,
-          orderBy: ['primaryentity asc', 'name asc'],
         });
 
         allResults.push(...result.value);
@@ -94,6 +93,13 @@ export class ClassicWorkflowDiscovery {
           this.onProgress(allResults.length, workflowIds.length);
         }
       }
+
+      // Sort in memory by entity then name
+      allResults.sort((a, b) => {
+        const entityCompare = (a.primaryentity || '').localeCompare(b.primaryentity || '');
+        if (entityCompare !== 0) return entityCompare;
+        return a.name.localeCompare(b.name);
+      });
 
       // Map to ClassicWorkflow objects
       return allResults.map((raw) => this.mapToClassicWorkflow(raw));
