@@ -12,6 +12,7 @@ interface RawBusinessProcessFlow {
   ismanaged: boolean;
   createdon: string;
   modifiedon: string;
+  clientdata?: string | null;
   _ownerid_value?: string;
   '_ownerid_value@OData.Community.Display.V1.FormattedValue'?: string;
   '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
@@ -71,7 +72,7 @@ export class BusinessProcessFlowDiscovery {
         const result = await this.client.query<RawBusinessProcessFlow>('workflows', {
           select: ['workflowid', 'name', 'description', 'category', 'uniquename',
             'primaryentity', 'statecode', 'ismanaged', 'createdon', 'modifiedon',
-            '_ownerid_value', '_modifiedby_value'],
+            'clientdata', '_ownerid_value', '_modifiedby_value'],
           filter,
         });
         allResults.push(...result.value);
@@ -190,6 +191,43 @@ export class BusinessProcessFlowDiscovery {
     return stepsByStageId;
   }
 
+  /**
+   * Extract ordered stage IDs from workflow clientdata.
+   * The clientdata is a nested WorkflowStep structure where each StageStep
+   * object has a "stageId" property. Collecting them in traversal order
+   * gives the correct BPF stage sequence.
+   */
+  private parseStageOrder(clientdata: string | null | undefined): string[] {
+    if (!clientdata) return [];
+    try {
+      const data = JSON.parse(clientdata);
+      const stageIds: string[] = [];
+
+      const walk = (obj: unknown): void => {
+        if (!obj || typeof obj !== 'object') return;
+        if (Array.isArray(obj)) {
+          for (const item of obj) walk(item);
+          return;
+        }
+        const record = obj as Record<string, unknown>;
+        if (
+          typeof record['__class'] === 'string' &&
+          record['__class'].startsWith('StageStep:') &&
+          record['stageId']
+        ) {
+          const id = String(record['stageId']).toLowerCase().replace(/[{}]/g, '');
+          if (!stageIds.includes(id)) stageIds.push(id);
+        }
+        for (const val of Object.values(record)) walk(val);
+      };
+
+      walk(data);
+      return stageIds;
+    } catch {
+      return [];
+    }
+  }
+
   private parseClientDataSteps(
     clientdata: string | null | undefined
   ): Array<{ displayName: string; fieldName: string; required: boolean }> {
@@ -239,6 +277,20 @@ export class BusinessProcessFlowDiscovery {
   ): BusinessProcessFlow {
     const bpfId = raw.workflowid.toLowerCase().replace(/[{}]/g, '');
     const rawStages = stagesByBpfId.get(bpfId) || [];
+
+    // Sort stages by the order defined in workflow clientdata.
+    // The clientdata encodes a linked list of StageStep objects in sequence.
+    const stageOrder = this.parseStageOrder(raw.clientdata);
+    if (stageOrder.length > 0) {
+      rawStages.sort((a, b) => {
+        const aIdx = stageOrder.indexOf(a.processstageid.toLowerCase().replace(/[{}]/g, ''));
+        const bIdx = stageOrder.indexOf(b.processstageid.toLowerCase().replace(/[{}]/g, ''));
+        if (aIdx === -1 && bIdx === -1) return 0;
+        if (aIdx === -1) return 1;
+        if (bIdx === -1) return -1;
+        return aIdx - bIdx;
+      });
+    }
 
     const stages = rawStages.map((s, index) => {
       const stageId = s.processstageid.toLowerCase().replace(/[{}]/g, '');
