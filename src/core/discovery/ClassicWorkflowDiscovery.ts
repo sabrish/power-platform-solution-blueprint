@@ -12,13 +12,12 @@ interface RawClassicWorkflow {
   category: number; // Must be 0 for classic workflows
   mode: number;
   triggeroncreate: boolean;
-  triggeronupdate: boolean;
+  triggeronupdateattributelist: string | null; // comma-separated attribute names; null/empty = not triggered on update
   triggerondelete: boolean;
   ondemand: boolean;
   scope: number;
   primaryentity: string;
   statecode: number;
-  xaml: string;
   ismanaged: boolean;
   createdon: string;
   modifiedon: string;
@@ -56,11 +55,10 @@ export class ClassicWorkflowDiscovery {
 
       for (let i = 0; i < workflowIds.length; i += batchSize) {
         const batch = workflowIds.slice(i, i + batchSize);
-        const filterClauses = batch.map((id) => {
-          const cleanGuid = id.replace(/[{}]/g, '');
-          return `workflowid eq ${cleanGuid}`;
-        });
-        const filter = `(${filterClauses.join(' or ')}) and category eq 0`;
+        // No category filter — IDs are pre-classified as category=0 by classifyWorkflows.
+        // Filtering by category eq 0 in OData may be silently dropped (falsy zero).
+        const filterClauses = batch.map((id) => `workflowid eq ${id}`);
+        const filter = filterClauses.join(' or ');
 
         const result = await this.client.query<RawClassicWorkflow>('workflows', {
           select: [
@@ -71,13 +69,12 @@ export class ClassicWorkflowDiscovery {
             'category',
             'mode',
             'triggeroncreate',
-            'triggeronupdate',
+            'triggeronupdateattributelist',
             'triggerondelete',
             'ondemand',
             'scope',
             'primaryentity',
             'statecode',
-            'xaml',
             'ismanaged',
             'createdon',
             'modifiedon',
@@ -123,7 +120,7 @@ export class ClassicWorkflowDiscovery {
       mode: raw.mode,
       modeName: this.getModeName(raw.mode),
       triggerOnCreate: raw.triggeroncreate,
-      triggerOnUpdate: raw.triggeronupdate,
+      triggerOnUpdate: !!(raw.triggeronupdateattributelist),
       triggerOnDelete: raw.triggerondelete,
       onDemand: raw.ondemand,
       scope: raw.scope,
@@ -132,7 +129,7 @@ export class ClassicWorkflowDiscovery {
       entityDisplayName: raw['_primaryentity_value@OData.Community.Display.V1.FormattedValue'] || null,
       state: this.getStateName(raw.statecode),
       isManaged: raw.ismanaged,
-      xaml: raw.xaml,
+      xaml: '',
       owner: raw['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedBy: raw['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: raw.modifiedon,

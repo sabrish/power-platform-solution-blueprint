@@ -358,8 +358,8 @@ export class SolutionComponentDiscovery {
       for (let i = 0; i < workflowIds.length; i += batchSize) {
         const batch = workflowIds.slice(i, i + batchSize);
         const filters = batch.map(id => {
-          const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
-          return `workflowid eq '${guidWithBraces}'`;
+          const cleanGuid = id.replace(/[{}]/g, '');
+          return `workflowid eq ${cleanGuid}`;
         }).join(' or ');
 
         const result = await this.client.query<WorkflowRecord>('workflows', {
@@ -373,8 +373,9 @@ export class SolutionComponentDiscovery {
       // Classify by category
       for (const workflow of allWorkflows) {
         const workflowId = workflow.workflowid.toLowerCase();
+        const cat = Number(workflow.category); // coerce in case API returns string
 
-        switch (workflow.category) {
+        switch (cat) {
           case WorkflowCategory.Flow:
             inventory.flowIds.push(workflowId);
             break;
