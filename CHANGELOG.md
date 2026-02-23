@@ -36,6 +36,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Blueprint Metadata** - Added `solutionNames` field to blueprint result metadata
 - **Connection URL** - `PptbDataverseClient` now receives the environment URL from `toolContext.connectionUrl`
 
+## [0.7.1] - 2026-02-23
+
+### Fixed
+- **Classic Workflows Not Appearing** - Removed unsupported `orderBy` from the classic workflow OData query
+  - The `orderBy primaryentity` clause caused the Dataverse query to fail silently, returning an empty list
+  - Replaced with equivalent in-memory sort after fetch
+- **Custom Connectors Not Appearing** - Corrected GUID format in custom connectors OData filter
+  - Filter was adding braces (`connectorid eq {guid}`) instead of removing them
+  - OData requires raw GUIDs without braces or quotes; changed to use `id.replace(/[{}]/g, '')`
+- **ERD Split-Publisher Diagrams** - Replaced split per-publisher ERDs with a single all-entities diagram
+  - Removed top-15 most-connected-entities filter that was hiding entities
+  - Removed per-publisher diagram splitting; now generates one diagram with all entities colour-coded by publisher
+  - Removed misleading "50+ entities" warning banner
+- **Component Browser Column Overflow** - Long strings no longer overflow list columns
+  - `EnvironmentVariablesList`: replaced wordWrap hacks with `TruncatedText`
+  - `ClassicWorkflowsList`: added `TruncatedText` for name, description, and entity columns
+  - `CustomConnectorsList`: added `TruncatedText` for display name and schema name columns
+
 ## [0.7.0] - 2026-02-22
 
 ### Added
