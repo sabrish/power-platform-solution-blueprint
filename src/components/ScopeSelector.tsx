@@ -28,7 +28,6 @@ import {
 } from '../core';
 import type { ScopeType, ScopeSelection, PublisherScopeMode } from '../types/scope';
 import { Footer } from './Footer';
-import { ThemeToggle } from './ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
@@ -37,6 +36,7 @@ const useStyles = makeStyles({
     maxWidth: '1200px',
     margin: '0 auto',
     minHeight: '100vh',
+    boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     '@media (max-width: 768px)': {
@@ -328,7 +328,6 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
             <Title1>Power Platform Solution Blueprint</Title1>
             <Subtitle1 className={styles.subtitle}>Select what you'd like to document</Subtitle1>
           </div>
-          <ThemeToggle />
         </div>
       </div>
 
