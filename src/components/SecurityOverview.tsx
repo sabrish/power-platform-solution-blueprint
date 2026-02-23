@@ -141,8 +141,8 @@ function SecurityOverviewComponent({
   const maskingRuleColumns = useMemo<TableColumnDefinition<AttributeMaskingRule>[]>(() => [
     createTableColumn<AttributeMaskingRule>({
       columnId: 'name',
-      renderHeaderCell: () => 'Rule Name',
-      renderCell: (rule) => <Text weight="semibold">{rule.name}</Text>,
+      renderHeaderCell: () => 'Masking Rule',
+      renderCell: (rule) => <Text weight="semibold">{rule.maskingRuleName}</Text>,
     }),
     createTableColumn<AttributeMaskingRule>({
       columnId: 'entity',
@@ -153,14 +153,6 @@ function SecurityOverviewComponent({
       columnId: 'attribute',
       renderHeaderCell: () => 'Attribute',
       renderCell: (rule) => rule.attributelogicalname,
-    }),
-    createTableColumn<AttributeMaskingRule>({
-      columnId: 'maskingType',
-      renderHeaderCell: () => 'Masking Type',
-      renderCell: (rule) => {
-        const type = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
-        return <Badge appearance="outline" shape="rounded">{type}</Badge>;
-      },
     }),
     createTableColumn<AttributeMaskingRule>({
       columnId: 'managed',

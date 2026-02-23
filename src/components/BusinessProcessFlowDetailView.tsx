@@ -64,13 +64,13 @@ export function BusinessProcessFlowDetailView({ bpf }: BusinessProcessFlowDetail
       <Card style={{ marginBottom: '24px' }}>
         <CardHeader header={<strong>Process Summary</strong>} />
         <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Unique Name</Caption1>
+            <Body1 style={{ fontFamily: 'monospace', fontSize: '13px', wordBreak: 'break-all' }}>{bpf.uniqueName}</Body1>
+          </div>
           <div>
             <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Primary Entity</Caption1>
             <Body1>{bpf.primaryEntityDisplayName || bpf.primaryEntity}</Body1>
-          </div>
-          <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Unique Name</Caption1>
-            <Body1 style={{ fontFamily: 'monospace', fontSize: '13px' }}>{bpf.uniqueName}</Body1>
           </div>
           <div>
             <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Total Stages</Caption1>

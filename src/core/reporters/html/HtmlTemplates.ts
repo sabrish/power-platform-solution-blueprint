@@ -80,6 +80,12 @@ ${this.embeddedCSS()}
    */
   htmlHeader(metadata: BlueprintMetadata): string {
     const generatedDate = metadata.generatedAt.toLocaleString();
+    const solutionsHtml = metadata.solutionNames && metadata.solutionNames.length > 0
+      ? `<div class="metadata-item">
+      <span class="metadata-label">Solutions:</span>
+      <span class="metadata-value">${this.escapeHtml(metadata.solutionNames.join(', '))}</span>
+    </div>`
+      : '';
     return `<header class="report-header" role="banner">
   <h1>Power Platform Solution Blueprint</h1>
   <div class="metadata-grid">
@@ -95,6 +101,7 @@ ${this.embeddedCSS()}
       <span class="metadata-label">Scope:</span>
       <span class="metadata-value">${this.escapeHtml(metadata.scope.description)}</span>
     </div>
+    ${solutionsHtml}
     <div class="metadata-item">
       <span class="metadata-label">Entities:</span>
       <span class="metadata-value">${metadata.entityCount}</span>
@@ -1061,7 +1068,6 @@ ${rows}
     const rows = workflows.map(workflow => {
       const entityDisplay = workflow.entityDisplayName || workflow.entity;
       const complexity = workflow.migrationRecommendation?.complexity || 'Unknown';
-      const effort = workflow.migrationRecommendation?.effort || 'Unknown';
 
       return `<tr>
   <td>${this.escapeHtml(workflow.name)}</td>
@@ -1069,7 +1075,6 @@ ${rows}
   <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${workflow.state}</span></td>
   <td>${this.escapeHtml(workflow.modeName)}</td>
   <td><span class="badge badge-${complexity === 'Critical' ? 'error' : complexity === 'High' ? 'warning' : 'info'}">${complexity}</span></td>
-  <td>${this.escapeHtml(effort)}</td>
 </tr>`;
     }).join('\n');
 
@@ -1103,7 +1108,6 @@ ${rows}
           <th onclick="sortTable('classic-workflows-table', 2)">State <span class="sort-indicator"></span></th>
           <th onclick="sortTable('classic-workflows-table', 3)">Mode <span class="sort-indicator"></span></th>
           <th onclick="sortTable('classic-workflows-table', 4)">Complexity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 5)">Effort <span class="sort-indicator"></span></th>
         </tr>
       </thead>
       <tbody>
@@ -2780,19 +2784,18 @@ ${this.embeddedJavaScript()}
           <tr>
             <th>Entity</th>
             <th>Attribute</th>
-            <th>Masking Type</th>
+            <th>Masking Rule</th>
             <th>Managed</th>
           </tr>
         </thead>
         <tbody>`;
 
     for (const rule of attributeMaskingRules) {
-      const maskingType = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
       html += `
           <tr>
             <td><strong>${this.escapeHtml(rule.entitylogicalname)}</strong></td>
             <td>${this.escapeHtml(rule.attributelogicalname)}</td>
-            <td><span class="badge">${maskingType}</span></td>
+            <td><span class="badge">${this.escapeHtml(rule.maskingRuleName)}</span></td>
             <td>${rule.ismanaged ? '<span class="badge">Managed</span>' : ''}</td>
           </tr>`;
     }

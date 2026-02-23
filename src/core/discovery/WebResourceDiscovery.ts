@@ -38,6 +38,7 @@ export class WebResourceDiscovery {
       const batchSize = 20;
       const allResults: WebResourceRecord[] = [];
 
+      // Pass 1: fetch metadata only (no content) — avoids large payload timeouts
       for (let i = 0; i < resourceIds.length; i += batchSize) {
         const batch = resourceIds.slice(i, i + batchSize);
         const filterClauses = batch.map((id) => `webresourceid eq ${id}`);
@@ -49,27 +50,58 @@ export class WebResourceDiscovery {
             'name',
             'displayname',
             'webresourcetype',
-            'content',
             'description',
             'modifiedon',
             'createdon',
           ],
           filter,
-          orderBy: ['webresourcetype', 'name'],
         });
 
         allResults.push(...response.value);
 
-        // Report progress after each batch
         if (this.onProgress) {
           this.onProgress(allResults.length, resourceIds.length);
         }
       }
 
-      // Map to WebResource objects
-      const webResources = allResults.map((record) => this.mapRecordToWebResource(record));
+      // Pass 2: fetch content for JS resources only (type=3), small batches
+      // Only JS needs content for analysis; images/CSS/HTML do not
+      const jsIds = allResults
+        .filter((r) => r.webresourcetype === 3)
+        .map((r) => r.webresourceid);
+      const contentMap = new Map<string, string>();
 
-      return webResources;
+      if (jsIds.length > 0) {
+        const contentBatchSize = 5;
+        try {
+          for (let i = 0; i < jsIds.length; i += contentBatchSize) {
+            const batch = jsIds.slice(i, i + contentBatchSize);
+            const filterClauses = batch.map((id) => `webresourceid eq ${id}`);
+            const filter = filterClauses.join(' or ');
+
+            const response = await this.client.query<{ webresourceid: string; content: string | null }>(
+              'webresourceset',
+              { select: ['webresourceid', 'content'], filter }
+            );
+
+            for (const rec of response.value) {
+              if (rec.content) {
+                contentMap.set(rec.webresourceid, rec.content);
+              }
+            }
+          }
+        } catch {
+          // Content fetch failed — JS analysis will be skipped but metadata is intact
+        }
+      }
+
+      // Map to WebResource, merging JS content where available
+      return allResults.map((record) =>
+        this.mapRecordToWebResource({
+          ...record,
+          content: contentMap.get(record.webresourceid) ?? null,
+        })
+      );
     } catch (error) {
       throw error;
     }

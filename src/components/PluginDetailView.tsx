@@ -139,13 +139,13 @@ export function PluginDetailView({ plugin, onClose }: PluginDetailViewProps) {
             <Text className={styles.label}>Entity:</Text>
             <Text className={styles.value}>{plugin.entity}</Text>
           </div>
-          <div className={styles.infoRow}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS }}>
             <Text className={styles.label}>Assembly:</Text>
-            <Text className={styles.value}>{plugin.assemblyName}</Text>
+            <Text style={{ wordBreak: 'break-all' }}>{plugin.assemblyName}</Text>
           </div>
-          <div className={styles.infoRow}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS }}>
             <Text className={styles.label}>Type:</Text>
-            <Text className={styles.value}>{plugin.typeName}</Text>
+            <Text style={{ wordBreak: 'break-all' }}>{plugin.typeName}</Text>
           </div>
           {plugin.description && (
             <div className={styles.infoRow}>
@@ -153,10 +153,10 @@ export function PluginDetailView({ plugin, onClose }: PluginDetailViewProps) {
               <Text className={styles.value}>{plugin.description}</Text>
             </div>
           )}
-          <div className={styles.infoRow}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS }}>
             <Text className={styles.label}>Plugin Type ID:</Text>
             <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center' }}>
-              <Text className={styles.value}>{plugin.pluginTypeId}</Text>
+              <Text style={{ wordBreak: 'break-all', flex: 1 }}>{plugin.pluginTypeId}</Text>
               <Button
                 appearance="subtle"
                 size="small"

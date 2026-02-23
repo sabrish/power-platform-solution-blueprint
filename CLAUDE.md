@@ -508,120 +508,102 @@ const message = `${progress.current} of ${progress.total} ${componentLabel} proc
 
 ### Component Browser List Pattern
 
-**⚠️ CRITICAL: Every list in the Component Browser MUST follow this exact pattern.**
+**⚠️ CRITICAL: Every list in the Component Browser MUST use the card-row expandable pattern.**
 
-The canonical reference implementation is `ConnectionReferencesList.tsx`. All list components (`ClassicWorkflowsList`, `CustomConnectorsList`, `EnvironmentVariablesList`, `BusinessProcessFlowsList`, etc.) must match this structure.
+The canonical reference implementations are `FlowsList.tsx` and `PluginsList.tsx`. All component browser lists (`ClassicWorkflowsList`, `CustomConnectorsList`, `EnvironmentVariablesList`, `BusinessProcessFlowsList`, etc.) must use this pattern. **Do NOT use Fluent UI `DataGrid` for component browser lists** — it causes column overflow and navigates away from the list.
 
-#### Standard Structure
+**The only exception** is `ConnectionReferencesList.tsx` which uses DataGrid — but this is legacy and should not be replicated for new lists.
+
+#### Card-Row Pattern (REQUIRED)
 
 ```tsx
-// 1. Outer container — always marginTop 16px inline style
-<div style={{ marginTop: '16px' }}>
-  <DataGrid
-    items={sorted}
-    columns={columns}
-    sortable
-    selectionMode="single"
-    selectedItems={selected ? [selected] : []}
-    getRowId={(item) => item.id}
-    focusMode="composite"
-  >
-    <DataGridHeader>
-      <DataGridRow>
-        {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
-      </DataGridRow>
-    </DataGridHeader>
-    <DataGridBody<T>>
-      {({ item, rowId }) => (
-        <DataGridRow<T>
-          key={rowId}
-          style={{ cursor: 'pointer', backgroundColor: selected === item.id ? tokens.colorNeutralBackground1Selected : undefined }}
-          onClick={() => { setSelected(item.id); onSelect(item); }}
-        >
-          {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
-        </DataGridRow>
-      )}
-    </DataGridBody>
-  </DataGrid>
-</div>
-```
+// makeStyles — grid layout with explicit column sizes
+const useStyles = makeStyles({
+  container: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS },
+  row: {
+    display: 'grid',
+    gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto', // adjust cols as needed
+    gap: tokens.spacingHorizontalM,
+    alignItems: 'start',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    ':hover': { backgroundColor: tokens.colorNeutralBackground1Hover, boxShadow: tokens.shadow4 },
+  },
+  rowExpanded: { backgroundColor: tokens.colorBrandBackground2 },
+  chevron: { display: 'flex', alignItems: 'center', color: tokens.colorNeutralForeground3 },
+  nameColumn: { display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 },
+  codeText: { fontFamily: 'Consolas, Monaco, monospace', fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 },
+  expandedDetails: {
+    backgroundColor: tokens.colorNeutralBackground2,
+    padding: tokens.spacingVerticalL,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderTop: 'none',
+    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
+    marginTop: '-4px',
+  },
+  // ... detailsGrid, detailItem, detailLabel, detailValue, section as needed
+});
 
-#### Column Cell Rules — Overflow / Column Overlap Prevention
+// Component — self-contained, NO onSelect prop, NO navigation
+export function MyList({ items }: { items: MyItem[] }) {
+  const styles = useStyles();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
-**⚠️ CRITICAL: Failing to follow these rules causes columns to bleed into adjacent columns.**
-
-**Rule 1: ALL text that can be long MUST use `TruncatedText`**
-```tsx
-// ✅ CORRECT
-renderCell: (item) => (
-  <TableCellLayout>
-    <TruncatedText text={item.name} />
-  </TableCellLayout>
-),
-
-// ❌ WRONG — raw text overflows columns
-renderCell: (item) => (
-  <TableCellLayout>{item.name}</TableCellLayout>
-),
-```
-
-**Rule 2: Name columns with icon + two-line layout**
-```tsx
-// ✅ CORRECT — use <div> (block) for the two text lines, TruncatedText inside each
-renderCell: (item) => (
-  <TableCellLayout media={<Icon20Regular />}>
-    <div style={{ fontWeight: 500 }}>
-      <TruncatedText text={item.displayName} />
+  return (
+    <div className={styles.container} style={{ marginTop: '16px' }}>
+      {sorted.map((item) => {
+        const isExpanded = expandedId === item.id;
+        return (
+          <div key={item.id}>
+            <div
+              className={`${styles.row} ${isExpanded ? styles.rowExpanded : ''}`}
+              onClick={() => toggleExpand(item.id)}
+            >
+              <div className={styles.chevron}>
+                {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+              </div>
+              <div className={styles.nameColumn}>
+                <Text weight="semibold"><TruncatedText text={item.name} /></Text>
+                <Text className={styles.codeText}><TruncatedText text={item.schemaName} /></Text>
+              </div>
+              <Badge appearance="filled" ...>{item.status}</Badge>
+              {/* other badge/text columns */}
+            </div>
+            {isExpanded && renderDetail(item)}
+          </div>
+        );
+      })}
     </div>
-    <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>
-      <TruncatedText text={item.schemaName} />
-    </div>
-  </TableCellLayout>
-),
+  );
+}
 ```
 
-**Rule 3: NEVER use `display: 'block'` on a `<span>` inside a table cell**
-```tsx
-// ❌ WRONG — breaks table cell layout, causes column overlap
-<span style={{ display: 'block', wordWrap: 'break-word' }}>{item.value}</span>
+#### Key Rules
 
-// ✅ CORRECT — use <div> if you need block display, or just TruncatedText in a span
-<div style={{ fontFamily: 'monospace', fontSize: '13px' }}>
-  <TruncatedText text={item.value} />
-</div>
-```
-
-**Rule 4: `<span>` elements inside cells must stay inline**
-```tsx
-// ✅ CORRECT — span stays inline, no layout disruption
-{item.value ? (
-  <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
-    <TruncatedText text={item.value} />
-  </span>
-) : (
-  <span style={{ color: tokens.colorNeutralForeground3 }}>None</span>
-)}
-```
-
-**Rule 5: Badge-only and short fixed-value cells don't need TruncatedText**
-```tsx
-// ✅ OK — badge content is always short and controlled
-renderCell: (item) => (
-  <TableCellLayout>
-    <Badge appearance="filled" color="success">{item.state}</Badge>
-  </TableCellLayout>
-),
-```
+1. **Self-contained** — no `onSelect` prop, no navigation away. Detail expands inline below the row.
+2. **`makeStyles` only** — all styles via design tokens, no inline style objects except for one-off overrides.
+3. **Grid columns** — always start with `24px` (chevron) then `minmax(200px, 2fr)` (name), then `auto` columns for badges/short text.
+4. **Name column** — always `minWidth: 0` to allow truncation; two lines (display name + schema name in `codeText`).
+5. **All long text uses `TruncatedText`** — never raw text in grid cells that could overflow.
+6. **Expanded detail** — `borderTop: 'none'` + `marginTop: '-4px'` to attach seamlessly to the row above.
+7. **Empty state** — full centred panel with icon, heading, description. Never just a plain string.
+8. **ResultsDashboard** — simply renders `<MyList items={result.items} />`. No state, no conditional detail view, no Back button needed.
 
 #### Checklist when creating or editing any list component
 
-- [ ] Outer wrapper is `<div style={{ marginTop: '16px' }}>`
-- [ ] `DataGrid` has: `sortable`, `selectionMode="single"`, `selectedItems`, `getRowId`, `focusMode="composite"`
-- [ ] Every text cell that could be long uses `TruncatedText`
-- [ ] Name/label columns with two lines use `<div>` (not `<span>`) for each line
-- [ ] No `display: 'block'` on any `<span>` inside a cell
-- [ ] No `wordWrap: 'break-word'` / `overflowWrap: 'break-word'` on raw text — use `TruncatedText` instead
-- [ ] `TruncatedText` is imported at the top of the file
+- [ ] Uses `makeStyles` + card-row grid (NOT DataGrid)
+- [ ] First grid column is `24px` chevron, second is `minmax(200px, 2fr)` name column
+- [ ] `nameColumn` has `minWidth: 0` to enable text truncation
+- [ ] All long text in rows uses `TruncatedText`
+- [ ] Expanded detail panel has `borderTop: 'none'` and `marginTop: '-4px'`
+- [ ] Component is self-contained — no `onSelect` / navigation prop
+- [ ] ResultsDashboard renders it directly with no surrounding conditional logic
+- [ ] Empty state has icon + heading + description
 
 ## Important Notes
 
