@@ -19,7 +19,6 @@ import { useBlueprint } from './hooks/useBlueprint';
 import { useConnectionChange } from './hooks/useConnectionChange';
 import type { ScopeSelection } from './types/scope';
 import { Footer } from './components/Footer';
-import { ThemeToggle } from './components/ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
@@ -28,6 +27,7 @@ const useStyles = makeStyles({
     maxWidth: '1600px',
     margin: '0 auto',
     minHeight: '100vh',
+    boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     '@media (max-width: 768px)': {
@@ -123,7 +123,6 @@ function App() {
 
   // Reset app to scope selector when connection changes
   const handleConnectionChange = useCallback(() => {
-    console.log('[PPSB] Connection change handler called, resetting app state');
     reset(); // Clear blueprint state first
     setSelectedScope(null);
     setShowConfirmation(false);
@@ -231,7 +230,6 @@ function App() {
               Complete architectural blueprints for your Power Platform systems
             </Subtitle1>
           </div>
-          <ThemeToggle />
         </div>
       </header>
 
