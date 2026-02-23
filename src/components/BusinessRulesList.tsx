@@ -10,6 +10,7 @@ import {
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { BusinessRule } from '../core';
 import { TruncatedText } from './TruncatedText';
+import { filterDescription } from '../utils/descriptionFilter';
 
 const useStyles = makeStyles({
   container: {
@@ -216,10 +217,10 @@ export function BusinessRulesList({
           </div>
         </div>
 
-        {rule.description && (
+        {filterDescription(rule.description ?? undefined) && (
           <div className={styles.section}>
             <Text className={styles.detailLabel}>Description</Text>
-            <Text>{rule.description}</Text>
+            <Text>{filterDescription(rule.description ?? undefined)}</Text>
           </div>
         )}
 
@@ -324,9 +325,9 @@ export function BusinessRulesList({
                 <Text weight="semibold">
                   <TruncatedText text={rule.name} />
                 </Text>
-                {rule.description && (
+                {filterDescription(rule.description ?? undefined) && (
                   <Text className={styles.codeText}>
-                    <TruncatedText text={rule.description} />
+                    <TruncatedText text={filterDescription(rule.description ?? undefined)!} />
                   </Text>
                 )}
               </div>
