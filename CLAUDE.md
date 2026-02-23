@@ -191,7 +191,10 @@ pnpm typecheck       # Type check all packages
 
 ## Commit Message Convention
 
-**IMPORTANT:** This project uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for all commit messages.
+**⚠️ CRITICAL — Claude MUST always do this without being asked:**
+- **Create a separate commit for each logical change** (e.g. one commit per bug fix, one per feature). Never batch unrelated changes into a single commit.
+- **Always use Conventional Commits format** for every commit message.
+- **Always include the Co-Authored-By trailer** (see below).
 
 Format: `<type>[optional scope]: <description>`
 
@@ -209,6 +212,18 @@ Examples:
 - `feat(ui): add dark mode support`
 - `fix(ui): prevent table column overflow`
 - `docs: add conventional commits guide`
+
+**Always end every commit message with:**
+```
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
+**Commit workflow Claude must follow after completing any task:**
+1. `git status` — identify which files changed
+2. Group into logical units (one bug fix = one commit, one feature = one commit, docs = one commit)
+3. `git add <specific files>` for each group — never `git add -A` blindly
+4. `git commit -m "..."` with conventional commit message + Co-Authored-By trailer
+5. Repeat for each logical group
 
 📖 **See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines**
 
@@ -490,6 +505,123 @@ const getComponentLabel = (phase: ProgressPhase): string => {
 const componentLabel = getComponentLabel(progress.phase);
 const message = `${progress.current} of ${progress.total} ${componentLabel} processed`;
 ```
+
+### Component Browser List Pattern
+
+**⚠️ CRITICAL: Every list in the Component Browser MUST follow this exact pattern.**
+
+The canonical reference implementation is `ConnectionReferencesList.tsx`. All list components (`ClassicWorkflowsList`, `CustomConnectorsList`, `EnvironmentVariablesList`, `BusinessProcessFlowsList`, etc.) must match this structure.
+
+#### Standard Structure
+
+```tsx
+// 1. Outer container — always marginTop 16px inline style
+<div style={{ marginTop: '16px' }}>
+  <DataGrid
+    items={sorted}
+    columns={columns}
+    sortable
+    selectionMode="single"
+    selectedItems={selected ? [selected] : []}
+    getRowId={(item) => item.id}
+    focusMode="composite"
+  >
+    <DataGridHeader>
+      <DataGridRow>
+        {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
+      </DataGridRow>
+    </DataGridHeader>
+    <DataGridBody<T>>
+      {({ item, rowId }) => (
+        <DataGridRow<T>
+          key={rowId}
+          style={{ cursor: 'pointer', backgroundColor: selected === item.id ? tokens.colorNeutralBackground1Selected : undefined }}
+          onClick={() => { setSelected(item.id); onSelect(item); }}
+        >
+          {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
+        </DataGridRow>
+      )}
+    </DataGridBody>
+  </DataGrid>
+</div>
+```
+
+#### Column Cell Rules — Overflow / Column Overlap Prevention
+
+**⚠️ CRITICAL: Failing to follow these rules causes columns to bleed into adjacent columns.**
+
+**Rule 1: ALL text that can be long MUST use `TruncatedText`**
+```tsx
+// ✅ CORRECT
+renderCell: (item) => (
+  <TableCellLayout>
+    <TruncatedText text={item.name} />
+  </TableCellLayout>
+),
+
+// ❌ WRONG — raw text overflows columns
+renderCell: (item) => (
+  <TableCellLayout>{item.name}</TableCellLayout>
+),
+```
+
+**Rule 2: Name columns with icon + two-line layout**
+```tsx
+// ✅ CORRECT — use <div> (block) for the two text lines, TruncatedText inside each
+renderCell: (item) => (
+  <TableCellLayout media={<Icon20Regular />}>
+    <div style={{ fontWeight: 500 }}>
+      <TruncatedText text={item.displayName} />
+    </div>
+    <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>
+      <TruncatedText text={item.schemaName} />
+    </div>
+  </TableCellLayout>
+),
+```
+
+**Rule 3: NEVER use `display: 'block'` on a `<span>` inside a table cell**
+```tsx
+// ❌ WRONG — breaks table cell layout, causes column overlap
+<span style={{ display: 'block', wordWrap: 'break-word' }}>{item.value}</span>
+
+// ✅ CORRECT — use <div> if you need block display, or just TruncatedText in a span
+<div style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+  <TruncatedText text={item.value} />
+</div>
+```
+
+**Rule 4: `<span>` elements inside cells must stay inline**
+```tsx
+// ✅ CORRECT — span stays inline, no layout disruption
+{item.value ? (
+  <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+    <TruncatedText text={item.value} />
+  </span>
+) : (
+  <span style={{ color: tokens.colorNeutralForeground3 }}>None</span>
+)}
+```
+
+**Rule 5: Badge-only and short fixed-value cells don't need TruncatedText**
+```tsx
+// ✅ OK — badge content is always short and controlled
+renderCell: (item) => (
+  <TableCellLayout>
+    <Badge appearance="filled" color="success">{item.state}</Badge>
+  </TableCellLayout>
+),
+```
+
+#### Checklist when creating or editing any list component
+
+- [ ] Outer wrapper is `<div style={{ marginTop: '16px' }}>`
+- [ ] `DataGrid` has: `sortable`, `selectionMode="single"`, `selectedItems`, `getRowId`, `focusMode="composite"`
+- [ ] Every text cell that could be long uses `TruncatedText`
+- [ ] Name/label columns with two lines use `<div>` (not `<span>`) for each line
+- [ ] No `display: 'block'` on any `<span>` inside a cell
+- [ ] No `wordWrap: 'break-word'` / `overflowWrap: 'break-word'` on raw text — use `TruncatedText` instead
+- [ ] `TruncatedText` is imported at the top of the file
 
 ## Important Notes
 
