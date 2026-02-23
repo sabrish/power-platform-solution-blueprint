@@ -143,6 +143,9 @@ export class MarkdownReporter {
     sections.push('');
     sections.push(`**Generated:** ${result.metadata.generatedAt.toISOString()}`);
     sections.push(`**Environment:** ${result.metadata.environment}`);
+    if (result.metadata.solutionNames && result.metadata.solutionNames.length > 0) {
+      sections.push(`**Solutions:** ${result.metadata.solutionNames.join(', ')}`);
+    }
     sections.push(`**Scope:** ${result.metadata.scope.description}`);
     sections.push('');
     sections.push(MarkdownFormatter.formatHorizontalRule());
@@ -1770,12 +1773,11 @@ export class MarkdownReporter {
       sections.push(MarkdownFormatter.formatHeading(`${complexity} Complexity (${workflows.length})`, 2));
       sections.push('');
 
-      const headers = ['Workflow', 'Entity', 'Type', 'Effort', 'Approach'];
+      const headers = ['Workflow', 'Entity', 'Type', 'Approach'];
       const rows = workflows.map(wf => [
         wf.name,
         wf.entityDisplayName || wf.entity,
         wf.typeName,
-        wf.migrationRecommendation?.effort || 'Unknown',
         wf.migrationRecommendation?.approach.substring(0, 50) + '...' || 'Unknown',
       ]);
 
@@ -2377,15 +2379,14 @@ export class MarkdownReporter {
     sections.push('');
 
     if (result.attributeMaskingRules && result.attributeMaskingRules.length > 0) {
-      const headers = ['Entity', 'Attribute', 'Masking Type', 'Managed'];
+      const headers = ['Entity', 'Attribute', 'Masking Rule', 'Managed'];
       const rows: string[][] = [];
 
       for (const rule of result.attributeMaskingRules) {
-        const maskingType = rule.maskingtype === 1 ? 'Full' : rule.maskingtype === 2 ? 'Partial' : rule.maskingtype === 3 ? 'Email' : 'Custom';
         rows.push([
           rule.entitylogicalname,
           rule.attributelogicalname,
-          maskingType,
+          rule.maskingRuleName,
           rule.ismanaged ? 'Yes' : 'No',
         ]);
       }

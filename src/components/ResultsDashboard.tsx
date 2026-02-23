@@ -17,7 +17,7 @@ import {
   ArrowDownload24Regular,
   ArrowLeft24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, ClassicWorkflow, BusinessProcessFlow, CustomAPI, EnvironmentVariable, ConnectionReference, CustomConnector } from '../core';
+import type { BlueprintResult, CustomAPI, ConnectionReference } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -26,18 +26,14 @@ import { FlowsList } from './FlowsList';
 import { BusinessRulesList } from './BusinessRulesList';
 import { WebResourcesList } from './WebResourcesList';
 import { ClassicWorkflowsList } from './ClassicWorkflowsList';
-import { ClassicWorkflowDetailView } from './ClassicWorkflowDetailView';
 import { BusinessProcessFlowsList } from './BusinessProcessFlowsList';
-import { BusinessProcessFlowDetailView } from './BusinessProcessFlowDetailView';
 import { CustomAPIsList } from './CustomAPIsList';
 import { CustomAPIDetailView } from './CustomAPIDetailView';
 import { EnvironmentVariablesList } from './EnvironmentVariablesList';
-import { EnvironmentVariableDetailView } from './EnvironmentVariableDetailView';
 import { ConnectionReferencesList } from './ConnectionReferencesList';
 import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
 import { GlobalChoicesList } from './GlobalChoicesList';
 import { CustomConnectorsList } from './CustomConnectorsList';
-import { CustomConnectorDetailView } from './CustomConnectorDetailView';
 import { ERDView } from './ERDView';
 import { CrossEntityMapView } from './CrossEntityMapView';
 import { ExternalDependenciesView } from './ExternalDependenciesView';
@@ -46,7 +42,6 @@ import { ExportDialog } from './ExportDialog';
 import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
 import { Footer } from './Footer';
-import { ThemeToggle } from './ThemeToggle';
 
 const useStyles = makeStyles({
   container: {
@@ -54,6 +49,10 @@ const useStyles = makeStyles({
     width: '95%',
     maxWidth: '1800px',
     margin: '0 auto',
+    minHeight: '100vh',
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
     '@media (min-width: 1920px)': {
       width: '90%',
       maxWidth: '2200px',
@@ -166,12 +165,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
   const [mainTab, setMainTab] = useState<string>('dashboard');
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>('entities');
-  const [selectedClassicWorkflow, setSelectedClassicWorkflow] = useState<ClassicWorkflow | null>(null);
-  const [selectedBPF, setSelectedBPF] = useState<BusinessProcessFlow | null>(null);
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
-  const [selectedEnvVar, setSelectedEnvVar] = useState<EnvironmentVariable | null>(null);
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
-  const [selectedCustomConnector, setSelectedCustomConnector] = useState<CustomConnector | null>(null);
 
   // Check what architecture features are available
   const hasERD = !!result.erd;
@@ -307,7 +302,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         >
           Generate New Blueprint
         </Button>
-        <ThemeToggle />
       </div>
 
       {/* SECTION 1: Header */}
@@ -484,47 +478,11 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'classicWorkflows' && hasResults('classicWorkflows') && (
-              <div>
-                {selectedClassicWorkflow ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedClassicWorkflow(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <ClassicWorkflowDetailView workflow={selectedClassicWorkflow} />
-                  </div>
-                ) : (
-                  <ClassicWorkflowsList
-                    workflows={result.classicWorkflows}
-                    onSelectWorkflow={setSelectedClassicWorkflow}
-                  />
-                )}
-              </div>
+              <ClassicWorkflowsList workflows={result.classicWorkflows} />
             )}
 
             {selectedTab === 'businessProcessFlows' && hasResults('businessProcessFlows') && (
-              <div>
-                {selectedBPF ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedBPF(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <BusinessProcessFlowDetailView bpf={selectedBPF} />
-                  </div>
-                ) : (
-                  <BusinessProcessFlowsList
-                    businessProcessFlows={result.businessProcessFlows}
-                    onSelectBPF={setSelectedBPF}
-                  />
-                )}
-              </div>
+              <BusinessProcessFlowsList businessProcessFlows={result.businessProcessFlows} />
             )}
 
             {selectedTab === 'customAPIs' && hasResults('customAPIs') && (
@@ -550,25 +508,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'environmentVariables' && hasResults('environmentVariables') && (
-              <div>
-                {selectedEnvVar ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedEnvVar(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <EnvironmentVariableDetailView envVar={selectedEnvVar} />
-                  </div>
-                ) : (
-                  <EnvironmentVariablesList
-                    environmentVariables={result.environmentVariables}
-                    onSelectVariable={setSelectedEnvVar}
-                  />
-                )}
-              </div>
+              <EnvironmentVariablesList environmentVariables={result.environmentVariables} />
             )}
 
             {selectedTab === 'connectionReferences' && hasResults('connectionReferences') && (
@@ -601,25 +541,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'customConnectors' && hasResults('customConnectors') && (
-              <div>
-                {selectedCustomConnector ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedCustomConnector(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <CustomConnectorDetailView customConnector={selectedCustomConnector} />
-                  </div>
-                ) : (
-                  <CustomConnectorsList
-                    customConnectors={result.customConnectors}
-                    onSelectConnector={setSelectedCustomConnector}
-                  />
-                )}
-              </div>
+              <CustomConnectorsList customConnectors={result.customConnectors} />
             )}
 
             {selectedTab === 'webResources' && hasResults('webResources') && (
