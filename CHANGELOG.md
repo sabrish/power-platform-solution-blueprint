@@ -5,6 +5,37 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-02-23
+
+### Fixed
+- **BPF Steps Always 0** - Business Process Flow stages now correctly report their step count
+  - Steps are defined in `processstage.clientdata` as a top-level JSON array
+  - Each entry has `DisplayName`, `Type`, and `Field: { AttributeName, IsRequired }`
+  - Updated parser to read this format, exposing field names and required flags per step
+- **Export Failures Under PPTB Desktop** - All export operations (JSON, Markdown, HTML, ZIP) now work correctly
+  - Dynamic `import()` calls created separate Vite chunks unreachable under the `pptb-webview://` protocol
+  - Converted to static imports so reporters and zip packager bundle into the main chunk
+- **Text Overflow in Component Lists** - Long strings (assembly names, unique names) no longer overflow grid columns
+  - Added `minWidth: 0`, `wordBreak: 'break-word'`, and `overflowWrap: 'anywhere'` to detail grid items
+  - Affects Plugin list, BPF list, and their expanded detail panels
+- **OData Query Compatibility** - Fixed query failures in multiple discovery classes
+  - Removed unsupported `orderBy` from classic workflow queries
+  - Fixed GUID format in custom connector OData filters
+  - Improved GUID normalisation in column security and web resource queries
+- **Placeholder Descriptions** - Business rules no longer show "Click to add description" placeholder text
+  - Applied existing `filterDescription` utility to both row preview and expanded detail panel
+- **Business Rule Parser** - Improved parsing robustness for edge-case XAML structures
+
+### Changed
+- **Classic Workflow Detail View** - Removed verbose migration guidance sections
+  - Removed: Migration Approach, Detected Features & Migration Path, Migration Challenges, Migration Resources
+  - Retained: Migration Complexity Alert and Advisory summary
+- **Theme System** - Simplified by removing the standalone `ThemeToggle` component
+  - Theme handling consolidated into `ThemeContext`; toggle removed from header bars
+- **Component List Layouts** - Improved EnvironmentVariablesList, CustomConnectorsList, and security views with expandable rows
+- **Blueprint Metadata** - Added `solutionNames` field to blueprint result metadata
+- **Connection URL** - `PptbDataverseClient` now receives the environment URL from `toolContext.connectionUrl`
+
 ## [0.7.0] - 2026-02-22
 
 ### Added
