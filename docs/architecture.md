@@ -17,7 +17,7 @@ This collaboration enabled rapid development while maintaining architectural con
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Monorepo Structure](#monorepo-structure)
+2. [Project Structure](#project-structure)
 3. [Core Package Architecture](#core-package-architecture)
 4. [PPTB Tool Package](#pptb-tool-package)
 5. [Dataverse Integration](#dataverse-integration)
@@ -56,75 +56,52 @@ PPSB follows a clean architecture pattern with strict separation of concerns:
 
 ---
 
-## 2. Monorepo Structure
+## 2. Project Structure
+
+The project uses a flat single-package structure (not a monorepo) with all source at root level.
 
 ```
 power-platform-solution-blueprint/
-├── packages/
-│   ├── core/                     # @ppsb/core - Pure TypeScript
-│   │   ├── src/
-│   │   │   ├── types/            # Type definitions
-│   │   │   │   └── blueprint.ts  # Main blueprint types
-│   │   │   ├── dataverse/        # Dataverse client
-│   │   │   │   ├── IDataverseClient.ts
-│   │   │   │   └── PptbDataverseClient.ts
-│   │   │   ├── discovery/        # Component discovery
-│   │   │   │   ├── PublisherDiscovery.ts
-│   │   │   │   ├── SolutionDiscovery.ts
-│   │   │   │   ├── EntityDiscovery.ts
-│   │   │   │   ├── PluginDiscovery.ts
-│   │   │   │   ├── FlowDiscovery.ts
-│   │   │   │   ├── ... (12 discovery services)
-│   │   │   ├── analyzers/        # Analysis components
-│   │   │   │   ├── PerformanceAnalyzer.ts
-│   │   │   │   ├── WorkflowMigrationAnalyzer.ts
-│   │   │   │   ├── CrossEntityMapper.ts
-│   │   │   │   └── ExternalDependencyAggregator.ts
-│   │   │   ├── generators/       # ERD and blueprint generation
-│   │   │   │   ├── ERDGenerator.ts
-│   │   │   │   └── BlueprintGenerator.ts
-│   │   │   ├── reporters/        # Export formats
-│   │   │   │   ├── MarkdownReporter.ts
-│   │   │   │   ├── JsonReporter.ts
-│   │   │   │   ├── HtmlReporter.ts
-│   │   │   │   └── ZipPackager.ts
-│   │   │   └── parsers/          # Content parsers
-│   │   │       ├── FlowDefinitionParser.ts
-│   │   │       ├── JavaScriptParser.ts
-│   │   │       └── BusinessRuleParser.ts
-│   │   ├── package.json
-│   │   └── tsconfig.json
+├── src/
+│   ├── core/                     # Pure TypeScript business logic
+│   │   ├── dataverse/            # PptbDataverseClient.ts
+│   │   ├── discovery/            # 12+ component discovery services
+│   │   ├── analyzers/            # Analysis engines
+│   │   │   ├── PerformanceAnalyzer.ts
+│   │   │   ├── WorkflowMigrationAnalyzer.ts
+│   │   │   ├── CrossEntityMapper.ts
+│   │   │   └── ExternalDependencyAggregator.ts
+│   │   ├── generators/           # ERD and blueprint generation
+│   │   │   ├── ERDGenerator.ts
+│   │   │   └── BlueprintGenerator.ts
+│   │   ├── reporters/            # Export formats
+│   │   │   ├── MarkdownReporter.ts
+│   │   │   ├── JsonReporter.ts
+│   │   │   ├── HtmlReporter.ts
+│   │   │   └── ZipPackager.ts
+│   │   ├── exporters/            # Export-format helpers
+│   │   ├── parsers/              # Content parsers
+│   │   │   ├── FlowDefinitionParser.ts
+│   │   │   ├── JavaScriptParser.ts
+│   │   │   └── BusinessRuleParser.ts
+│   │   ├── types/                # Shared TypeScript interfaces and types
+│   │   └── utils/                # Shared utility functions
 │   │
-│   └── pptb-tool/                # @ppsb/pptb - React UI
-│       ├── src/
-│       │   ├── App.tsx           # Main application
-│       │   ├── components/       # React components
-│       │   │   ├── ScopeSelector.tsx
-│       │   │   ├── ResultsDashboard.tsx
-│       │   │   ├── ERDView.tsx
-│       │   │   ├── EntityDetailView.tsx
-│       │   │   ├── ... (20+ components)
-│       │   ├── hooks/            # Custom React hooks
-│       │   │   └── useBlueprintGeneration.ts
-│       │   ├── types/
-│       │   │   └── pptb.d.ts     # PPTB API types
-│       │   └── main.tsx          # Entry point
-│       ├── index.html
-│       ├── vite.config.ts
-│       ├── package.json
-│       └── tsconfig.json
+│   └── components/               # React UI — no business logic
+│       ├── App.tsx
+│       ├── ScopeSelector.tsx
+│       ├── ResultsDashboard.tsx
+│       └── ... (20+ components and hooks)
 │
 ├── docs/                         # Documentation
-├── package.json                  # Monorepo root
-├── pnpm-workspace.yaml
-└── README.md
+├── CLAUDE.md
+├── index.html
+├── package.json
+├── vite.config.ts
+└── tsconfig.json
 ```
 
-**Monorepo Benefits**:
-- **Shared Types**: Core types reused in UI
-- **Atomic Changes**: Change core + UI in single commit
-- **Simplified Builds**: Single `pnpm build` builds everything
-- **Consistent Dependencies**: Shared dependency versions via pnpm workspaces
+**Why flat structure?** PPTB Desktop requires a single-package layout. The original monorepo (packages/core + packages/pptb-tool) was dismantled in v0.5.1 due to `pptb-webview://` protocol incompatibilities with workspace package references.
 
 ---
 
@@ -158,7 +135,7 @@ export interface IDataverseClient {
 ```
 
 **Implementation** (`PptbDataverseClient.ts`):
-- Uses `window.toolboxAPI.dataverse.queryData()`
+- Uses `window.dataverseAPI.queryData()`
 - Builds OData query strings
 - Parses responses
 - Handles errors and retries
@@ -413,7 +390,7 @@ if (!window.toolboxAPI) {
 ```typescript
 async query<T>(odataQuery: string): Promise<QueryResult<T>> {
   try {
-    const result = await window.toolboxAPI.dataverse.queryData(odataQuery);
+    const result = await window.dataverseAPI.queryData(odataQuery);
     return {
       value: result.value,
       count: result.value.length,
