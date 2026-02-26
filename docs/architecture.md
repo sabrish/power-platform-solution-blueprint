@@ -18,8 +18,8 @@ This collaboration enabled rapid development while maintaining architectural con
 
 1. [Overview](#overview)
 2. [Project Structure](#project-structure)
-3. [Core Package Architecture](#core-package-architecture)
-4. [PPTB Tool Package](#pptb-tool-package)
+3. [Core Business Logic](#core-business-logic)
+4. [React UI Components](#react-ui-components)
 5. [Dataverse Integration](#dataverse-integration)
 6. [Discovery Components](#discovery-components)
 7. [Analysis Components](#analysis-components)
@@ -105,9 +105,9 @@ power-platform-solution-blueprint/
 
 ---
 
-## 3. Core Package Architecture
+## 3. Core Business Logic
 
-The `@ppsb/core` package is pure TypeScript with zero UI dependencies.
+The `src/core/` directory is pure TypeScript with zero UI dependencies.
 
 ### Type System
 
@@ -244,7 +244,7 @@ Analyzers take discovered data and produce insights:
 
 ---
 
-## 4. PPTB Tool Package
+## 4. React UI Components
 
 React 18 application using Vite and Fluent UI v9.
 
