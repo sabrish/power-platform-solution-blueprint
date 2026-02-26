@@ -41,12 +41,17 @@ Report: **"Implementation context loaded: [files read]"**
 ```
 power-platform-solution-blueprint/
 ├── src/
-│   ├── core/           ← Pure TypeScript business logic ONLY
-│   │   ├── types.ts    ← All shared TypeScript interfaces and types
-│   │   ├── discovery/  ← Dataverse API calls, data fetching
-│   │   ├── analysis/   ← Business logic: complexity scoring, dependency mapping etc
-│   │   └── export/     ← Markdown, JSON, HTML, ZIP generation
-│   └── components/     ← React UI components ONLY (no business logic)
+│   ├── core/               ← Pure TypeScript business logic ONLY
+│   │   ├── analyzers/      ← Analysis engines (performance, workflow migration, cross-entity, dependencies)
+│   │   ├── dataverse/      ← PptbDataverseClient — all Dataverse API calls
+│   │   ├── discovery/      ← Component discovery classes (entities, plugins, flows, etc.)
+│   │   ├── exporters/      ← Export-format helpers
+│   │   ├── generators/     ← BlueprintGenerator, ERDGenerator
+│   │   ├── parsers/        ← FlowDefinitionParser, JavaScriptParser, BusinessRuleParser
+│   │   ├── reporters/      ← MarkdownReporter, JsonReporter, HtmlReporter, ZipPackager
+│   │   ├── types/          ← Shared TypeScript interfaces and types
+│   │   └── utils/          ← Shared utility functions
+│   └── components/         ← React UI components ONLY (no business logic)
 ├── docs/               ← Project documentation
 ├── CLAUDE.md
 ├── UI_PATTERNS.md
@@ -72,7 +77,7 @@ power-platform-solution-blueprint/
 - No inline styles — Fluent UI v9 `makeStyles` only
 - Every async operation must handle loading, error, and empty states
 - No direct DOM manipulation — React state and refs only
-- Custom hooks in `src/components/hooks/` for reusable stateful logic
+- Custom hooks in `src/hooks/` for reusable stateful logic
 
 **Fluent UI v9:**
 - Import from `@fluentui/react-components` only
