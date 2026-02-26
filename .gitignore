@@ -44,3 +44,6 @@ coverage/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Claude Code agent interactions log
+.claude/memory/interactions/

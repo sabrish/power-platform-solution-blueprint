@@ -1,163 +1,95 @@
-# Publishing to npm - Trusted Publishing Setup
+# Publishing to npm
 
-This repository uses **GitHub Actions with npm provenance** for secure, automated publishing to npm.
+This repository publishes to npm using **OIDC Trusted Publishing** — no long-lived npm tokens required.
 
-## 🔐 Security Features
-
-- ✅ **Provenance attestations** - Cryptographically signed build provenance
-- ✅ **OIDC authentication** - No long-lived tokens in workflows
-- ✅ **2FA support** - Manual workflow supports one-time passwords
-- ✅ **Minimal permissions** - Workflows use least-privilege access
+> **Setup guide:** See [`NPM_TRUSTED_PUBLISHING.md`](NPM_TRUSTED_PUBLISHING.md) for one-time npm + GitHub configuration.
 
 ---
 
-## 📋 One-Time Setup
+## How Publishing Works
 
-### 1. Create npm Access Token
+The `publish-npm.yml` workflow handles all publishing. It authenticates with npm via OIDC (short-lived token, no secrets to manage) and generates signed provenance attestations automatically.
 
-**Required for automated publishing until npm fully supports OIDC.**
+**Triggers:**
+- Automatically on GitHub Release publication (`release: published`)
+- Manually via Actions → "Publish to npm" → "Run workflow"
 
-1. Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-2. Click **"Generate New Token"** → **"Granular Access Token"**
-3. Configure the token:
-   - **Token name**: `GitHub Actions - power-platform-solution-blueprint`
-   - **Expiration**: 90 days (maximum)
-   - **Packages and scopes**: Select your package
-   - **Permissions**:
-     - ✅ Read and write (for publishing)
-   - **Organizations**: (Leave default)
-   - **IP allowances**: GitHub Actions IP ranges (optional for extra security)
-4. Click **"Generate Token"**
-5. **Copy the token immediately** (you won't see it again)
-
-### 2. Add Token to GitHub Secrets
-
-1. Go to your GitHub repository: https://github.com/sabrish/power-platform-solution-blueprint
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **"New repository secret"**
-4. Name: `NPM_TOKEN`
-5. Value: Paste your npm token
-6. Click **"Add secret"**
-
-### 3. Enable Provenance on npm (Optional but Recommended)
-
-1. Go to your package page: https://www.npmjs.com/package/@sabrish/power-platform-solution-blueprint
-2. Navigate to **Settings**
-3. Enable **"Provenance attestations"** if available
+The workflow runs on the `npm` GitHub Environment. If that environment has required-reviewer protection configured, you will receive an approval notification before the job runs.
 
 ---
 
-## 🚀 Publishing Methods
+## Release Process
 
-### Method 1: Automatic Publish (via GitHub Release)
+Follow the release workflow defined in `.claude/agents/orchestrator.md`. In summary:
 
-**Recommended for version releases**
-
-1. Update version in `package.json`:
+1. Reviewer, Security Auditor, Document Updater, Developer all run in sequence (see orchestrator)
+2. Orchestrator prints the exact git commands to run manually:
    ```bash
-   npm version patch  # or minor, or major
+   git add package.json CHANGELOG.md README.md npm-shrinkwrap.json
+   git commit -m "chore: release v[version]"
+   git tag v[version] -m "Release v[version]"
+   git push origin main
+   git push origin v[version]
    ```
+3. Create a GitHub Release from the tag — this triggers the publish workflow automatically
 
-2. Commit and push:
-   ```bash
-   git add package.json
-   git commit -m "Bump version to X.Y.Z"
-   git push
-   ```
+---
 
-3. Create a GitHub Release:
-   ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes "Release notes here"
-   ```
+## Manual Publish (workflow_dispatch)
 
-   Or via GitHub UI:
-   - Go to **Releases** → **Draft a new release**
-   - Create a new tag (e.g., `v0.5.1`)
-   - Click **"Publish release"**
-
-4. The workflow will automatically:
-   - Build the project
-   - Publish to npm with provenance
-   - Generate signed attestations
-
-### Method 2: Manual Publish (via GitHub Actions)
-
-**For immediate publishing with 2FA**
-
-1. Go to **Actions** → **Manual Publish to npm**
+1. Go to **Actions** → **Publish to npm**
 2. Click **"Run workflow"**
-3. Enter your current 2FA code (6 digits from authenticator app)
+3. Optionally enter a version string (leave blank to use `package.json` version)
 4. Click **"Run workflow"**
-5. Monitor the workflow execution
+5. Approve the deployment in the `npm` environment if required-reviewer protection is active
 
-### Method 3: Local Publish (Fallback)
+---
 
-**Only if GitHub Actions is unavailable**
+## Local Publish (emergency fallback only)
+
+Only use this if GitHub Actions is unavailable:
 
 ```bash
-# Ensure you're logged in
+# Ensure you are logged in to npm
 npm whoami
 
 # Build the project
 pnpm build
 
-# Publish with 2FA
-npm publish --access public --otp=YOUR_2FA_CODE
+# Publish
+npm publish --access public
 ```
 
 ---
 
-## 🔍 Verifying Publication
-
-After publishing, verify the package:
+## Verifying Publication
 
 ```bash
-# View package info
+# Check package info
 npm view @sabrish/power-platform-solution-blueprint
 
-# Check provenance (if supported)
+# View provenance signatures
 npm view @sabrish/power-platform-solution-blueprint --json | jq .dist.signatures
 ```
 
-Visit your package page:
-https://www.npmjs.com/package/@sabrish/power-platform-solution-blueprint
-
-Look for the **provenance badge** (🛡️ Provenance) indicating secure publishing.
+Visit the package page and look for the **Provenance** badge.
 
 ---
 
-## 🔄 Token Rotation
+## Troubleshooting
 
-npm granular access tokens expire after 90 days. Set a calendar reminder to rotate:
-
-1. 7 days before expiration, generate a new token (same process as setup)
-2. Update `NPM_TOKEN` secret in GitHub
-3. Delete the old token from npm
-
----
-
-## 🐛 Troubleshooting
-
-### Workflow fails with "403 Forbidden"
-- **Cause**: Token expired or insufficient permissions
-- **Fix**: Regenerate token with "Read and write" permission
-
-### Workflow fails with "E401 Unauthorized"
-- **Cause**: Token not set or incorrect in GitHub Secrets
-- **Fix**: Verify `NPM_TOKEN` secret exists and is correct
-
-### Manual workflow requires 2FA but fails
-- **Cause**: OTP code expired (codes are valid for 30 seconds)
-- **Fix**: Get a fresh code and run workflow immediately
-
-### Package size warning
-- **Cause**: Large build artifacts (expected for this project)
-- **Fix**: This is normal - Mermaid and other dependencies are large
+| Error | Cause | Fix |
+|-------|-------|-----|
+| "This operation requires authentication" | Trusted Publisher not configured on npm | Configure it in npm package settings — see `NPM_TRUSTED_PUBLISHING.md` |
+| "Package does not exist" | First publish not completed | Do the first publish locally: `npm publish --access public` |
+| "Workflow not authorized" | Wrong workflow/repo details in npm trusted publisher config | Verify: owner `sabrish`, repo `power-platform-solution-blueprint`, workflow `publish-npm.yml`, environment `npm` |
+| Build fails | TypeScript errors or pnpm lockfile out of date | Fix errors locally; run `pnpm install` if lockfile is stale |
 
 ---
 
-## 📚 Additional Resources
+## Resources
 
-- [npm Provenance Documentation](https://docs.npmjs.com/generating-provenance-statements)
-- [GitHub Actions OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+- [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers/)
+- [GitHub OIDC Hardening](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+- [npm Provenance](https://docs.npmjs.com/generating-provenance-statements)
 - [PPTB Publishing Guide](https://docs.powerplatformtoolbox.com/tool-development/publishing)

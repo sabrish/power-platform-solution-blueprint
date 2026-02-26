@@ -56,7 +56,7 @@ This guide ensures only @sabrish can approve PRs, merge code, and deploy to npm.
 
 2. Click **"New environment"** (or edit if exists)
 
-3. **Name**: `npm-production`
+3. **Name**: `npm`
 
 4. **Configure environment:**
 
@@ -70,9 +70,9 @@ This guide ensures only @sabrish can approve PRs, merge code, and deploy to npm.
 
 5. Click **"Save protection rules"**
 
-### Update the workflow to use this environment:
+### Workflow configuration:
 
-The workflow needs to reference this environment. Let me update it:
+The `publish-npm.yml` workflow already references `environment: name: npm`. No further changes needed.
 
 ---
 
@@ -125,7 +125,7 @@ The workflow needs to reference this environment. Let me update it:
 1. **Test PR protection:**
    - Create a test branch: `git checkout -b test-protection`
    - Make a change: `echo "test" >> README.md`
-   - Commit and push: `git add . && git commit -m "test" && git push -u origin test-protection`
+   - Commit and push: `git add README.md && git commit -m "test: branch protection check" && git push -u origin test-protection`
    - Create PR on GitHub
    - Try to merge without approval → Should be blocked
 
@@ -167,8 +167,8 @@ If you need to bypass protections temporarily (emergencies only):
 
 - [ ] Branch protection rules configured on `main`
 - [ ] CODEOWNERS file committed (✅ Already done)
-- [ ] Environment protection set up for `npm-production`
-- [ ] Workflow updated to use protected environment
+- [ ] Environment `npm` protection set up in GitHub UI (required reviewers, protected branches only)
+- [x] Workflow already references `environment: name: npm` ✅
 - [ ] Repository settings reviewed
 - [ ] Actions permissions restricted
 - [ ] Protection tested with test PR

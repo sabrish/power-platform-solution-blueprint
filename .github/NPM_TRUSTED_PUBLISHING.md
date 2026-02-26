@@ -36,7 +36,7 @@ npm requires the package to exist before you can configure trusted publishing.
      - **Repository owner**: `sabrish`
      - **Repository name**: `power-platform-solution-blueprint`
      - **Workflow file**: `publish-npm.yml`
-     - **Environment** (optional): `npm-production`
+     - **Environment** (optional): `npm`
 
 4. **Save the configuration**
 
@@ -108,7 +108,7 @@ gh release create v0.5.2 --title "v0.5.2" --notes "Release notes"
 ### Manual Publish (via Workflow):
 1. Go to Actions → Publish to npm
 2. Click "Run workflow"
-3. OIDC handles npm authentication automatically (no npm token required), but GitHub environment protection rules for the `npm-production` environment may still require manual approval before the job runs.
+3. OIDC handles npm authentication automatically (no npm token required), but GitHub environment protection rules for the `npm` environment may still require manual approval before the job runs.
 
 ---
 
