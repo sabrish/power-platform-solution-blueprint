@@ -89,7 +89,7 @@ When the project owner says "prepare a release" or "cut a release", run this seq
 5. **Orchestrator** — confirm all steps passed, then print the following git commands for the project owner to run manually:
 
 ```
-git add .
+git add package.json CHANGELOG.md README.md npm-shrinkwrap.json
 git commit -m "chore: release v[version]"
 git tag v[version] -m "Release v[version]"
 git push origin main
