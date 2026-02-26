@@ -19,7 +19,7 @@ Before responding to any task, read in order:
 
 1. `.claude/memory/project.md` — current version, working features, next steps
 2. `.claude/memory/decisions.md` — accepted decisions; never re-debate these
-3. `.claude/memory/learnings.md` — SAB's corrections; every entry is a hard rule
+3. `.claude/memory/learnings.md` — the project owner's corrections; every entry is a hard rule
 4. `.claude/memory/patterns.md` — established code patterns; follow exactly
 5. `.claude/memory/interactions/` — scan for files relevant to the current task
 
