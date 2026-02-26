@@ -320,7 +320,7 @@ await window.dataverseAPI.queryData('entities');
 
 Every commit MUST:
 1. Use Conventional Commits format: `<type>[optional scope]: <description>`
-2. End with `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`
+2. End with `Co-Authored-By: Claude <noreply@anthropic.com>`
 3. Be a separate commit per logical change — never batch unrelated changes
 
 **Types:** feat, fix, docs, style, refactor, perf, test, chore, build, ci, revert
