@@ -177,6 +177,14 @@ Self-contained, interactive HTML documentation ready to share with stakeholders.
 
 ---
 
+## 🤖 AI-Assisted Development
+
+This project uses Claude Code with custom sub-agents defined in `.claude/agents/`.
+Shared agent memory (decisions, patterns, learnings) lives in `.claude/memory/`.
+If contributing, agents will automatically load this context.
+
+---
+
 ## 🚦 Installation
 
 ### For PPTB Desktop Users
