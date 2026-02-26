@@ -49,7 +49,7 @@ Report: **"Memory loaded: [files read]"**
 - **NEVER** use `executeDataverseRequest()` or `window.toolboxAPI.dataverse.*` — they do not exist
 - **ALWAYS** use static imports for reporters — dynamic imports break under `pptb-webview://`
 - **ALWAYS** commit one logical change per commit, Conventional Commits format, with trailer:
-  `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`
+  `Co-Authored-By: Claude <noreply@anthropic.com>`
 - **ALWAYS** run security-auditor before any commit touching source, docs, or memory files
 
 ## Key Reference Files

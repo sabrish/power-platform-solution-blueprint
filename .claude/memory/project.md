@@ -77,11 +77,14 @@ Data:           Microsoft Dataverse (Cloud)
 src/
   core/
     dataverse/        PptbDataverseClient.ts
-    discovery/        12+ discovery services
-    generators/       ERDGenerator.ts, BlueprintGenerator.ts
+    discovery/        12+ component discovery services
     analyzers/        PerformanceAnalyzer, WorkflowMigrationAnalyzer, CrossEntityMapper, ExternalDependencyAggregator
+    generators/       ERDGenerator.ts, BlueprintGenerator.ts
     reporters/        MarkdownReporter, JsonReporter, HtmlReporter, ZipPackager
+    exporters/        Export-format helpers
     parsers/          FlowDefinitionParser, JavaScriptParser, BusinessRuleParser
+    types/            Shared TypeScript interfaces and types
+    utils/            Shared utility functions
   components/         React components
   hooks/              Custom React hooks
   types/              TypeScript type definitions
@@ -149,7 +152,7 @@ pnpm typecheck  # Type check
 | `CLAUDE.md` | Primary development guide — read first |
 | `COMPONENT_TYPES_REFERENCE.md` | Complete Dataverse component type codes — always check before implementing discovery |
 | `DATAVERSE_OPTIMIZATION_GUIDE.md` | Performance patterns and GUID handling rules |
-| `UI_PATTERNS.md` | UI design decisions (superseded by CLAUDE.md card-row pattern section) |
+| `UI_PATTERNS.md` | UI design decisions (card-row pattern now canonically documented in `.claude/memory/patterns.md` PATTERN-001) |
 | `docs/architecture.md` | Technical architecture (note: describes old monorepo structure; actual structure is flat since v0.5.1) |
 | `docs/roadmap.md` | Future development plans |
 | `docs/API_SECURITY.md` | API call reference and security considerations |
