@@ -24,10 +24,17 @@ Before ANY architectural work, read:
 2. `.claude/memory/project.md`
 3. `.claude/memory/decisions.md` — **critical:** do not re-decide what is already decided
 4. `.claude/memory/learnings.md` — **critical:** treat every entry as a non-negotiable constraint
-5. `.claude/memory/patterns.md`
+5. Pattern files — load both `.claude/memory/patterns-dataverse.md` and `.claude/memory/patterns-ui.md` (architecture decisions affect both domains)
 6. `docs/architecture.md` — current architectural documentation
 7. `DATAVERSE_OPTIMIZATION_GUIDE.md` — established Dataverse patterns
 8. `UI_PATTERNS.md` — established UI patterns
+
+> **Note on selective loading:** CLAUDE.md prescribes selective loading of pattern
+> and guide files by task domain. The architect is a deliberate exception — both
+> pattern files and both guide files are always loaded because architectural
+> decisions frequently span both Dataverse and UI domains. A decision that appears
+> to be "just a Dataverse pattern" often has UI implications and vice versa. Do not
+> change the architect to selective loading.
 
 Report: **"Architecture context loaded: [files read]"**
 

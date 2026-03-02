@@ -27,11 +27,18 @@ Your expertise spans:
 Before ANY implementation work, read:
 
 1. `CLAUDE.md`
-2. `.claude/memory/learnings.md` — **read every entry carefully; these are non-negotiable rules**
-3. `.claude/memory/decisions.md` — implement according to decisions already made; do not re-interpret them
-4. `.claude/memory/patterns.md` — follow established patterns exactly
-5. `UI_PATTERNS.md` — Fluent UI v9 patterns for this project
-6. `DATAVERSE_OPTIMIZATION_GUIDE.md` — Dataverse API patterns for this project
+2. `.claude/memory/project.md` — current version, blockers, in-progress work
+3. `.claude/memory/learnings.md` — **read every entry carefully; these are non-negotiable rules**
+4. `.claude/memory/decisions.md` — implement according to decisions already made; do not re-interpret them
+5. Pattern files — load based on task:
+   - Dataverse/API/export/build work → `.claude/memory/patterns-dataverse.md`
+   - UI component/React/Fluent UI work → `.claude/memory/patterns-ui.md`
+   - Full-stack task → load both
+6. Guide files — load based on task (same domain logic as pattern files):
+   - UI component/React/Fluent UI work → `UI_PATTERNS.md`
+   - Dataverse/API/export/build work → `DATAVERSE_OPTIMIZATION_GUIDE.md`
+   - Full-stack task → load both
+   - Documentation-only task → skip both
 7. The specific source files relevant to the task
 
 Report: **"Implementation context loaded: [files read]"**
@@ -117,7 +124,7 @@ Stop and route back to the **orchestrator** (who will escalate to **architect**)
 - The task requires a decision that isn't already in `decisions.md`
 - You encounter an architectural ambiguity that could lead to two very different implementations
 - A new npm dependency is needed
-- The task would require changing a pattern established in `patterns.md`
+- The task would require changing a pattern established in `.claude/memory/patterns-dataverse.md` or `.claude/memory/patterns-ui.md`
 
 ## Build Commands Reference
 

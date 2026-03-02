@@ -1,0 +1,51 @@
+---
+name: pre-commit
+description: Pre-commit gate invoked by the orchestrator before any git commit. Runs reviewer then security-auditor in sequence. Not invoked directly by the project owner — the orchestrator calls this when you say "ready to commit" or similar.
+---
+
+/agent orchestrator
+
+Pre-commit gate. Run in this exact order — do not skip steps.
+
+**Files in scope:** $ARGUMENTS
+(If no files specified, ask the project owner which files are being committed before proceeding.)
+
+## Step 1: Reviewer
+
+Invoke the reviewer agent with the files listed above.
+- The reviewer reads learnings.md first — any violation is an automatic blocker
+- The reviewer works through the full review checklist
+- Wait for the reviewer's verdict before proceeding to Step 2
+
+If the reviewer returns ❌ Changes required:
+- Stop. Report the blockers to the project owner.
+- Do NOT proceed to the security audit.
+- Wait for the developer to fix the blockers, then the project owner must re-invoke this skill.
+
+## Step 2: Security Auditor
+
+Only run if Step 1 returned ✅ Approved or ⚠️ Approved with comments.
+
+Invoke the security-auditor with scope limited to the files being committed plus
+.claude/memory/ (memory files are always in scope for security audit).
+
+## Step 3: Combined Verdict
+
+Report to the project owner:
+
+```
+## Pre-Commit Gate Result
+
+**Reviewer:** [✅ Approved | ⚠️ Approved with comments | ❌ Changes required]
+**Security Audit:** [✅ CLEAN | ⚠️ FINDINGS REQUIRE ACTION | ❌ CRITICAL — blocked]
+
+**Verdict:** [CLEAR TO COMMIT | COMMIT WITH CAVEATS: [list] | BLOCKED: [list blockers]]
+
+**Suggested git add:**
+git add [list the files that passed]
+
+**Hold back (needs fixing first):**
+[any files with unresolved blockers]
+```
+
+Never run git add or git commit yourself. Always hand the commands to the project owner.
