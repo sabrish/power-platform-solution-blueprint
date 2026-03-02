@@ -17,7 +17,7 @@
 - All source lives under `src/core/` (business logic) and `src/components/` (React UI)
 - Import paths use relative paths (`./core`, `../core`), never workspace package references (`@ppsb/core`)
 - Single `package.json` at root
-- `docs/architecture.md` still describes the old monorepo structure — it is out of date
+- `docs/architecture.md` updated 2026-03-02 — flat structure, API layer, card-row, static imports all now current
 
 ---
 
