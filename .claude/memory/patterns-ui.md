@@ -35,7 +35,7 @@ const useStyles = makeStyles({
   chevron: { display: 'flex', alignItems: 'center', color: tokens.colorNeutralForeground3 },
   nameColumn: {
     display: 'flex', flexDirection: 'column', gap: '2px',
-    minWidth: 0,  // REQUIRED — enables text truncation
+    minWidth: 0,  // REQUIRED — allows column to shrink so text can wrap
     wordBreak: 'break-word',
   },
   codeText: { fontFamily: 'Consolas, Monaco, monospace', fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 },
@@ -54,8 +54,8 @@ const useStyles = makeStyles({
 1. Self-contained — no `onSelect` prop, no navigation. Detail expands inline below the row.
 2. `makeStyles` only — all styles via design tokens, no inline style objects except one-off overrides.
 3. First grid column is always `24px` (chevron), second is always `minmax(200px, 2fr)` (name column).
-4. `nameColumn` always has `minWidth: 0` to allow truncation.
-5. All long text uses `TruncatedText` component — never raw text in grid cells.
+4. `nameColumn` always has `minWidth: 0` to allow text to wrap below its natural width.
+5. Long text in name/detail columns **wraps** — it does not truncate. Do not use `TruncatedText` in card-row lists: it hard-codes `whiteSpace: 'nowrap'` and `textOverflow: 'ellipsis'`, which contradicts the wrap-don't-truncate rule. Use `wordBreak: 'break-word'` directly. See PATTERN-013.
 6. Expanded detail has `borderTop: 'none'` and `marginTop: '-4px'` to attach seamlessly.
 7. Empty state: full centred panel with icon, heading, description — never a plain string.
 8. ResultsDashboard renders `<MyList items={result.items} />` directly — no surrounding conditional or back button.
@@ -63,8 +63,8 @@ const useStyles = makeStyles({
 ### Checklist
 - [ ] Uses makeStyles + card-row grid (NOT DataGrid)
 - [ ] First grid column 24px chevron, second minmax(200px, 2fr) name
-- [ ] nameColumn has minWidth: 0
-- [ ] All long text uses TruncatedText
+- [ ] nameColumn has minWidth: 0 and wordBreak: 'break-word' (wraps — not truncated)
+- [ ] TruncatedText NOT used in card-row list rows
 - [ ] Expanded detail: borderTop none, marginTop -4px
 - [ ] Self-contained — no onSelect / navigation prop
 - [ ] Empty state has icon + heading + description

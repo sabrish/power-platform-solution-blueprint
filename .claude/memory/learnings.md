@@ -131,7 +131,7 @@
 
 **Affects:** Developer, Reviewer
 **Severity:** High
-**Rule:** Do not use Fluent UI `DataGrid` for any component browser list component. Always use the card-row expandable pattern (see PATTERN-001 in patterns-ui.md).
+**Rule:** Do not use Fluent UI `DataGrid` for any component browser list component. Always use the card-row expandable pattern (see PATTERN-001 in `.claude/memory/patterns-ui.md`).
 **Context:** DataGrid caused column overflow and navigated away from the list view. The canonical examples are FlowsList.tsx and PluginsList.tsx.
 **Example:**
 - Wrong: `<DataGrid items={flows} columns={columns} />`
