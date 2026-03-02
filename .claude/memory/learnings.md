@@ -131,7 +131,7 @@
 
 **Affects:** Developer, Reviewer
 **Severity:** High
-**Rule:** Do not use Fluent UI `DataGrid` for any component browser list component. Always use the card-row expandable pattern (see PATTERN-001 in patterns.md).
+**Rule:** Do not use Fluent UI `DataGrid` for any component browser list component. Always use the card-row expandable pattern (see PATTERN-001 in `.claude/memory/patterns-ui.md`).
 **Context:** DataGrid caused column overflow and navigated away from the list view. The canonical examples are FlowsList.tsx and PluginsList.tsx.
 **Example:**
 - Wrong: `<DataGrid items={flows} columns={columns} />`
@@ -215,7 +215,7 @@
 
 **Affects:** Orchestrator, Developer, Document Updater
 **Severity:** Blocker
-**Rule:** When the project owner says "prepare a release" or "cut a release", the orchestrator must run the following sequence in order: (1) Reviewer — final code review of all changed files, (2) Security Auditor — full sweep of code and `.claude/` folder, (3) Document Updater — bumps version in `package.json`, finalises `CHANGELOG.md` with release date, updates `README.md` version badge and any inline version references — all three must match before proceeding, (4) Developer — runs `pnpm typecheck` (must pass zero errors), then `pnpm build` (must succeed), then `npm shrinkwrap` to capture the updated version from `package.json` — shrinkwrap must always run AFTER the version bump or it will capture the old version number, (5) Orchestrator — confirms all steps passed, then prints the exact git commands for the project owner to run manually: `git add package.json CHANGELOG.md README.md npm-shrinkwrap.json`, `git commit -m "chore: release v[version]"`, `git tag v[version] -m "Release v[version]"`, `git push origin main`, `git push origin v[version]`. The orchestrator must NEVER run `git push` itself.
+**Rule:** The orchestrator owns the release sequence. When the project owner says "prepare a release" or "cut a release", invoke the `/release` skill. The sequence is: (1) Reviewer, (2) Security Auditor, (3) Document Updater — version bump in `package.json`, CHANGELOG and README badge must all match before proceeding, (4) Developer — `pnpm typecheck`, `pnpm build`, `npm shrinkwrap` in that order (shrinkwrap MUST run after version bump), (5) Orchestrator prints git commands for manual execution. The orchestrator must NEVER run `git push` itself.
 **Context:** Git push to the public repo is irreversible. The project owner must retain manual control of the final push step. The orchestrator owns the release sequence coordination but hands off the actual publish action.
 **Example:**
 - Wrong: Orchestrator runs `git push origin v0.8.0` autonomously after tagging

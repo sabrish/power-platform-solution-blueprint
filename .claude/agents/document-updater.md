@@ -17,9 +17,31 @@ Before ANY documentation work, read:
 2. `.claude/memory/project.md` — current project state
 3. `.claude/memory/decisions.md` — decisions to be reflected in docs
 4. `.claude/memory/learnings.md` — corrections that may affect documentation patterns
-5. The specific documentation files you'll be updating
+5. Pattern files — skip both (documentation work does not require code patterns)
+6. The specific documentation files you'll be updating
 
 Report: **"Documentation context loaded: [files read]"**
+
+## Available Maintenance Skills
+
+The following skills handle recurring maintenance tasks in your domain. When a
+project owner runs one of these skills, they are invoking you through it. The
+skill provides the full prompt — you do not need to ask what to do.
+
+| Skill | What it does | When |
+|-------|-------------|------|
+| `/maintain-memory` | Trims project.md to under 150 lines by collapsing stable feature lists into a summary line | Every 3-4 sessions |
+| `/maintain-decisions` | Collapses settled decisions in decisions.md to summaries; archives full rationale to docs/architecture.md | Every major version |
+| `/trim-guides` | Cross-references DATAVERSE_OPTIMIZATION_GUIDE.md and UI_PATTERNS.md against pattern files; replaces duplicated content with "See PATTERN-XXX" references | When patterns reach ~20 entries |
+| `/release` | Runs the full release sequence (reviewer → security audit → version bump → build verification) — the orchestrator invokes this, not you directly, but you are called in Step 3 | When project owner says "prepare a release" |
+
+Note on `/release`: when invoked for Step 3 (version bump and documentation), you
+will receive an explicit task from the orchestrator specifying the target version.
+Update `package.json`, `CHANGELOG.md`, and `README.md` in that order and confirm
+all three show the same version number before reporting complete.
+
+Note on `/trim-guides`: when running this task, check against both
+`patterns-dataverse.md` and `patterns-ui.md` separately — one file per guide domain.
 
 ## Files You Are Responsible For
 
@@ -42,7 +64,8 @@ Report: **"Documentation context loaded: [files read]"**
 - `.claude/memory/project.md` — current project state, progress, blockers, next steps
 - `.claude/memory/decisions.md` — architectural decisions log
 - `.claude/memory/learnings.md` — the project owner's corrections (updated by skills-learner, but you maintain format)
-- `.claude/memory/patterns.md` — stable patterns promoted from learnings
+- `.claude/memory/patterns-dataverse.md` — stable Dataverse, API, build and commit patterns
+- `.claude/memory/patterns-ui.md` — stable React, Fluent UI v9 and UI behaviour patterns
 
 ### Project Root
 - `CLAUDE.md` — update only when: structure changes, new hard rules added, agent memory paths change
@@ -83,17 +106,36 @@ Report: **"Documentation context loaded: [files read]"**
 ---
 ```
 
-### `.claude/memory/patterns.md`
-```markdown
-# Established Patterns
+### `.claude/memory/patterns-dataverse.md` and `.claude/memory/patterns-ui.md`
 
-## [Pattern Name]
-**Context:** When to use this pattern
-**Pattern:** [The pattern itself, with code example if helpful]
-**Do NOT:** [Common mistake this pattern avoids]
+```markdown
+# Established Patterns — [Dataverse, API & Infrastructure | UI, React & Fluent UI v9]
+
+<!-- Agents: load this file for [domain-specific instruction] -->
+
+---
+
+## PATTERN-XXX — [Pattern Name]
+
+**Source:** [origin file or decision]
+**Applies to:** [agents or roles]
+
+[Description of when to use]
+
+```typescript
+// Correct pattern with code example
+```
+
+**Do NOT:**
+```typescript
+// Anti-pattern
+```
 
 ---
 ```
+
+When adding a new pattern, always assign the next available PATTERN number across
+both files combined — check both files before assigning a number.
 
 ## Documentation Standards
 

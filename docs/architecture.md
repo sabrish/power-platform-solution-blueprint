@@ -41,7 +41,8 @@ PPSB follows a clean architecture pattern with strict separation of concerns:
 ├─────────────────────────────────────────┤
 │         Core Library (TypeScript)        │  Business Logic Layer
 ├─────────────────────────────────────────┤
-│    PPTB API (window.toolboxAPI)         │  Data Access Layer
+│  window.dataverseAPI (data queries)     │  Data Access Layer
+│  window.toolboxAPI.getToolContext()     │  (tool context / connection URL)
 ├─────────────────────────────────────────┤
 │      Microsoft Dataverse (Cloud)         │  Data Layer
 └─────────────────────────────────────────┘
@@ -142,8 +143,7 @@ export interface IDataverseClient {
 
 **Why Interface?**:
 - **Testability**: Mock client for unit tests
-- **Flexibility**: Could add NodeDataverseClient for CLI
-- **Portability**: Core package not tied to PPTB Desktop
+- **Flexibility**: Could add alternative implementations (e.g. CLI/Node context)
 
 ### Discovery Services
 
@@ -373,17 +373,36 @@ return <div className={styles.container}>...</div>;
 
 **Initialization**:
 ```typescript
-// main.tsx
+// Minimal local interfaces — no @pptb/types import required.
+// Core avoids direct @pptb/types imports; each module declares only
+// what it needs (pattern established in PptbDataverseClient.ts).
+interface ToolContext {
+  connectionUrl: string;
+}
+interface ToolboxApi {
+  getToolContext(): Promise<ToolContext>;
+}
+interface DataverseApi {
+  queryData(
+    odataQuery: string,
+    connectionTarget?: 'primary' | 'secondary'
+  ): Promise<{ value: Record<string, unknown>[] }>;
+}
 declare global {
   interface Window {
-    toolboxAPI: PptbAPI;
+    toolboxAPI: ToolboxApi;
+    dataverseAPI: DataverseApi;
   }
 }
 
 // Check API availability
-if (!window.toolboxAPI) {
+if (!window.dataverseAPI || !window.toolboxAPI) {
   throw new Error('PPTB Desktop API not available');
 }
+
+// Get environment URL (async — always await)
+const toolContext = await window.toolboxAPI.getToolContext();
+const environmentUrl = toolContext.connectionUrl;
 ```
 
 **Query Pattern**:
@@ -418,8 +437,8 @@ const query = `sdkmessageprocessingsteps?` +
 - Always use `$select` (don't fetch unnecessary fields)
 - Use `$expand` for related data (reduces round-trips)
 - Filter server-side when possible (`$filter`)
-- Sort server-side (`$orderby`)
-- Batch queries when API supports it
+- Sort server-side (`$orderby`) — **not supported on metadata endpoints** (`EntityDefinitions`); sort in memory for those
+- Batch queries when API supports it (see `DATAVERSE_OPTIMIZATION_GUIDE.md`)
 
 ### Performance Optimizations
 
@@ -664,14 +683,16 @@ interface IReporter {
 - Use `IntersectionObserver` to detect visibility
 - Defer Mermaid rendering until needed
 
-### Table Virtualization
+### List Rendering
 
-**Problem**: Rendering 1000-row tables is slow
+**Problem**: Rendering large component lists is slow
 
-**Solution**:
-- Use Fluent UI DataGrid (has built-in virtualization)
-- Only render visible rows
-- Smooth scrolling with invisible buffer
+**Solution**: Card-row expandable pattern (see `UI_PATTERNS.md` and PATTERN-001 in `.claude/memory/patterns-ui.md`)
+- Each component renders as a collapsed card row
+- Detail expands inline on click — no navigation away from list
+- Only the visible rows carry full DOM; collapsed rows are lightweight
+
+**Note**: Fluent UI `DataGrid` is **not used** for component browser lists. DataGrid caused column overflow and navigation issues. The card-row pattern is the only approved list pattern for the Component Browser. The sole legacy exception is `ConnectionReferencesList.tsx` — do not replicate.
 
 ### Caching
 
@@ -679,17 +700,17 @@ interface IReporter {
 
 **Implementation**:
 ```typescript
-private cache = new Map<string, any>();
+private pluginCache = new Map<string, Plugin[]>();
 
 async getPlugins(entityId: string): Promise<Plugin[]> {
-  const cacheKey = `plugins-${entityId}`;
+  const cacheKey = entityId.toLowerCase().replace(/[{}]/g, '');
 
-  if (this.cache.has(cacheKey)) {
-    return this.cache.get(cacheKey);
+  if (this.pluginCache.has(cacheKey)) {
+    return this.pluginCache.get(cacheKey)!;
   }
 
   const plugins = await this.fetchPlugins(entityId);
-  this.cache.set(cacheKey, plugins);
+  this.pluginCache.set(cacheKey, plugins);
   return plugins;
 }
 ```
@@ -853,27 +874,24 @@ export class PdfReporter {
 
 ### Plugin Architecture (Future)
 
-**Vision**: Load plugins at runtime
+**Vision**: Statically-registered extension modules
 
-```json
-{
-  "plugins": [
-    {
-      "name": "custom-discovery",
-      "entry": "./plugins/custom-discovery.js"
-    },
-    {
-      "name": "custom-analyzer",
-      "entry": "./plugins/custom-analyzer.js"
-    }
-  ]
-}
+Custom discovery services, analyzers, and reporters are registered at build time via static imports in `BlueprintGenerator.ts`. Dynamic `import()` is **not permitted** — PPTB Desktop serves the tool via the `pptb-webview://` protocol, which cannot resolve dynamically chunked assets. All extension code must be bundled into the main chunk.
+
+```typescript
+// Register a custom discovery service — static import required
+import { EmailTemplateDiscovery } from './discovery/EmailTemplateDiscovery';
+
+// In BlueprintGenerator.generate():
+const emailTemplates = await new EmailTemplateDiscovery(this.client)
+  .discover(scope);
+result.emailTemplates = emailTemplates;
 ```
 
 **Benefits**:
-- Community contributions
 - Custom organizational logic
 - Industry-specific analyzers
+- Additional export formats
 
 ---
 
@@ -887,3 +905,7 @@ PPSB architecture emphasizes:
 - **Maintainability** (Clear patterns, comprehensive docs)
 
 **Made with ❤️ for the Power Platform community**
+
+---
+
+*Last updated: 2026-03-02 — updated API layer description, DataGrid → card-row correction, static import constraint, metadata $orderby caveat, typed cache. Flat-structure migration documented in Section 2 (since v0.5.1).*
