@@ -152,8 +152,8 @@ pnpm typecheck  # Type check
 | `CLAUDE.md` | Primary development guide — read first |
 | `COMPONENT_TYPES_REFERENCE.md` | Complete Dataverse component type codes — always check before implementing discovery |
 | `DATAVERSE_OPTIMIZATION_GUIDE.md` | Performance patterns and GUID handling rules |
-| `UI_PATTERNS.md` | UI design decisions (card-row pattern now canonically documented in `.claude/memory/patterns.md` PATTERN-001) |
-| `docs/architecture.md` | Technical architecture (note: describes old monorepo structure; actual structure is flat since v0.5.1) |
+| `UI_PATTERNS.md` | UI design decisions (card-row pattern now canonically documented in `.claude/memory/patterns-ui.md` PATTERN-001) |
+| `docs/architecture.md` | Technical architecture — updated 2026-03-02; flat structure, correct API layer, card-row pattern, static-import constraint |
 | `docs/roadmap.md` | Future development plans |
 | `docs/API_SECURITY.md` | API call reference and security considerations |
 | `docs/user-guide.md` | End-user documentation |
