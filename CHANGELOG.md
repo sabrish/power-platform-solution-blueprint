@@ -5,6 +5,21 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Plugin Assembly Recovery** - New Plugin Assemblies browser with DLL recovery, batch ZIP export, and decompiler command templates
+  - Supports local terminal decompilation workflows (e.g., ILSpy command-line)
+  - Includes lightweight .NET reverse-engineering hints (dependency signals, external URLs, interesting strings)
+- **Plugin Assembly Discovery** - Collect assembly metadata (version, culture, public key token, source/isolation mode) and per-assembly plugin counts
+
+### Changed
+- **Results Dashboard** - Added Plugin Assemblies tab and summary metrics for assembly counts
+
+### Fixed
+- **Dataverse Query Resilience** - Primary queries now retry with exponential backoff and fail over to secondary endpoints on transient errors
+- **Security Role Discovery Resilience** - Blueprint generation skips failed roles instead of aborting the entire run
+
 ## [0.7.2] - 2026-02-23
 
 ### Fixed

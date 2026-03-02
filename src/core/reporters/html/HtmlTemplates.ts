@@ -183,6 +183,10 @@ ${items}
       <div class="card-label">Plugins</div>
     </div>
     <div class="summary-card">
+      <div class="card-number">${summary.totalPluginAssemblies}</div>
+      <div class="card-label">Plugin Assemblies</div>
+    </div>
+    <div class="summary-card">
       <div class="card-number">${summary.totalFlows}</div>
       <div class="card-label">Flows</div>
     </div>

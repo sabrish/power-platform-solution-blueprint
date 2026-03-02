@@ -4,6 +4,7 @@
 import type { PluginStep } from '../types.js';
 import type { EntityFieldSecurity } from '../discovery/FieldSecurityProfileDiscovery.js';
 import type { SecurityRoleDetail } from '../discovery/SecurityRoleDiscovery.js';
+import type { PluginAssembly } from './pluginAssembly.js';
 
 /**
  * Progress phases during blueprint generation
@@ -458,6 +459,7 @@ export interface EntityBlueprint {
 export interface BlueprintSummary {
   totalEntities: number;
   totalPlugins: number;
+  totalPluginAssemblies: number;
   totalPluginPackages: number;
   totalFlows: number;
   totalBusinessRules: number;
@@ -663,6 +665,7 @@ export interface BlueprintResult {
   entities: EntityBlueprint[];
   summary: BlueprintSummary;
   plugins: PluginStep[];
+  pluginAssemblies: PluginAssembly[];
   pluginsByEntity: Map<string, PluginStep[]>;
   flows: Flow[];
   flowsByEntity: Map<string, Flow[]>;

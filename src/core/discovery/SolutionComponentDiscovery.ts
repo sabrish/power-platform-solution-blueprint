@@ -44,6 +44,7 @@ export class SolutionComponentDiscovery {
         entityIds: [],
         attributeIds: [],
         pluginIds: [],
+        pluginAssemblyIds: [],
         pluginPackageIds: [],
         workflowIds: [],
         webResourceIds: [],
@@ -148,6 +149,11 @@ export class SolutionComponentDiscovery {
                 inventory.pluginIds.push(objectId);
               }
               break;
+            case ComponentType.PluginAssembly:
+              if (!inventory.pluginAssemblyIds.includes(objectId)) {
+                inventory.pluginAssemblyIds.push(objectId);
+              }
+              break;
             case ComponentType.PluginPackage:
               if (!inventory.pluginPackageIds.includes(objectId)) {
                 inventory.pluginPackageIds.push(objectId);
@@ -224,6 +230,7 @@ export class SolutionComponentDiscovery {
       entityIds: [],
       attributeIds: [],
       pluginIds: [],
+      pluginAssemblyIds: [],
       pluginPackageIds: [],
       workflowIds: [],
       webResourceIds: [],
@@ -245,6 +252,12 @@ export class SolutionComponentDiscovery {
         select: ['sdkmessageprocessingstepid'],
       });
       inventory.pluginIds = pluginsResult.value.map(p => p.sdkmessageprocessingstepid.toLowerCase().replace(/[{}]/g, ''));
+
+      // Query plugin assemblies - all
+      const assembliesResult = await this.client.query<{ pluginassemblyid: string }>('pluginassemblies', {
+        select: ['pluginassemblyid'],
+      });
+      inventory.pluginAssemblyIds = assembliesResult.value.map(a => a.pluginassemblyid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query workflows (all categories) - all workflows
       const workflowsResult = await this.client.query<{ workflowid: string }>('workflows', {

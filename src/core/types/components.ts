@@ -9,6 +9,7 @@ export interface ComponentInventory {
   entityIds: string[];
   attributeIds: string[];
   pluginIds: string[];
+  pluginAssemblyIds: string[];
   pluginPackageIds: string[];
   workflowIds: string[];
   webResourceIds: string[];

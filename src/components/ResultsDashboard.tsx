@@ -41,6 +41,7 @@ import { SolutionDistributionView } from './SolutionDistributionView';
 import { ExportDialog } from './ExportDialog';
 import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
+import { PluginAssemblyRecoveryView } from './PluginAssemblyRecoveryView';
 import { Footer } from './Footer';
 
 const useStyles = makeStyles({
@@ -198,6 +199,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         return result.summary.totalPlugins > 0;
       case 'pluginPackages':
         return result.summary.totalPluginPackages > 0;
+      case 'pluginAssemblies':
+        return result.summary.totalPluginAssemblies > 0;
       case 'flows':
         return result.summary.totalFlows > 0;
       case 'businessRules':
@@ -238,6 +241,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         return result.summary.totalPlugins;
       case 'pluginPackages':
         return result.summary.totalPluginPackages;
+      case 'pluginAssemblies':
+        return result.summary.totalPluginAssemblies;
       case 'flows':
         return result.summary.totalFlows;
       case 'businessRules':
@@ -273,6 +278,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
   const componentTypes = [
     { key: 'entities', label: 'Entities', icon: '📊' },
     { key: 'plugins', label: 'Plugins', icon: '🔌' },
+    { key: 'pluginAssemblies', label: 'Plugin Assemblies', icon: '🧩' },
     { key: 'pluginPackages', label: 'Plugin Packages', icon: '📦' },
     { key: 'flows', label: 'Flows', icon: '🌊' },
     { key: 'businessRules', label: 'Business Rules', icon: '📋' },
@@ -406,6 +412,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
               <Tab value="plugins">{`🔌 Plugins (${result.summary.totalPlugins})`}</Tab>
             )}
 
+            {hasResults('pluginAssemblies') && (
+              <Tab value="pluginAssemblies">{`🧩 Plugin Assemblies (${result.summary.totalPluginAssemblies})`}</Tab>
+            )}
+
             {hasResults('flows') && (
               <Tab value="flows">{`🌊 Flows (${result.summary.totalFlows})`}</Tab>
             )}
@@ -467,6 +477,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
 
             {selectedTab === 'plugins' && hasResults('plugins') && (
               <PluginsList plugins={result.plugins} />
+            )}
+
+            {selectedTab === 'pluginAssemblies' && hasResults('pluginAssemblies') && (
+              <PluginAssemblyRecoveryView assemblies={result.pluginAssemblies} />
             )}
 
             {selectedTab === 'flows' && hasResults('flows') && (

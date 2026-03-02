@@ -5,6 +5,7 @@ import { SolutionDiscovery } from '../discovery/SolutionDiscovery.js';
 import { PublisherDiscovery } from '../discovery/PublisherDiscovery.js';
 import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
 import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
+import { PluginAssemblyDiscovery } from '../discovery/PluginAssemblyDiscovery.js';
 import { FlowDiscovery } from '../discovery/FlowDiscovery.js';
 import { BusinessRuleDiscovery } from '../discovery/BusinessRuleDiscovery.js';
 import { ClassicWorkflowDiscovery } from '../discovery/ClassicWorkflowDiscovery.js';
@@ -23,6 +24,7 @@ import { MarkdownReporter } from '../reporters/MarkdownReporter.js';
 import { HtmlReporter } from '../reporters/HtmlReporter.js';
 import { ZipPackager } from '../exporters/ZipPackager.js';
 import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
+import type { PluginAssembly } from '../types/pluginAssembly.js';
 import type { ComponentInventory, ComponentInventoryWithSolutions, WorkflowInventory } from '../types/components.js';
 import type {
   GeneratorOptions,
@@ -105,6 +107,7 @@ export class BlueprintGenerator {
 
       // STEP 3: Process Plugins
       const plugins = await this.processPlugins(inventory.pluginIds);
+      const pluginAssemblies = await this.processPluginAssemblies(inventory.pluginAssemblyIds, plugins);
       const pluginsByEntity = this.groupPluginsByEntity(plugins);
 
       if (inventory.pluginIds.length === 0) {
@@ -239,6 +242,7 @@ export class BlueprintGenerator {
         summary: {
           totalEntities: 0,
           totalPlugins: 0,
+          totalPluginAssemblies: 0,
           totalPluginPackages: 0,
           totalFlows: 0,
           totalBusinessRules: 0,
@@ -259,6 +263,7 @@ export class BlueprintGenerator {
           totalCustomPages: 0,
         },
         plugins,
+        pluginAssemblies,
         pluginsByEntity,
         flows,
         flowsByEntity,
@@ -307,6 +312,7 @@ export class BlueprintGenerator {
       const summary = {
         totalEntities: entityBlueprints.length,
         totalPlugins: inventory.pluginIds.length,
+        totalPluginAssemblies: pluginAssemblies.length,
         totalPluginPackages: inventory.pluginPackageIds.length,
         totalFlows: workflowInventory.flowIds.length,
         totalBusinessRules: workflowInventory.businessRuleIds.length,
@@ -351,6 +357,7 @@ export class BlueprintGenerator {
         entities: entityBlueprints,
         summary,
         plugins,
+        pluginAssemblies,
         pluginsByEntity,
         flows,
         flowsByEntity,
@@ -514,6 +521,7 @@ export class BlueprintGenerator {
     return (
       inventory.entityIds.length === 0 &&
       inventory.pluginIds.length === 0 &&
+      inventory.pluginAssemblyIds.length === 0 &&
       inventory.workflowIds.length === 0 &&
       inventory.webResourceIds.length === 0 &&
       inventory.canvasAppIds.length === 0 &&
@@ -535,6 +543,9 @@ export class BlueprintGenerator {
     }
     if (inventory.pluginIds.length > 0) {
       parts.push(`${inventory.pluginIds.length} plugins`);
+    }
+    if (inventory.pluginAssemblyIds.length > 0) {
+      parts.push(`${inventory.pluginAssemblyIds.length} plugin assemblies`);
     }
     if (workflowInventory.flowIds.length > 0) {
       parts.push(`${workflowInventory.flowIds.length} flows`);
@@ -617,6 +628,26 @@ export class BlueprintGenerator {
     } catch (error) {
       console.error('Error processing plugins:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
+    }
+  }
+
+  /**
+   * Process plugin assemblies for recovery metadata.
+   */
+  private async processPluginAssemblies(
+    pluginAssemblyIds: string[],
+    plugins: PluginStep[]
+  ): Promise<PluginAssembly[]> {
+    if (pluginAssemblyIds.length === 0) {
+      return [];
+    }
+
+    try {
+      const discovery = new PluginAssemblyDiscovery(this.client);
+      return await discovery.getAssembliesByIds(pluginAssemblyIds, plugins);
+    } catch (error) {
+      console.error('Error processing plugin assemblies:', error instanceof Error ? error.message : 'Unknown error');
+      return [];
     }
   }
 

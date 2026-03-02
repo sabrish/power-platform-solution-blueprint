@@ -14,6 +14,7 @@ export type { GlobalChoice, GlobalChoiceOption } from './types/globalChoice.js';
 export { GLOBAL_CHOICE_STATUS_COLORS } from './types/globalChoice.js';
 export type { CustomConnector } from './types/customConnector.js';
 export { CUSTOM_CONNECTOR_TYPE_COLORS } from './types/customConnector.js';
+export type { PluginAssembly, RecoveredPluginAssembly } from './types/pluginAssembly.js';
 export type {
   ProgressPhase,
   ProgressInfo,
@@ -79,6 +80,7 @@ export { EntityDiscovery } from './discovery/EntityDiscovery.js';
 export { SolutionComponentDiscovery } from './discovery/SolutionComponentDiscovery.js';
 export { SchemaDiscovery } from './discovery/SchemaDiscovery.js';
 export { PluginDiscovery } from './discovery/PluginDiscovery.js';
+export { PluginAssemblyDiscovery } from './discovery/PluginAssemblyDiscovery.js';
 export { FlowDiscovery } from './discovery/FlowDiscovery.js';
 export { BusinessRuleDiscovery } from './discovery/BusinessRuleDiscovery.js';
 export { FormDiscovery } from './discovery/FormDiscovery.js';

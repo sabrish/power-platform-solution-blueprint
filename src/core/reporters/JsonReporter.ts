@@ -54,6 +54,7 @@ export class JsonReporter {
       entities: result.entities,
       summary: result.summary,
       plugins: result.plugins,
+      pluginAssemblies: result.pluginAssemblies,
       pluginsByEntity: this.mapToObject(result.pluginsByEntity),
       flows: result.flows,
       flowsByEntity: this.mapToObject(result.flowsByEntity),

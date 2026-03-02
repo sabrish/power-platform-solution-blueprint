@@ -242,7 +242,7 @@ export class MarkdownReporter {
     const items: string[] = [];
 
     items.push(`**${result.summary.totalEntities}** Entities`);
-    items.push(`**${result.summary.totalPlugins}** Plugins (${result.summary.totalPluginPackages} assemblies)`);
+    items.push(`**${result.summary.totalPlugins}** Plugins (${result.summary.totalPluginAssemblies} assemblies)`);
     items.push(`**${result.summary.totalFlows}** Cloud Flows`);
     items.push(`**${result.summary.totalBusinessRules}** Business Rules`);
     items.push(`**${result.summary.totalClassicWorkflows}** Classic Workflows ⚠️`);
@@ -339,7 +339,7 @@ export class MarkdownReporter {
       ['Entities', result.summary.totalEntities.toString()],
       ['Attributes (Fields)', result.summary.totalAttributes.toString()],
       ['Plugins', result.summary.totalPlugins.toString()],
-      ['Plugin Assemblies', result.summary.totalPluginPackages.toString()],
+      ['Plugin Assemblies', result.summary.totalPluginAssemblies.toString()],
       ['Cloud Flows', result.summary.totalFlows.toString()],
       ['Business Rules', result.summary.totalBusinessRules.toString()],
       ['Classic Workflows', result.summary.totalClassicWorkflows.toString()],
@@ -419,7 +419,7 @@ export class MarkdownReporter {
     sections.push(MarkdownFormatter.formatHeading('All Plugins', 1));
     sections.push('');
     sections.push(`**Total Plugins:** ${result.summary.totalPlugins}`);
-    sections.push(`**Total Assemblies:** ${result.summary.totalPluginPackages}`);
+    sections.push(`**Total Assemblies:** ${result.summary.totalPluginAssemblies}`);
     sections.push('');
 
     if (result.plugins.length === 0) {
