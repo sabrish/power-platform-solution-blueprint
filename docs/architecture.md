@@ -373,11 +373,25 @@ return <div className={styles.container}>...</div>;
 
 **Initialization**:
 ```typescript
-// main.tsx
+// Minimal local interfaces — no @pptb/types import required.
+// Core avoids direct @pptb/types imports; each module declares only
+// what it needs (pattern established in PptbDataverseClient.ts).
+interface ToolContext {
+  connectionUrl: string;
+}
+interface ToolboxApi {
+  getToolContext(): Promise<ToolContext>;
+}
+interface DataverseApi {
+  queryData(
+    odataQuery: string,
+    connectionTarget?: 'primary' | 'secondary'
+  ): Promise<{ value: Record<string, unknown>[] }>;
+}
 declare global {
   interface Window {
-    toolboxAPI: ToolboxAPI;   // for getToolContext() — always await
-    dataverseAPI: DataverseAPI.API;  // for all Dataverse queries
+    toolboxAPI: ToolboxApi;
+    dataverseAPI: DataverseApi;
   }
 }
 
