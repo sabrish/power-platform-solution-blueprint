@@ -17,7 +17,7 @@ Before responding to ANY task, you MUST read these files in order (skip graceful
 2. `.claude/memory/project.md` — current project state and progress
 3. `.claude/memory/decisions.md` — architecture decisions already made (do not re-debate these)
 4. `.claude/memory/learnings.md` — the project owner's corrections; treat every entry as a hard rule
-5. `.claude/memory/patterns.md` — established code patterns to follow
+5. Pattern files — skip both (orchestrator routes tasks; does not implement code)
 6. Scan `.claude/memory/interactions/` — load any files relevant to the current task topic
 
 Report at the start of your response: **"Memory loaded: [list files successfully read]"**
@@ -64,39 +64,39 @@ At the start of each session:
 2. Summarise where the project left off (from `project.md`)
 3. Ask the project owner what to work on, or proceed with the stated task
 
-At the end of each session, instruct the **document-updater** to update `.claude/memory/project.md` with:
-- What was completed
-- Any decisions made (→ also to `decisions.md`)
-- Current blockers or next steps
+At the end of each session:
+1. Instruct the **document-updater** to update `.claude/memory/project.md` with:
+   - What was completed
+   - Any decisions made (→ also to `decisions.md`)
+   - Current blockers or next steps
+2. If any memory files were updated this session (`project.md`, `decisions.md`,
+   `learnings.md`, or any pattern file), run the **security-auditor** scoped to
+   `.claude/memory/` before closing the session. Memory files are verbatim from
+   conversations and are the highest-risk source of accidentally committed
+   sensitive data.
+
+## Commit Gate
+
+Before any commit, invoke the `/pre-commit` skill with the files being committed:
+```
+/pre-commit src/path/to/file1.ts src/path/to/file2.tsx
+```
+The skill runs reviewer then security-auditor in sequence and reports a combined
+verdict. Never run git add or git commit without this gate passing.
 
 ## Release Workflow
 
-When the project owner says "prepare a release" or "cut a release", run this sequence in order. Do not skip steps.
-
-1. **Reviewer** — final code review of all changed files since the last release
-2. **Security Auditor** — full sweep of source code and `.claude/` folder
-3. **Document Updater**:
-   - Bump version in `package.json`
-   - Finalise `CHANGELOG.md` with release date (move Unreleased → versioned entry)
-   - Update `README.md`: version badge (shields.io at the top) and any inline version references
-   - Confirm all three files are consistent — `package.json` version, `CHANGELOG.md` latest entry header, and `README.md` badge must all show the same version number before proceeding
-4. **Developer** — run in this exact order:
-   - `pnpm typecheck` — must pass with zero errors
-   - `pnpm build` — must complete successfully
-   - `npm shrinkwrap` — captures the updated version from `package.json` per `NPM_SHRINKWRAP_GENERATION.md`
-
-   **Note:** `npm shrinkwrap` must always run AFTER the version bump in step 3. Running it before will capture the old version number in `npm-shrinkwrap.json`.
-5. **Orchestrator** — confirm all steps passed, then print the following git commands for the project owner to run manually:
-
+When the project owner says "prepare a release" or "cut a release", invoke the
+`/release` skill with the target version:
 ```
-git add package.json CHANGELOG.md README.md npm-shrinkwrap.json
-git commit -m "chore: release v[version]"
-git tag v[version] -m "Release v[version]"
-git push origin main
-git push origin v[version]
+/release v[X.Y.Z]
 ```
+The skill runs the full sequence: reviewer → security auditor → document-updater
+(version bump, CHANGELOG, README badge) → developer (typecheck, build, shrinkwrap)
+→ prints git commands for manual execution.
 
-**NEVER run `git push` yourself.** Always hand these commands to the project owner to execute. Git push to the public repo is irreversible — the project owner must retain manual control of this step.
+**NEVER run `git push` yourself.** Always hand the git commands to the project owner.
+The full sequence detail is in `.claude/skills/release.md`.
 
 ## Communication Style
 

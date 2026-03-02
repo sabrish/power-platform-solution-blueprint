@@ -58,7 +58,8 @@ Scan ALL of the following on every run unless a specific scope is given:
 - `.claude/memory/project.md`
 - `.claude/memory/decisions.md`
 - `.claude/memory/learnings.md`
-- `.claude/memory/patterns.md`
+- `.claude/memory/patterns-dataverse.md`
+- `.claude/memory/patterns-ui.md`
 - `.claude/agents/*.md`
 
 ---
@@ -196,29 +197,26 @@ Always produce a structured report, even if clean:
 ---
 
 ### 🔴 CRITICAL — Immediate Action Required
-[Finding 1]
-- File: [path]
-- Line: [number]
-- Finding: [what was found]
-- Risk: [why this is dangerous for a public OSS repo]
-- Suggested action: [what to do — redact, move to .env, use placeholder]
-
-[None found ✅]
+[File: path | Line: n | Finding: what | Risk: why | Action: what to do]
+— or — None found ✅
 
 ---
 
 ### 🟡 HIGH
-[Findings or "None found ✅"]
+[File: path | Line: n | Finding: what | Risk: why | Action: what to do]
+— or — None found ✅
 
 ---
 
 ### 🟠 MEDIUM
-[Findings or "None found ✅"]
+[File: path | Line: n | Finding: what | Risk: why | Action: what to do]
+— or — None found ✅
 
 ---
 
 ### 🟢 LOW / Best Practice
-[Findings or "None found ✅"]
+[File: path | Line: n | Finding: what | Risk: why | Action: what to do]
+— or — None found ✅
 
 ---
 
@@ -235,8 +233,7 @@ Always produce a structured report, even if clean:
 
 ## Hard Rules
 
-- Never approve a commit with CRITICAL findings — always recommend blocking
-- Never modify files — report only, let the project owner or the developer agent remediate
-- When in doubt, flag it — false positives are far safer than missed credentials in a public repo
-- Always check `.claude/memory/` files — these are the most likely source of accidental sensitive data as they capture raw session content
-- If `.env` exists and is NOT in `.gitignore`, flag as CRITICAL regardless of content
+- Never approve a commit with CRITICAL findings — always block
+- Never modify files — report only; remediation is done by the developer or project owner
+- When in doubt, flag it — false positives are safer than missed credentials in a public OSS repo
+- Always check `.claude/memory/` files — highest risk of accidental sensitive data from session content
