@@ -1739,6 +1739,19 @@ ${this.embeddedJavaScript()}
       margin-bottom: 10px;
     }
 
+    .erd-diagram .mermaid {
+      overflow-x: auto;
+      border: 1px solid #edebe9;
+      border-radius: 6px;
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .erd-diagram .mermaid svg {
+      max-width: none !important;
+      height: auto !important;
+    }
+
     .diagram-description {
       color: #605e5c;
       margin-bottom: 15px;
@@ -2346,11 +2359,21 @@ ${this.embeddedJavaScript()}
     return `    // Initialize Mermaid
     mermaid.initialize({
       startOnLoad: true,
-      theme: 'default',
+      theme: 'base',
       securityLevel: 'loose',
+      maxTextSize: 1000000,
+      class: {
+        useMaxWidth: false
+      },
       flowchart: {
         useMaxWidth: true,
         htmlLabels: true
+      },
+      themeVariables: {
+        fontFamily: 'Segoe UI, Arial, sans-serif',
+        primaryTextColor: '#242424',
+        lineColor: '#616161',
+        primaryBorderColor: '#8a8886'
       }
     });
 

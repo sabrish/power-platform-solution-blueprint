@@ -51,6 +51,15 @@ const useStyles = makeStyles({
   diagramCard: {
     padding: tokens.spacingVerticalL,
   },
+  diagramViewport: {
+    marginTop: tokens.spacingVerticalS,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderRadius: tokens.borderRadiusMedium,
+    backgroundColor: tokens.colorNeutralBackground1,
+    overflow: 'auto',
+    maxHeight: '72vh',
+    minHeight: '420px',
+  },
   diagramControls: {
     display: 'flex',
     gap: tokens.spacingHorizontalM,
@@ -58,9 +67,14 @@ const useStyles = makeStyles({
   },
   diagramContainer: {
     display: 'inline-block',
-    minHeight: '400px',
     minWidth: '100%',
+    width: 'max-content',
     padding: tokens.spacingVerticalL,
+    transformOrigin: 'top left',
+    '& svg': {
+      maxWidth: 'none',
+      height: 'auto',
+    },
   },
   legendSection: {
     display: 'grid',
@@ -280,11 +294,15 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   };
 
   const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 10, 200));
+    setZoomLevel((prev) => Math.min(prev + 10, 180));
   };
 
   const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 10, 50));
+    setZoomLevel((prev) => Math.max(prev - 10, 40));
+  };
+
+  const handleZoomReset = () => {
+    setZoomLevel(100);
   };
 
   return (
@@ -328,11 +346,14 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
           <Button icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
             Copy dbdiagram.io Code
           </Button>
-          <Button icon={<ZoomIn24Regular />} onClick={handleZoomIn} disabled={zoomLevel >= 200}>
+          <Button icon={<ZoomIn24Regular />} onClick={handleZoomIn} disabled={zoomLevel >= 180}>
             Zoom In
           </Button>
-          <Button icon={<ZoomOut24Regular />} onClick={handleZoomOut} disabled={zoomLevel <= 50}>
+          <Button icon={<ZoomOut24Regular />} onClick={handleZoomOut} disabled={zoomLevel <= 40}>
             Zoom Out
+          </Button>
+          <Button onClick={handleZoomReset} disabled={zoomLevel === 100}>
+            Reset Zoom
           </Button>
           <Text>{zoomLevel}%</Text>
         </div>
@@ -345,11 +366,13 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             </div>
           )}
           {svgContent && !isLoading && !error && (
-            <div
-              className={styles.diagramContainer}
-              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
-              dangerouslySetInnerHTML={{ __html: svgContent }}
-            />
+            <div className={styles.diagramViewport}>
+              <div
+                className={styles.diagramContainer}
+                style={{ transform: `scale(${zoomLevel / 100})` }}
+                dangerouslySetInnerHTML={{ __html: svgContent }}
+              />
+            </div>
           )}
         </Card>
       </div>

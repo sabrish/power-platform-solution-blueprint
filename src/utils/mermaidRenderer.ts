@@ -6,8 +6,18 @@ import mermaid from 'mermaid';
 export function initMermaid(): void {
   mermaid.initialize({
     startOnLoad: false,
-    theme: 'default',
+    theme: 'base',
     securityLevel: 'loose',
+    maxTextSize: 1000000,
+    class: {
+      useMaxWidth: false,
+    },
+    themeVariables: {
+      fontFamily: 'Segoe UI, Arial, sans-serif',
+      primaryTextColor: '#242424',
+      lineColor: '#616161',
+      primaryBorderColor: '#8a8886',
+    },
     er: {
       useMaxWidth: true,
       fontSize: 14,
@@ -43,9 +53,12 @@ export async function renderMermaid(
     try {
       mermaid.initialize({
         startOnLoad: false,
-        theme: 'default',
+        theme: 'base',
         securityLevel: 'loose',
         maxTextSize: 900000,
+        class: {
+          useMaxWidth: false,
+        },
         er: {
           useMaxWidth: true,
           fontSize: 12,
@@ -70,8 +83,9 @@ export async function renderMermaid(
  */
 export function validateMermaidDiagram(diagram: string): boolean {
   try {
-    // Basic validation: check for required ERD syntax
-    if (!diagram.trim().startsWith('erDiagram')) {
+    const normalized = diagram.trim();
+    // Basic validation: support both ER and class diagram syntax
+    if (!normalized.startsWith('erDiagram') && !normalized.startsWith('classDiagram')) {
       return false;
     }
     return true;
