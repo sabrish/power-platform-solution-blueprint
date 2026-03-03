@@ -309,7 +309,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
           onChange={(_, data) => setSearchQuery(data.value || '')}
         />
         <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedBPFs.length} of {sorted.length} flows
+          {searchedBPFs.length} of {sorted.length} BPFs
         </Text>
       </div>
       {searchedBPFs.length === 0 && sorted.length > 0 && (

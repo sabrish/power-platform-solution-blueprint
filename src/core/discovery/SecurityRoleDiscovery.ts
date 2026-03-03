@@ -237,9 +237,9 @@ export class SecurityRoleDiscovery {
 
     for (const priv of privileges) {
       // Extract entity name from privilege name (format: prvCreateAccount, prvReadContact, etc.)
-      // NOTE: AppendTo must be listed before Append in the alternation — otherwise the regex
-      // engine greedily matches "Append" in "prvAppendToAccount" and leaves "ToAccount" as the
-      // entity name, creating a ghost entity instead of attributing the privilege to the real one.
+      // NOTE: AppendTo must be listed before Append in the alternation — alternations are tried
+      // left-to-right and stop at the first match. If Append came first, "prvAppendToAccount"
+      // would match as type=Append entity="toaccount" (ghost entity) instead of the correct entity.
       const match = priv.privilegename.match(/^prv(Create|Read|Write|Delete|AppendTo|Append|Assign|Share)(.+)$/);
 
       if (match) {
