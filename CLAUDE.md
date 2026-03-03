@@ -54,6 +54,7 @@ Report: **"Memory loaded: [files read]"**
 - **ALWAYS** use static imports for reporters — dynamic imports break under `pptb-webview://`
 - **ALWAYS** commit one logical change per commit, Conventional Commits format, with trailer:
   `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>`
+- **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient; a passing typecheck does not guarantee the Vite build succeeds
 - **ALWAYS** run the `/pre-commit` skill before any commit touching source, docs, or memory files — it runs reviewer then security-auditor in sequence
 
 ## Key Reference Files
