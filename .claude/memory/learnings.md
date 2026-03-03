@@ -223,6 +223,18 @@
 
 ---
 
+## [2026-03-03] — Run pnpm typecheck AND pnpm build before every commit — typecheck alone is not sufficient
+
+**Affects:** All agents
+**Severity:** Blocker
+**Rule:** After any set of code changes, always run BOTH `pnpm typecheck` AND `pnpm build` before committing. Running only `pnpm typecheck` is not sufficient — a passing typecheck does not guarantee the Vite build will succeed.
+**Context:** After implementing entity list flag improvements, only `pnpm typecheck` was run before committing. The project owner had to point out that `pnpm build` is also required after every changeset. A clean typecheck does not catch Vite bundler errors, missing static assets, or chunk resolution issues that only surface at build time.
+**Example:**
+- Wrong: `pnpm typecheck` passes → commit (skipping build)
+- Right: `pnpm typecheck && pnpm build` — both must pass before committing any source change
+
+---
+
 ## [2026-02-26] — Version numbers in three files must always match at release time
 
 **Affects:** Document Updater, Orchestrator, Reviewer

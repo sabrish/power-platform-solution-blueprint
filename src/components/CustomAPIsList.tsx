@@ -11,11 +11,30 @@ import {
   createTableColumn,
   Badge,
   Tooltip,
+  SearchBox,
+  Text,
   tokens,
+  makeStyles,
 } from '@fluentui/react-components';
 import { Code20Regular, ArrowSync20Regular, ArrowRight20Regular } from '@fluentui/react-icons';
 import type { CustomAPI } from '../core';
 import { TruncatedText } from './TruncatedText';
+
+const useStyles = makeStyles({
+  filters: {
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: '12px',
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+    marginBottom: '16px',
+  },
+  searchBox: {
+    minWidth: '300px',
+  },
+});
 
 interface CustomAPIsListProps {
   customAPIs: CustomAPI[];
@@ -26,12 +45,24 @@ interface CustomAPIsListProps {
  * List view of Custom APIs
  */
 export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps) {
+  const styles = useStyles();
   const [selectedAPI, setSelectedAPI] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Sort APIs alphabetically by unique name
   const sortedAPIs = useMemo(() => {
     return [...customAPIs].sort((a, b) => a.uniqueName.localeCompare(b.uniqueName));
   }, [customAPIs]);
+
+  // Apply search filter before DataGrid
+  const filteredAPIs = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sortedAPIs;
+    return sortedAPIs.filter((a) =>
+      a.uniqueName.toLowerCase().includes(q) ||
+      (a.displayName && a.displayName.toLowerCase().includes(q))
+    );
+  }, [sortedAPIs, searchQuery]);
 
   const handleRowClick = (api: CustomAPI) => {
     setSelectedAPI(api.id);
@@ -183,6 +214,17 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
 
   return (
     <div style={{ marginTop: '16px' }}>
+      <div className={styles.filters}>
+        <SearchBox
+          className={styles.searchBox}
+          placeholder="Search custom APIs..."
+          value={searchQuery}
+          onChange={(_, data) => setSearchQuery(data.value || '')}
+        />
+        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+          {filteredAPIs.length} of {sortedAPIs.length} APIs
+        </Text>
+      </div>
       <div
         style={{
           padding: '12px',
@@ -203,7 +245,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
       </div>
 
       <DataGrid
-        items={sortedAPIs}
+        items={filteredAPIs}
         columns={columns}
         sortable
         selectionMode="single"

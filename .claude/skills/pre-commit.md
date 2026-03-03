@@ -10,6 +10,17 @@ Pre-commit gate. Run in this exact order — do not skip steps.
 **Files in scope:** $ARGUMENTS
 (If no files specified, ask the project owner which files are being committed before proceeding.)
 
+## Step 0: Build Verification
+
+Before invoking any agent, confirm with the project owner that both of the following commands have been run and passed since the last code change:
+
+1. `pnpm typecheck`
+2. `pnpm build`
+
+If either has NOT been run or did NOT pass — stop immediately. Report:
+"Build verification required: please run `pnpm typecheck && pnpm build` and confirm both pass before continuing."
+Do not proceed to Step 1 until the project owner confirms both commands passed.
+
 ## Step 1: Reviewer
 
 Invoke the reviewer agent with the files listed above.

@@ -6,6 +6,7 @@ import {
   tokens,
   Card,
   Title3,
+  SearchBox,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { Flow } from '../core';
@@ -17,6 +18,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+  },
+  filters: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalM,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  searchBox: {
+    minWidth: '300px',
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -131,6 +144,7 @@ export function FlowsList({
 }: FlowsListProps) {
   const styles = useStyles();
   const [expandedFlowId, setExpandedFlowId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Filter flows by entity if specified
   const filteredFlows = useMemo(() => {
@@ -150,6 +164,18 @@ export function FlowsList({
       return a.name.localeCompare(b.name);
     });
   }, [filteredFlows]);
+
+  // Apply search filter
+  const searchedFlows = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sortedFlows;
+    return sortedFlows.filter((f) =>
+      f.name.toLowerCase().includes(q) ||
+      (f.entity && f.entity.toLowerCase().includes(q)) ||
+      (f.description && f.description.toLowerCase().includes(q)) ||
+      (f.definition.triggerType && f.definition.triggerType.toLowerCase().includes(q))
+    );
+  }, [sortedFlows, searchQuery]);
 
   const toggleExpand = (flowId: string) => {
     setExpandedFlowId(expandedFlowId === flowId ? null : flowId);
@@ -302,7 +328,23 @@ export function FlowsList({
 
   return (
     <div className={styles.container}>
-      {sortedFlows.map((flow) => {
+      <div className={styles.filters}>
+        <SearchBox
+          className={styles.searchBox}
+          placeholder="Search flows..."
+          value={searchQuery}
+          onChange={(_, data) => setSearchQuery(data.value || '')}
+        />
+        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+          {searchedFlows.length} of {sortedFlows.length} flows
+        </Text>
+      </div>
+      {searchedFlows.length === 0 && sortedFlows.length > 0 && (
+        <div className={styles.emptyState}>
+          <Text>No flows match your search.</Text>
+        </div>
+      )}
+      {searchedFlows.map((flow) => {
         const isExpanded = expandedFlowId === flow.id;
         const stateBadgeProps = getStateBadgeProps(flow.state);
 

@@ -6,6 +6,7 @@ import {
   tokens,
   Card,
   Title3,
+  SearchBox,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular, PlugDisconnected20Regular } from '@fluentui/react-icons';
 import type { CustomConnector } from '../core';
@@ -17,6 +18,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+  },
+  filters: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalM,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  searchBox: {
+    minWidth: '300px',
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -104,10 +117,20 @@ interface CustomConnectorsListProps {
 export function CustomConnectorsList({ customConnectors }: CustomConnectorsListProps) {
   const styles = useStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const sorted = useMemo(() => {
     return [...customConnectors].sort((a, b) => a.name.localeCompare(b.name));
   }, [customConnectors]);
+
+  const searchedConnectors = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sorted;
+    return sorted.filter((c) =>
+      c.displayName.toLowerCase().includes(q) ||
+      c.name.toLowerCase().includes(q)
+    );
+  }, [sorted, searchQuery]);
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -179,7 +202,23 @@ export function CustomConnectorsList({ customConnectors }: CustomConnectorsListP
 
   return (
     <div className={styles.container} style={{ marginTop: '16px' }}>
-      {sorted.map((connector) => {
+      <div className={styles.filters}>
+        <SearchBox
+          className={styles.searchBox}
+          placeholder="Search custom connectors..."
+          value={searchQuery}
+          onChange={(_, data) => setSearchQuery(data.value || '')}
+        />
+        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+          {searchedConnectors.length} of {sorted.length} connectors
+        </Text>
+      </div>
+      {searchedConnectors.length === 0 && sorted.length > 0 && (
+        <div className={styles.emptyState}>
+          <Text>No custom connectors match your search.</Text>
+        </div>
+      )}
+      {searchedConnectors.map((connector) => {
         const isExpanded = expandedId === connector.id;
         return (
           <div key={connector.id}>
