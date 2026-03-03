@@ -107,20 +107,6 @@ export interface EntitySecurityAccess {
   permissions: PrivilegeDetail[];
 }
 
-/**
- * Privilege type bitmask values
- */
-const PRIVILEGE_TYPES = {
-  None: 0,
-  Create: 1,
-  Read: 2,
-  Write: 4,
-  Delete: 8,
-  Append: 16,
-  AppendTo: 32,
-  Assign: 64,
-  Share: 128,
-};
 
 /**
  * Special privilege names (miscellaneous/non-entity permissions)
@@ -251,7 +237,10 @@ export class SecurityRoleDiscovery {
 
     for (const priv of privileges) {
       // Extract entity name from privilege name (format: prvCreateAccount, prvReadContact, etc.)
-      const match = priv.privilegename.match(/^prv(Create|Read|Write|Delete|Append|AppendTo|Assign|Share)(.+)$/);
+      // NOTE: AppendTo must be listed before Append in the alternation — otherwise the regex
+      // engine greedily matches "Append" in "prvAppendToAccount" and leaves "ToAccount" as the
+      // entity name, creating a ghost entity instead of attributing the privilege to the real one.
+      const match = priv.privilegename.match(/^prv(Create|Read|Write|Delete|AppendTo|Append|Assign|Share)(.+)$/);
 
       if (match) {
         const privilegeType = match[1] as PrivilegeDetail['type'];
@@ -365,47 +354,36 @@ export class SecurityRoleDiscovery {
   }
 
   /**
-   * Parse privilege details from bitmask
+   * Parse privilege details from depthMask.
+   *
+   * The privilege type is already known from the name regex (Create/Read/Write/etc.),
+   * so we only need the depthMask to determine the access level. The accessright field
+   * from the Dataverse `privileges` entity is not used — its bitmask values vary and
+   * the type is redundant given the name.
    */
   private parsePrivilegeDetails(
-    accessRight: number,
+    _accessRight: number,
     depthMask: number,
     privilegeType: PrivilegeDetail['type']
   ): PrivilegeDetail[] {
-    const details: PrivilegeDetail[] = [];
+    let depth: PrivilegeDetail['depth'] = 'None';
+    let depthValue = 0;
 
-    // Get the privilege type value
-    const typeValue = PRIVILEGE_TYPES[privilegeType];
-    if (!typeValue) return details;
-
-    // Check if this privilege type is enabled
-    if (accessRight & typeValue) {
-      // Determine depth
-      let depth: PrivilegeDetail['depth'] = 'None';
-      let depthValue = 0;
-
-      if (depthMask & 8) {
-        depth = 'Global';
-        depthValue = 8;
-      } else if (depthMask & 4) {
-        depth = 'Deep';
-        depthValue = 4;
-      } else if (depthMask & 2) {
-        depth = 'Local';
-        depthValue = 2;
-      } else if (depthMask & 1) {
-        depth = 'Basic';
-        depthValue = 1;
-      }
-
-      details.push({
-        type: privilegeType,
-        depth,
-        depthValue,
-      });
+    if (depthMask & 8) {
+      depth = 'Global';
+      depthValue = 8;
+    } else if (depthMask & 4) {
+      depth = 'Deep';
+      depthValue = 4;
+    } else if (depthMask & 2) {
+      depth = 'Local';
+      depthValue = 2;
+    } else if (depthMask & 1) {
+      depth = 'Basic';
+      depthValue = 1;
     }
 
-    return details;
+    return [{ type: privilegeType, depth, depthValue }];
   }
 
   /**

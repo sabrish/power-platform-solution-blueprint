@@ -121,8 +121,7 @@ const useStyles = makeStyles({
   },
   summaryCardSelected: {
     padding: tokens.spacingVerticalS,
-    outline: `2px solid ${tokens.colorBrandForeground1}`,
-    outlineOffset: '2px',
+    borderBottom: `3px solid ${tokens.colorBrandForeground1}`,
   },
   summaryCardContent: {
     display: 'flex',
@@ -439,6 +438,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             selectedValue={selectedTab}
             onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
               setSelectedTab(data.value as string);
+              setSelectedCard(data.value as string);
             }}
             size="small"
             style={{
@@ -446,12 +446,12 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
               gap: tokens.spacingHorizontalS
             }}
           >
-            {/* Entities Tab - Always shown */}
-            <Tooltip content="Entities" relationship="label">
-              <Tab value="entities">{`📊 (${result.summary.totalEntities})`}</Tab>
-            </Tooltip>
+            {hasResults('entities') && (
+              <Tooltip content="Entities" relationship="label">
+                <Tab value="entities">{`📊 (${result.summary.totalEntities})`}</Tab>
+              </Tooltip>
+            )}
 
-            {/* Conditional Tabs */}
             {hasResults('plugins') && (
               <Tooltip content="Plugins" relationship="label">
                 <Tab value="plugins">{`🔌 (${result.summary.totalPlugins})`}</Tab>
