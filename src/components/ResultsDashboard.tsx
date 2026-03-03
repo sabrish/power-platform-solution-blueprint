@@ -447,101 +447,20 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
               gap: tokens.spacingHorizontalS
             }}
           >
-            {hasResults('entities') && (
-              <Tooltip content="Entities" relationship="label">
-                <Tab value="entities">{`📊 (${result.summary.totalEntities})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('plugins') && (
-              <Tooltip content="Plugins" relationship="label">
-                <Tab value="plugins">{`🔌 (${result.summary.totalPlugins})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('pluginPackages') && (
-              <Tooltip content="Plugin Packages" relationship="label">
-                <Tab value="pluginPackages">{`📦 (${result.summary.totalPluginPackages})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('flows') && (
-              <Tooltip content="Flows" relationship="label">
-                <Tab value="flows">{`🌊 (${result.summary.totalFlows})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('businessRules') && (
-              <Tooltip content="Business Rules" relationship="label">
-                <Tab value="businessRules">{`📋 (${result.summary.totalBusinessRules})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('classicWorkflows') && (
-              <Tooltip content="Classic Workflows" relationship="label">
-                <Tab value="classicWorkflows">{`⚠️ (${result.summary.totalClassicWorkflows})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('businessProcessFlows') && (
-              <Tooltip content="Business Process Flows" relationship="label">
-                <Tab value="businessProcessFlows">{`🔄 (${result.summary.totalBusinessProcessFlows})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('customAPIs') && (
-              <Tooltip content="Custom APIs" relationship="label">
-                <Tab value="customAPIs">{`🔧 (${result.summary.totalCustomAPIs})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('environmentVariables') && (
-              <Tooltip content="Environment Variables" relationship="label">
-                <Tab value="environmentVariables">{`⚙️ (${result.summary.totalEnvironmentVariables})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('connectionReferences') && (
-              <Tooltip content="Connection References" relationship="label">
-                <Tab value="connectionReferences">{`🔗 (${result.summary.totalConnectionReferences})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('globalChoices') && (
-              <Tooltip content="Global Choices" relationship="label">
-                <Tab value="globalChoices">{`🎯 (${result.summary.totalGlobalChoices})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('customConnectors') && (
-              <Tooltip content="Custom Connectors" relationship="label">
-                <Tab value="customConnectors">{`🔀 (${result.summary.totalCustomConnectors})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('webResources') && (
-              <Tooltip content="Web Resources" relationship="label">
-                <Tab value="webResources">{`🌐 (${result.summary.totalWebResources})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('securityRoles') && (
-              <Tooltip content="Security Roles" relationship="label">
-                <Tab value="securityRoles">{`🔒 (${getCount('securityRoles')})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('fieldSecurityProfiles') && (
-              <Tooltip content="Field Security Profiles" relationship="label">
-                <Tab value="fieldSecurityProfiles">{`🛡️ (${getCount('fieldSecurityProfiles')})`}</Tab>
-              </Tooltip>
-            )}
-
-            {hasResults('customPages') && (
-              <Tooltip content="Custom Pages" relationship="label">
-                <Tab value="customPages">{`📄 (${result.summary.totalCustomPages})`}</Tab>
-              </Tooltip>
-            )}
+            {componentTypes.map((type) => {
+              if (!hasResults(type.key)) return null;
+              const count = getCount(type.key);
+              const isSelected = selectedTab === type.key;
+              return (
+                <Tooltip key={type.key} content={type.label} relationship="label">
+                  <Tab value={type.key}>
+                    {isSelected
+                      ? `${type.icon} ${type.label} (${count})`
+                      : `${type.icon} (${count})`}
+                  </Tab>
+                </Tooltip>
+              );
+            })}
           </TabList>
 
           {/* Tab Content */}
