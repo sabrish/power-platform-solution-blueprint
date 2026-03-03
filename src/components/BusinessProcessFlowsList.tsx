@@ -6,6 +6,7 @@ import {
   tokens,
   Card,
   Title3,
+  SearchBox,
 } from '@fluentui/react-components';
 import {
   ChevronDown20Regular,
@@ -23,6 +24,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+  },
+  filters: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalM,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  searchBox: {
+    minWidth: '300px',
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -147,10 +160,21 @@ interface BusinessProcessFlowsListProps {
 export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProcessFlowsListProps) {
   const styles = useStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const sorted = useMemo(() => {
     return [...businessProcessFlows].sort((a, b) => a.name.localeCompare(b.name));
   }, [businessProcessFlows]);
+
+  const searchedBPFs = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sorted;
+    return sorted.filter((bpf) =>
+      bpf.name.toLowerCase().includes(q) ||
+      bpf.primaryEntity.toLowerCase().includes(q) ||
+      (bpf.primaryEntityDisplayName && bpf.primaryEntityDisplayName.toLowerCase().includes(q))
+    );
+  }, [sorted, searchQuery]);
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -277,7 +301,23 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
 
   return (
     <div className={styles.container} style={{ marginTop: '16px' }}>
-      {sorted.map((bpf) => {
+      <div className={styles.filters}>
+        <SearchBox
+          className={styles.searchBox}
+          placeholder="Search business process flows..."
+          value={searchQuery}
+          onChange={(_, data) => setSearchQuery(data.value || '')}
+        />
+        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+          {searchedBPFs.length} of {sorted.length} flows
+        </Text>
+      </div>
+      {searchedBPFs.length === 0 && sorted.length > 0 && (
+        <div className={styles.emptyState}>
+          <Text>No business process flows match your search.</Text>
+        </div>
+      )}
+      {searchedBPFs.map((bpf) => {
         const isExpanded = expandedId === bpf.id;
         return (
           <div key={bpf.id}>

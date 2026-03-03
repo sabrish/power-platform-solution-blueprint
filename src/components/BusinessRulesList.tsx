@@ -6,6 +6,7 @@ import {
   tokens,
   Card,
   Title3,
+  SearchBox,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { BusinessRule } from '../core';
@@ -17,6 +18,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+  },
+  filters: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalM,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  searchBox: {
+    minWidth: '300px',
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -135,6 +148,7 @@ export function BusinessRulesList({
 }: BusinessRulesListProps) {
   const styles = useStyles();
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Filter business rules by entity if specified
   const filteredRules = useMemo(() => {
@@ -153,6 +167,16 @@ export function BusinessRulesList({
       return a.name.localeCompare(b.name);
     });
   }, [filteredRules]);
+
+  // Apply search filter
+  const searchedRules = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sortedRules;
+    return sortedRules.filter((r) =>
+      r.name.toLowerCase().includes(q) ||
+      r.entity.toLowerCase().includes(q)
+    );
+  }, [sortedRules, searchQuery]);
 
   const toggleExpand = (ruleId: string) => {
     setExpandedRuleId(expandedRuleId === ruleId ? null : ruleId);
@@ -306,7 +330,23 @@ export function BusinessRulesList({
 
   return (
     <div className={styles.container}>
-      {sortedRules.map((rule) => {
+      <div className={styles.filters}>
+        <SearchBox
+          className={styles.searchBox}
+          placeholder="Search business rules..."
+          value={searchQuery}
+          onChange={(_, data) => setSearchQuery(data.value || '')}
+        />
+        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+          {searchedRules.length} of {sortedRules.length} rules
+        </Text>
+      </div>
+      {searchedRules.length === 0 && sortedRules.length > 0 && (
+        <div className={styles.emptyState}>
+          <Text>No business rules match your search.</Text>
+        </div>
+      )}
+      {searchedRules.map((rule) => {
         const isExpanded = expandedRuleId === rule.id;
         const stateBadgeProps = getStateBadgeProps(rule.state);
         const conditionCount = rule.definition.conditions.length;

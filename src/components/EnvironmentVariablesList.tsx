@@ -6,6 +6,7 @@ import {
   tokens,
   Card,
   Title3,
+  SearchBox,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular, Settings20Regular } from '@fluentui/react-icons';
 import type { EnvironmentVariable } from '../core';
@@ -16,6 +17,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+  },
+  filters: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalM,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  searchBox: {
+    minWidth: '300px',
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -123,10 +136,21 @@ const getTypeColor = (type: string): 'brand' | 'success' | 'danger' | 'warning' 
 export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVariablesListProps) {
   const styles = useStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const sorted = useMemo(() => {
     return [...environmentVariables].sort((a, b) => a.schemaName.localeCompare(b.schemaName));
   }, [environmentVariables]);
+
+  const searchedVars = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sorted;
+    return sorted.filter((v) =>
+      v.displayName.toLowerCase().includes(q) ||
+      v.schemaName.toLowerCase().includes(q) ||
+      v.typeName.toLowerCase().includes(q)
+    );
+  }, [sorted, searchQuery]);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -207,7 +231,23 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
 
   return (
     <div className={styles.container} style={{ marginTop: '16px' }}>
-      {sorted.map((envVar) => {
+      <div className={styles.filters}>
+        <SearchBox
+          className={styles.searchBox}
+          placeholder="Search environment variables..."
+          value={searchQuery}
+          onChange={(_, data) => setSearchQuery(data.value || '')}
+        />
+        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+          {searchedVars.length} of {sorted.length} variables
+        </Text>
+      </div>
+      {searchedVars.length === 0 && sorted.length > 0 && (
+        <div className={styles.emptyState}>
+          <Text>No environment variables match your search.</Text>
+        </div>
+      )}
+      {searchedVars.map((envVar) => {
         const isExpanded = expandedId === envVar.id;
         return (
           <div key={envVar.id}>

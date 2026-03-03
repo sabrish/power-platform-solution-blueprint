@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Button,
   Title2,
@@ -7,6 +7,7 @@ import {
   Card,
   Tab,
   TabList,
+  Tooltip,
   makeStyles,
   tokens,
   SelectTabData,
@@ -118,6 +119,11 @@ const useStyles = makeStyles({
     opacity: 0.5,
     cursor: 'default',
   },
+  summaryCardSelected: {
+    padding: tokens.spacingVerticalS,
+    outline: `2px solid ${tokens.colorBrandForeground1}`,
+    outlineOffset: '2px',
+  },
   summaryCardContent: {
     display: 'flex',
     flexDirection: 'column',
@@ -162,11 +168,36 @@ export interface ResultsDashboardProps {
 
 export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOver }: ResultsDashboardProps) {
   const styles = useStyles();
+
+  // Compute default selected card — first component type with data (evaluated once before hooks)
+  const defaultSelectedKey = (() => {
+    const s = result.summary;
+    if (s.totalEntities > 0) return 'entities';
+    if (s.totalPlugins > 0) return 'plugins';
+    if (s.totalPluginPackages > 0) return 'pluginPackages';
+    if (s.totalFlows > 0) return 'flows';
+    if (s.totalBusinessRules > 0) return 'businessRules';
+    if (s.totalClassicWorkflows > 0) return 'classicWorkflows';
+    if (s.totalBusinessProcessFlows > 0) return 'businessProcessFlows';
+    if (s.totalCustomAPIs > 0) return 'customAPIs';
+    if (s.totalEnvironmentVariables > 0) return 'environmentVariables';
+    if (s.totalConnectionReferences > 0) return 'connectionReferences';
+    if (s.totalGlobalChoices > 0) return 'globalChoices';
+    if (s.totalCustomConnectors > 0) return 'customConnectors';
+    if (s.totalWebResources > 0) return 'webResources';
+    if ((result.securityRoles?.length ?? 0) > 0) return 'securityRoles';
+    if ((result.fieldSecurityProfiles?.length ?? 0) > 0) return 'fieldSecurityProfiles';
+    if (s.totalCustomPages > 0) return 'customPages';
+    return 'entities';
+  })();
+
   const [mainTab, setMainTab] = useState<string>('dashboard');
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<string>('entities');
+  const [selectedTab, setSelectedTab] = useState<string>(defaultSelectedKey);
+  const [selectedCard, setSelectedCard] = useState<string | null>(defaultSelectedKey);
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
+  const browserSectionRef = useRef<HTMLDivElement>(null);
 
   // Check what architecture features are available
   const hasERD = !!result.erd;
@@ -364,12 +395,29 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                 {componentTypes.map((type) => {
                   const count = getCount(type.key);
                   const hasData = count > 0;
+                  const isSelected = selectedCard === type.key;
 
                   return (
                     <Card
                       key={type.key}
-                      className={hasData ? styles.summaryCard : styles.summaryCardDisabled}
+                      className={
+                        !hasData
+                          ? styles.summaryCardDisabled
+                          : isSelected
+                          ? styles.summaryCardSelected
+                          : styles.summaryCard
+                      }
                       appearance={hasData ? 'filled' : 'outline'}
+                      onClick={
+                        hasData
+                          ? () => {
+                              setSelectedCard(type.key);
+                              setSelectedTab(type.key);
+                              browserSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                            }
+                          : undefined
+                      }
+                      style={hasData ? { cursor: 'pointer' } : undefined}
                     >
                       <div className={styles.summaryCardContent}>
                         <Text style={{ fontSize: '18px' }}>{type.icon}</Text>
@@ -384,7 +432,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           </div>
 
           {/* SECTION 3: Component Browser (Tabbed Interface) */}
-      <div className={styles.browserSection}>
+      <div className={styles.browserSection} ref={browserSectionRef}>
         <Card>
           <Title3>Component Browser</Title3>
           <TabList
@@ -399,63 +447,93 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             }}
           >
             {/* Entities Tab - Always shown */}
-            <Tab value="entities">{`📊 Entities (${result.summary.totalEntities})`}</Tab>
+            <Tooltip content="Entities" relationship="label">
+              <Tab value="entities">{`📊 (${result.summary.totalEntities})`}</Tab>
+            </Tooltip>
 
             {/* Conditional Tabs */}
             {hasResults('plugins') && (
-              <Tab value="plugins">{`🔌 Plugins (${result.summary.totalPlugins})`}</Tab>
+              <Tooltip content="Plugins" relationship="label">
+                <Tab value="plugins">{`🔌 (${result.summary.totalPlugins})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('flows') && (
-              <Tab value="flows">{`🌊 Flows (${result.summary.totalFlows})`}</Tab>
+              <Tooltip content="Flows" relationship="label">
+                <Tab value="flows">{`🌊 (${result.summary.totalFlows})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('businessRules') && (
-              <Tab value="businessRules">{`📋 Business Rules (${result.summary.totalBusinessRules})`}</Tab>
+              <Tooltip content="Business Rules" relationship="label">
+                <Tab value="businessRules">{`📋 (${result.summary.totalBusinessRules})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('classicWorkflows') && (
-              <Tab value="classicWorkflows">{`⚠️ Classic Workflows (${result.summary.totalClassicWorkflows})`}</Tab>
+              <Tooltip content="Classic Workflows" relationship="label">
+                <Tab value="classicWorkflows">{`⚠️ (${result.summary.totalClassicWorkflows})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('businessProcessFlows') && (
-              <Tab value="businessProcessFlows">{`🔄 Business Process Flows (${result.summary.totalBusinessProcessFlows})`}</Tab>
+              <Tooltip content="Business Process Flows" relationship="label">
+                <Tab value="businessProcessFlows">{`🔄 (${result.summary.totalBusinessProcessFlows})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('customAPIs') && (
-              <Tab value="customAPIs">{`🔧 Custom APIs (${result.summary.totalCustomAPIs})`}</Tab>
+              <Tooltip content="Custom APIs" relationship="label">
+                <Tab value="customAPIs">{`🔧 (${result.summary.totalCustomAPIs})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('environmentVariables') && (
-              <Tab value="environmentVariables">{`⚙️ Environment Variables (${result.summary.totalEnvironmentVariables})`}</Tab>
+              <Tooltip content="Environment Variables" relationship="label">
+                <Tab value="environmentVariables">{`⚙️ (${result.summary.totalEnvironmentVariables})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('connectionReferences') && (
-              <Tab value="connectionReferences">{`🔗 Connection References (${result.summary.totalConnectionReferences})`}</Tab>
+              <Tooltip content="Connection References" relationship="label">
+                <Tab value="connectionReferences">{`🔗 (${result.summary.totalConnectionReferences})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('globalChoices') && (
-              <Tab value="globalChoices">{`🎯 Global Choices (${result.summary.totalGlobalChoices})`}</Tab>
+              <Tooltip content="Global Choices" relationship="label">
+                <Tab value="globalChoices">{`🎯 (${result.summary.totalGlobalChoices})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('customConnectors') && (
-              <Tab value="customConnectors">{`🔀 Custom Connectors (${result.summary.totalCustomConnectors})`}</Tab>
+              <Tooltip content="Custom Connectors" relationship="label">
+                <Tab value="customConnectors">{`🔀 (${result.summary.totalCustomConnectors})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('webResources') && (
-              <Tab value="webResources">{`🌐 Web Resources (${result.summary.totalWebResources})`}</Tab>
+              <Tooltip content="Web Resources" relationship="label">
+                <Tab value="webResources">{`🌐 (${result.summary.totalWebResources})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('securityRoles') && (
-              <Tab value="securityRoles">{`🔒 Security Roles (${getCount('securityRoles')})`}</Tab>
+              <Tooltip content="Security Roles" relationship="label">
+                <Tab value="securityRoles">{`🔒 (${getCount('securityRoles')})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('fieldSecurityProfiles') && (
-              <Tab value="fieldSecurityProfiles">{`🛡️ Field Security Profiles (${getCount('fieldSecurityProfiles')})`}</Tab>
+              <Tooltip content="Field Security Profiles" relationship="label">
+                <Tab value="fieldSecurityProfiles">{`🛡️ (${getCount('fieldSecurityProfiles')})`}</Tab>
+              </Tooltip>
             )}
 
             {hasResults('customPages') && (
-              <Tab value="customPages">{`📄 Custom Pages (${result.summary.totalCustomPages})`}</Tab>
+              <Tooltip content="Custom Pages" relationship="label">
+                <Tab value="customPages">{`📄 (${result.summary.totalCustomPages})`}</Tab>
+              </Tooltip>
             )}
           </TabList>
 
