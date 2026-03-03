@@ -5,6 +5,39 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-03-03
+
+### Added
+- **Plugin Packages Tab** - New "Plugin Packages" tab in the Component Browser groups plugin steps by assembly name
+  - Searchable list of plugin packages with step counts
+  - Each package expands to show a step-level table (entity, message, stage, mode, state)
+  - Enabled/disabled badge counts per package
+  - Follows card-row expandable pattern (PATTERN-001)
+- **Universal Search in Component Browser** - Each component list now includes its own search box
+  - Consistent search experience across all tabs in the Component Browser
+- **Clickable Dashboard Cards** - Summary cards on the Dashboard tab are now interactive
+  - Clicking a card selects the corresponding Component Browser tab and scrolls to it
+  - Cards with data show filled appearance and pointer cursor; empty cards are disabled
+  - Selected card is highlighted with a brand-colour bottom border
+
+### Changed
+- **Compact Component Browser Tabs** - Tabs in the Component Browser now show icon + count when unselected, full label + count when selected
+  - Reduces horizontal overflow for environments with many component types
+  - Tooltip on each tab provides the full label on hover
+- **Bidirectional Card/Tab Sync** - Dashboard card selection and Component Browser tab selection are now kept in sync in both directions
+- **HTML Export Responsive Layout** - HTML export now uses a responsive full-width layout, improving readability at all viewport widths
+
+### Fixed
+- **Entities Tab Conditional Render** - Entity tab content now correctly renders even when no filter is active
+- **Security Roles Search** - Search box added to Security Roles view; roles list is now filterable by role name or business unit
+- **Security Roles Spacing** - Improved spacing and layout in the Security Roles view sections
+- **Security Role Privilege Matrix** - Entity permission matrix now correctly reads `depthValue` directly (numeric: 0, 1, 2, 4, 8) instead of a string depth label, fixing incorrect permission display
+- **Entity Badge Counts** - Flag badges on entity list rows now show counts (e.g. "3 Plugin" instead of just "Plugin")
+- **Entity Filter Bar** - Filter bar now only appears when at least one flag type is present; filter buttons show correct labels
+- **AND Filter Logic** - Entity flag filtering now uses AND logic — entity must have ALL selected flags to be shown
+- **Managed / Custom Badges** - "Custom" and "Managed" entity badges are now right-aligned and displayed as stat text
+- **Attribute Count Display** - Attribute count is right-aligned on entity rows and uses brand colour for emphasis
+
 ## [0.7.2] - 2026-02-23
 
 ### Fixed
