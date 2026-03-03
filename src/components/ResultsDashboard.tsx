@@ -22,6 +22,7 @@ import type { BlueprintResult, CustomAPI, ConnectionReference } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
+import { PluginPackagesList } from './PluginPackagesList';
 import { EntityList } from './EntityList';
 import { FlowsList } from './FlowsList';
 import { BusinessRulesList } from './BusinessRulesList';
@@ -458,6 +459,12 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
               </Tooltip>
             )}
 
+            {hasResults('pluginPackages') && (
+              <Tooltip content="Plugin Packages" relationship="label">
+                <Tab value="pluginPackages">{`📦 (${result.summary.totalPluginPackages})`}</Tab>
+              </Tooltip>
+            )}
+
             {hasResults('flows') && (
               <Tooltip content="Flows" relationship="label">
                 <Tab value="flows">{`🌊 (${result.summary.totalFlows})`}</Tab>
@@ -540,11 +547,15 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           {/* Tab Content */}
           <div style={{ marginTop: tokens.spacingVerticalL }}>
             {selectedTab === 'entities' && (
-              <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} />
+              <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} businessProcessFlows={result.businessProcessFlows} />
             )}
 
             {selectedTab === 'plugins' && hasResults('plugins') && (
               <PluginsList plugins={result.plugins} />
+            )}
+
+            {selectedTab === 'pluginPackages' && hasResults('pluginPackages') && (
+              <PluginPackagesList plugins={result.plugins} />
             )}
 
             {selectedTab === 'flows' && hasResults('flows') && (
