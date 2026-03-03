@@ -3,6 +3,7 @@ import {
   SearchBox,
   Text,
   Badge,
+  Button,
   Tooltip,
   ToggleButton,
   makeStyles,
@@ -26,7 +27,7 @@ const useStyles = makeStyles({
   searchHeader: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalXS,
+    gap: tokens.spacingVerticalS,
     flexShrink: 0,
   },
   searchBox: {
@@ -114,7 +115,7 @@ const useStyles = makeStyles({
   },
   filterBar: {
     display: 'flex',
-    gap: tokens.spacingHorizontalS,
+    gap: tokens.spacingHorizontalXS,
     flexWrap: 'wrap',
     alignItems: 'center',
   },
@@ -122,6 +123,14 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground3,
     marginRight: tokens.spacingHorizontalXS,
+    flexShrink: 0,
+  },
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   statBadge: {
     fontSize: tokens.fontSizeBase200,
@@ -223,22 +232,20 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
     return blueprints.map(bp => bp.entity.LogicalName);
   }, [blueprints]);
 
-  // Compute entity flags per blueprint
-  const getEntityFlags = useMemo(() => {
-    return (blueprint: EntityBlueprint): Set<FlagType> => {
-      const flags = new Set<FlagType>();
-      if (blueprint.plugins.length > 0) flags.add('plugins');
-      if (blueprint.forms.length > 0) flags.add('forms');
-      if (blueprint.businessRules.length > 0) flags.add('businessRules');
-      if (blueprint.flows.length > 0) flags.add('flows');
+  // Compute entity flag counts per blueprint (Map<FlagType, count>)
+  const getEntityFlagCounts = useMemo(() => {
+    return (blueprint: EntityBlueprint): Map<FlagType, number> => {
+      const counts = new Map<FlagType, number>();
+      if (blueprint.plugins.length > 0) counts.set('plugins', blueprint.plugins.length);
+      if (blueprint.forms.length > 0) counts.set('forms', blueprint.forms.length);
+      if (blueprint.businessRules.length > 0) counts.set('businessRules', blueprint.businessRules.length);
+      if (blueprint.flows.length > 0) counts.set('flows', blueprint.flows.length);
       const logicalName = blueprint.entity.LogicalName;
-      if (classicWorkflows.some(wf => wf.entity === logicalName)) {
-        flags.add('classicWorkflows');
-      }
-      if (businessProcessFlows.some(bpf => bpf.primaryEntity === logicalName)) {
-        flags.add('bpfs');
-      }
-      return flags;
+      const cwCount = classicWorkflows.filter(wf => wf.entity === logicalName).length;
+      if (cwCount > 0) counts.set('classicWorkflows', cwCount);
+      const bpfCount = businessProcessFlows.filter(bpf => bpf.primaryEntity === logicalName).length;
+      if (bpfCount > 0) counts.set('bpfs', bpfCount);
+      return counts;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blueprints, classicWorkflows, businessProcessFlows]);
@@ -247,11 +254,10 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
   const availableFlags = useMemo<FlagType[]>(() => {
     const present = new Set<FlagType>();
     for (const bp of blueprints) {
-      const flags = getEntityFlags(bp);
-      flags.forEach(f => present.add(f));
+      getEntityFlagCounts(bp).forEach((_, k) => present.add(k));
     }
     return FLAG_CONFIGS.map(c => c.key).filter(k => present.has(k));
-  }, [blueprints, getEntityFlags]);
+  }, [blueprints, getEntityFlagCounts]);
 
   const toggleFilter = (flag: FlagType) => {
     setActiveFilters(prev => {
@@ -280,14 +286,14 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
       });
     }
 
-    // Apply flag filters (OR logic)
+    // Apply flag filters (AND logic — entity must have ALL selected flags)
     if (activeFilters.size > 0) {
       filtered = filtered.filter(bp => {
-        const flags = getEntityFlags(bp);
+        const counts = getEntityFlagCounts(bp);
         for (const f of activeFilters) {
-          if (flags.has(f)) return true;
+          if (!counts.has(f)) return false;
         }
-        return false;
+        return true;
       });
     }
 
@@ -297,7 +303,7 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
       const nameB = b.entity.DisplayName?.UserLocalizedLabel?.Label || b.entity.LogicalName;
       return nameA.localeCompare(nameB);
     });
-  }, [blueprints, searchQuery, activeFilters, getEntityFlags]);
+  }, [blueprints, searchQuery, activeFilters, getEntityFlagCounts]);
 
   const toggleExpand = (entityId: string) => {
     setExpandedEntityId(expandedEntityId === entityId ? null : entityId);
@@ -322,30 +328,31 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
         />
         {availableFlags.length > 0 && (
           <div className={styles.filterBar}>
-            <Text className={styles.filterLabel}>Filter:</Text>
+            <Text className={styles.filterLabel}>Has all of:</Text>
             {availableFlags.map(flagKey => {
               const cfg = FLAG_CONFIGS.find(c => c.key === flagKey)!;
               return (
                 <ToggleButton
                   key={flagKey}
                   size="small"
+                  className={styles.filterButton}
                   checked={activeFilters.has(flagKey)}
                   onClick={() => toggleFilter(flagKey)}
-                  appearance={activeFilters.has(flagKey) ? 'primary' : 'subtle'}
+                  appearance={activeFilters.has(flagKey) ? 'primary' : 'outline'}
                 >
-                  {cfg.tooltip}
+                  {cfg.label}
                 </ToggleButton>
               );
             })}
             {activeFilters.size > 0 && (
-              <ToggleButton
+              <Button
                 size="small"
+                className={styles.filterButton}
                 appearance="subtle"
-                checked={false}
                 onClick={() => setActiveFilters(new Set())}
               >
-                Clear filters
-              </ToggleButton>
+                Clear
+              </Button>
             )}
           </div>
         )}
@@ -373,7 +380,7 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
             const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName || 'Unknown Entity';
             const description = filterDescription(entity.Description?.UserLocalizedLabel?.Label);
             const attributeCount = entity.Attributes?.length || 0;
-            const entityFlagSet = getEntityFlags(blueprint);
+            const entityFlagCounts = getEntityFlagCounts(blueprint);
 
             return (
               <div key={entity.MetadataId}>
@@ -398,15 +405,18 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                       </Text>
                     )}
                   </div>
-                  {entityFlagSet.size > 0 && (
+                  {entityFlagCounts.size > 0 && (
                     <div className={styles.entityFlags}>
-                      {FLAG_CONFIGS.filter(cfg => entityFlagSet.has(cfg.key)).map(cfg => (
-                        <Tooltip key={cfg.key} content={cfg.tooltip} relationship="label">
-                          <Badge size="small" color={cfg.color} appearance="filled">
-                            {cfg.label}
-                          </Badge>
-                        </Tooltip>
-                      ))}
+                      {FLAG_CONFIGS.filter(cfg => entityFlagCounts.has(cfg.key)).map(cfg => {
+                        const count = entityFlagCounts.get(cfg.key)!;
+                        return (
+                          <Tooltip key={cfg.key} content={`${count} ${cfg.tooltip}`} relationship="label">
+                            <Badge size="small" color={cfg.color} appearance="tint">
+                              {count} {cfg.label}
+                            </Badge>
+                          </Tooltip>
+                        );
+                      })}
                     </div>
                   )}
                   <div className={styles.entityStats}>
