@@ -1,4 +1,4 @@
-import { useMemo, memo } from 'react';
+import { useMemo, memo, useState } from 'react';
 import {
   Title3,
   Text,
@@ -17,6 +17,7 @@ import {
   AccordionHeader,
   AccordionItem,
   AccordionPanel,
+  SearchBox,
 } from '@fluentui/react-components';
 import type { SecurityRoleDetail } from '../core';
 
@@ -30,6 +31,21 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalM,
+  },
+  filters: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalM,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  searchBox: {
+    minWidth: '300px',
+  },
+  accordionItem: {
+    marginBottom: tokens.spacingVerticalS,
   },
   description: {
     color: tokens.colorNeutralForeground3,
@@ -59,6 +75,16 @@ interface SecurityRolesViewProps {
 
 function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
   const styles = useStyles();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredRoles = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return securityRoles;
+    return securityRoles.filter((r) =>
+      r.name.toLowerCase().includes(q) ||
+      (r.businessunitname && r.businessunitname.toLowerCase().includes(q))
+    );
+  }, [securityRoles, searchQuery]);
 
   // Special permissions columns for the matrix (in the order specified by user)
   const specialPermissions = [
@@ -217,9 +243,21 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
         </div>
       ) : (
         <>
+          <div className={styles.filters}>
+            <SearchBox
+              className={styles.searchBox}
+              placeholder="Search security roles..."
+              value={searchQuery}
+              onChange={(_, data) => setSearchQuery(data.value || '')}
+            />
+            <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+              {filteredRoles.length} of {securityRoles.length} roles
+            </Text>
+          </div>
+
           <div className={styles.section}>
             <DataGrid
-              items={securityRoles}
+              items={filteredRoles}
               columns={rolesColumns}
               sortable
               style={{ minWidth: '500px' }}
@@ -244,7 +282,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
           </div>
 
           {/* Special Permission Matrix */}
-          <div className={styles.section}>
+          <div className={styles.section} style={{ marginTop: tokens.spacingVerticalXL }}>
             <div style={{ marginBottom: tokens.spacingVerticalS }}>
               <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Special Permission Matrix</Title3>
               <Text className={styles.description}>
@@ -290,7 +328,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {securityRoles.map((role) => (
+                  {filteredRoles.map((role) => (
                     <tr key={role.roleid} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
                       <td
                         style={{
@@ -332,7 +370,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
             </div>
           </div>
 
-          <div className={styles.section}>
+          <div className={styles.section} style={{ marginTop: tokens.spacingVerticalXL }}>
             <div style={{ marginBottom: tokens.spacingVerticalS }}>
               <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Role Details</Title3>
               <Text className={styles.description}>
@@ -341,8 +379,8 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
             </div>
 
             <Accordion multiple collapsible>
-              {securityRoles.map((role) => (
-                <AccordionItem key={role.roleid} value={role.roleid}>
+              {filteredRoles.map((role) => (
+                <AccordionItem key={role.roleid} value={role.roleid} className={styles.accordionItem}>
                   <AccordionHeader>
                     {role.name}
                     <Badge appearance="filled" shape="rounded" className={styles.badge}>
