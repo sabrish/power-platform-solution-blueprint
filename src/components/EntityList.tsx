@@ -232,6 +232,24 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
     return blueprints.map(bp => bp.entity.LogicalName);
   }, [blueprints]);
 
+  // Precompute per-entity counts for classicWorkflows and BPFs once (O(n))
+  // so getEntityFlagCounts can do O(1) map lookups instead of O(n) filters per entity.
+  const classicWorkflowCountByEntity = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const wf of classicWorkflows) {
+      map.set(wf.entity, (map.get(wf.entity) ?? 0) + 1);
+    }
+    return map;
+  }, [classicWorkflows]);
+
+  const bpfCountByEntity = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const bpf of businessProcessFlows) {
+      map.set(bpf.primaryEntity, (map.get(bpf.primaryEntity) ?? 0) + 1);
+    }
+    return map;
+  }, [businessProcessFlows]);
+
   // Compute entity flag counts per blueprint (Map<FlagType, count>)
   const getEntityFlagCounts = useMemo(() => {
     return (blueprint: EntityBlueprint): Map<FlagType, number> => {
@@ -240,15 +258,13 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
       if (blueprint.forms.length > 0) counts.set('forms', blueprint.forms.length);
       if (blueprint.businessRules.length > 0) counts.set('businessRules', blueprint.businessRules.length);
       if (blueprint.flows.length > 0) counts.set('flows', blueprint.flows.length);
-      const logicalName = blueprint.entity.LogicalName;
-      const cwCount = classicWorkflows.filter(wf => wf.entity === logicalName).length;
+      const cwCount = classicWorkflowCountByEntity.get(blueprint.entity.LogicalName) ?? 0;
       if (cwCount > 0) counts.set('classicWorkflows', cwCount);
-      const bpfCount = businessProcessFlows.filter(bpf => bpf.primaryEntity === logicalName).length;
+      const bpfCount = bpfCountByEntity.get(blueprint.entity.LogicalName) ?? 0;
       if (bpfCount > 0) counts.set('bpfs', bpfCount);
       return counts;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blueprints, classicWorkflows, businessProcessFlows]);
+  }, [classicWorkflowCountByEntity, bpfCountByEntity]);
 
   // Which flag types are present in at least one entity (for filter bar)
   const availableFlags = useMemo<FlagType[]>(() => {

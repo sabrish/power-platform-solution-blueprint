@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Button,
   Title2,
@@ -204,6 +204,14 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
   const hasExternalDeps = !!(result.externalEndpoints && result.externalEndpoints.length > 0);
   const hasSolutionDist = !!(result.solutionDistribution && result.solutionDistribution.length > 0);
 
+  // Derive plugin package count from unique assembly names in the plugin steps array.
+  // totalPluginPackages counts inventory components and can differ from unique assemblies
+  // that actually have steps, causing mismatched counts/empty states in PluginPackagesList.
+  const uniquePluginPackageCount = useMemo(
+    () => new Set(result.plugins.map((p) => p.assemblyName).filter(Boolean)).size,
+    [result.plugins]
+  );
+
   // Format timestamp
   const formattedDate = formatDate(result.metadata.generatedAt);
   const formattedTime = formatDateTime(result.metadata.generatedAt).split(' ')[1]; // Extract time portion
@@ -228,7 +236,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       case 'plugins':
         return result.summary.totalPlugins > 0;
       case 'pluginPackages':
-        return result.summary.totalPluginPackages > 0;
+        return uniquePluginPackageCount > 0;
       case 'flows':
         return result.summary.totalFlows > 0;
       case 'businessRules':
@@ -268,7 +276,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       case 'plugins':
         return result.summary.totalPlugins;
       case 'pluginPackages':
-        return result.summary.totalPluginPackages;
+        return uniquePluginPackageCount;
       case 'flows':
         return result.summary.totalFlows;
       case 'businessRules':
@@ -448,7 +456,9 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             }}
           >
             {componentTypes.map((type) => {
-              if (!hasResults(type.key)) return null;
+              // Entities tab is always rendered to maintain a stable default TabList option.
+              // All other tabs are hidden when they have no data.
+              if (type.key !== 'entities' && !hasResults(type.key)) return null;
               const count = getCount(type.key);
               const isSelected = selectedTab === type.key;
               return (
