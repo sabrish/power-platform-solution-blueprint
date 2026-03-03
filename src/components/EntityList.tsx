@@ -2,11 +2,14 @@ import { useState, useMemo } from 'react';
 import {
   SearchBox,
   Text,
+  Badge,
+  Tooltip,
+  ToggleButton,
   makeStyles,
   tokens,
 } from '@fluentui/react-components';
 import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import type { EntityBlueprint, ClassicWorkflow } from '../core';
+import type { EntityBlueprint, ClassicWorkflow, BusinessProcessFlow } from '../core';
 import { SchemaView } from './SchemaView';
 import { filterDescription } from '../utils/descriptionFilter';
 import { TruncatedText } from './TruncatedText';
@@ -72,6 +75,7 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     flex: 1,
     minWidth: 0,
+    overflow: 'hidden',
   },
   entityName: {
     fontWeight: tokens.fontWeightSemibold,
@@ -95,11 +99,29 @@ const useStyles = makeStyles({
     flex: 1,
     minWidth: 0,
   },
+  entityFlags: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalXS,
+    alignItems: 'center',
+    flexShrink: 0,
+  },
   entityStats: {
     display: 'flex',
     gap: tokens.spacingHorizontalS,
     alignItems: 'center',
     flexShrink: 0,
+    marginLeft: 'auto',
+  },
+  filterBar: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalS,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  filterLabel: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+    marginRight: tokens.spacingHorizontalXS,
   },
   statBadge: {
     fontSize: tokens.fontSizeBase200,
@@ -165,20 +187,80 @@ const useStyles = makeStyles({
   },
 });
 
+// Flag types for filtering
+type FlagType = 'plugins' | 'forms' | 'businessRules' | 'flows' | 'classicWorkflows' | 'bpfs';
+
+interface FlagConfig {
+  key: FlagType;
+  label: string;
+  color: 'brand' | 'success' | 'warning' | 'informative' | 'severe';
+  tooltip: string;
+}
+
+const FLAG_CONFIGS: FlagConfig[] = [
+  { key: 'plugins', label: 'Plugin', color: 'brand', tooltip: 'Has Plugins' },
+  { key: 'forms', label: 'Form', color: 'success', tooltip: 'Has Forms' },
+  { key: 'businessRules', label: 'Rule', color: 'warning', tooltip: 'Has Business Rules' },
+  { key: 'flows', label: 'Flow', color: 'informative', tooltip: 'Has Flows' },
+  { key: 'classicWorkflows', label: 'Workflow', color: 'severe', tooltip: 'Has Classic Workflows' },
+  { key: 'bpfs', label: 'BPF', color: 'success', tooltip: 'Has Business Process Flows' },
+];
+
 export interface EntityListProps {
   blueprints: EntityBlueprint[];
   classicWorkflows?: ClassicWorkflow[];
+  businessProcessFlows?: BusinessProcessFlow[];
 }
 
-export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProps) {
+export function EntityList({ blueprints, classicWorkflows = [], businessProcessFlows = [] }: EntityListProps) {
   const styles = useStyles();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEntityId, setExpandedEntityId] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<Set<FlagType>>(new Set());
 
   // Get list of all entity logical names in scope
   const entitiesInScope = useMemo(() => {
     return blueprints.map(bp => bp.entity.LogicalName);
   }, [blueprints]);
+
+  // Compute entity flags per blueprint
+  const getEntityFlags = useMemo(() => {
+    return (blueprint: EntityBlueprint): Set<FlagType> => {
+      const flags = new Set<FlagType>();
+      if (blueprint.plugins.length > 0) flags.add('plugins');
+      if (blueprint.forms.length > 0) flags.add('forms');
+      if (blueprint.businessRules.length > 0) flags.add('businessRules');
+      if (blueprint.flows.length > 0) flags.add('flows');
+      const logicalName = blueprint.entity.LogicalName;
+      if (classicWorkflows.some(wf => wf.entity === logicalName)) {
+        flags.add('classicWorkflows');
+      }
+      if (businessProcessFlows.some(bpf => bpf.primaryEntity === logicalName)) {
+        flags.add('bpfs');
+      }
+      return flags;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blueprints, classicWorkflows, businessProcessFlows]);
+
+  // Which flag types are present in at least one entity (for filter bar)
+  const availableFlags = useMemo<FlagType[]>(() => {
+    const present = new Set<FlagType>();
+    for (const bp of blueprints) {
+      const flags = getEntityFlags(bp);
+      flags.forEach(f => present.add(f));
+    }
+    return FLAG_CONFIGS.map(c => c.key).filter(k => present.has(k));
+  }, [blueprints, getEntityFlags]);
+
+  const toggleFilter = (flag: FlagType) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(flag)) next.delete(flag);
+      else next.add(flag);
+      return next;
+    });
+  };
 
   // Filter and sort blueprints
   const filteredBlueprints = useMemo(() => {
@@ -198,13 +280,24 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
       });
     }
 
+    // Apply flag filters (OR logic)
+    if (activeFilters.size > 0) {
+      filtered = filtered.filter(bp => {
+        const flags = getEntityFlags(bp);
+        for (const f of activeFilters) {
+          if (flags.has(f)) return true;
+        }
+        return false;
+      });
+    }
+
     // Sort alphabetically by display name
     return filtered.sort((a, b) => {
       const nameA = a.entity.DisplayName?.UserLocalizedLabel?.Label || a.entity.LogicalName;
       const nameB = b.entity.DisplayName?.UserLocalizedLabel?.Label || b.entity.LogicalName;
       return nameA.localeCompare(nameB);
     });
-  }, [blueprints, searchQuery]);
+  }, [blueprints, searchQuery, activeFilters, getEntityFlags]);
 
   const toggleExpand = (entityId: string) => {
     setExpandedEntityId(expandedEntityId === entityId ? null : entityId);
@@ -227,8 +320,37 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
           value={searchQuery}
           onChange={(_, data) => setSearchQuery(data.value || '')}
         />
+        {availableFlags.length > 0 && (
+          <div className={styles.filterBar}>
+            <Text className={styles.filterLabel}>Filter:</Text>
+            {availableFlags.map(flagKey => {
+              const cfg = FLAG_CONFIGS.find(c => c.key === flagKey)!;
+              return (
+                <ToggleButton
+                  key={flagKey}
+                  size="small"
+                  checked={activeFilters.has(flagKey)}
+                  onClick={() => toggleFilter(flagKey)}
+                  appearance={activeFilters.has(flagKey) ? 'primary' : 'subtle'}
+                >
+                  {cfg.tooltip}
+                </ToggleButton>
+              );
+            })}
+            {activeFilters.size > 0 && (
+              <ToggleButton
+                size="small"
+                appearance="subtle"
+                checked={false}
+                onClick={() => setActiveFilters(new Set())}
+              >
+                Clear filters
+              </ToggleButton>
+            )}
+          </div>
+        )}
         <Text className={styles.countBadge}>
-          {searchQuery
+          {searchQuery || activeFilters.size > 0
             ? `Showing ${filteredBlueprints.length} of ${blueprints.length} entities`
             : `${blueprints.length} ${blueprints.length === 1 ? 'entity' : 'entities'} found`}
         </Text>
@@ -251,6 +373,7 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
             const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName || 'Unknown Entity';
             const description = filterDescription(entity.Description?.UserLocalizedLabel?.Label);
             const attributeCount = entity.Attributes?.length || 0;
+            const entityFlagSet = getEntityFlags(blueprint);
 
             return (
               <div key={entity.MetadataId}>
@@ -274,17 +397,28 @@ export function EntityList({ blueprints, classicWorkflows = [] }: EntityListProp
                         <TruncatedText text={description} />
                       </Text>
                     )}
-                    <div className={styles.entityStats}>
-                      <Text className={styles.attributeCount}>
-                        {attributeCount} attr{attributeCount !== 1 ? 's' : ''}
-                      </Text>
-                      {entity.IsCustomEntity && (
-                        <Text className={styles.statBadge}>Custom</Text>
-                      )}
-                      {entity.IsManaged && (
-                        <Text className={styles.statBadge}>Managed</Text>
-                      )}
+                  </div>
+                  {entityFlagSet.size > 0 && (
+                    <div className={styles.entityFlags}>
+                      {FLAG_CONFIGS.filter(cfg => entityFlagSet.has(cfg.key)).map(cfg => (
+                        <Tooltip key={cfg.key} content={cfg.tooltip} relationship="label">
+                          <Badge size="small" color={cfg.color} appearance="filled">
+                            {cfg.label}
+                          </Badge>
+                        </Tooltip>
+                      ))}
                     </div>
+                  )}
+                  <div className={styles.entityStats}>
+                    <Text className={styles.attributeCount}>
+                      {attributeCount} attr{attributeCount !== 1 ? 's' : ''}
+                    </Text>
+                    {entity.IsCustomEntity && (
+                      <Text className={styles.statBadge}>Custom</Text>
+                    )}
+                    {entity.IsManaged && (
+                      <Text className={styles.statBadge}>Managed</Text>
+                    )}
                   </div>
                 </div>
                 {isExpanded && renderEntityDetails(blueprint)}
