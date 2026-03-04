@@ -26,7 +26,8 @@ export class ZipPackager {
   async packageBlueprint(
     markdown?: MarkdownExport,
     json?: string,
-    html?: string
+    html?: string,
+    dataDictionaryExcel?: Blob
   ): Promise<Blob> {
     const zip = new JSZip();
     const timestamp = new Date();
@@ -51,8 +52,13 @@ export class ZipPackager {
       zip.file('blueprint.html', html);
     }
 
+    // Add Data Dictionary Excel if provided
+    if (dataDictionaryExcel) {
+      zip.file('data-dictionary.xlsx', dataDictionaryExcel);
+    }
+
     // Add metadata file
-    const metadata = this.generateMetadata(timestamp, markdown, json, html);
+    const metadata = this.generateMetadata(timestamp, markdown, json, html, dataDictionaryExcel);
     zip.file('metadata.txt', metadata);
 
     // Generate ZIP blob with compression
@@ -74,7 +80,8 @@ export class ZipPackager {
     timestamp: Date,
     markdown?: MarkdownExport,
     json?: string,
-    html?: string
+    html?: string,
+    dataDictionaryExcel?: Blob
   ): string {
     const lines: string[] = [];
 
@@ -101,6 +108,10 @@ export class ZipPackager {
       lines.push(`✓ HTML (${this.formatBytes(htmlSize)})`);
     }
 
+    if (dataDictionaryExcel) {
+      lines.push(`✓ Data Dictionary Excel (${this.formatBytes(dataDictionaryExcel.size)})`);
+    }
+
     lines.push('');
     lines.push('File Structure:');
     lines.push('-'.repeat(60));
@@ -121,6 +132,10 @@ export class ZipPackager {
       lines.push('blueprint.html');
     }
 
+    if (dataDictionaryExcel) {
+      lines.push('data-dictionary.xlsx');
+    }
+
     lines.push('metadata.txt');
     lines.push('');
     lines.push('Usage:');
@@ -129,6 +144,7 @@ export class ZipPackager {
     lines.push('- Markdown: Upload to Azure DevOps Wiki or GitHub');
     lines.push('- JSON: Use for baselines, automation, or programmatic analysis');
     lines.push('- HTML: Open blueprint.html in any modern web browser');
+    lines.push('- Data Dictionary: Open data-dictionary.xlsx in Microsoft Excel or compatible tools');
     lines.push('');
     lines.push('For more information, visit:');
     lines.push('https://github.com/anthropics/power-platform-solution-blueprint');

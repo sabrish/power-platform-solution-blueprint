@@ -8,6 +8,7 @@ export interface UseExportResult {
   exportMarkdown: () => Promise<void>;
   exportJson: () => Promise<void>;
   exportHtml: () => Promise<void>;
+  exportDataDictionary: () => Promise<void>;
   exportZip: (formats: string[]) => Promise<void>;
   exportAll: () => Promise<void>;
   isExporting: boolean;
@@ -172,6 +173,38 @@ export function useExport(blueprintGenerator: any): UseExportResult {
   };
 
   /**
+   * Export Data Dictionary as Excel (single file)
+   */
+  const exportDataDictionary = async () => {
+    try {
+      setIsExporting(true);
+      setError(null);
+      setProgress({
+        phase: 'Generating Data Dictionary',
+        current: 0,
+        total: 1,
+        message: 'Creating Excel workbook...',
+      });
+
+      const excelBlob = await blueprintGenerator.exportDataDictionaryAsExcel();
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      downloadFile(excelBlob, `data-dictionary-${timestamp}.xlsx`);
+
+      setProgress({
+        phase: 'Complete',
+        current: 1,
+        total: 1,
+        message: 'Data Dictionary export downloaded',
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Export failed'));
+    } finally {
+      setIsExporting(false);
+      setTimeout(() => setProgress(null), 2000);
+    }
+  };
+
+  /**
    * Export selected formats as ZIP (or single file if applicable)
    */
   const exportZip = async (formats: string[]) => {
@@ -186,6 +219,9 @@ export function useExport(blueprintGenerator: any): UseExportResult {
           return;
         } else if (formats[0] === 'json') {
           await exportJson();
+          return;
+        } else if (formats[0] === 'dataDictionary') {
+          await exportDataDictionary();
           return;
         }
         // For markdown (multiple files), continue with ZIP
@@ -242,7 +278,7 @@ export function useExport(blueprintGenerator: any): UseExportResult {
    * Export all formats
    */
   const exportAll = async () => {
-    await exportZip(['markdown', 'json', 'html']);
+    await exportZip(['markdown', 'json', 'html', 'dataDictionary']);
   };
 
   /**
@@ -256,6 +292,7 @@ export function useExport(blueprintGenerator: any): UseExportResult {
     exportMarkdown,
     exportJson,
     exportHtml,
+    exportDataDictionary,
     exportZip,
     exportAll,
     isExporting,

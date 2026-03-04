@@ -148,6 +148,33 @@ export function estimateHtmlSize(result: BlueprintResult): number {
 }
 
 /**
+ * Estimate Data Dictionary Excel size
+ * @param result Blueprint result
+ * @returns Estimated size in bytes
+ */
+export function estimateDataDictionarySize(result: BlueprintResult): number {
+  // XLSX is compressed XML; this estimate tracks primary metadata volume.
+  let size = 120000; // Base workbook overhead with six sheets and styles.
+
+  size += result.entities.length * 2200;
+  size += result.summary.totalAttributes * 220;
+
+  for (const entityBlueprint of result.entities) {
+    const entity = entityBlueprint.entity;
+    size += (entity.ManyToOneRelationships?.length || 0) * 140;
+    size += (entity.OneToManyRelationships?.length || 0) * 140;
+    size += (entity.ManyToManyRelationships?.length || 0) * 180;
+    size += (entity.Keys?.length || 0) * 160;
+
+    for (const attribute of entity.Attributes || []) {
+      size += (attribute.OptionSet?.Options?.length || 0) * 80;
+    }
+  }
+
+  return size;
+}
+
+/**
  * Format bytes to human-readable string
  * @param bytes Size in bytes
  * @returns Formatted string (e.g., "1.2 MB", "450 KB")
@@ -175,9 +202,10 @@ export function formatBytes(bytes: number): string {
 export function estimateZipSize(
   markdownSize: number,
   jsonSize: number,
-  htmlSize: number
+  htmlSize: number,
+  dataDictionarySize = 0
 ): number {
-  const totalUncompressed = markdownSize + jsonSize + htmlSize;
+  const totalUncompressed = markdownSize + jsonSize + htmlSize + dataDictionarySize;
   // Assume ~40% compression ratio (text compresses well)
   return Math.round(totalUncompressed * 0.6);
 }

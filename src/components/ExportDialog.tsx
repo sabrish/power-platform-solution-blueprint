@@ -16,7 +16,13 @@ import {
 } from '@fluentui/react-components';
 import { Dismiss24Regular } from '@fluentui/react-icons';
 import type { BlueprintResult } from '../core';
-import { estimateMarkdownSize, estimateJsonSize, estimateHtmlSize, formatBytes } from '../utils/sizeEstimator';
+import {
+  estimateMarkdownSize,
+  estimateJsonSize,
+  estimateHtmlSize,
+  estimateDataDictionarySize,
+  formatBytes,
+} from '../utils/sizeEstimator';
 import { ExportProgressOverlay } from './ExportProgressOverlay';
 import { useExport } from '../hooks/useExport';
 
@@ -76,7 +82,7 @@ export interface ExportDialogProps {
  */
 export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: ExportDialogProps) {
   const styles = useStyles();
-  const [selectedFormats, setSelectedFormats] = useState<string[]>(['html']);
+  const [selectedFormats, setSelectedFormats] = useState<string[]>(['html', 'dataDictionary']);
 
   const {
     exportZip,
@@ -91,6 +97,7 @@ export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: Ex
     markdown: estimateMarkdownSize(result),
     json: estimateJsonSize(result),
     html: estimateHtmlSize(result),
+    dataDictionary: estimateDataDictionarySize(result),
   }), [result]);
 
   const estimatedFiles = useMemo(() => {
@@ -110,7 +117,7 @@ export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: Ex
   };
 
   const handleSelectAll = () => {
-    setSelectedFormats(['markdown', 'json', 'html']);
+    setSelectedFormats(['markdown', 'json', 'html', 'dataDictionary']);
   };
 
   const handleDeselectAll = () => {
@@ -219,6 +226,23 @@ export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: Ex
                     ~{formatBytes(estimates.html)}
                   </div>
                 </div>
+
+                {/* Data Dictionary Option */}
+                <div className={styles.formatOption}>
+                  <div className={styles.formatHeader}>
+                    <Checkbox
+                      checked={selectedFormats.includes('dataDictionary')}
+                      onChange={(_, data) => handleFormatToggle('dataDictionary', data.checked as boolean)}
+                      label={<span className={styles.formatTitle}>Data Dictionary (Excel)</span>}
+                    />
+                  </div>
+                  <div className={styles.formatDescription}>
+                    Table metadata catalogue in XLSX format for solution or publisher scope
+                  </div>
+                  <div className={styles.formatPreview}>
+                    ~{formatBytes(estimates.dataDictionary)}
+                  </div>
+                </div>
               </div>
 
               {/* Export Info */}
@@ -226,7 +250,8 @@ export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: Ex
                 <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
                   {selectedFormats.length === 0 && 'Select at least one format to export'}
                   {selectedFormats.length === 1 && selectedFormats[0] === 'markdown' && 'Export will download as ZIP archive (Markdown contains multiple files)'}
-                  {selectedFormats.length === 1 && selectedFormats[0] !== 'markdown' && `Export will download as single ${selectedFormats[0].toUpperCase()} file`}
+                  {selectedFormats.length === 1 && selectedFormats[0] === 'dataDictionary' && 'Export will download as single Excel file (.xlsx)'}
+                  {selectedFormats.length === 1 && selectedFormats[0] !== 'markdown' && selectedFormats[0] !== 'dataDictionary' && `Export will download as single ${selectedFormats[0].toUpperCase()} file`}
                   {selectedFormats.length > 1 && `Export will download as ZIP archive with ${selectedFormats.length} formats`}
                 </Text>
               </div>

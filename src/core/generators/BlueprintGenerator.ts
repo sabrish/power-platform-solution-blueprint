@@ -23,6 +23,7 @@ import { JsonReporter } from '../reporters/JsonReporter.js';
 import { MarkdownReporter } from '../reporters/MarkdownReporter.js';
 import { HtmlReporter } from '../reporters/HtmlReporter.js';
 import { ZipPackager } from '../exporters/ZipPackager.js';
+import { DataDictionaryExcelExporter } from '../exporters/DataDictionaryExcelExporter.js';
 import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
 import type { PluginAssembly } from '../types/pluginAssembly.js';
 import type { ComponentInventory, ComponentInventoryWithSolutions, WorkflowInventory } from '../types/components.js';
@@ -1494,6 +1495,15 @@ export class BlueprintGenerator {
   }
 
   /**
+   * Export data dictionary as Excel workbook
+   * @returns XLSX blob for browser download
+   */
+  async exportDataDictionaryAsExcel(): Promise<Blob> {
+    const exporter = new DataDictionaryExcelExporter();
+    return exporter.export(this.latestResult!);
+  }
+
+  /**
    * Export blueprint as ZIP package
    * @param formats Array of formats to include ('json', 'html', 'markdown')
    * @returns ZIP file as Blob for browser download
@@ -1504,6 +1514,7 @@ export class BlueprintGenerator {
     let json: string | undefined;
     let html: string | undefined;
     let markdown: import('../types/blueprint.js').MarkdownExport | undefined;
+    let dataDictionaryExcel: Blob | undefined;
 
     // Generate selected formats
     if (formats.includes('json')) {
@@ -1518,8 +1529,12 @@ export class BlueprintGenerator {
       markdown = await this.exportAsMarkdown();
     }
 
+    if (formats.includes('dataDictionary')) {
+      dataDictionaryExcel = await this.exportDataDictionaryAsExcel();
+    }
+
     // Package into ZIP
-    return packager.packageBlueprint(markdown, json, html);
+    return packager.packageBlueprint(markdown, json, html, dataDictionaryExcel);
   }
 
   /**
@@ -1528,7 +1543,7 @@ export class BlueprintGenerator {
    * @returns ZIP file as Blob
    */
   async exportAll(): Promise<Blob> {
-    return this.exportAsZip(['markdown', 'json', 'html']);
+    return this.exportAsZip(['markdown', 'json', 'html', 'dataDictionary']);
   }
 
 }
