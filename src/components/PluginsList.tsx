@@ -6,6 +6,7 @@ import {
   tokens,
   Card,
   Title3,
+  SearchBox,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
@@ -16,6 +17,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+  },
+  filters: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalM,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  searchBox: {
+    minWidth: '300px',
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -121,6 +134,7 @@ export function PluginsList({
 }: PluginsListProps) {
   const styles = useStyles();
   const [expandedPluginId, setExpandedPluginId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Filter plugins by entity if specified
   const filteredPlugins = useMemo(() => {
@@ -137,6 +151,18 @@ export function PluginsList({
       return a.rank - b.rank;
     });
   }, [filteredPlugins]);
+
+  // Apply search filter
+  const searchedPlugins = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sortedPlugins;
+    return sortedPlugins.filter((p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.entity.toLowerCase().includes(q) ||
+      p.assemblyName.toLowerCase().includes(q) ||
+      p.typeName.toLowerCase().includes(q)
+    );
+  }, [sortedPlugins, searchQuery]);
 
   const getStageBadgeColor = (stage: number): string => {
     const stageColors: Record<number, string> = {
@@ -264,7 +290,23 @@ export function PluginsList({
 
   return (
     <div className={styles.container}>
-      {sortedPlugins.map((plugin) => {
+      <div className={styles.filters}>
+        <SearchBox
+          className={styles.searchBox}
+          placeholder="Search plugins..."
+          value={searchQuery}
+          onChange={(_, data) => setSearchQuery(data.value || '')}
+        />
+        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+          {searchedPlugins.length} of {sortedPlugins.length} plugins
+        </Text>
+      </div>
+      {searchedPlugins.length === 0 && sortedPlugins.length > 0 ? (
+        <div className={styles.emptyState}>
+          <Text>No plugins match your search.</Text>
+        </div>
+      ) : null}
+      {searchedPlugins.map((plugin) => {
         const isExpanded = expandedPluginId === plugin.id;
         return (
           <div key={plugin.id}>

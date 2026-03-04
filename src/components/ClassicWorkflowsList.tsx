@@ -9,6 +9,7 @@ import {
   Link,
   MessageBar,
   MessageBarBody,
+  SearchBox,
 } from '@fluentui/react-components';
 import {
   ChevronDown20Regular,
@@ -26,6 +27,18 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
+  },
+  filters: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalM,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  searchBox: {
+    minWidth: '300px',
   },
   warning: {
     padding: tokens.spacingVerticalM,
@@ -139,6 +152,7 @@ const complexityColor = (c: string | undefined): 'success' | 'warning' | 'danger
 export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   const styles = useStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const sorted = useMemo(() => {
     const order: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
@@ -148,6 +162,16 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
       return (order[ac] ?? 3) - (order[bc] ?? 3);
     });
   }, [workflows]);
+
+  const searchedWorkflows = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sorted;
+    return sorted.filter((w) =>
+      w.name.toLowerCase().includes(q) ||
+      (w.entity && w.entity.toLowerCase().includes(q)) ||
+      (w.entityDisplayName && w.entityDisplayName.toLowerCase().includes(q))
+    );
+  }, [sorted, searchQuery]);
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -235,8 +259,25 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
         </Text>
       </div>
 
+      <div className={styles.filters}>
+        <SearchBox
+          className={styles.searchBox}
+          placeholder="Search workflows..."
+          value={searchQuery}
+          onChange={(_, data) => setSearchQuery(data.value || '')}
+        />
+        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
+          {searchedWorkflows.length} of {sorted.length} workflows
+        </Text>
+      </div>
+
       <div className={styles.container}>
-        {sorted.map((workflow) => {
+        {searchedWorkflows.length === 0 && sorted.length > 0 && (
+          <div className={styles.emptyState}>
+            <Text>No workflows match your search.</Text>
+          </div>
+        )}
+        {searchedWorkflows.map((workflow) => {
           const isExpanded = expandedId === workflow.id;
           const complexity = workflow.migrationRecommendation?.complexity || 'Low';
           return (

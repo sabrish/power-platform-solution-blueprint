@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Button,
   Title2,
@@ -7,6 +7,7 @@ import {
   Card,
   Tab,
   TabList,
+  Tooltip,
   makeStyles,
   tokens,
   SelectTabData,
@@ -21,6 +22,7 @@ import type { BlueprintResult, CustomAPI, ConnectionReference } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
+import { PluginPackagesList } from './PluginPackagesList';
 import { EntityList } from './EntityList';
 import { FlowsList } from './FlowsList';
 import { BusinessRulesList } from './BusinessRulesList';
@@ -119,6 +121,10 @@ const useStyles = makeStyles({
     opacity: 0.5,
     cursor: 'default',
   },
+  summaryCardSelected: {
+    padding: tokens.spacingVerticalS,
+    borderBottom: `3px solid ${tokens.colorBrandForeground1}`,
+  },
   summaryCardContent: {
     display: 'flex',
     flexDirection: 'column',
@@ -163,16 +169,49 @@ export interface ResultsDashboardProps {
 
 export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOver }: ResultsDashboardProps) {
   const styles = useStyles();
+
+  // Compute default selected card — first component type with data (evaluated once before hooks)
+  const defaultSelectedKey = (() => {
+    const s = result.summary;
+    if (s.totalEntities > 0) return 'entities';
+    if (s.totalPlugins > 0) return 'plugins';
+    if (s.totalPluginPackages > 0) return 'pluginPackages';
+    if (s.totalFlows > 0) return 'flows';
+    if (s.totalBusinessRules > 0) return 'businessRules';
+    if (s.totalClassicWorkflows > 0) return 'classicWorkflows';
+    if (s.totalBusinessProcessFlows > 0) return 'businessProcessFlows';
+    if (s.totalCustomAPIs > 0) return 'customAPIs';
+    if (s.totalEnvironmentVariables > 0) return 'environmentVariables';
+    if (s.totalConnectionReferences > 0) return 'connectionReferences';
+    if (s.totalGlobalChoices > 0) return 'globalChoices';
+    if (s.totalCustomConnectors > 0) return 'customConnectors';
+    if (s.totalWebResources > 0) return 'webResources';
+    if ((result.securityRoles?.length ?? 0) > 0) return 'securityRoles';
+    if ((result.fieldSecurityProfiles?.length ?? 0) > 0) return 'fieldSecurityProfiles';
+    if (s.totalCustomPages > 0) return 'customPages';
+    return 'entities';
+  })();
+
   const [mainTab, setMainTab] = useState<string>('dashboard');
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<string>('entities');
+  const [selectedTab, setSelectedTab] = useState<string>(defaultSelectedKey);
+  const [selectedCard, setSelectedCard] = useState<string | null>(defaultSelectedKey);
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
   const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
+  const browserSectionRef = useRef<HTMLDivElement>(null);
 
   // Check what architecture features are available
   const hasERD = !!result.erd;
   const hasExternalDeps = !!(result.externalEndpoints && result.externalEndpoints.length > 0);
   const hasSolutionDist = !!(result.solutionDistribution && result.solutionDistribution.length > 0);
+
+  // Derive plugin package count from unique assembly names in the plugin steps array.
+  // totalPluginPackages counts inventory components and can differ from unique assemblies
+  // that actually have steps, causing mismatched counts/empty states in PluginPackagesList.
+  const uniquePluginPackageCount = useMemo(
+    () => new Set(result.plugins.map((p) => p.assemblyName).filter(Boolean)).size,
+    [result.plugins]
+  );
 
   // Format timestamp
   const formattedDate = formatDate(result.metadata.generatedAt);
@@ -370,12 +409,29 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                 {componentTypes.map((type) => {
                   const count = getCount(type.key);
                   const hasData = count > 0;
+                  const isSelected = selectedCard === type.key;
 
                   return (
                     <Card
                       key={type.key}
-                      className={hasData ? styles.summaryCard : styles.summaryCardDisabled}
+                      className={
+                        !hasData
+                          ? styles.summaryCardDisabled
+                          : isSelected
+                          ? styles.summaryCardSelected
+                          : styles.summaryCard
+                      }
                       appearance={hasData ? 'filled' : 'outline'}
+                      onClick={
+                        hasData
+                          ? () => {
+                              setSelectedCard(type.key);
+                              setSelectedTab(type.key);
+                              browserSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                            }
+                          : undefined
+                      }
+                      style={hasData ? { cursor: 'pointer' } : undefined}
                     >
                       <div className={styles.summaryCardContent}>
                         <Text style={{ fontSize: '18px' }}>{type.icon}</Text>
@@ -390,13 +446,14 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           </div>
 
           {/* SECTION 3: Component Browser (Tabbed Interface) */}
-      <div className={styles.browserSection}>
+      <div className={styles.browserSection} ref={browserSectionRef}>
         <Card>
           <Title3>Component Browser</Title3>
           <TabList
             selectedValue={selectedTab}
             onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
               setSelectedTab(data.value as string);
+              setSelectedCard(data.value as string);
             }}
             size="small"
             style={{
@@ -472,7 +529,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           {/* Tab Content */}
           <div style={{ marginTop: tokens.spacingVerticalL }}>
             {selectedTab === 'entities' && (
-              <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} />
+              <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} businessProcessFlows={result.businessProcessFlows} />
             )}
 
             {selectedTab === 'plugins' && hasResults('plugins') && (

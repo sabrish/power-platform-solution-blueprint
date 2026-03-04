@@ -1597,7 +1597,21 @@ ${this.embeddedJavaScript()}
     main {
       margin-left: 250px;
       padding: 30px;
-      max-width: 1400px;
+      width: calc(100% - 250px);
+      max-width: 1800px;
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 2170px) {
+      main {
+        max-width: 2200px;
+      }
+    }
+
+    @media (min-width: 4090px) {
+      main {
+        max-width: 3200px;
+      }
     }
 
     /* Header */

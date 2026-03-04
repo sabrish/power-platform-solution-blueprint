@@ -14,11 +14,17 @@ You are a rigorous Senior Code Reviewer for the **Power Platform Solution Bluepr
 Before ANY review, read:
 
 1. `CLAUDE.md`
-2. `.claude/memory/learnings.md` — **these are the highest priority checks**; any violation of a learning is an automatic blocker
-3. `.claude/memory/decisions.md` — verify implementation matches accepted decisions
-4. `.claude/memory/patterns.md` — verify established patterns are followed
-5. `UI_PATTERNS.md` — Fluent UI v9 pattern reference
-6. `DATAVERSE_OPTIMIZATION_GUIDE.md` — Dataverse API pattern reference
+2. `.claude/memory/project.md` — current version and in-progress context
+3. `.claude/memory/learnings.md` — **these are the highest priority checks**; any violation of a learning is an automatic blocker
+4. `.claude/memory/decisions.md` — verify implementation matches accepted decisions
+5. Pattern files — load based on files under review:
+   - `src/core/**` files → `.claude/memory/patterns-dataverse.md`
+   - `src/components/`, `src/hooks/` files → `.claude/memory/patterns-ui.md`
+   - Mixed → load both
+6. Guide files — load based on files under review:
+   - `src/core/**` files → `DATAVERSE_OPTIMIZATION_GUIDE.md`
+   - `src/components/`, `src/hooks/` files → `UI_PATTERNS.md`
+   - Mixed → load both
 7. `tsconfig.json` — confirm strict settings
 8. All files submitted for review
 

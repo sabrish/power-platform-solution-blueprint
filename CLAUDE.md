@@ -19,8 +19,12 @@ Before responding to any task, read in order:
 
 1. `.claude/memory/project.md` — current version, working features, next steps
 2. `.claude/memory/decisions.md` — accepted decisions; never re-debate these
-3. `.claude/memory/learnings.md` — the project owner's corrections; every entry is a hard rule
-4. `.claude/memory/patterns.md` — established code patterns; follow exactly
+3. `.claude/memory/learnings.md` — corrections from the project owner; every entry is a hard rule
+4. Pattern files — load based on task domain:
+   - Dataverse, API, discovery, export, build, commits → `.claude/memory/patterns-dataverse.md`
+   - React components, Fluent UI v9, UI behaviour → `.claude/memory/patterns-ui.md`
+   - Both → load both
+   - Documentation only (no code changes) → skip both
 5. `.claude/memory/interactions/` — scan for files relevant to the current task
 
 Report: **"Memory loaded: [files read]"**
@@ -49,8 +53,9 @@ Report: **"Memory loaded: [files read]"**
 - **NEVER** use `executeDataverseRequest()` or `window.toolboxAPI.dataverse.*` — they do not exist
 - **ALWAYS** use static imports for reporters — dynamic imports break under `pptb-webview://`
 - **ALWAYS** commit one logical change per commit, Conventional Commits format, with trailer:
-  `Co-Authored-By: Claude <noreply@anthropic.com>`
-- **ALWAYS** run security-auditor before any commit touching source, docs, or memory files
+  `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>`
+- **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient; a passing typecheck does not guarantee the Vite build succeeds
+- **ALWAYS** run the `/pre-commit` skill before any commit touching source, docs, or memory files — it runs reviewer then security-auditor in sequence
 
 ## Key Reference Files
 
