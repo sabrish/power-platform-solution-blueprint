@@ -34,6 +34,31 @@ const useStyles = makeStyles({
   searchBox: {
     minWidth: '300px',
   },
+  dataGridRow: {
+    transitionDuration: '0.2s',
+    transitionTimingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    ':hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    },
+  },
+  dataGridRowSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1) !important',
+  },
+  emptyState: {
+    padding: tokens.spacingVerticalXXXL,
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: tokens.spacingVerticalL,
+    color: tokens.colorNeutralForeground3,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: tokens.borderRadiusLarge,
+    border: `1px dashed rgba(255, 255, 255, 0.1)`,
+    minHeight: '200px',
+  },
 });
 
 interface CustomAPIsListProps {
@@ -206,8 +231,10 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
 
   if (customAPIs.length === 0) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-        No Custom APIs found.
+      <div className={styles.emptyState}>
+        <Code20Regular style={{ fontSize: '48px' }} />
+        <Text size={500} weight="semibold">No Custom APIs Found</Text>
+        <Text>No Custom APIs were found in the selected solution(s).</Text>
       </div>
     );
   }
@@ -265,11 +292,8 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
           {({ item, rowId }) => (
             <DataGridRow<CustomAPI>
               key={rowId}
-              style={{
-                cursor: 'pointer',
-                backgroundColor:
-                  selectedAPI === item.id ? tokens.colorNeutralBackground1Selected : undefined,
-              }}
+              className={`${styles.dataGridRow} ${selectedAPI === item.id ? styles.dataGridRowSelected : ''}`}
+              style={{ cursor: 'pointer' }}
               onClick={() => handleRowClick(item)}
             >
               {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}

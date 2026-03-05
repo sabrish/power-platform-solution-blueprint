@@ -48,21 +48,15 @@ import { Footer } from './Footer';
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
-    width: '95%',
-    maxWidth: '1800px',
+    width: '100%',
     margin: '0 auto',
-    minHeight: '100vh',
+    minHeight: '100%',
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    '@media (min-width: 1920px)': {
-      width: '90%',
-      maxWidth: '2200px',
-    },
-    '@media (min-width: 3840px)': {
-      width: '85%',
-      maxWidth: '3200px',
-    },
+    animation: 'fadeIn 0.5s ease-out',
+    paddingLeft: 'max(24px, 5%)',
+    paddingRight: 'max(24px, 5%)',
   },
   topBar: {
     display: 'flex',
@@ -105,15 +99,17 @@ const useStyles = makeStyles({
   },
   section: {
     marginBottom: tokens.spacingVerticalL,
+    animation: 'slideInUp 0.4s ease-out forwards',
   },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
     gap: tokens.spacingHorizontalS,
     marginTop: tokens.spacingVerticalS,
   },
   summaryCard: {
-    padding: tokens.spacingVerticalS,
+    padding: tokens.spacingVerticalM,
+    transition: 'all 0.2s',
   },
   summaryCardDisabled: {
     padding: tokens.spacingVerticalS,
@@ -121,13 +117,14 @@ const useStyles = makeStyles({
     cursor: 'default',
   },
   summaryCardSelected: {
-    padding: tokens.spacingVerticalS,
+    padding: tokens.spacingVerticalM,
     borderBottom: `3px solid ${tokens.colorBrandForeground1}`,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   summaryCardContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
+    gap: tokens.spacingVerticalS,
     alignItems: 'center',
     textAlign: 'center',
   },
@@ -154,8 +151,13 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: tokens.spacingVerticalL,
     color: tokens.colorNeutralForeground3,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: tokens.borderRadiusLarge,
+    border: `1px dashed rgba(255, 255, 255, 0.1)`,
+    minHeight: '300px',
   },
 });
 
@@ -397,10 +399,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         <>
           {/* SECTION 2: Discovery Summary */}
           <div className={styles.section}>
-            <Card>
+            <Card className="enhanced-card">
               <Title3>Component Summary</Title3>
               <div className={styles.summaryGrid}>
-                {componentTypes.map((type) => {
+                {componentTypes.map((type, index) => {
                   const count = getCount(type.key);
                   const hasData = count > 0;
                   const isSelected = selectedCard === type.key;
@@ -412,23 +414,26 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                         !hasData
                           ? styles.summaryCardDisabled
                           : isSelected
-                          ? styles.summaryCardSelected
-                          : styles.summaryCard
+                            ? styles.summaryCardSelected
+                            : styles.summaryCard
                       }
                       appearance={hasData ? 'filled' : 'outline'}
                       onClick={
                         hasData
                           ? () => {
-                              setSelectedCard(type.key);
-                              setSelectedTab(type.key);
-                              browserSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-                            }
+                            setSelectedCard(type.key);
+                            setSelectedTab(type.key);
+                            browserSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                          }
                           : undefined
                       }
-                      style={hasData ? { cursor: 'pointer' } : undefined}
+                      style={{
+                        ...(hasData ? { cursor: 'pointer' } : {}),
+                        animationDelay: `${index * 0.03}s`
+                      }}
                     >
                       <div className={styles.summaryCardContent}>
-                        <Text style={{ fontSize: '18px' }}>{type.icon}</Text>
+                        <Text style={{ fontSize: '24px' }}>{type.icon}</Text>
                         <Text className={styles.summaryCount}>{count}</Text>
                         <Text className={styles.summaryLabel}>{type.label}</Text>
                       </div>
@@ -440,154 +445,154 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           </div>
 
           {/* SECTION 3: Component Browser (Tabbed Interface) */}
-      <div className={styles.browserSection} ref={browserSectionRef}>
-        <Card>
-          <Title3>Component Browser</Title3>
-          <TabList
-            selectedValue={selectedTab}
-            onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
-              setSelectedTab(data.value as string);
-              setSelectedCard(data.value as string);
-            }}
-            size="small"
-            style={{
-              flexWrap: 'wrap',
-              gap: tokens.spacingHorizontalS
-            }}
-          >
-            {componentTypes.map((type) => {
-              // Entities tab is always rendered to maintain a stable default TabList option.
-              // All other tabs are hidden when they have no data.
-              if (type.key !== 'entities' && !hasResults(type.key)) return null;
-              const count = getCount(type.key);
-              const isSelected = selectedTab === type.key;
-              return (
-                <Tooltip key={type.key} content={type.label} relationship="label">
-                  <Tab value={type.key}>
-                    {isSelected
-                      ? `${type.icon} ${type.label} (${count})`
-                      : `${type.icon} (${count})`}
-                  </Tab>
-                </Tooltip>
-              );
-            })}
-          </TabList>
+          <div className={`${styles.browserSection} slide-in-up`} style={{ animationDelay: '0.2s' }} ref={browserSectionRef}>
+            <Card className="enhanced-card">
+              <Title3>Component Browser</Title3>
+              <TabList
+                selectedValue={selectedTab}
+                onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
+                  setSelectedTab(data.value as string);
+                  setSelectedCard(data.value as string);
+                }}
+                size="small"
+                style={{
+                  flexWrap: 'wrap',
+                  gap: tokens.spacingHorizontalS
+                }}
+              >
+                {componentTypes.map((type) => {
+                  // Entities tab is always rendered to maintain a stable default TabList option.
+                  // All other tabs are hidden when they have no data.
+                  if (type.key !== 'entities' && !hasResults(type.key)) return null;
+                  const count = getCount(type.key);
+                  const isSelected = selectedTab === type.key;
+                  return (
+                    <Tooltip key={type.key} content={type.label} relationship="label">
+                      <Tab value={type.key}>
+                        {isSelected
+                          ? `${type.icon} ${type.label} (${count})`
+                          : `${type.icon} (${count})`}
+                      </Tab>
+                    </Tooltip>
+                  );
+                })}
+              </TabList>
 
-          {/* Tab Content */}
-          <div style={{ marginTop: tokens.spacingVerticalL }}>
-            {selectedTab === 'entities' && (
-              <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} businessProcessFlows={result.businessProcessFlows} />
-            )}
+              {/* Tab Content */}
+              <div style={{ marginTop: tokens.spacingVerticalL }}>
+                {selectedTab === 'entities' && (
+                  <EntityList blueprints={result.entities} classicWorkflows={result.classicWorkflows} businessProcessFlows={result.businessProcessFlows} />
+                )}
 
-            {selectedTab === 'plugins' && hasResults('plugins') && (
-              <PluginsList plugins={result.plugins} />
-            )}
+                {selectedTab === 'plugins' && hasResults('plugins') && (
+                  <PluginsList plugins={result.plugins} />
+                )}
 
-            {selectedTab === 'pluginPackages' && hasResults('pluginPackages') && (
-              <PluginPackagesList plugins={result.plugins} />
-            )}
+                {selectedTab === 'pluginPackages' && hasResults('pluginPackages') && (
+                  <PluginPackagesList plugins={result.plugins} />
+                )}
 
-            {selectedTab === 'flows' && hasResults('flows') && (
-              <FlowsList flows={result.flows} />
-            )}
+                {selectedTab === 'flows' && hasResults('flows') && (
+                  <FlowsList flows={result.flows} />
+                )}
 
-            {selectedTab === 'businessRules' && hasResults('businessRules') && (
-              <BusinessRulesList businessRules={result.businessRules} />
-            )}
+                {selectedTab === 'businessRules' && hasResults('businessRules') && (
+                  <BusinessRulesList businessRules={result.businessRules} />
+                )}
 
-            {selectedTab === 'classicWorkflows' && hasResults('classicWorkflows') && (
-              <ClassicWorkflowsList workflows={result.classicWorkflows} />
-            )}
+                {selectedTab === 'classicWorkflows' && hasResults('classicWorkflows') && (
+                  <ClassicWorkflowsList workflows={result.classicWorkflows} />
+                )}
 
-            {selectedTab === 'businessProcessFlows' && hasResults('businessProcessFlows') && (
-              <BusinessProcessFlowsList businessProcessFlows={result.businessProcessFlows} />
-            )}
+                {selectedTab === 'businessProcessFlows' && hasResults('businessProcessFlows') && (
+                  <BusinessProcessFlowsList businessProcessFlows={result.businessProcessFlows} />
+                )}
 
-            {selectedTab === 'customAPIs' && hasResults('customAPIs') && (
-              <div>
-                {selectedCustomAPI ? (
+                {selectedTab === 'customAPIs' && hasResults('customAPIs') && (
                   <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedCustomAPI(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <CustomAPIDetailView api={selectedCustomAPI} />
+                    {selectedCustomAPI ? (
+                      <div>
+                        <Button
+                          appearance="secondary"
+                          onClick={() => setSelectedCustomAPI(null)}
+                          style={{ marginBottom: '16px' }}
+                        >
+                          ← Back to List
+                        </Button>
+                        <CustomAPIDetailView api={selectedCustomAPI} />
+                      </div>
+                    ) : (
+                      <CustomAPIsList
+                        customAPIs={result.customAPIs}
+                        onSelectAPI={setSelectedCustomAPI}
+                      />
+                    )}
                   </div>
-                ) : (
-                  <CustomAPIsList
-                    customAPIs={result.customAPIs}
-                    onSelectAPI={setSelectedCustomAPI}
+                )}
+
+                {selectedTab === 'environmentVariables' && hasResults('environmentVariables') && (
+                  <EnvironmentVariablesList environmentVariables={result.environmentVariables} />
+                )}
+
+                {selectedTab === 'connectionReferences' && hasResults('connectionReferences') && (
+                  <div>
+                    {selectedConnRef ? (
+                      <div>
+                        <Button
+                          appearance="secondary"
+                          onClick={() => setSelectedConnRef(null)}
+                          style={{ marginBottom: '16px' }}
+                        >
+                          ← Back to List
+                        </Button>
+                        <ConnectionReferenceDetailView connectionRef={selectedConnRef} />
+                      </div>
+                    ) : (
+                      <ConnectionReferencesList
+                        connectionReferences={result.connectionReferences}
+                        onSelectReference={setSelectedConnRef}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {selectedTab === 'globalChoices' && hasResults('globalChoices') && (
+                  <GlobalChoicesList
+                    globalChoices={result.globalChoices}
+                    onSelectChoice={() => { }} // Unused - list handles expansion internally
                   />
                 )}
-              </div>
-            )}
 
-            {selectedTab === 'environmentVariables' && hasResults('environmentVariables') && (
-              <EnvironmentVariablesList environmentVariables={result.environmentVariables} />
-            )}
+                {selectedTab === 'customConnectors' && hasResults('customConnectors') && (
+                  <CustomConnectorsList customConnectors={result.customConnectors} />
+                )}
 
-            {selectedTab === 'connectionReferences' && hasResults('connectionReferences') && (
-              <div>
-                {selectedConnRef ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedConnRef(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <ConnectionReferenceDetailView connectionRef={selectedConnRef} />
-                  </div>
-                ) : (
-                  <ConnectionReferencesList
-                    connectionReferences={result.connectionReferences}
-                    onSelectReference={setSelectedConnRef}
+                {selectedTab === 'webResources' && hasResults('webResources') && (
+                  <WebResourcesList webResources={result.webResources} />
+                )}
+
+                {selectedTab === 'securityRoles' && hasResults('securityRoles') && (
+                  <SecurityRolesView securityRoles={result.securityRoles || []} />
+                )}
+
+                {selectedTab === 'fieldSecurityProfiles' && hasResults('fieldSecurityProfiles') && (
+                  <FieldSecurityProfilesView
+                    profiles={result.fieldSecurityProfiles || []}
+                    attributeMaskingRules={result.attributeMaskingRules}
+                    columnSecurityProfiles={result.columnSecurityProfiles}
                   />
                 )}
+
+                {selectedTab === 'customPages' && hasResults('customPages') && (
+                  <div className={styles.emptyState}>
+                    <Text style={{ fontSize: '48px' }}>📄</Text>
+                    <Title3>Custom Pages</Title3>
+                    <Text>Custom pages browser coming soon...</Text>
+                  </div>
+                )}
               </div>
-            )}
-
-            {selectedTab === 'globalChoices' && hasResults('globalChoices') && (
-              <GlobalChoicesList
-                globalChoices={result.globalChoices}
-                onSelectChoice={() => {}} // Unused - list handles expansion internally
-              />
-            )}
-
-            {selectedTab === 'customConnectors' && hasResults('customConnectors') && (
-              <CustomConnectorsList customConnectors={result.customConnectors} />
-            )}
-
-            {selectedTab === 'webResources' && hasResults('webResources') && (
-              <WebResourcesList webResources={result.webResources} />
-            )}
-
-            {selectedTab === 'securityRoles' && hasResults('securityRoles') && (
-              <SecurityRolesView securityRoles={result.securityRoles || []} />
-            )}
-
-            {selectedTab === 'fieldSecurityProfiles' && hasResults('fieldSecurityProfiles') && (
-              <FieldSecurityProfilesView
-                profiles={result.fieldSecurityProfiles || []}
-                attributeMaskingRules={result.attributeMaskingRules}
-                columnSecurityProfiles={result.columnSecurityProfiles}
-              />
-            )}
-
-            {selectedTab === 'customPages' && hasResults('customPages') && (
-              <div className={styles.emptyState}>
-                <Text style={{ fontSize: '48px' }}>📄</Text>
-                <Title3>Custom Pages</Title3>
-                <Text>Custom pages browser coming soon...</Text>
-              </div>
-            )}
+            </Card>
           </div>
-        </Card>
-      </div>
         </>
       )}
 

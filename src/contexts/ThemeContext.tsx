@@ -9,13 +9,17 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(webLightTheme);
-  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<Theme>(webDarkTheme);
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
 
   useEffect(() => {
     const applyTheme = (mode: 'light' | 'dark') => {
       setCurrentTheme(mode);
       setTheme(mode === 'dark' ? webDarkTheme : webLightTheme);
+      
+      // Update body class for CSS overrides
+      document.body.classList.remove('theme-light', 'theme-dark');
+      document.body.classList.add(`theme-${mode}`);
     };
 
     const fallbackToSystem = () => {

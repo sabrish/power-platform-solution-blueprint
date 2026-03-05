@@ -16,17 +16,18 @@ const useStyles = makeStyles({
   table: {
     display: 'flex',
     flexDirection: 'column',
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    border: `1px solid rgba(255, 255, 255, 0.08)`,
     borderRadius: tokens.borderRadiusMedium,
     overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
   },
   tableHeader: {
     display: 'grid',
     gridTemplateColumns: '40px 1fr auto auto',
     gap: tokens.spacingHorizontalS,
     padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottom: `1px solid rgba(255, 255, 255, 0.08)`,
     fontWeight: tokens.fontWeightSemibold,
   },
   tableRow: {
@@ -34,18 +35,19 @@ const useStyles = makeStyles({
     gridTemplateColumns: '40px 1fr auto auto',
     gap: tokens.spacingHorizontalS,
     padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderBottom: `1px solid rgba(255, 255, 255, 0.08)`,
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transitionDuration: '0.2s',
+    transitionTimingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
     ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
+      backgroundColor: 'rgba(255, 255, 255, 0.08)',
     },
     ':last-child': {
       borderBottom: 'none',
     },
   },
   tableRowExpanded: {
-    backgroundColor: tokens.colorNeutralBackground1Pressed,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   cellContent: {
     display: 'flex',
@@ -55,8 +57,8 @@ const useStyles = makeStyles({
   expandedContent: {
     padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
     paddingLeft: '56px', // Indent to align with content
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderBottom: `1px solid rgba(255, 255, 255, 0.08)`,
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalM,
@@ -72,6 +74,7 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     padding: `${tokens.spacingVerticalXXS} 0`,
     fontSize: tokens.fontSizeBase200,
+    borderBottom: `1px solid rgba(255, 255, 255, 0.03)`,
   },
   eventHandlerLabel: {
     color: tokens.colorNeutralForeground3,
@@ -128,7 +131,7 @@ export function FormsTable({ forms }: FormsTableProps) {
           </Text>
 
           {/* Header Row */}
-          <div className={styles.eventHandlerRow} style={{ fontWeight: tokens.fontWeightSemibold, borderBottom: `1px solid ${tokens.colorNeutralStroke1}`, paddingBottom: tokens.spacingVerticalXS }}>
+          <div className={styles.eventHandlerRow} style={{ fontWeight: tokens.fontWeightSemibold, borderBottom: `1px solid rgba(255, 255, 255, 0.08)`, paddingBottom: tokens.spacingVerticalXS }}>
             <Text size={200} className={styles.eventHandlerLabel}>Event</Text>
             <Text size={200} className={styles.eventHandlerLabel}>Library</Text>
             <Text size={200} className={styles.eventHandlerLabel}>Function</Text>

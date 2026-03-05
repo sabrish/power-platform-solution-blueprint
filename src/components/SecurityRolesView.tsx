@@ -44,6 +44,14 @@ const useStyles = makeStyles({
   searchBox: {
     minWidth: '300px',
   },
+  dataGridRow: {
+    transitionDuration: '0.2s',
+    transitionTimingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    ':hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    },
+  },
   accordionItem: {
     marginBottom: tokens.spacingVerticalS,
   },
@@ -271,7 +279,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
               </DataGridHeader>
               <DataGridBody<SecurityRoleDetail>>
                 {({ item, rowId }) => (
-                  <DataGridRow<SecurityRoleDetail> key={rowId}>
+                  <DataGridRow<SecurityRoleDetail> key={rowId} className={styles.dataGridRow}>
                     {({ renderCell }) => (
                       <DataGridCell>{renderCell(item)}</DataGridCell>
                     )}

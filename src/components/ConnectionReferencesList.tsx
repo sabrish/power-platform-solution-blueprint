@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
-import { DataGrid, DataGridBody, DataGridRow, DataGridHeader, DataGridHeaderCell, DataGridCell, TableCellLayout,
-  TableColumnDefinition, createTableColumn, Badge, SearchBox, Text, tokens, makeStyles } from '@fluentui/react-components';
+import {
+  DataGrid, DataGridBody, DataGridRow, DataGridHeader, DataGridHeaderCell, DataGridCell, TableCellLayout,
+  TableColumnDefinition, createTableColumn, Badge, SearchBox, Text, tokens, makeStyles
+} from '@fluentui/react-components';
 import { PlugConnected20Regular } from '@fluentui/react-icons';
 import type { ConnectionReference } from '../core';
 import { TruncatedText } from './TruncatedText';
@@ -18,6 +20,31 @@ const useStyles = makeStyles({
   },
   searchBox: {
     minWidth: '300px',
+  },
+  dataGridRow: {
+    transitionDuration: '0.2s',
+    transitionTimingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    ':hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    },
+  },
+  dataGridRowSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1) !important',
+  },
+  emptyState: {
+    padding: tokens.spacingVerticalXXXL,
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: tokens.spacingVerticalL,
+    color: tokens.colorNeutralForeground3,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: tokens.borderRadiusLarge,
+    border: `1px dashed rgba(255, 255, 255, 0.1)`,
+    minHeight: '200px',
   },
 });
 
@@ -80,7 +107,13 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
   ];
 
   if (connectionReferences.length === 0) {
-    return <div style={{ padding: '20px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>No Connection References found.</div>;
+    return (
+      <div className={styles.emptyState}>
+        <PlugConnected20Regular style={{ fontSize: '48px' }} />
+        <Text size={500} weight="semibold">No Connection References Found</Text>
+        <Text>No connection references were found in the selected solution(s).</Text>
+      </div>
+    );
   }
 
   return (
@@ -101,8 +134,9 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
         <DataGridHeader><DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow></DataGridHeader>
         <DataGridBody<ConnectionReference>>
           {({ item, rowId }) => (
-            <DataGridRow<ConnectionReference> key={rowId} style={{ cursor: 'pointer',
-              backgroundColor: selectedRef === item.id ? tokens.colorNeutralBackground1Selected : undefined }}
+            <DataGridRow<ConnectionReference> key={rowId}
+              className={`${styles.dataGridRow} ${selectedRef === item.id ? styles.dataGridRowSelected : ''}`}
+              style={{ cursor: 'pointer' }}
               onClick={() => { setSelectedRef(item.id); onSelectReference(item); }}>
               {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
             </DataGridRow>

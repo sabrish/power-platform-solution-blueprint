@@ -22,30 +22,33 @@ import { Footer } from './components/Footer';
 
 const useStyles = makeStyles({
   container: {
-    padding: tokens.spacingVerticalXXL,
-    width: '95%',
-    maxWidth: '1600px',
-    margin: '0 auto',
+    width: '100vw',
     minHeight: '100vh',
+    padding: tokens.spacingVerticalXXL,
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    '@media (max-width: 768px)': {
-      width: '100%',
-      padding: tokens.spacingVerticalL,
-    },
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: '800px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalL,
+    animation: 'slideInUp 0.5s ease-out',
   },
   header: {
-    marginBottom: tokens.spacingVerticalL,
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
-    position: 'relative',
+    textAlign: 'center',
   },
   headerTop: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerContent: {
     display: 'flex',
@@ -57,22 +60,25 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
   },
   confirmationCard: {
-    marginBottom: tokens.spacingVerticalL,
+    // Relying on global glass-panel for style
   },
   scopeDetails: {
     padding: tokens.spacingVerticalM,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: tokens.spacingVerticalM,
   },
   label: {
     fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground3,
+    display: 'block',
+    marginBottom: tokens.spacingVerticalXS,
   },
   value: {
-    color: tokens.colorNeutralForeground2,
+    color: tokens.colorNeutralForeground1,
+    fontSize: tokens.fontSizeBase300,
   },
   readyCard: {
-    marginBottom: tokens.spacingVerticalL,
     textAlign: 'center',
     padding: tokens.spacingVerticalXXL,
   },
@@ -222,62 +228,63 @@ function App() {
   // Show confirmation screen
   return (
     <main id="main-content" className={styles.container} role="main" aria-label="Power Platform Solution Blueprint">
-      <header className={styles.header}>
-        <div className={styles.headerTop}>
-          <div className={styles.headerContent}>
-            <Title1>Power Platform Solution Blueprint</Title1>
-            <Subtitle1 className={styles.subtitle}>
-              Complete architectural blueprints for your Power Platform systems
-            </Subtitle1>
+      <div className={styles.contentWrapper}>
+        <header className={styles.header}>
+          <div className={styles.headerTop}>
+            <div className={styles.headerContent}>
+              <Title1 style={{ textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>Power Platform Solution Blueprint</Title1>
+              <Subtitle1 className={styles.subtitle}>
+                Complete architectural blueprints for your Power Platform systems
+              </Subtitle1>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {error && (
-        <div className={styles.errorContainer}>
-          <MessageBar intent="error">
-            <MessageBarBody>
-              <MessageBarTitle>Generation Failed</MessageBarTitle>
-              {error.message}
-              <br />
-              <Button
-                appearance="secondary"
-                size="small"
-                onClick={handleGenerate}
-                style={{ marginTop: '8px' }}
-              >
-                Retry
-              </Button>
-            </MessageBarBody>
-          </MessageBar>
-        </div>
-      )}
+        {error && (
+          <div className={styles.errorContainer}>
+            <MessageBar intent="error" className="glass-panel">
+              <MessageBarBody>
+                <MessageBarTitle>Generation Failed</MessageBarTitle>
+                {error.message}
+                <br />
+                <Button
+                  appearance="secondary"
+                  size="small"
+                  onClick={handleGenerate}
+                  style={{ marginTop: '8px' }}
+                >
+                  Retry
+                </Button>
+              </MessageBarBody>
+            </MessageBar>
+          </div>
+        )}
 
-      <Card className={styles.confirmationCard}>
-        <CardHeader header={<Text weight="semibold">Selected Scope</Text>} />
-        {renderScopeSummary(selectedScope)}
-      </Card>
+        <Card className={`${styles.confirmationCard} glass-panel`}>
+          <CardHeader header={<Text size={400} weight="semibold">Configuration Summary</Text>} />
+          {renderScopeSummary(selectedScope)}
+        </Card>
 
-      <Card className={styles.readyCard}>
-        <Text size={500} weight="semibold">
-          Ready to generate blueprint
-        </Text>
-        <Text style={{ marginTop: tokens.spacingVerticalM }}>
-          This will process all entities in your selected scope and generate a complete system
-          blueprint.
-        </Text>
-      </Card>
+        <Card className={`${styles.readyCard} glass-panel`}>
+          <Text size={600} weight="semibold">
+            Ready to generate blueprint
+          </Text>
+          <Text style={{ marginTop: tokens.spacingVerticalM, display: 'block', color: tokens.colorNeutralForeground2 }}>
+            This will process all entities in your selected scope and generate a complete system blueprint.
+          </Text>
 
-      <div className={styles.buttonGroup}>
-        <Button appearance="secondary" onClick={handleChangeSelection}>
-          Change Selection
-        </Button>
-        <Button appearance="primary" onClick={handleGenerate} aria-label="Generate system blueprint">
-          Generate Blueprint
-        </Button>
+          <div className={styles.buttonGroup}>
+            <Button size="large" appearance="secondary" onClick={handleChangeSelection}>
+              Change Selection
+            </Button>
+            <Button size="large" appearance="primary" onClick={handleGenerate} aria-label="Generate system blueprint">
+              Generate Blueprint
+            </Button>
+          </div>
+        </Card>
+
+        <Footer />
       </div>
-
-      <Footer />
     </main>
   );
 }
