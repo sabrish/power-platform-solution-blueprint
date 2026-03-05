@@ -14,6 +14,9 @@ interface DataverseApi {
 export class PptbDataverseClient implements IDataverseClient {
   private readonly dataverseApi: DataverseApi;
   private readonly environmentUrl: string;
+  private static readonly MAX_PRIMARY_ATTEMPTS = 3;
+  private static readonly RETRY_BASE_DELAY_MS = 600;
+  private static readonly MAX_RETRY_DELAY_MS = 5000;
 
   constructor(dataverseApi: DataverseApi, environmentUrl?: string) {
     this.dataverseApi = dataverseApi;
@@ -35,7 +38,7 @@ export class PptbDataverseClient implements IDataverseClient {
       const queryString = this.buildQueryString(options);
       const odataQuery = queryString ? `${entitySet}?${queryString}` : entitySet;
 
-      const response = await this.dataverseApi.queryData(odataQuery, 'primary');
+      const response = await this.queryDataWithRetry(odataQuery);
 
       return this.parseResponse<T>(response);
     } catch (error) {
@@ -53,7 +56,7 @@ export class PptbDataverseClient implements IDataverseClient {
       const queryString = this.buildQueryString(options);
       const odataQuery = queryString ? `${metadataPath}?${queryString}` : metadataPath;
 
-      const response = await this.dataverseApi.queryData(odataQuery, 'primary');
+      const response = await this.queryDataWithRetry(odataQuery);
 
       return this.parseResponse<T>(response);
     } catch (error) {
@@ -94,6 +97,96 @@ export class PptbDataverseClient implements IDataverseClient {
     }
 
     return params.join('&');
+  }
+
+  private async queryDataWithRetry(odataQuery: string): Promise<{ value: Record<string, unknown>[] }> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= PptbDataverseClient.MAX_PRIMARY_ATTEMPTS; attempt++) {
+      try {
+        return await this.dataverseApi.queryData(odataQuery, 'primary');
+      } catch (error) {
+        lastError = error;
+        if (!this.isRetryableError(error) || attempt === PptbDataverseClient.MAX_PRIMARY_ATTEMPTS) {
+          break;
+        }
+        await this.delay(this.getBackoffDelayMs(attempt));
+      }
+    }
+
+    if (this.isRetryableError(lastError)) {
+      try {
+        return await this.dataverseApi.queryData(odataQuery, 'secondary');
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (lastError instanceof Error) {
+      throw lastError;
+    }
+
+    const unknownErrorMessage = this.getErrorMessage(lastError);
+    if (unknownErrorMessage) {
+      throw new Error(unknownErrorMessage);
+    }
+
+    throw new Error('Dataverse query failed');
+  }
+
+  private isRetryableError(error: unknown): boolean {
+    const errorMessage = this.getErrorMessage(error);
+    if (!errorMessage) {
+      return false;
+    }
+
+    const message = errorMessage.toLowerCase();
+    const retryableIndicators = [
+      'etimedout',
+      'timeout',
+      'econnreset',
+      'econnrefused',
+      'enotfound',
+      'eai_again',
+      'socket hang up',
+      'network error',
+      'temporarily unavailable',
+      'too many requests',
+      ' 429',
+      ' 502',
+      ' 503',
+      ' 504',
+    ];
+
+    return retryableIndicators.some(indicator => message.includes(indicator));
+  }
+
+  private getErrorMessage(error: unknown): string | undefined {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    if (error && typeof error === 'object' && 'message' in error) {
+      const message = (error as Record<string, unknown>).message;
+      if (typeof message === 'string') {
+        return message;
+      }
+    }
+
+    return undefined;
+  }
+
+  private getBackoffDelayMs(attempt: number): number {
+    const exponentialDelay = PptbDataverseClient.RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+    return Math.min(exponentialDelay, PptbDataverseClient.MAX_RETRY_DELAY_MS);
+  }
+
+  private async delay(ms: number): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**

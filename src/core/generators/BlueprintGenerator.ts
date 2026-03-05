@@ -1164,8 +1164,16 @@ export class BlueprintGenerator {
       // Get detailed permissions for each role
       const roleDetails: import('../discovery/SecurityRoleDiscovery.js').SecurityRoleDetail[] = [];
       for (let i = 0; i < rolesInSolution.length; i++) {
-        const detail = await securityRoleDiscovery.getSecurityRoleDetail(rolesInSolution[i]);
-        roleDetails.push(detail);
+        try {
+          const detail = await securityRoleDiscovery.getSecurityRoleDetail(rolesInSolution[i]);
+          roleDetails.push(detail);
+        } catch (error) {
+          console.warn(
+            `Skipping security role ${rolesInSolution[i].name} due to query error: ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`
+          );
+        }
 
         this.reportProgress({
           phase: 'discovering',
@@ -1179,7 +1187,7 @@ export class BlueprintGenerator {
       return roleDetails;
     } catch (error) {
       console.error('Error processing security roles:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      return [];
     }
   }
 
