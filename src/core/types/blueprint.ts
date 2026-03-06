@@ -494,6 +494,37 @@ export interface BlueprintMetadata {
 }
 
 /**
+ * Node in the ERD graph data model (used by the interactive viewer)
+ */
+export interface ERDNode {
+  id: string;
+  label: string;
+  publisherPrefix: string;
+  color: string;
+  strokeColor: string;
+  textColor: string;
+}
+
+/**
+ * Edge in the ERD graph data model (used by the interactive viewer)
+ */
+export interface ERDEdge {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+  type: '1-N' | 'N-N';
+}
+
+/**
+ * Graph data for the ERD interactive viewer
+ */
+export interface ERDGraphData {
+  nodes: ERDNode[];
+  edges: ERDEdge[];
+}
+
+/**
  * ERD (Entity Relationship Diagram) definition
  */
 export interface ERDDefinition {
@@ -503,6 +534,7 @@ export interface ERDDefinition {
   totalEntities: number;
   totalRelationships: number;
   warnings?: string[];
+  graphData?: ERDGraphData;
 }
 
 /**
