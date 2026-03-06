@@ -31,3 +31,4 @@ This project uses short-lived feature branches aligned to roadmap delivery slice
 - `feat/baseline-comparison`
 - `feat/canvas-apps-phase-1`
 - `feat/canvas-apps-phase-2`
+- `feat/canvas-apps-phase-3`

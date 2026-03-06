@@ -170,9 +170,9 @@ export function CanvasAppsList({ canvasApps }: CanvasAppsListProps) {
       </Card>
 
       <Card className={styles.analysisSection}>
-        <Title3>.msapp Deep Analysis (Phase 2 Beta)</Title3>
+        <Title3>.msapp Deep Analysis (Phase 3 Beta)</Title3>
         <Text className={styles.summary}>
-          Upload a Canvas App package to extract screen inventory, control summaries, and data source hints.
+          Upload a Canvas App package to extract screen inventory, complexity signals, per-screen data source usage, and accessibility checks.
         </Text>
 
         <div className={styles.controls}>
@@ -210,6 +210,9 @@ export function CanvasAppsList({ canvasApps }: CanvasAppsListProps) {
               <Badge appearance="filled" color="informative">Screens: {analysis.screenNames.length}</Badge>
               <Badge appearance="filled" color="informative">Control Types: {analysis.controlTypes.length}</Badge>
               <Badge appearance="filled" color="informative">Data Source Hints: {analysis.dataSourceHints.length}</Badge>
+              <Badge appearance="filled" color={analysis.accessibilityIssues.length > 0 ? 'warning' : 'success'}>
+                Accessibility Issues: {analysis.accessibilityIssues.length}
+              </Badge>
             </div>
 
             <div className={styles.splitGrid}>
@@ -263,6 +266,65 @@ export function CanvasAppsList({ canvasApps }: CanvasAppsListProps) {
             </Card>
 
             <Card>
+              <Text weight="semibold" style={{ display: 'block', marginBottom: tokens.spacingVerticalS }}>
+                Screen Complexity and Data Source Usage
+              </Text>
+              {analysis.screenAnalysis.length === 0 ? (
+                <Text className={styles.summary}>No screen-level analysis could be produced from this package.</Text>
+              ) : (
+                <div className={styles.tableWrap}>
+                  <Table aria-label="Canvas App screen analysis">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHeaderCell>Screen</TableHeaderCell>
+                        <TableHeaderCell>Complexity</TableHeaderCell>
+                        <TableHeaderCell>Score</TableHeaderCell>
+                        <TableHeaderCell>Controls</TableHeaderCell>
+                        <TableHeaderCell>Formulas</TableHeaderCell>
+                        <TableHeaderCell>Data Sources</TableHeaderCell>
+                        <TableHeaderCell>Accessibility</TableHeaderCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {analysis.screenAnalysis.slice(0, 50).map((screen) => (
+                        <TableRow key={screen.screenName}>
+                          <TableCell><span className={styles.code}>{screen.screenName}</span></TableCell>
+                          <TableCell>
+                            <Badge
+                              appearance="tint"
+                              color={
+                                screen.complexityBand === 'High'
+                                  ? 'danger'
+                                  : screen.complexityBand === 'Medium'
+                                    ? 'warning'
+                                    : 'success'
+                              }
+                            >
+                              {screen.complexityBand}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{screen.formulaComplexityScore}</TableCell>
+                          <TableCell>{screen.controlCount} ({screen.distinctControlTypes} types)</TableCell>
+                          <TableCell>{screen.formulaCount}</TableCell>
+                          <TableCell>
+                            {screen.dataSourceHints.length === 0
+                              ? 'None'
+                              : screen.dataSourceHints.slice(0, 4).join(', ')}
+                          </TableCell>
+                          <TableCell>
+                            <Badge appearance="tint" color={screen.accessibilityIssueCount > 0 ? 'warning' : 'success'}>
+                              {screen.accessibilityIssueCount}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </Card>
+
+            <Card>
               <Text weight="semibold">Data Source Hints</Text>
               {analysis.dataSourceHints.length === 0 ? (
                 <Text className={styles.summary}>No data source hints detected.</Text>
@@ -271,6 +333,51 @@ export function CanvasAppsList({ canvasApps }: CanvasAppsListProps) {
                   {analysis.dataSourceHints.slice(0, 30).map((hint) => (
                     <Badge key={hint} appearance="tint" color="warning">{hint}</Badge>
                   ))}
+                </div>
+              )}
+            </Card>
+
+            <Card>
+              <Text weight="semibold" style={{ display: 'block', marginBottom: tokens.spacingVerticalS }}>
+                Accessibility Findings
+              </Text>
+              {analysis.accessibilityIssues.length === 0 ? (
+                <Text className={styles.summary}>No accessibility issues were detected by current heuristics.</Text>
+              ) : (
+                <div className={styles.tableWrap}>
+                  <Table aria-label="Canvas App accessibility findings">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHeaderCell>Screen</TableHeaderCell>
+                        <TableHeaderCell>Severity</TableHeaderCell>
+                        <TableHeaderCell>Issue</TableHeaderCell>
+                        <TableHeaderCell>Recommendation</TableHeaderCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {analysis.accessibilityIssues.slice(0, 80).map((item, index) => (
+                        <TableRow key={`${item.screenName}-${item.issue}-${index}`}>
+                          <TableCell><span className={styles.code}>{item.screenName}</span></TableCell>
+                          <TableCell>
+                            <Badge
+                              appearance="tint"
+                              color={
+                                item.severity === 'High'
+                                  ? 'danger'
+                                  : item.severity === 'Medium'
+                                    ? 'warning'
+                                    : 'informative'
+                              }
+                            >
+                              {item.severity}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{item.issue}</TableCell>
+                          <TableCell>{item.recommendation}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </Card>

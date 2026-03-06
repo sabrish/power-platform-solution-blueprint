@@ -84,9 +84,9 @@ Future development plans for Power Platform Solution Blueprint
 
 - [x] Phase 1: Canvas app inventory (app metadata for selected solution/publisher scope)
 - [x] Phase 2: Screen inventory with navigation mapping (.msapp upload analysis beta)
-- [ ] Control analysis and formula complexity
-- [ ] Data source usage per screen
-- [ ] Accessibility checks
+- [x] Control analysis and formula complexity (.msapp upload analysis phase 3 beta)
+- [x] Data source usage per screen (.msapp upload analysis phase 3 beta)
+- [x] Accessibility checks (.msapp upload analysis phase 3 beta)
 - Requires .msapp extraction
 
 ### Power Pages
