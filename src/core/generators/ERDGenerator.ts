@@ -1,4 +1,4 @@
-import type { EntityBlueprint, ERDDefinition, ERDDiagram, PublisherLegend, EntityQuickLink, ERDGraphData, ERDNode, ERDEdge } from '../types/blueprint.js';
+import type { EntityBlueprint, ERDDefinition, ERDDiagram, PublisherLegend, EntityQuickLink } from '../types/blueprint.js';
 import type { Publisher } from '../types.js';
 import { getPublisherColors } from '../utils/ColorGenerator.js';
 import { isSystemEntity, isSystemRelationship } from '../../utils/systemFilters.js';
@@ -46,16 +46,12 @@ export class ERDGenerator {
     // Count total relationships
     const totalRelationships = this.countTotalRelationships(filteredEntities);
 
-    // Build dagre-compatible graph data
-    const graphData = this.buildGraphData(filteredEntities, publisherMap);
-
     return {
       diagrams,
       legend,
       entityQuickLinks,
       totalEntities: filteredEntities.length,
       totalRelationships,
-      graphData,
     };
   }
 
@@ -268,103 +264,6 @@ export class ERDGenerator {
       entityCount: entities.length,
       relationshipCount,
     };
-  }
-
-  /**
-   * Build graph data (nodes + edges) for the dagre-based interactive canvas view.
-   * Uses the same filtering logic as generateClassDiagramForEntities.
-   */
-  private buildGraphData(
-    entities: EntityBlueprint[],
-    publisherMap: Map<string, { prefix: string; name: string; color: string; entities: string[] }>
-  ): ERDGraphData {
-    const entityLogicalNames = new Set(entities.map(bp => bp.entity.LogicalName.toLowerCase()));
-
-    const entityAttributes = new Map<string, Set<string>>();
-    for (const { entity } of entities) {
-      const attributes = new Set<string>();
-      for (const attr of entity.Attributes || []) {
-        attributes.add(attr.LogicalName.toLowerCase());
-      }
-      entityAttributes.set(entity.LogicalName.toLowerCase(), attributes);
-    }
-
-    // Suppress unused-variable warning — publisherMap param is used implicitly via getPublisherColors
-    void publisherMap;
-
-    // Build nodes
-    const nodes: ERDNode[] = entities.map(({ entity }) => {
-      const prefix = this.extractPublisherPrefix(entity.SchemaName);
-      const colors = getPublisherColors(prefix);
-      return {
-        id: entity.LogicalName,
-        label: entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName,
-        publisherPrefix: prefix,
-        color: colors.fill,
-        strokeColor: colors.stroke,
-        textColor: colors.text,
-      };
-    });
-
-    // Build edges (same filtering logic as generateClassDiagramForEntities)
-    const edges: ERDEdge[] = [];
-    const processedRelationships = new Set<string>();
-
-    for (const { entity } of entities) {
-      if (entity.OneToManyRelationships) {
-        for (const rel of entity.OneToManyRelationships) {
-          if (isSystemRelationship(
-            rel.SchemaName,
-            rel.ReferencingAttribute,
-            rel.ReferencedEntity,
-            rel.ReferencingEntity
-          )) continue;
-          if (!entityLogicalNames.has(rel.ReferencingEntity.toLowerCase())) continue;
-          const referencingAttrs = entityAttributes.get(rel.ReferencingEntity.toLowerCase());
-          const referencedAttrs = entityAttributes.get(rel.ReferencedEntity.toLowerCase());
-          if (!referencingAttrs?.has(rel.ReferencingAttribute.toLowerCase()) ||
-              !referencedAttrs?.has(rel.ReferencedAttribute.toLowerCase())) continue;
-          const key = `${entity.LogicalName}->${rel.ReferencingEntity}:${rel.SchemaName}`;
-          if (!processedRelationships.has(key)) {
-            processedRelationships.add(key);
-            edges.push({
-              id: rel.SchemaName,
-              source: entity.LogicalName,
-              target: rel.ReferencingEntity,
-              label: rel.ReferencingAttribute,
-              type: '1-N',
-            });
-          }
-        }
-      }
-
-      if (entity.ManyToManyRelationships) {
-        for (const rel of entity.ManyToManyRelationships) {
-          if (isSystemRelationship(
-            rel.SchemaName,
-            undefined,
-            rel.Entity1LogicalName,
-            rel.Entity2LogicalName
-          )) continue;
-          if (!entityLogicalNames.has(rel.Entity1LogicalName.toLowerCase()) ||
-              !entityLogicalNames.has(rel.Entity2LogicalName.toLowerCase())) continue;
-          const key1 = `${rel.Entity1LogicalName}<->${rel.Entity2LogicalName}:${rel.SchemaName}`;
-          const key2 = `${rel.Entity2LogicalName}<->${rel.Entity1LogicalName}:${rel.SchemaName}`;
-          if (!processedRelationships.has(key1) && !processedRelationships.has(key2)) {
-            processedRelationships.add(key1);
-            edges.push({
-              id: rel.SchemaName,
-              source: rel.Entity1LogicalName,
-              target: rel.Entity2LogicalName,
-              label: rel.Entity1IntersectAttribute,
-              type: 'N-N',
-            });
-          }
-        }
-      }
-    }
-
-    return { nodes, edges };
   }
 
   /**

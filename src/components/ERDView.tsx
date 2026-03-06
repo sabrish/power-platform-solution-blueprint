@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Text,
   Title3,
@@ -7,6 +7,8 @@ import {
   Button,
   makeStyles,
   tokens,
+  MessageBar,
+  MessageBarBody,
   Toast,
   ToastTitle,
   Toaster,
@@ -16,11 +18,14 @@ import {
 import {
   ArrowDownload24Regular,
   Copy24Regular,
+  ZoomIn24Regular,
+  ZoomOut24Regular,
+  Info24Regular,
   Checkmark24Regular,
 } from '@fluentui/react-icons';
 import type { ERDDefinition, BlueprintResult } from '../core';
+import { renderMermaid, initMermaid } from '../utils/mermaidRenderer';
 import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
-import { ERDCanvasView } from './ERDCanvasView';
 
 const useStyles = makeStyles({
   container: {
@@ -41,6 +46,12 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     flexWrap: 'wrap',
   },
+  diagramContainer: {
+    display: 'inline-block',
+    minHeight: '400px',
+    minWidth: '100%',
+    padding: tokens.spacingVerticalL,
+  },
   legendSection: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
@@ -60,11 +71,6 @@ const useStyles = makeStyles({
     borderRadius: tokens.borderRadiusSmall,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
 });
 
 export interface ERDViewProps {
@@ -74,32 +80,64 @@ export interface ERDViewProps {
 
 export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   const styles = useStyles();
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [svgContent, setSvgContent] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(100);
 
+  // Toast notifications
   const toasterId = useId('toaster');
   const { dispatchToast } = useToastController(toasterId);
 
+  // Use the first diagram (comprehensive view with all entities)
+  const currentDiagram = erd.diagrams[0];
+
+  // Initialize Mermaid on mount
+  useEffect(() => {
+    initMermaid();
+  }, []);
+
+  // Render Mermaid diagram when selected diagram changes
+  useEffect(() => {
+    const renderDiagram = async () => {
+      if (!currentDiagram) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        const svg = await renderMermaid(
+          currentDiagram.mermaidDiagram,
+          `erd-diagram-${currentDiagram.id}`
+        );
+        setSvgContent(svg);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to render ERD');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    renderDiagram();
+  }, [currentDiagram]);
+
   const handleDownloadSVG = () => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const serializer = new XMLSerializer();
-    const svgStr = serializer.serializeToString(svg);
-    const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'entity-relationship-diagram.svg';
+    a.download = `entity-relationship-diagram-${currentDiagram?.id || 'diagram'}.svg`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const handleCopyMermaid = () => {
-    const diagram = erd.diagrams[0];
-    if (diagram) {
-      navigator.clipboard.writeText(diagram.mermaidDiagram);
+    if (currentDiagram) {
+      navigator.clipboard.writeText(currentDiagram.mermaidDiagram);
       dispatchToast(
         <Toast>
-          <ToastTitle action={<Checkmark24Regular />}>Mermaid code copied to clipboard</ToastTitle>
+          <ToastTitle action={<Checkmark24Regular />}>
+            Mermaid code copied to clipboard
+          </ToastTitle>
         </Toast>,
         { intent: 'success', timeout: 2000 }
       );
@@ -119,39 +157,82 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     );
   };
 
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(prev + 10, 200));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => Math.max(prev - 10, 50));
+  };
+
   return (
     <div className={styles.container}>
       <Toaster toasterId={toasterId} />
-
+      {/* ERD Diagram Section */}
       <div className={styles.diagramSection}>
         <Title3>Entity Relationship Diagram</Title3>
         <Text>
           {erd.totalEntities} total entities, {erd.totalRelationships} total relationships
         </Text>
 
+        {/* Warnings */}
+        {erd.warnings && erd.warnings.length > 0 && (
+          <MessageBar intent="info" icon={<Info24Regular />}>
+            <MessageBarBody>
+              {erd.warnings.map((warning, index) => (
+                <div key={index}>{warning}</div>
+              ))}
+            </MessageBarBody>
+          </MessageBar>
+        )}
+
+        {currentDiagram && (
+          <Text style={{ marginTop: tokens.spacingVerticalS, color: tokens.colorNeutralForeground3 }}>
+            {currentDiagram.description}
+          </Text>
+        )}
+
         <div className={styles.diagramControls}>
-          <Button icon={<ArrowDownload24Regular />} onClick={handleDownloadSVG} disabled={!erd.graphData}>
+          <Button
+            icon={<ArrowDownload24Regular />}
+            onClick={handleDownloadSVG}
+            disabled={!svgContent}
+          >
             Download SVG
           </Button>
-          <Button icon={<Copy24Regular />} onClick={handleCopyMermaid} disabled={erd.diagrams.length === 0}>
+          <Button icon={<Copy24Regular />} onClick={handleCopyMermaid}>
             Copy Mermaid Code
           </Button>
           <Button icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
             Copy dbdiagram.io Code
           </Button>
+          <Button icon={<ZoomIn24Regular />} onClick={handleZoomIn} disabled={zoomLevel >= 200}>
+            Zoom In
+          </Button>
+          <Button icon={<ZoomOut24Regular />} onClick={handleZoomOut} disabled={zoomLevel <= 50}>
+            Zoom Out
+          </Button>
+          <Text>{zoomLevel}%</Text>
         </div>
 
         <Card className={styles.diagramCard}>
-          {erd.graphData ? (
-            <ERDCanvasView graphData={erd.graphData} height={600} svgRef={svgRef} />
-          ) : (
-            <div className={styles.emptyState}>
+          {isLoading && <Text>Rendering diagram...</Text>}
+          {error && (
+            <div style={{ padding: tokens.spacingVerticalL, textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
               <Text>Diagram preview unavailable. Use the export options to generate the full ERD.</Text>
             </div>
+          )}
+          {svgContent && !isLoading && !error && (
+            <div
+              className={styles.diagramContainer}
+              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+              dangerouslySetInnerHTML={{ __html: svgContent }}
+            />
           )}
         </Card>
       </div>
 
+      {/* Publisher Legend Section */}
       <div className={styles.diagramSection}>
         <Title3>Publisher Color Legend</Title3>
         <div className={styles.legendSection}>
