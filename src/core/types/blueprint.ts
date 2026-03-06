@@ -494,6 +494,37 @@ export interface BlueprintMetadata {
 }
 
 /**
+ * ERD node for dagre-based interactive canvas view
+ */
+export interface ERDNode {
+  id: string;
+  label: string;
+  publisherPrefix: string;
+  color: string;
+  strokeColor: string;
+  textColor: string;
+}
+
+/**
+ * ERD edge for dagre-based interactive canvas view
+ */
+export interface ERDEdge {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+  type: '1-N' | 'N-N';
+}
+
+/**
+ * Graph data for dagre layout, embedded in ERDDefinition
+ */
+export interface ERDGraphData {
+  nodes: ERDNode[];
+  edges: ERDEdge[];
+}
+
+/**
  * ERD (Entity Relationship Diagram) definition
  */
 export interface ERDDefinition {
@@ -503,6 +534,7 @@ export interface ERDDefinition {
   totalEntities: number;
   totalRelationships: number;
   warnings?: string[];
+  graphData?: ERDGraphData;
 }
 
 /**
