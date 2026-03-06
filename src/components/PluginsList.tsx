@@ -8,6 +8,8 @@ import {
   Title3,
   ToggleButton,
   Button,
+  Dropdown,
+  Option,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
@@ -149,6 +151,7 @@ export function PluginsList({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStageFilters, setActiveStageFilters] = useState<Set<string>>(new Set());
   const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
+  const [selectedMessage, setSelectedMessage] = useState<string>('');
 
   // Filter plugins by entity if specified
   const filteredPlugins = useMemo(() => {
@@ -166,6 +169,13 @@ export function PluginsList({
     });
   }, [filteredPlugins]);
 
+  // Sorted unique message names in the base dataset (for the message dropdown)
+  const availableMessages = useMemo(() => {
+    const msgs = new Set<string>();
+    for (const p of sortedPlugins) if (p.message) msgs.add(p.message);
+    return [...msgs].sort();
+  }, [sortedPlugins]);
+
   // Count per stage / state in the base dataset (drives disabled state on filter buttons)
   const stageCounts = useMemo(() => {
     const counts = Object.fromEntries(STAGE_VALUES.map((s) => [s, 0]));
@@ -182,6 +192,9 @@ export function PluginsList({
   // Apply ToggleButton filters then search
   const toggleFilteredPlugins = useMemo(() => {
     let filtered = sortedPlugins;
+    if (selectedMessage) {
+      filtered = filtered.filter((p) => p.message === selectedMessage);
+    }
     if (activeStageFilters.size > 0) {
       filtered = filtered.filter((p) => activeStageFilters.has(p.stageName));
     }
@@ -189,7 +202,7 @@ export function PluginsList({
       filtered = filtered.filter((p) => activeStateFilters.has(p.state));
     }
     return filtered;
-  }, [sortedPlugins, activeStageFilters, activeStateFilters]);
+  }, [sortedPlugins, selectedMessage, activeStageFilters, activeStateFilters]);
 
   // Apply search filter
   const searchedPlugins = useMemo(() => {
@@ -361,6 +374,20 @@ export function PluginsList({
         totalCount={sortedPlugins.length}
         itemLabel="plugins"
       >
+        <FilterGroup label="Message:">
+          <Dropdown
+            size="small"
+            style={{ minWidth: '130px' }}
+            value={selectedMessage || 'All'}
+            selectedOptions={selectedMessage ? [selectedMessage] : []}
+            onOptionSelect={(_, data) => setSelectedMessage(data.optionValue === '' ? '' : (data.optionValue ?? ''))}
+          >
+            <Option value="">All</Option>
+            {availableMessages.map((msg) => (
+              <Option key={msg} value={msg}>{msg}</Option>
+            ))}
+          </Dropdown>
+        </FilterGroup>
         <FilterGroup label="Stage:">
           {STAGE_VALUES.map((stage) => (
             <ToggleButton
@@ -442,7 +469,7 @@ export function PluginsList({
               >
                 {plugin.stageName}
               </Badge>
-              <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium" shape="rounded">
+              <Badge appearance={plugin.mode === 0 ? 'outline' : 'tint'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium" shape="rounded">
                 {plugin.modeName}
               </Badge>
               <Badge appearance="filled" shape="rounded" color={plugin.state === 'Enabled' ? 'success' : 'important'} size="medium">

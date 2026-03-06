@@ -389,7 +389,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
                 <Text className={styles.codeText}>
                   <TruncatedText text={workflow.entityDisplayName || workflow.entity} />
                 </Text>
-                <Badge appearance="filled" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'} size="small">
+                <Badge appearance="tint" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'} size="small">
                   {workflow.mode === 1 ? <><FlashFlow20Regular /> RealTime</> : <><Cloud20Regular /> Background</>}
                 </Badge>
                 <Badge appearance="filled" shape="rounded"
