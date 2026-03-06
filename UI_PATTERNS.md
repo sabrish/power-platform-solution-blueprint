@@ -80,3 +80,20 @@ When creating new list components:
 3. Use `alignItems: 'start'` for multi-line layouts
 4. Use `minmax()` for flexible grid columns
 5. Follow the color coding patterns above
+
+## PATTERN-014: Badge — Canonical Usage
+
+Always specify `shape="rounded"` on every `Badge`. Never omit the `shape` prop; the default Fluent UI v9 shape ("circular") produces pill-shaped badges that clash with the consistent rounded style used throughout PPSB.
+
+Standard badge template:
+```tsx
+<Badge appearance="tint" shape="rounded" color="brand" size="small">
+  Label
+</Badge>
+```
+
+Rules:
+- `shape`: ALWAYS `"rounded"` — never omit, never use `"circular"`
+- `appearance`: `"tint"` for informational/status; `"filled"` for high-emphasis state
+- `size`: `"small"` in list rows; default in detail cards
+- `color`: use semantic tokens (`success`, `warning`, `important`, `brand`, `severe`, `danger`)

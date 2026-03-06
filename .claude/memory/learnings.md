@@ -246,3 +246,55 @@
 - Right: Update `package.json`, `CHANGELOG.md`, and `README.md` badge in the same step; verify all three read `0.8.0` before proceeding
 
 ---
+
+## [2026-03-05] — Filter control selection: Binary inclusion uses Checkbox, categorical multi-select uses ToggleButton
+
+**Affects:** Developer (UI), Reviewer
+**Severity:** High
+**Rule:** Choose filter controls based on the property's semantic nature, not just the number of values. A Checkbox filters for binary boolean inclusion (e.g., "Include X" where the inverse is just the default baseline, not a meaningful filter target). A ToggleButton group filters for categorical multi-select where all distinct values are independently useful filter targets, or where BOTH values of a binary property are equally useful. Never use a Checkbox where users would reasonably want to filter to either value independently.
+**Context:** Plugin Packages filter examples: "Include packages with disabled steps" is a checkbox (only the positive value is interesting; "without disabled steps" is the default). Plugin State (Enabled vs Disabled) is a ToggleButton (both values are equally useful filter targets). This distinction prevents filter UX that doesn't map to user intent.
+**Example:**
+- Wrong: Using Checkbox for "Plugin State" when both Enabled and Disabled are meaningful filters
+- Wrong: Using ToggleButton for "Include deprecated code" when only the positive value is a filter target
+- Right: Checkbox for "Include packages with disabled steps" (positive value only)
+- Right: ToggleButton for Plugin State (all values useful), Enabled/Disabled toggle (both values useful)
+
+---
+
+## [2026-03-05] — Plugin Stage filters are always categorical ToggleButton
+
+**Affects:** Developer (UI), Reviewer
+**Severity:** High
+**Rule:** Plugin Stage filters (Pre-Validation, Pre-Operation, Post-Operation, Async) must always use ToggleButton groups with OR logic, never Checkbox. Stage is a categorical classification property with 4 distinct values where all are equally meaningful filter targets, and combinations are valid. This is distinct from "surface the notable ones" exception properties (which use Checkbox).
+**Context:** Stage is a foundational property classification, not a boolean flag. Users filter by stage category. All 4 stage values define meaningful categories (e.g., "show only synchronous early-stage steps" = Pre-Validation + Pre-Operation). The key distinction: Checkboxes surface exceptions; ToggleButtons classify by category.
+**Example:**
+- Wrong: Using Checkbox for "Include Pre-Validation steps"
+- Right: ToggleButton group with all 4 stage values selectable via OR logic
+
+---
+
+## [2026-03-05] — Field Security Profiles: SearchBox only, no categorical filters
+
+**Affects:** Developer (UI), Reviewer
+**Severity:** Medium
+**Rule:** Field Security Profiles component list must use SearchBox only for filtering. Do not add categorical filter controls (Checkboxes, ToggleButtons, or dropdowns). This matches Security Roles behaviour and is intentional.
+**Context:** Field Security Profiles are identified and filtered primarily by name. There are no meaningful categorical dimensions (like Stage, State, or Type) that warrant filter controls.
+**Example:**
+- Wrong: Adding ToggleButton group for "Profile Type" or "Status" to Field Security Profiles filter bar
+- Right: SearchBox only
+
+---
+
+## [2026-03-05] — EntityList flag filter uses AND logic; all other categorical filters use OR logic
+
+**Affects:** Developer (UI), Reviewer
+**Severity:** High
+**Rule:** EntityList component has a unique ToggleButton filter labeled "Has all of:" which uses AND logic — the entity must have ALL selected flag types. All other section filters (State, Type, Stage, Mode, Scope, Status, Binding, and similar categorical properties) use OR logic — show items matching ANY selected value. EntityList's AND-logic implementation must not be copied or used as a template for other filters. Use property-name group labels (e.g., "Stage:", "State:") for OR-logic filters, never the "Has all of:" label pattern.
+**Context:** EntityList filters across multiple associated component dimensions (plugins, flows, rules, etc.), making AND logic appropriate for that specific case. It is the exception, not the pattern. All other categorical filters should follow the standard OR-logic expectation: show items where the property matches one of the selected values.
+**Example:**
+- Wrong: `<Text>Has all of:</Text>` label on a Stage filter (Stage uses OR logic)
+- Wrong: Using AND logic for a State filter
+- Right: EntityList uses "Has all of:" with AND logic for flag combinations
+- Right: Stage filter uses "Stage:" label with OR logic: show items where stage is Pre-Validation OR Pre-Operation OR...
+
+---
