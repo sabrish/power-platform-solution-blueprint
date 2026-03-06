@@ -40,6 +40,7 @@ import { ERDView } from './ERDView';
 import { CrossEntityMapView } from './CrossEntityMapView';
 import { ExternalDependenciesView } from './ExternalDependenciesView';
 import { SolutionDistributionView } from './SolutionDistributionView';
+import { BaselineComparisonView } from './BaselineComparisonView';
 import { ExportDialog } from './ExportDialog';
 import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
@@ -390,6 +391,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             <Tab value="solutionDist">📦 Solution Distribution</Tab>
           )}
 
+          <Tab value="baselineComparison">🧾 Baseline Comparison</Tab>
           <Tab value="crossEntity">🔗 Cross-Entity Automation (Coming Soon)</Tab>
         </TabList>
       </div>
@@ -621,6 +623,13 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       {mainTab === 'crossEntity' && (
         <div className={styles.tabContent}>
           <CrossEntityMapView links={result.crossEntityLinks || []} />
+        </div>
+      )}
+
+      {/* Baseline Comparison Tab Content */}
+      {mainTab === 'baselineComparison' && (
+        <div className={styles.tabContent}>
+          <BaselineComparisonView result={result} />
         </div>
       )}
 
