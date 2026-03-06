@@ -6,12 +6,17 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
+  ToggleButton,
+  Button,
 } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { Flow } from '../core';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
+
+const FLOW_TYPE_VALUES = ['Dataverse', 'Scheduled', 'Manual', 'Other'];
+const FLOW_STATE_VALUES = ['Active', 'Draft', 'Suspended'];
 
 const useStyles = makeStyles({
   container: {
@@ -19,17 +24,12 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -145,6 +145,8 @@ export function FlowsList({
   const styles = useStyles();
   const [expandedFlowId, setExpandedFlowId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
+  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   // Filter flows by entity if specified
   const filteredFlows = useMemo(() => {
@@ -165,17 +167,66 @@ export function FlowsList({
     });
   }, [filteredFlows]);
 
+  // Count per type / state in the base dataset (drives disabled state on filter buttons)
+  const typeCounts = useMemo(() => {
+    const counts = Object.fromEntries(FLOW_TYPE_VALUES.map((t) => [t, 0]));
+    for (const f of sortedFlows) counts[f.definition.triggerType] = (counts[f.definition.triggerType] ?? 0) + 1;
+    return counts;
+  }, [sortedFlows]);
+
+  const stateCounts = useMemo(() => {
+    const counts = Object.fromEntries(FLOW_STATE_VALUES.map((s) => [s, 0]));
+    for (const f of sortedFlows) counts[f.state] = (counts[f.state] ?? 0) + 1;
+    return counts;
+  }, [sortedFlows]);
+
+  // Apply ToggleButton filters
+  const toggleFilteredFlows = useMemo(() => {
+    let filtered = sortedFlows;
+    if (activeTypeFilters.size > 0) {
+      filtered = filtered.filter((f) => activeTypeFilters.has(f.definition.triggerType));
+    }
+    if (activeStateFilters.size > 0) {
+      filtered = filtered.filter((f) => activeStateFilters.has(f.state));
+    }
+    return filtered;
+  }, [sortedFlows, activeTypeFilters, activeStateFilters]);
+
   // Apply search filter
   const searchedFlows = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sortedFlows;
-    return sortedFlows.filter((f) =>
+    if (!q) return toggleFilteredFlows;
+    return toggleFilteredFlows.filter((f) =>
       f.name.toLowerCase().includes(q) ||
       (f.entity && f.entity.toLowerCase().includes(q)) ||
       (f.description && f.description.toLowerCase().includes(q)) ||
       (f.definition.triggerType && f.definition.triggerType.toLowerCase().includes(q))
     );
-  }, [sortedFlows, searchQuery]);
+  }, [toggleFilteredFlows, searchQuery]);
+
+  const toggleTypeFilter = (type: string) => {
+    setActiveTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
+
+  const toggleStateFilter = (state: string) => {
+    setActiveStateFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(state)) {
+        next.delete(state);
+      } else {
+        next.add(state);
+      }
+      return next;
+    });
+  };
 
   const toggleExpand = (flowId: string) => {
     setExpandedFlowId(expandedFlowId === flowId ? null : flowId);
@@ -203,7 +254,7 @@ export function FlowsList({
           <div className={styles.detailItem}>
             <Text className={styles.detailLabel}>Entity</Text>
             <Text className={styles.detailValue}>
-              {flow.entityDisplayName || flow.entity || 'None'}
+              {flow.entityDisplayName || flow.definition.triggerEntity || flow.entity || '—'}
             </Text>
           </div>
           <div className={styles.detailItem}>
@@ -244,7 +295,21 @@ export function FlowsList({
               External Calls
             </Badge>
           )}
+          {flow.definition.triggerConditions && (
+            <Badge appearance="outline" shape="rounded" color="informative">
+              Filtered
+            </Badge>
+          )}
         </div>
+
+        {flow.definition.triggerConditions && (
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Trigger Filter</Text>
+            <Text className={`${styles.detailValue} ${styles.codeText}`} style={{ wordBreak: 'break-all' }}>
+              {flow.definition.triggerConditions}
+            </Text>
+          </div>
+        )}
 
         {flow.definition.connectionReferences.length > 0 && (
           <div className={styles.section}>
@@ -328,17 +393,53 @@ export function FlowsList({
 
   return (
     <div className={styles.container}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search flows..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedFlows.length} of {sortedFlows.length} flows
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search flows..."
+        filteredCount={searchedFlows.length}
+        totalCount={sortedFlows.length}
+        itemLabel="flows"
+      >
+        <FilterGroup label="Type:">
+          {FLOW_TYPE_VALUES.map((type) => (
+            <ToggleButton
+              key={type}
+              className={styles.filterButton}
+              size="small"
+              checked={activeTypeFilters.has(type)}
+              disabled={typeCounts[type] === 0}
+              onClick={() => toggleTypeFilter(type)}
+            >
+              {type}
+            </ToggleButton>
+          ))}
+          {activeTypeFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+        <FilterGroup label="State:">
+          {FLOW_STATE_VALUES.map((state) => (
+            <ToggleButton
+              key={state}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStateFilters.has(state)}
+              disabled={stateCounts[state] === 0}
+              onClick={() => toggleStateFilter(state)}
+            >
+              {state}
+            </ToggleButton>
+          ))}
+          {activeStateFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveStateFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
       {searchedFlows.length === 0 && sortedFlows.length > 0 && (
         <div className={styles.emptyState}>
           <Text>No flows match your search.</Text>
@@ -367,9 +468,9 @@ export function FlowsList({
                   </Text>
                 )}
               </div>
-              {!entityLogicalName && flow.entity && (
+              {!entityLogicalName && (flow.definition.triggerEntity || flow.entity) && (
                 <Text className={styles.codeText}>
-                  <TruncatedText text={flow.entity} />
+                  <TruncatedText text={flow.definition.triggerEntity || flow.entity || ''} />
                 </Text>
               )}
               <Badge appearance="tint" shape="rounded" color="brand" size="small">

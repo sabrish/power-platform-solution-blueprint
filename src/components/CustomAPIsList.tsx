@@ -11,28 +11,26 @@ import {
   createTableColumn,
   Badge,
   Tooltip,
-  SearchBox,
-  Text,
   tokens,
   makeStyles,
+  ToggleButton,
+  Button,
 } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import { Code20Regular, ArrowSync20Regular, ArrowRight20Regular } from '@fluentui/react-icons';
 import type { CustomAPI } from '../core';
 import { TruncatedText } from './TruncatedText';
 
+const API_TYPE_VALUES = ['Action', 'Function'];
+const API_BINDING_VALUES = ['Global', 'Entity', 'EntityCollection'];
+
 const useStyles = makeStyles({
-  filters: {
-    display: 'flex',
-    gap: '12px',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: '12px',
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-    marginBottom: '16px',
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
 });
 
@@ -48,21 +46,73 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
   const styles = useStyles();
   const [selectedAPI, setSelectedAPI] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
+  const [activeBindingFilters, setActiveBindingFilters] = useState<Set<string>>(new Set());
 
   // Sort APIs alphabetically by unique name
   const sortedAPIs = useMemo(() => {
     return [...customAPIs].sort((a, b) => a.uniqueName.localeCompare(b.uniqueName));
   }, [customAPIs]);
 
-  // Apply search filter before DataGrid
+  const typeCounts = useMemo(() => {
+    const counts = Object.fromEntries(API_TYPE_VALUES.map((t) => [t, 0]));
+    for (const a of sortedAPIs) {
+      const key = a.isFunction ? 'Function' : 'Action';
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [sortedAPIs]);
+
+  const bindingCounts = useMemo(() => {
+    const counts = Object.fromEntries(API_BINDING_VALUES.map((b) => [b, 0]));
+    for (const a of sortedAPIs) counts[a.bindingType] = (counts[a.bindingType] ?? 0) + 1;
+    return counts;
+  }, [sortedAPIs]);
+
+  const toggleTypeFilter = (type: string) => {
+    setActiveTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
+
+  const toggleBindingFilter = (binding: string) => {
+    setActiveBindingFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(binding)) {
+        next.delete(binding);
+      } else {
+        next.add(binding);
+      }
+      return next;
+    });
+  };
+
+  // Apply search and ToggleButton filters before DataGrid
   const filteredAPIs = useMemo(() => {
+    let filtered = sortedAPIs;
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sortedAPIs;
-    return sortedAPIs.filter((a) =>
-      a.uniqueName.toLowerCase().includes(q) ||
-      (a.displayName && a.displayName.toLowerCase().includes(q))
-    );
-  }, [sortedAPIs, searchQuery]);
+    if (q) {
+      filtered = filtered.filter((a) =>
+        a.uniqueName.toLowerCase().includes(q) ||
+        (a.displayName && a.displayName.toLowerCase().includes(q))
+      );
+    }
+    if (activeTypeFilters.size > 0) {
+      filtered = filtered.filter((a) =>
+        activeTypeFilters.has(a.isFunction ? 'Function' : 'Action')
+      );
+    }
+    if (activeBindingFilters.size > 0) {
+      filtered = filtered.filter((a) => activeBindingFilters.has(a.bindingType));
+    }
+    return filtered;
+  }, [sortedAPIs, searchQuery, activeTypeFilters, activeBindingFilters]);
 
   const handleRowClick = (api: CustomAPI) => {
     setSelectedAPI(api.id);
@@ -214,17 +264,54 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
 
   return (
     <div style={{ marginTop: '16px' }}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search custom APIs..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {filteredAPIs.length} of {sortedAPIs.length} APIs
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search custom APIs..."
+        filteredCount={filteredAPIs.length}
+        totalCount={sortedAPIs.length}
+        itemLabel="APIs"
+        style={{ marginBottom: '16px' }}
+      >
+        <FilterGroup label="Type:">
+          {API_TYPE_VALUES.map((type) => (
+            <ToggleButton
+              key={type}
+              className={styles.filterButton}
+              size="small"
+              checked={activeTypeFilters.has(type)}
+              disabled={typeCounts[type] === 0}
+              onClick={() => toggleTypeFilter(type)}
+            >
+              {type}
+            </ToggleButton>
+          ))}
+          {activeTypeFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+        <FilterGroup label="Binding:">
+          {API_BINDING_VALUES.map((binding) => (
+            <ToggleButton
+              key={binding}
+              className={styles.filterButton}
+              size="small"
+              checked={activeBindingFilters.has(binding)}
+              disabled={bindingCounts[binding] === 0}
+              onClick={() => toggleBindingFilter(binding)}
+            >
+              {binding}
+            </ToggleButton>
+          ))}
+          {activeBindingFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveBindingFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
       <div
         style={{
           padding: '12px',

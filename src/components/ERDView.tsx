@@ -1,21 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Text,
   Title3,
   Card,
   Badge,
   Button,
-  SearchBox,
   makeStyles,
   tokens,
-  DataGrid,
-  DataGridHeader,
-  DataGridRow,
-  DataGridHeaderCell,
-  DataGridBody,
-  DataGridCell,
-  TableColumnDefinition,
-  createTableColumn,
   MessageBar,
   MessageBarBody,
   Toast,
@@ -32,10 +23,9 @@ import {
   Info24Regular,
   Checkmark24Regular,
 } from '@fluentui/react-icons';
-import type { ERDDefinition, EntityQuickLink, BlueprintResult } from '../core';
+import type { ERDDefinition, BlueprintResult } from '../core';
 import { renderMermaid, initMermaid } from '../utils/mermaidRenderer';
 import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
-import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -87,19 +77,6 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     marginTop: tokens.spacingVerticalXS,
   },
-  quickLinksSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
-  },
-  searchBox: {
-    minWidth: '300px',
-  },
-  tableContainer: {
-  },
-  complexityBadge: {
-    minWidth: '60px',
-  },
 });
 
 export interface ERDViewProps {
@@ -112,7 +89,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   const [svgContent, setSvgContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(100);
 
   // Toast notifications
@@ -149,98 +125,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
     renderDiagram();
   }, [currentDiagram]);
-
-  // Filter entity quick links
-  const filteredEntities = useMemo(() => {
-    if (!searchQuery) return erd.entityQuickLinks;
-
-    const query = searchQuery.toLowerCase();
-    return erd.entityQuickLinks.filter(
-      (entity) =>
-        entity.logicalName.toLowerCase().includes(query) ||
-        entity.displayName.toLowerCase().includes(query) ||
-        entity.publisherPrefix.toLowerCase().includes(query)
-    );
-  }, [erd.entityQuickLinks, searchQuery]);
-
-  // Table columns
-  const columns: TableColumnDefinition<EntityQuickLink>[] = [
-    createTableColumn<EntityQuickLink>({
-      columnId: 'displayName',
-      renderHeaderCell: () => 'Entity Name',
-      renderCell: (item: EntityQuickLink) => (
-        <div style={{ fontWeight: tokens.fontWeightSemibold, overflow: 'hidden', maxWidth: '100%' }}>
-          <TruncatedText text={item.displayName} />
-        </div>
-      ),
-      compare: (a, b) => a.displayName.localeCompare(b.displayName),
-    }),
-    createTableColumn<EntityQuickLink>({
-      columnId: 'logicalName',
-      renderHeaderCell: () => 'Logical Name',
-      renderCell: (item) => (
-        <div style={{ fontFamily: 'Consolas, Monaco, monospace', fontSize: tokens.fontSizeBase200, overflow: 'hidden', maxWidth: '100%' }}>
-          <TruncatedText text={item.logicalName} />
-        </div>
-      ),
-    }),
-    createTableColumn<EntityQuickLink>({
-      columnId: 'publisher',
-      renderHeaderCell: () => 'Publisher',
-      renderCell: (item) => (
-        <div style={{ overflow: 'hidden', maxWidth: '100%' }}>
-          <TruncatedText text={item.publisherPrefix} maxWidth="150px" />
-        </div>
-      ),
-    }),
-    createTableColumn<EntityQuickLink>({
-      columnId: 'fields',
-      renderHeaderCell: () => 'Fields',
-      renderCell: (item) => <Text>{item.fieldCount}</Text>,
-      compare: (a, b) => a.fieldCount - b.fieldCount,
-    }),
-    createTableColumn<EntityQuickLink>({
-      columnId: 'plugins',
-      renderHeaderCell: () => 'Plugins',
-      renderCell: (item) => <Text>{item.pluginCount}</Text>,
-      compare: (a, b) => a.pluginCount - b.pluginCount,
-    }),
-    createTableColumn<EntityQuickLink>({
-      columnId: 'flows',
-      renderHeaderCell: () => 'Flows',
-      renderCell: (item) => <Text>{item.flowCount}</Text>,
-      compare: (a, b) => a.flowCount - b.flowCount,
-    }),
-    createTableColumn<EntityQuickLink>({
-      columnId: 'businessRules',
-      renderHeaderCell: () => 'Business Rules',
-      renderCell: (item) => <Text>{item.businessRuleCount}</Text>,
-      compare: (a, b) => a.businessRuleCount - b.businessRuleCount,
-    }),
-    createTableColumn<EntityQuickLink>({
-      columnId: 'complexity',
-      renderHeaderCell: () => 'Complexity',
-      renderCell: (item) => (
-        <Badge
-          className={styles.complexityBadge}
-          appearance="filled"
-          color={
-            item.complexity === 'High'
-              ? 'danger'
-              : item.complexity === 'Medium'
-              ? 'warning'
-              : 'success'
-          }
-        >
-          {item.complexity}
-        </Badge>
-      ),
-      compare: (a, b) => {
-        const order: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
-        return order[a.complexity] - order[b.complexity];
-      },
-    }),
-  ];
 
   const handleDownloadSVG = () => {
     const blob = new Blob([svgContent], { type: 'image/svg+xml' });
@@ -371,38 +255,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               </div>
             </Card>
           ))}
-        </div>
-      </div>
-
-      {/* Entity Quick Links Section */}
-      <div className={styles.quickLinksSection}>
-        <Title3>Entity Quick Links</Title3>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search entities..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value)}
-        />
-
-        <Text>
-          Showing {filteredEntities.length} of {erd.entityQuickLinks.length} entities
-        </Text>
-
-        <div className={styles.tableContainer}>
-          <DataGrid items={filteredEntities} columns={columns} sortable resizableColumns>
-            <DataGridHeader>
-              <DataGridRow>
-                {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
-              </DataGridRow>
-            </DataGridHeader>
-            <DataGridBody<EntityQuickLink>>
-              {({ item, rowId }) => (
-                <DataGridRow<EntityQuickLink> key={rowId}>
-                  {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
-                </DataGridRow>
-              )}
-            </DataGridBody>
-          </DataGrid>
         </div>
       </div>
     </div>
