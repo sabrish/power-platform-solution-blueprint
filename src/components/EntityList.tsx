@@ -178,7 +178,7 @@ type FlagType = 'plugins' | 'forms' | 'businessRules' | 'flows' | 'classicWorkfl
 interface FlagConfig {
   key: FlagType;
   label: string;
-  color: 'brand' | 'success' | 'warning' | 'informative' | 'severe';
+  color: 'brand' | 'success' | 'warning' | 'informative' | 'severe' | 'important';
   tooltip: string;
 }
 
@@ -188,7 +188,7 @@ const FLAG_CONFIGS: FlagConfig[] = [
   { key: 'businessRules', label: 'Rule', color: 'warning', tooltip: 'Has Business Rules' },
   { key: 'flows', label: 'Flow', color: 'informative', tooltip: 'Has Flows' },
   { key: 'classicWorkflows', label: 'Workflow', color: 'severe', tooltip: 'Has Classic Workflows' },
-  { key: 'bpfs', label: 'BPF', color: 'success', tooltip: 'Has Business Process Flows' },
+  { key: 'bpfs', label: 'BPF', color: 'important', tooltip: 'Has Business Process Flows' },
 ];
 
 export interface EntityListProps {
@@ -514,23 +514,23 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                       </div>
                     )}
                     <div className={styles.entityStats}>
-                      <Badge appearance="tint" shape="rounded" size="small" color="brand">
+                      <Badge appearance="outline" shape="rounded" size="small" color="brand">
                         {attributeCount} attr{attributeCount !== 1 ? 's' : ''}
                       </Badge>
                       {(publisherPrefix || entity.IsCustomEntity || entity.IsManaged) && (
                         <>
                           {publisherPrefix && (
-                            <Badge appearance="outline" shape="rounded" size="small" color="subtle">
+                            <Badge appearance="tint" shape="rounded" size="small" color="subtle">
                               {publisherPrefix}_
                             </Badge>
                           )}
                           {entity.IsCustomEntity && (
-                            <Badge appearance="tint" shape="rounded" size="small" color="brand">
+                            <Badge appearance="outline" shape="rounded" size="small" color="success">
                               Custom
                             </Badge>
                           )}
                           {entity.IsManaged && (
-                            <Badge appearance="tint" shape="rounded" size="small" color="warning">
+                            <Badge appearance="outline" shape="rounded" size="small" color="warning">
                               Managed
                             </Badge>
                           )}
