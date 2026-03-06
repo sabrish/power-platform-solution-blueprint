@@ -6,7 +6,6 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
   Checkbox,
   Table,
   TableHeader,
@@ -17,6 +16,7 @@ import {
   TableCellLayout,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
+import { FilterBar } from './FilterBar';
 import type { GlobalChoice, GlobalChoiceOption } from '../core';
 import { TruncatedText } from './TruncatedText';
 
@@ -25,18 +25,6 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalM,
-  },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
   },
   listContainer: {
     display: 'flex',
@@ -126,7 +114,6 @@ const useStyles = makeStyles({
 
 interface GlobalChoicesListProps {
   globalChoices: GlobalChoice[];
-  onSelectChoice: (choice: GlobalChoice) => void;
 }
 
 export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
@@ -152,7 +139,13 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
         return (
           c.name.toLowerCase().includes(query) ||
           c.displayName.toLowerCase().includes(query) ||
-          (c.description && c.description.toLowerCase().includes(query))
+          (c.description && c.description.toLowerCase().includes(query)) ||
+          c.options.some(
+            (opt) =>
+              opt.label.toLowerCase().includes(query) ||
+              String(opt.value).includes(query) ||
+              (opt.description && opt.description.toLowerCase().includes(query))
+          )
         );
       });
     }
@@ -290,23 +283,20 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
 
   return (
     <div className={styles.container}>
-      {/* Filters */}
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search global choices..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search global choices..."
+        filteredCount={filteredChoices.length}
+        totalCount={globalChoices.length}
+        itemLabel="global choices"
+      >
         <Checkbox
-          label="Managed only"
+          label="Include managed only"
           checked={showManagedOnly}
           onChange={(_, data) => setShowManagedOnly(data.checked === true)}
         />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {filteredChoices.length} of {globalChoices.length} global choices
-        </Text>
-      </div>
+      </FilterBar>
 
       {/* Global Choices List */}
       <div className={styles.listContainer}>

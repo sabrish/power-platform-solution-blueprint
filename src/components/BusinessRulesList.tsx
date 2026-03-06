@@ -6,12 +6,17 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
+  ToggleButton,
+  Button,
 } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { BusinessRule } from '../core';
 import { TruncatedText } from './TruncatedText';
 import { filterDescription } from '../utils/descriptionFilter';
+
+const RULE_STATE_VALUES = ['Active', 'Draft'];
+const RULE_SCOPE_VALUES = ['Entity', 'AllForms'];
 
 const useStyles = makeStyles({
   container: {
@@ -19,17 +24,12 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -149,6 +149,8 @@ export function BusinessRulesList({
   const styles = useStyles();
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
+  const [activeScopeFilters, setActiveScopeFilters] = useState<Set<string>>(new Set());
 
   // Filter business rules by entity if specified
   const filteredRules = useMemo(() => {
@@ -168,15 +170,63 @@ export function BusinessRulesList({
     });
   }, [filteredRules]);
 
+  const stateCounts = useMemo(() => {
+    const counts = Object.fromEntries(RULE_STATE_VALUES.map((s) => [s, 0]));
+    for (const r of sortedRules) counts[r.state] = (counts[r.state] ?? 0) + 1;
+    return counts;
+  }, [sortedRules]);
+
+  const scopeCounts = useMemo(() => {
+    const counts = Object.fromEntries(RULE_SCOPE_VALUES.map((s) => [s, 0]));
+    for (const r of sortedRules) counts[r.scope] = (counts[r.scope] ?? 0) + 1;
+    return counts;
+  }, [sortedRules]);
+
+  // Apply ToggleButton filters
+  const toggleFilteredRules = useMemo(() => {
+    let filtered = sortedRules;
+    if (activeStateFilters.size > 0) {
+      filtered = filtered.filter((r) => activeStateFilters.has(r.state));
+    }
+    if (activeScopeFilters.size > 0) {
+      filtered = filtered.filter((r) => activeScopeFilters.has(r.scope));
+    }
+    return filtered;
+  }, [sortedRules, activeStateFilters, activeScopeFilters]);
+
   // Apply search filter
   const searchedRules = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sortedRules;
-    return sortedRules.filter((r) =>
+    if (!q) return toggleFilteredRules;
+    return toggleFilteredRules.filter((r) =>
       r.name.toLowerCase().includes(q) ||
       r.entity.toLowerCase().includes(q)
     );
-  }, [sortedRules, searchQuery]);
+  }, [toggleFilteredRules, searchQuery]);
+
+  const toggleStateFilter = (state: string) => {
+    setActiveStateFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(state)) {
+        next.delete(state);
+      } else {
+        next.add(state);
+      }
+      return next;
+    });
+  };
+
+  const toggleScopeFilter = (scope: string) => {
+    setActiveScopeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(scope)) {
+        next.delete(scope);
+      } else {
+        next.add(scope);
+      }
+      return next;
+    });
+  };
 
   const toggleExpand = (ruleId: string) => {
     setExpandedRuleId(expandedRuleId === ruleId ? null : ruleId);
@@ -330,17 +380,53 @@ export function BusinessRulesList({
 
   return (
     <div className={styles.container}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search business rules..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedRules.length} of {sortedRules.length} rules
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search business rules..."
+        filteredCount={searchedRules.length}
+        totalCount={sortedRules.length}
+        itemLabel="rules"
+      >
+        <FilterGroup label="State:">
+          {RULE_STATE_VALUES.map((state) => (
+            <ToggleButton
+              key={state}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStateFilters.has(state)}
+              disabled={stateCounts[state] === 0}
+              onClick={() => toggleStateFilter(state)}
+            >
+              {state}
+            </ToggleButton>
+          ))}
+          {activeStateFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveStateFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+        <FilterGroup label="Scope:">
+          {RULE_SCOPE_VALUES.map((scope) => (
+            <ToggleButton
+              key={scope}
+              className={styles.filterButton}
+              size="small"
+              checked={activeScopeFilters.has(scope)}
+              disabled={scopeCounts[scope] === 0}
+              onClick={() => toggleScopeFilter(scope)}
+            >
+              {scope}
+            </ToggleButton>
+          ))}
+          {activeScopeFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveScopeFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
       {searchedRules.length === 0 && sortedRules.length > 0 && (
         <div className={styles.emptyState}>
           <Text>No business rules match your search.</Text>

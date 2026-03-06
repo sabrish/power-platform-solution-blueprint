@@ -6,8 +6,10 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
+  ToggleButton,
+  Button,
 } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import {
   ChevronDown20Regular,
   ChevronRight20Regular,
@@ -19,23 +21,20 @@ import type { BusinessProcessFlow, BPFStage } from '../core';
 import { formatDate } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
 
+const BPF_STATE_VALUES = ['Active', 'Inactive'];
+
 const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -75,6 +74,7 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: '2px',
     minWidth: 0,
+    wordBreak: 'break-word',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -161,20 +161,45 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
   const styles = useStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     return [...businessProcessFlows].sort((a, b) => a.name.localeCompare(b.name));
   }, [businessProcessFlows]);
 
+  const stateCounts = useMemo(() => {
+    const counts = Object.fromEntries(BPF_STATE_VALUES.map((s) => [s, 0]));
+    for (const bpf of sorted) counts[bpf.state] = (counts[bpf.state] ?? 0) + 1;
+    return counts;
+  }, [sorted]);
+
+  // Apply ToggleButton filters
+  const toggleFilteredBPFs = useMemo(() => {
+    if (activeStateFilters.size === 0) return sorted;
+    return sorted.filter((bpf) => activeStateFilters.has(bpf.state));
+  }, [sorted, activeStateFilters]);
+
   const searchedBPFs = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sorted;
-    return sorted.filter((bpf) =>
+    if (!q) return toggleFilteredBPFs;
+    return toggleFilteredBPFs.filter((bpf) =>
       bpf.name.toLowerCase().includes(q) ||
       bpf.primaryEntity.toLowerCase().includes(q) ||
       (bpf.primaryEntityDisplayName && bpf.primaryEntityDisplayName.toLowerCase().includes(q))
     );
-  }, [sorted, searchQuery]);
+  }, [toggleFilteredBPFs, searchQuery]);
+
+  const toggleStateFilter = (state: string) => {
+    setActiveStateFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(state)) {
+        next.delete(state);
+      } else {
+        next.add(state);
+      }
+      return next;
+    });
+  };
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -301,17 +326,34 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
 
   return (
     <div className={styles.container} style={{ marginTop: '16px' }}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search business process flows..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedBPFs.length} of {sorted.length} BPFs
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search business process flows..."
+        filteredCount={searchedBPFs.length}
+        totalCount={sorted.length}
+        itemLabel="BPFs"
+      >
+        <FilterGroup label="State:">
+          {BPF_STATE_VALUES.map((state) => (
+            <ToggleButton
+              key={state}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStateFilters.has(state)}
+              disabled={stateCounts[state] === 0}
+              onClick={() => toggleStateFilter(state)}
+            >
+              {state}
+            </ToggleButton>
+          ))}
+          {activeStateFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveStateFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
       {searchedBPFs.length === 0 && sorted.length > 0 && (
         <div className={styles.emptyState}>
           <Text>No business process flows match your search.</Text>

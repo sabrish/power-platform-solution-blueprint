@@ -6,11 +6,15 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
+  ToggleButton,
+  Button,
 } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular, Settings20Regular } from '@fluentui/react-icons';
 import type { EnvironmentVariable } from '../core';
 import { TruncatedText } from './TruncatedText';
+
+const ENV_TYPE_VALUES = ['String', 'Number', 'Boolean', 'JSON', 'DataSource'];
 
 const useStyles = makeStyles({
   container: {
@@ -18,17 +22,12 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -137,20 +136,45 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
   const styles = useStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     return [...environmentVariables].sort((a, b) => a.schemaName.localeCompare(b.schemaName));
   }, [environmentVariables]);
 
+  const typeCounts = useMemo(() => {
+    const counts = Object.fromEntries(ENV_TYPE_VALUES.map((t) => [t, 0]));
+    for (const v of sorted) counts[v.typeName] = (counts[v.typeName] ?? 0) + 1;
+    return counts;
+  }, [sorted]);
+
+  // Apply ToggleButton filters
+  const toggleFilteredVars = useMemo(() => {
+    if (activeTypeFilters.size === 0) return sorted;
+    return sorted.filter((v) => activeTypeFilters.has(v.typeName));
+  }, [sorted, activeTypeFilters]);
+
   const searchedVars = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sorted;
-    return sorted.filter((v) =>
+    if (!q) return toggleFilteredVars;
+    return toggleFilteredVars.filter((v) =>
       v.displayName.toLowerCase().includes(q) ||
       v.schemaName.toLowerCase().includes(q) ||
       v.typeName.toLowerCase().includes(q)
     );
-  }, [sorted, searchQuery]);
+  }, [toggleFilteredVars, searchQuery]);
+
+  const toggleTypeFilter = (type: string) => {
+    setActiveTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -231,17 +255,34 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
 
   return (
     <div className={styles.container} style={{ marginTop: '16px' }}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search environment variables..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedVars.length} of {sorted.length} variables
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search environment variables..."
+        filteredCount={searchedVars.length}
+        totalCount={sorted.length}
+        itemLabel="variables"
+      >
+        <FilterGroup label="Type:">
+          {ENV_TYPE_VALUES.map((type) => (
+            <ToggleButton
+              key={type}
+              className={styles.filterButton}
+              size="small"
+              checked={activeTypeFilters.has(type)}
+              disabled={typeCounts[type] === 0}
+              onClick={() => toggleTypeFilter(type)}
+            >
+              {type}
+            </ToggleButton>
+          ))}
+          {activeTypeFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
       {searchedVars.length === 0 && sorted.length > 0 && (
         <div className={styles.emptyState}>
           <Text>No environment variables match your search.</Text>

@@ -6,11 +6,16 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
+  ToggleButton,
+  Button,
 } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
 import { TruncatedText } from './TruncatedText';
+
+const STAGE_VALUES = ['Pre-Validation', 'Pre-Operation', 'Post-Operation', 'Asynchronous'];
+const STATE_VALUES = ['Enabled', 'Disabled'];
 
 const useStyles = makeStyles({
   container: {
@@ -18,17 +23,12 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -135,6 +135,8 @@ export function PluginsList({
   const styles = useStyles();
   const [expandedPluginId, setExpandedPluginId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeStageFilters, setActiveStageFilters] = useState<Set<string>>(new Set());
+  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   // Filter plugins by entity if specified
   const filteredPlugins = useMemo(() => {
@@ -152,17 +154,66 @@ export function PluginsList({
     });
   }, [filteredPlugins]);
 
+  // Count per stage / state in the base dataset (drives disabled state on filter buttons)
+  const stageCounts = useMemo(() => {
+    const counts = Object.fromEntries(STAGE_VALUES.map((s) => [s, 0]));
+    for (const p of sortedPlugins) counts[p.stageName] = (counts[p.stageName] ?? 0) + 1;
+    return counts;
+  }, [sortedPlugins]);
+
+  const stateCounts = useMemo(() => {
+    const counts = Object.fromEntries(STATE_VALUES.map((s) => [s, 0]));
+    for (const p of sortedPlugins) counts[p.state] = (counts[p.state] ?? 0) + 1;
+    return counts;
+  }, [sortedPlugins]);
+
+  // Apply ToggleButton filters then search
+  const toggleFilteredPlugins = useMemo(() => {
+    let filtered = sortedPlugins;
+    if (activeStageFilters.size > 0) {
+      filtered = filtered.filter((p) => activeStageFilters.has(p.stageName));
+    }
+    if (activeStateFilters.size > 0) {
+      filtered = filtered.filter((p) => activeStateFilters.has(p.state));
+    }
+    return filtered;
+  }, [sortedPlugins, activeStageFilters, activeStateFilters]);
+
   // Apply search filter
   const searchedPlugins = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sortedPlugins;
-    return sortedPlugins.filter((p) =>
+    if (!q) return toggleFilteredPlugins;
+    return toggleFilteredPlugins.filter((p) =>
       p.name.toLowerCase().includes(q) ||
       p.entity.toLowerCase().includes(q) ||
       p.assemblyName.toLowerCase().includes(q) ||
       p.typeName.toLowerCase().includes(q)
     );
-  }, [sortedPlugins, searchQuery]);
+  }, [toggleFilteredPlugins, searchQuery]);
+
+  const toggleStageFilter = (stage: string) => {
+    setActiveStageFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(stage)) {
+        next.delete(stage);
+      } else {
+        next.add(stage);
+      }
+      return next;
+    });
+  };
+
+  const toggleStateFilter = (state: string) => {
+    setActiveStateFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(state)) {
+        next.delete(state);
+      } else {
+        next.add(state);
+      }
+      return next;
+    });
+  };
 
   const getStageBadgeColor = (stage: number): string => {
     const stageColors: Record<number, string> = {
@@ -290,17 +341,53 @@ export function PluginsList({
 
   return (
     <div className={styles.container}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search plugins..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedPlugins.length} of {sortedPlugins.length} plugins
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search plugins..."
+        filteredCount={searchedPlugins.length}
+        totalCount={sortedPlugins.length}
+        itemLabel="plugins"
+      >
+        <FilterGroup label="Stage:">
+          {STAGE_VALUES.map((stage) => (
+            <ToggleButton
+              key={stage}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStageFilters.has(stage)}
+              disabled={stageCounts[stage] === 0}
+              onClick={() => toggleStageFilter(stage)}
+            >
+              {stage}
+            </ToggleButton>
+          ))}
+          {activeStageFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveStageFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+        <FilterGroup label="State:">
+          {STATE_VALUES.map((state) => (
+            <ToggleButton
+              key={state}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStateFilters.has(state)}
+              disabled={stateCounts[state] === 0}
+              onClick={() => toggleStateFilter(state)}
+            >
+              {state}
+            </ToggleButton>
+          ))}
+          {activeStateFilters.size > 0 && (
+            <Button appearance="subtle" size="small" onClick={() => setActiveStateFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
       {searchedPlugins.length === 0 && sortedPlugins.length > 0 ? (
         <div className={styles.emptyState}>
           <Text>No plugins match your search.</Text>
