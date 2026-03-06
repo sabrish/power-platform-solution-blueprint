@@ -150,7 +150,7 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
             </ToggleButton>
           ))}
           {activeStatusFilters.size > 0 && (
-            <Button appearance="subtle" size="small" onClick={() => setActiveStatusFilters(new Set())}>
+            <Button appearance="transparent" size="small" onClick={() => setActiveStatusFilters(new Set())}>
               Clear
             </Button>
           )}

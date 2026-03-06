@@ -348,7 +348,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
             </ToggleButton>
           ))}
           {activeStateFilters.size > 0 && (
-            <Button appearance="subtle" size="small" onClick={() => setActiveStateFilters(new Set())}>
+            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
               Clear
             </Button>
           )}

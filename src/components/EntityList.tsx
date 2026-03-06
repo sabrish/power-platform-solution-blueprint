@@ -31,8 +31,8 @@ const useStyles = makeStyles({
   },
   entityRow: {
     display: 'flex',
-    alignItems: 'start',
-    gap: tokens.spacingHorizontalM,
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXS,
     padding: tokens.spacingVerticalM,
     backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
@@ -43,6 +43,11 @@ const useStyles = makeStyles({
       backgroundColor: tokens.colorNeutralBackground1Hover,
       boxShadow: tokens.shadow4,
     },
+  },
+  entityRowMain: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalM,
   },
   entityRowExpanded: {
     backgroundColor: tokens.colorBrandBackground2,
@@ -63,7 +68,14 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     flex: 1,
     minWidth: 0,
-    overflow: 'hidden',
+  },
+  entityDescriptionRow: {
+    // Indent to align under the name (past chevron 24px + icon 24px + two gaps)
+    paddingLeft: `calc(24px + 24px + ${tokens.spacingHorizontalM} + ${tokens.spacingHorizontalM})`,
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase200,
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
   },
   entityName: {
     fontWeight: tokens.fontWeightSemibold,
@@ -80,12 +92,6 @@ const useStyles = makeStyles({
     minWidth: 0,
     maxWidth: '200px',
     flexShrink: 0,
-  },
-  entityDescription: {
-    color: tokens.colorNeutralForeground2,
-    fontSize: tokens.fontSizeBase300,
-    flex: 1,
-    minWidth: 0,
   },
   entityFlags: {
     display: 'flex',
@@ -110,11 +116,6 @@ const useStyles = makeStyles({
   statBadge: {
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground3,
-  },
-  attributeCount: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorBrandForeground1,
-    fontWeight: tokens.fontWeightSemibold,
   },
   expandedDetails: {
     backgroundColor: tokens.colorNeutralBackground2,
@@ -447,7 +448,7 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                 <Button
                   size="small"
                   className={styles.filterButton}
-                  appearance="subtle"
+                  appearance="transparent"
                   onClick={() => setActiveFilters(new Set())}
                 >
                   Clear
@@ -484,57 +485,65 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                   className={`${styles.entityRow} ${isExpanded ? styles.entityRowExpanded : ''}`}
                   onClick={() => toggleExpand(entity.MetadataId)}
                 >
-                  <div className={styles.chevron}>
-                    {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
-                  </div>
-                  <Database24Regular className={styles.entityIcon} />
-                  <div className={styles.entityInfo}>
-                    <Text className={styles.entityName}>
-                      <TruncatedText text={displayName} />
-                    </Text>
-                    <Text className={styles.entityLogicalName}>
-                      <TruncatedText text={entity.LogicalName} />
-                    </Text>
-                    {description && (
-                      <Text className={styles.entityDescription}>
-                        <TruncatedText text={description} />
+                  {/* Row 1: chevron + icon + name/logicalName + flags + stats */}
+                  <div className={styles.entityRowMain}>
+                    <div className={styles.chevron}>
+                      {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+                    </div>
+                    <Database24Regular className={styles.entityIcon} />
+                    <div className={styles.entityInfo}>
+                      <Text className={styles.entityName}>
+                        <TruncatedText text={displayName} />
                       </Text>
+                      <Text className={styles.entityLogicalName}>
+                        <TruncatedText text={entity.LogicalName} />
+                      </Text>
+                    </div>
+                    {entityFlagCounts.size > 0 && (
+                      <div className={styles.entityFlags}>
+                        {FLAG_CONFIGS.filter(cfg => entityFlagCounts.has(cfg.key)).map(cfg => {
+                          const count = entityFlagCounts.get(cfg.key)!;
+                          return (
+                            <Tooltip key={cfg.key} content={`${count} ${cfg.tooltip}`} relationship="label">
+                              <Badge size="small" color={cfg.color} appearance="tint" shape="rounded">
+                                {count} {cfg.label}
+                              </Badge>
+                            </Tooltip>
+                          );
+                        })}
+                      </div>
                     )}
-                  </div>
-                  {entityFlagCounts.size > 0 && (
-                    <div className={styles.entityFlags}>
-                      {FLAG_CONFIGS.filter(cfg => entityFlagCounts.has(cfg.key)).map(cfg => {
-                        const count = entityFlagCounts.get(cfg.key)!;
-                        return (
-                          <Tooltip key={cfg.key} content={`${count} ${cfg.tooltip}`} relationship="label">
-                            <Badge size="small" color={cfg.color} appearance="tint" shape="rounded">
-                              {count} {cfg.label}
+                    <div className={styles.entityStats}>
+                      <Badge appearance="tint" shape="rounded" size="small" color="brand">
+                        {attributeCount} attr{attributeCount !== 1 ? 's' : ''}
+                      </Badge>
+                      {(publisherPrefix || entity.IsCustomEntity || entity.IsManaged) && (
+                        <>
+                          {publisherPrefix && (
+                            <Badge appearance="outline" shape="rounded" size="small" color="subtle">
+                              {publisherPrefix}_
                             </Badge>
-                          </Tooltip>
-                        );
-                      })}
+                          )}
+                          {entity.IsCustomEntity && (
+                            <Badge appearance="tint" shape="rounded" size="small" color="brand">
+                              Custom
+                            </Badge>
+                          )}
+                          {entity.IsManaged && (
+                            <Badge appearance="tint" shape="rounded" size="small" color="warning">
+                              Managed
+                            </Badge>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {/* Row 2: description (only when present), indented under name */}
+                  {description && (
+                    <div className={styles.entityDescriptionRow}>
+                      {description}
                     </div>
                   )}
-                  <div className={styles.entityStats}>
-                    <Text className={styles.attributeCount}>
-                      {attributeCount} attr{attributeCount !== 1 ? 's' : ''}
-                    </Text>
-                    {publisherPrefix && (
-                      <Badge appearance="outline" shape="rounded" size="small" color="subtle">
-                        {publisherPrefix}_
-                      </Badge>
-                    )}
-                    {entity.IsCustomEntity && (
-                      <Badge appearance="tint" shape="rounded" size="small" color="brand">
-                        Custom
-                      </Badge>
-                    )}
-                    {entity.IsManaged && (
-                      <Badge appearance="tint" shape="rounded" size="small" color="warning">
-                        Managed
-                      </Badge>
-                    )}
-                  </div>
                 </div>
                 {isExpanded && renderEntityDetails(blueprint)}
               </div>

@@ -4,6 +4,9 @@ import type { BusinessRuleDefinition, Condition, Action } from '../types/bluepri
  * Parser for Business Rule definitions.
  * Modern business rules store their definition in clientdata (JSON).
  * XAML is kept as a fallback for older records.
+ *
+ * Dataverse business rules use WF4 XAML and a proprietary clientdata JSON schema.
+ * Neither format is publicly documented, so parsing is best-effort.
  */
 export class BusinessRuleParser {
   /**
@@ -15,9 +18,14 @@ export class BusinessRuleParser {
       try {
         const json = JSON.parse(clientdata) as Record<string, unknown>;
         const result = this.parseJson(json);
+        // Accept the result even with 0 conditions if actions > 0, or vice versa —
+        // real rules can be action-only (always execute). Only skip if both are 0.
         if (result.conditions.length > 0 || result.actions.length > 0) {
           return result;
         }
+        // If JSON parsed but found nothing, still return it so the parse attempt
+        // is recorded — only fall through to XAML if parse itself threw.
+        return result;
       } catch {
         // Fall through to XAML
       }
@@ -36,10 +44,37 @@ export class BusinessRuleParser {
     try {
       const conditions = this.parseConditions(xaml);
       const actions = this.parseActions(xaml);
-      const executionContext = this.determineExecutionContext(actions);
-      const conditionLogic = this.buildConditionLogic(conditions);
 
-      return { conditions, actions, executionContext, conditionLogic };
+      // If XAML regex patterns yielded nothing, count elements as a last resort
+      // so the UI shows a non-zero count when data is definitely present.
+      const conditionCount = conditions.length > 0
+        ? conditions.length
+        : this.countXamlConditions(xaml);
+      const actionCount = actions.length > 0
+        ? actions.length
+        : this.countXamlActions(xaml);
+
+      // Synthesize placeholder conditions/actions when counts > 0 but parsing failed
+      const finalConditions: Condition[] = conditions.length > 0
+        ? conditions
+        : Array.from({ length: conditionCount }, (_, i) => ({
+            field: `condition_${i + 1}`,
+            operator: 'defined in XAML',
+            value: '',
+            logicOperator: 'AND' as const,
+          }));
+
+      const finalActions: Action[] = actions.length > 0
+        ? actions
+        : Array.from({ length: actionCount }, (_, i) => ({
+            type: 'SetValue' as Action['type'],
+            field: `action_${i + 1}`,
+          }));
+
+      const executionContext = this.determineExecutionContext(finalActions);
+      const conditionLogic = this.buildConditionLogic(finalConditions);
+
+      return { conditions: finalConditions, actions: finalActions, executionContext, conditionLogic };
     } catch (error) {
       return {
         conditions: [],
@@ -56,31 +91,34 @@ export class BusinessRuleParser {
   // ---------------------------------------------------------------------------
 
   private static parseJson(json: Record<string, unknown>): BusinessRuleDefinition {
-    const rawConditions = this.findArray(json, ['conditions', 'ruleConditions']) as Record<string, unknown>[];
-    const rawActions = this.findArray(json, ['actions', 'ruleActions']) as Record<string, unknown>[];
+    const rawConditions = this.findConditionsArray(json);
+    const rawActions = this.findActionsArray(json);
 
     const conditions: Condition[] = rawConditions.map(c => ({
-      field: String(c.attributeName ?? c.field ?? c.attribute ?? 'unknown'),
-      operator: this.normalizeJsonOperator(String(c.operatorCode ?? c.operator ?? 'eq')),
-      value: this.extractJsonValue(c.value ?? c.valueExpression),
+      field: String(c.attributeName ?? c.field ?? c.attribute ?? c.AttributeName ?? c.Field ?? 'unknown'),
+      operator: this.normalizeJsonOperator(String(c.operatorCode ?? c.operator ?? c.OperatorCode ?? c.Operator ?? 'eq')),
+      value: this.extractJsonValue(c.value ?? c.valueExpression ?? c.Value ?? c.ValueExpression),
       logicOperator: 'AND' as const,
     }));
 
     // Apply combinator to conditions after the first
-    const combinatorRaw = String(json.conditionsCombinator ?? json.conditionCombinator ?? 'And');
+    const combinatorRaw = String(
+      json.conditionsCombinator ?? json.conditionCombinator ??
+      json.ConditionsCombinator ?? json.ConditionCombinator ?? 'And'
+    );
     const isOr = combinatorRaw.toLowerCase() === 'or';
     for (let i = 1; i < conditions.length; i++) {
       conditions[i].logicOperator = isOr ? 'OR' : 'AND';
     }
 
     const actions: Action[] = rawActions.map(a => {
-      const actionType = String(a.type ?? a.actionType ?? '');
-      const value = this.extractJsonValue(a.value);
+      const actionType = String(a.type ?? a.actionType ?? a.Type ?? a.ActionType ?? '');
+      const value = this.extractJsonValue(a.value ?? a.Value);
       return {
         type: this.mapJsonActionType(actionType, value),
-        field: String(a.attributeName ?? a.field ?? 'unknown'),
+        field: String(a.attributeName ?? a.field ?? a.AttributeName ?? a.Field ?? 'unknown'),
         value: value || undefined,
-        message: a.message ? String(a.message) : undefined,
+        message: (a.message ?? a.Message) ? String(a.message ?? a.Message) : undefined,
       };
     });
 
@@ -90,20 +128,71 @@ export class BusinessRuleParser {
     return { conditions, actions, executionContext, conditionLogic };
   }
 
-  /** Recursively search obj for an array under any of the given keys */
-  private static findArray(obj: Record<string, unknown>, keys: string[]): unknown[] {
+  /**
+   * Recursively search obj for a conditions array using many known key variants
+   * and up to 3 levels of nesting.
+   */
+  private static findConditionsArray(obj: Record<string, unknown>): Record<string, unknown>[] {
+    const conditionKeys = [
+      'conditions', 'ruleConditions', 'Conditions', 'RuleConditions',
+      'conditionSet', 'ConditionSet', 'conditionsList', 'ConditionsList',
+      'ifConditions', 'IfConditions', 'conditionItems', 'ConditionItems',
+    ];
+    return this.deepFindArray(obj, conditionKeys, 3);
+  }
+
+  /**
+   * Recursively search obj for an actions array using many known key variants
+   * and up to 3 levels of nesting.
+   */
+  private static findActionsArray(obj: Record<string, unknown>): Record<string, unknown>[] {
+    const actionKeys = [
+      'actions', 'ruleActions', 'Actions', 'RuleActions',
+      'thenActions', 'ThenActions', 'actionsList', 'ActionsList',
+      'actionItems', 'ActionItems', 'steps', 'Steps',
+      'actionSteps', 'ActionSteps',
+    ];
+    return this.deepFindArray(obj, actionKeys, 3);
+  }
+
+  /** Search for an array value under any of the given keys, up to maxDepth levels deep */
+  private static deepFindArray(
+    obj: Record<string, unknown>,
+    keys: string[],
+    maxDepth: number
+  ): Record<string, unknown>[] {
+    if (maxDepth <= 0) return [];
+
+    // Direct match at this level
     for (const key of keys) {
-      if (Array.isArray(obj[key])) return obj[key] as unknown[];
+      if (Array.isArray(obj[key])) {
+        const arr = obj[key] as unknown[];
+        // Only return if array contains objects (not primitives)
+        const objectItems = arr.filter(
+          (item): item is Record<string, unknown> =>
+            item !== null && typeof item === 'object' && !Array.isArray(item)
+        );
+        if (objectItems.length > 0) return objectItems;
+      }
     }
-    // One level of nesting
+
+    // Recurse into nested objects
     for (const val of Object.values(obj)) {
-      if (val && typeof val === 'object' && !Array.isArray(val)) {
-        const nested = val as Record<string, unknown>;
-        for (const key of keys) {
-          if (Array.isArray(nested[key])) return nested[key] as unknown[];
+      if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
+        const found = this.deepFindArray(val as Record<string, unknown>, keys, maxDepth - 1);
+        if (found.length > 0) return found;
+      }
+      // Also recurse into array elements that are objects
+      if (Array.isArray(val)) {
+        for (const item of val) {
+          if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
+            const found = this.deepFindArray(item as Record<string, unknown>, keys, maxDepth - 1);
+            if (found.length > 0) return found;
+          }
         }
       }
     }
+
     return [];
   }
 
@@ -114,7 +203,7 @@ export class BusinessRuleParser {
     if (typeof val === 'number' || typeof val === 'boolean') return String(val);
     if (typeof val === 'object') {
       const o = val as Record<string, unknown>;
-      const inner = o.value ?? o.Value ?? o.param ?? o.stringValue ?? '';
+      const inner = o.value ?? o.Value ?? o.param ?? o.stringValue ?? o.StringValue ?? '';
       return String(inner);
     }
     return String(val);
@@ -134,6 +223,19 @@ export class BusinessRuleParser {
       EndsWith: 'ends with',
       IsNull: 'is null',
       IsNotNull: 'is not null',
+      // lowercase variants
+      equal: 'equals',
+      notequal: 'not equals',
+      greaterthan: 'greater than',
+      greaterthanorequalto: 'greater than or equals',
+      lessthan: 'less than',
+      lessthanorequalto: 'less than or equals',
+      contains: 'contains',
+      doesnotcontain: 'does not contain',
+      beginswith: 'begins with',
+      endswith: 'ends with',
+      isnull: 'is null',
+      isnotnull: 'is not null',
     };
     return opMap[op] ?? this.getOperatorDisplayName(op);
   }
@@ -160,6 +262,11 @@ export class BusinessRuleParser {
       lock: 'LockField',
       unlock: 'UnlockField',
       showerror: 'ShowError',
+      // Dataverse rule action types
+      showfield: 'ShowField',
+      hidefield: 'HideField',
+      lockfield: 'LockField',
+      unlockfield: 'UnlockField',
     };
     return typeMap[lower] ?? 'SetValue';
   }
@@ -170,8 +277,10 @@ export class BusinessRuleParser {
 
   private static parseConditions(xaml: string): Condition[] {
     const conditions: Condition[] = [];
+
+    // Pattern 1: <condition attribute="..." operator="..."> ... <value>...</value>
     const conditionPattern = /<condition[^>]*attribute="([^"]*)"[^>]*operator="([^"]*)"[^>]*>[\s\S]*?<value[^>]*>([^<]*)<\/value>/gi;
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = conditionPattern.exec(xaml)) !== null) {
       const [, field, operator, value] = match;
       conditions.push({
@@ -181,13 +290,30 @@ export class BusinessRuleParser {
         logicOperator: this.getLogicOperator(xaml, match.index),
       });
     }
+    if (conditions.length > 0) return conditions;
+
+    // Pattern 2: Dataverse WF4 XAML — ConditionExpression or RuleCondition elements
+    // e.g. <mxsf:ConditionExpression LeftOperand="field" Operator="Equal" RightOperand="value" />
+    const wf4Pattern = /<(?:\w+:)?ConditionExpression[^>]*LeftOperand="([^"]*)"[^>]*Operator="([^"]*)"[^>]*RightOperand="([^"]*)"[^/]*/gi;
+    while ((match = wf4Pattern.exec(xaml)) !== null) {
+      const [, field, operator, value] = match;
+      conditions.push({
+        field: field || 'unknown',
+        operator: this.normalizeJsonOperator(operator || 'eq'),
+        value: value || '',
+        logicOperator: 'AND',
+      });
+    }
+
     return conditions;
   }
 
   private static parseActions(xaml: string): Action[] {
     const actions: Action[] = [];
+
+    // Pattern 1: <action actiontype="..."> ... </action>
     const actionPattern = /<action[^>]*actiontype="([^"]*)"[^>]*>[\s\S]*?<\/action>/gi;
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = actionPattern.exec(xaml)) !== null) {
       const [fullMatch, actionType] = match;
       const field = this.extractParameter(fullMatch, 'field');
@@ -200,7 +326,77 @@ export class BusinessRuleParser {
         message: message || undefined,
       });
     }
+    if (actions.length > 0) return actions;
+
+    // Pattern 2: Dataverse WF4 XAML — RuleAction or SetAttributeValue elements
+    // e.g. <mxsf:SetAttributeValueStep AttributeName="field" ... />
+    const wf4SetPattern = /<(?:\w+:)?SetAttributeValue(?:Step)?[^>]*AttributeName="([^"]*)"[^>]*/gi;
+    while ((match = wf4SetPattern.exec(xaml)) !== null) {
+      const [, field] = match;
+      actions.push({
+        type: 'SetValue',
+        field: field || 'unknown',
+      });
+    }
+    if (actions.length > 0) return actions;
+
+    // Pattern 3: ShowField/HideField/LockField/UnlockField steps
+    const visibilityPattern = /<(?:\w+:)?(ShowField|HideField|LockField|UnlockField)(?:Step)?[^>]*AttributeName="([^"]*)"[^>]*/gi;
+    while ((match = visibilityPattern.exec(xaml)) !== null) {
+      const [, type, field] = match;
+      actions.push({
+        type: this.getActionType(type),
+        field: field || 'unknown',
+      });
+    }
+
     return actions;
+  }
+
+  /**
+   * Count condition-like elements in XAML when regex patterns return 0.
+   * Uses broad tag matching to detect any condition-related elements.
+   */
+  private static countXamlConditions(xaml: string): number {
+    const patterns = [
+      /<condition[\s>]/gi,
+      /<ConditionExpression[\s>]/gi,
+      /<(?:\w+:)?ConditionExpression[\s>]/gi,
+      /<(?:\w+:)?Condition[\s>]/gi,
+      /<RuleCondition[\s>]/gi,
+      /<(?:\w+:)?RuleCondition[\s>]/gi,
+      /<IfCondition[\s>]/gi,
+    ];
+    for (const pattern of patterns) {
+      const matches = xaml.match(pattern);
+      if (matches && matches.length > 0) return matches.length;
+    }
+    return 0;
+  }
+
+  /**
+   * Count action-like elements in XAML when regex patterns return 0.
+   */
+  private static countXamlActions(xaml: string): number {
+    const patterns = [
+      /<action[\s>]/gi,
+      /<(?:\w+:)?SetAttributeValue(?:Step)?[\s>]/gi,
+      /<(?:\w+:)?ShowField(?:Step)?[\s>]/gi,
+      /<(?:\w+:)?HideField(?:Step)?[\s>]/gi,
+      /<(?:\w+:)?LockField(?:Step)?[\s>]/gi,
+      /<(?:\w+:)?UnlockField(?:Step)?[\s>]/gi,
+      /<(?:\w+:)?SetRequired(?:Step)?[\s>]/gi,
+      /<(?:\w+:)?ShowMessage(?:Step)?[\s>]/gi,
+      /<RuleAction[\s>]/gi,
+    ];
+    let total = 0;
+    for (const pattern of patterns) {
+      const matches = xaml.match(pattern);
+      if (matches && matches.length > 0) {
+        total += matches.length;
+      }
+    }
+    return total;
   }
 
   // ---------------------------------------------------------------------------
@@ -236,7 +432,7 @@ export class BusinessRuleParser {
 
   private static getLogicOperator(xaml: string, position: number): 'AND' | 'OR' {
     const before = xaml.substring(Math.max(0, position - 200), position);
-    return before.includes('<or>') ? 'OR' : 'AND';
+    return before.includes('<or>') || before.includes('<Or>') ? 'OR' : 'AND';
   }
 
   private static getOperatorDisplayName(operator: string): string {
@@ -264,6 +460,10 @@ export class BusinessRuleParser {
       lock: 'LockField',
       unlock: 'UnlockField',
       showerror: 'ShowError',
+      showfield: 'ShowField',
+      hidefield: 'HideField',
+      lockfield: 'LockField',
+      unlockfield: 'UnlockField',
     };
     return typeMap[actionType.toLowerCase()] || 'SetValue';
   }

@@ -287,7 +287,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
             </ToggleButton>
           ))}
           {activeTypeFilters.size > 0 && (
-            <Button appearance="subtle" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+            <Button appearance="transparent" size="small" onClick={() => setActiveTypeFilters(new Set())}>
               Clear
             </Button>
           )}
@@ -306,7 +306,7 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
             </ToggleButton>
           ))}
           {activeBindingFilters.size > 0 && (
-            <Button appearance="subtle" size="small" onClick={() => setActiveBindingFilters(new Set())}>
+            <Button appearance="transparent" size="small" onClick={() => setActiveBindingFilters(new Set())}>
               Clear
             </Button>
           )}
