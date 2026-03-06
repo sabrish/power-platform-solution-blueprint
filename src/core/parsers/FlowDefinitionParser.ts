@@ -11,6 +11,7 @@ export class FlowDefinitionParser {
     const defaultDefinition: FlowDefinition = {
       triggerType: 'Other',
       triggerEvent: 'Unknown',
+      triggerEntity: null,
       triggerConditions: null,
       scopeType: 'Unknown',
       actionsCount: 0,
@@ -41,6 +42,7 @@ export class FlowDefinitionParser {
       return {
         triggerType: trigger.type,
         triggerEvent: trigger.event,
+        triggerEntity: trigger.entity,
         triggerConditions: trigger.conditions,
         scopeType,
         actionsCount,
@@ -59,13 +61,14 @@ export class FlowDefinitionParser {
   private static extractTrigger(data: any): {
     type: FlowDefinition['triggerType'];
     event: FlowDefinition['triggerEvent'];
+    entity: string | null;
     conditions: string | null;
   } {
     const properties = data?.properties;
     const definition = properties?.definition;
 
     if (!definition || !definition.triggers) {
-      return { type: 'Other', event: 'Unknown', conditions: null };
+      return { type: 'Other', event: 'Unknown', entity: null, conditions: null };
     }
 
     // Get first trigger (flows typically have one trigger)
@@ -73,33 +76,67 @@ export class FlowDefinitionParser {
     const trigger = definition.triggers[triggerKey];
 
     if (!trigger) {
-      return { type: 'Other', event: 'Unknown', conditions: null };
+      return { type: 'Other', event: 'Unknown', entity: null, conditions: null };
     }
 
     // Determine trigger type
     let triggerType: FlowDefinition['triggerType'] = 'Other';
     let triggerEvent: FlowDefinition['triggerEvent'] = 'Unknown';
+    let triggerEntity: string | null = null;
     let conditions: string | null = null;
 
     const triggerKind = trigger.type?.toLowerCase() || '';
 
-    // Check for Dataverse triggers
-    if (triggerKind.includes('dataverse') || triggerKind.includes('commondataservice')) {
+    // Real PA flows use type "OpenApiConnectionWebhook" (modern) or "ApiConnectionWebhook" (legacy)
+    // for connection-based triggers — they never contain "dataverse" in the type string.
+    // Detect Dataverse triggers via the connector's apiId in the host block instead.
+    const apiId = (trigger.inputs?.host?.apiId || '').toLowerCase();
+    const isDataverseTrigger =
+      apiId.includes('commondataservice') ||
+      // Fallback for older flow formats that do embed type names
+      triggerKind.includes('dataverse') ||
+      triggerKind.includes('commondataservice');
+
+    if (isDataverseTrigger) {
       triggerType = 'Dataverse';
 
-      // Determine event type from trigger
-      if (triggerKind.includes('create')) {
-        triggerEvent = trigger.inputs?.message === 'Update' ? 'CreateOrUpdate' : 'Create';
-      } else if (triggerKind.includes('update')) {
-        triggerEvent = 'Update';
-      } else if (triggerKind.includes('delete')) {
-        triggerEvent = 'Delete';
+      // Modern Dataverse connector: event is a numeric message code in parameters
+      // 1 = Create, 2 = Delete, 3 = Update, 4 = CreateOrUpdate
+      const messageCode = trigger.inputs?.parameters?.['subscriptionRequest/message'];
+      if (messageCode !== undefined && messageCode !== null) {
+        const code = Number(messageCode);
+        if (code === 1) triggerEvent = 'Create';
+        else if (code === 2) triggerEvent = 'Delete';
+        else if (code === 3) triggerEvent = 'Update';
+        else if (code === 4) triggerEvent = 'CreateOrUpdate';
+      } else {
+        // Legacy connector: infer event from trigger type string
+        if (triggerKind.includes('create')) {
+          triggerEvent = 'Create';
+        } else if (triggerKind.includes('update')) {
+          triggerEvent = 'Update';
+        } else if (triggerKind.includes('delete')) {
+          triggerEvent = 'Delete';
+        }
       }
 
-      // Extract filter conditions
-      if (trigger.inputs?.filterExpression) {
-        conditions = trigger.inputs.filterExpression;
-      }
+      // Entity extraction — try modern connector path first, then legacy paths
+      triggerEntity =
+        trigger.inputs?.parameters?.['subscriptionRequest/entityname'] ||
+        trigger.inputs?.body?.EntityLogicalName ||
+        trigger.inputs?.parameters?.EntityLogicalName ||
+        trigger.inputs?.parameters?.entityName ||
+        trigger.inputs?.parameters?.entityLogicalName ||
+        trigger.metadata?.entityName ||
+        null;
+
+      // Filter conditions — try modern connector path first, then legacy paths
+      const filterExpr =
+        trigger.inputs?.parameters?.['subscriptionRequest/filterexpression'] ||
+        trigger.inputs?.body?.FilterExpression ||
+        trigger.inputs?.filterExpression ||
+        null;
+      if (filterExpr) conditions = String(filterExpr);
     } else if (triggerKind.includes('manual') || triggerKind.includes('request')) {
       triggerType = 'Manual';
       triggerEvent = 'Manual';
@@ -108,7 +145,7 @@ export class FlowDefinitionParser {
       triggerEvent = 'Scheduled';
     }
 
-    return { type: triggerType, event: triggerEvent, conditions };
+    return { type: triggerType, event: triggerEvent, entity: triggerEntity, conditions };
   }
 
   /**
@@ -260,7 +297,7 @@ export class FlowDefinitionParser {
       const actionType = action.type?.toLowerCase() || '';
 
       if (actionType.includes('dataverse') || actionType.includes('commondataservice') ||
-          actionType === 'openApiConnection') {
+          actionType === 'openapiconnection') {
 
         // Detect operation type
         const operation = this.detectDataverseOperation(action, actionName);
