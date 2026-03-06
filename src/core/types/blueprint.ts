@@ -239,6 +239,7 @@ export interface Flow {
 export interface FlowDefinition {
   triggerType: 'Dataverse' | 'Manual' | 'Scheduled' | 'Other';
   triggerEvent: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Manual' | 'Scheduled' | 'Unknown';
+  triggerEntity: string | null;
   triggerConditions: string | null;
   scopeType: 'User' | 'BusinessUnit' | 'Organization' | 'Unknown';
   actionsCount: number;
