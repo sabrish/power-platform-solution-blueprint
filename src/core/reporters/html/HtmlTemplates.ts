@@ -36,7 +36,7 @@ export class HtmlTemplates {
   <meta name="generator" content="Power Platform Solution Blueprint (PPSB)">
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
   <title>${this.escapeHtml(title)}</title>
-  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>
 ${this.embeddedCSS()}
   </style>
@@ -112,42 +112,33 @@ ${this.embeddedCSS()}
 
   /**
    * Generate ERD section
-   * Uses dagre-based interactive SVG canvas instead of Mermaid for in-browser rendering.
-   * Note: Only includes the first diagram (comprehensive view) to match the tool UI behavior.
+   * Note: Only includes the first diagram (comprehensive view) to match the tool UI behavior
    */
   htmlErdSection(erd: ERDDefinition | undefined): string {
     if (!erd || erd.diagrams.length === 0) {
       return `<section id="erd" class="content-section">
-<h2>Entity Relationship Diagram</h2>
-<div class="empty-state">No ERD available</div>
+  <h2>Entity Relationship Diagram</h2>
+  <div class="empty-state">No ERD available</div>
 </section>`;
     }
 
     const legendHtml = this.generateLegendHtml(erd.legend);
-    const diagram = erd.diagrams[0];
 
-    let erdContent = '';
-    if (erd.graphData) {
-      const graphJson = JSON.stringify(erd.graphData);
-      erdContent = `<div class="erd-diagram">
-<h3>${this.escapeHtml(diagram.title)}</h3>
-<p class="diagram-description">${this.escapeHtml(diagram.description)}</p>
-<div id="erd-container" style="width:100%;height:600px;overflow:hidden;position:relative;cursor:grab;background:#f9f9f9;border-radius:6px;border:1px solid #e0e0e0;"></div>
-<p class="diagram-stats">Entities: ${diagram.entityCount} | Relationships: ${diagram.relationshipCount}</p>
-</div>
-<script>window.__ERD_DATA__ = ${graphJson};</script>`;
-    } else {
-      erdContent = `<div class="erd-diagram">
-<h3>${this.escapeHtml(diagram.title)}</h3>
-<p class="diagram-description">${this.escapeHtml(diagram.description)}</p>
-<p class="diagram-stats">Entities: ${diagram.entityCount} | Relationships: ${diagram.relationshipCount}</p>
+    // Use only the first diagram (comprehensive view with all entities) - matches UI behavior
+    const diagram = erd.diagrams[0];
+    const diagramHtml = `<div class="erd-diagram">
+  <h3>${this.escapeHtml(diagram.title)}</h3>
+  <p class="diagram-description">${this.escapeHtml(diagram.description)}</p>
+  <div class="mermaid" id="diagram-0">
+${diagram.mermaidDiagram}
+  </div>
+  <p class="diagram-stats">Entities: ${diagram.entityCount} | Relationships: ${diagram.relationshipCount}</p>
 </div>`;
-    }
 
     return `<section id="erd" class="content-section">
-<h2>Entity Relationship Diagram</h2>
-${legendHtml}
-${erdContent}
+  <h2>Entity Relationship Diagram</h2>
+  ${legendHtml}
+  ${diagramHtml}
 </section>`;
   }
 
@@ -1496,186 +1487,8 @@ ${sampleRows}
    */
   htmlScripts(): string {
     return `<script>
-${this.erdJavaScript()}
-</script>
-<script>
 ${this.embeddedJavaScript()}
 </script>`;
-  }
-
-  /**
-   * Inline ERD rendering script using dagre (loaded from CDN in htmlHead).
-   * Builds a pan/zoom/highlight SVG canvas inside #erd-container.
-   */
-  private erdJavaScript(): string {
-    return `(function() {
-  var data = window.__ERD_DATA__;
-  if (!data || typeof dagre === 'undefined') return;
-  var container = document.getElementById('erd-container');
-  if (!container) return;
-
-  var NODE_W = 180, NODE_H = 52, PAD = 60;
-  var g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 80, marginx: PAD, marginy: PAD });
-  g.setDefaultEdgeLabel(function() { return {}; });
-
-  data.nodes.forEach(function(n) { g.setNode(n.id, { width: NODE_W, height: NODE_H }); });
-  data.edges.forEach(function(e) { g.setEdge(e.source, e.target, { id: e.id }); });
-  dagre.layout(g);
-
-  var ns = 'http://www.w3.org/2000/svg';
-  var svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
-  container.appendChild(svg);
-
-  var defs = document.createElementNS(ns, 'defs');
-  defs.innerHTML = '<marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#888"/></marker><marker id="arr-hl" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#0078D4"/></marker>';
-  svg.appendChild(defs);
-
-  var gEl = document.createElementNS(ns, 'g');
-  svg.appendChild(gEl);
-
-  var tx = 0, ty = 0, scale = 1, selectedId = null;
-  var dragging = false, sx, sy, stx, sty;
-
-  function applyT() { gEl.setAttribute('transform', 'translate(' + tx + ',' + ty + ') scale(' + scale + ')'); }
-
-  // Draw edges
-  data.edges.forEach(function(e) {
-    var ed = g.edge(e.source, e.target);
-    if (!ed || !ed.points || ed.points.length < 2) return;
-    var path = document.createElementNS(ns, 'path');
-    var d = 'M ' + ed.points.map(function(p) { return p.x + ' ' + p.y; }).join(' L ');
-    path.setAttribute('d', d);
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', '#999');
-    path.setAttribute('stroke-width', '1');
-    path.setAttribute('marker-end', 'url(#arr)');
-    path.dataset.src = e.source;
-    path.dataset.tgt = e.target;
-    path.dataset.eid = e.id;
-    gEl.appendChild(path);
-    if (e.label && ed.points.length > 0) {
-      var mid = ed.points[Math.floor(ed.points.length / 2)];
-      var lbl = document.createElementNS(ns, 'text');
-      lbl.setAttribute('x', mid.x);
-      lbl.setAttribute('y', mid.y - 5);
-      lbl.setAttribute('text-anchor', 'middle');
-      lbl.setAttribute('font-size', '10');
-      lbl.setAttribute('fill', '#888');
-      lbl.setAttribute('font-family', 'Consolas,monospace');
-      lbl.setAttribute('pointer-events', 'none');
-      lbl.textContent = e.label;
-      gEl.appendChild(lbl);
-    }
-  });
-
-  // Draw nodes
-  data.nodes.forEach(function(n) {
-    var nd = g.node(n.id);
-    if (!nd) return;
-    var grp = document.createElementNS(ns, 'g');
-    grp.setAttribute('transform', 'translate(' + (nd.x - NODE_W / 2) + ',' + (nd.y - NODE_H / 2) + ')');
-    grp.style.cursor = 'pointer';
-    grp.dataset.nid = n.id;
-    var rect = document.createElementNS(ns, 'rect');
-    rect.setAttribute('width', NODE_W);
-    rect.setAttribute('height', NODE_H);
-    rect.setAttribute('rx', '6');
-    rect.setAttribute('fill', n.color);
-    rect.setAttribute('stroke', n.strokeColor);
-    rect.setAttribute('stroke-width', '1.5');
-    grp.appendChild(rect);
-    var txt = document.createElementNS(ns, 'text');
-    txt.setAttribute('x', NODE_W / 2);
-    txt.setAttribute('y', NODE_H / 2 + 5);
-    txt.setAttribute('text-anchor', 'middle');
-    txt.setAttribute('font-size', '13');
-    txt.setAttribute('fill', n.textColor);
-    txt.setAttribute('font-family', 'Segoe UI,system-ui,sans-serif');
-    txt.setAttribute('pointer-events', 'none');
-    txt.textContent = n.label;
-    grp.appendChild(txt);
-    grp.addEventListener('click', function(ev) {
-      ev.stopPropagation();
-      if (selectedId === n.id) { selectedId = null; resetHL(); }
-      else { selectedId = n.id; applyHL(n.id); }
-    });
-    gEl.appendChild(grp);
-  });
-
-  // Fit to container
-  var gi = g.graph();
-  var gW = (gi.width || 800) + PAD * 2, gH = (gi.height || 600) + PAD * 2;
-  var cW = container.clientWidth, cH = container.clientHeight;
-  scale = Math.min(cW / gW, cH / gH, 1);
-  tx = (cW - gW * scale) / 2;
-  ty = (cH - gH * scale) / 2;
-  applyT();
-
-  // Hint overlay
-  var hint = document.createElement('div');
-  hint.style.cssText = 'position:absolute;bottom:8px;right:12px;font-size:11px;color:#666;pointer-events:none;';
-  hint.textContent = 'Scroll to zoom \u00b7 Drag to pan \u00b7 Click node to highlight';
-  container.appendChild(hint);
-
-  // Events
-  container.addEventListener('wheel', function(e) {
-    e.preventDefault();
-    scale = Math.max(0.1, Math.min(5, scale * (e.deltaY < 0 ? 1.1 : 0.9)));
-    applyT();
-  }, { passive: false });
-
-  container.addEventListener('mousedown', function(e) {
-    if (e.button !== 0) return;
-    dragging = true; sx = e.clientX; sy = e.clientY; stx = tx; sty = ty;
-    container.style.cursor = 'grabbing';
-  });
-
-  document.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    tx = stx + (e.clientX - sx); ty = sty + (e.clientY - sy); applyT();
-  });
-
-  document.addEventListener('mouseup', function() {
-    dragging = false; container.style.cursor = 'grab';
-  });
-
-  svg.addEventListener('click', function() { selectedId = null; resetHL(); });
-
-  function applyHL(id) {
-    var connected = new Set([id]);
-    gEl.querySelectorAll('[data-eid]').forEach(function(el) {
-      if (el.dataset.src === id || el.dataset.tgt === id) {
-        connected.add(el.dataset.src);
-        connected.add(el.dataset.tgt);
-      }
-    });
-    gEl.querySelectorAll('[data-nid]').forEach(function(el) {
-      el.style.opacity = connected.has(el.dataset.nid) ? '1' : '0.12';
-    });
-    gEl.querySelectorAll('[data-eid]').forEach(function(el) {
-      var hl = el.dataset.src === id || el.dataset.tgt === id;
-      el.style.opacity = hl ? '1' : '0.12';
-      if (hl) {
-        el.setAttribute('stroke', '#0078D4');
-        el.setAttribute('stroke-width', '2');
-        el.setAttribute('marker-end', 'url(#arr-hl)');
-      }
-    });
-  }
-
-  function resetHL() {
-    gEl.querySelectorAll('[data-nid]').forEach(function(el) { el.style.opacity = '1'; });
-    gEl.querySelectorAll('[data-eid]').forEach(function(el) {
-      el.style.opacity = '1';
-      el.setAttribute('stroke', '#999');
-      el.setAttribute('stroke-width', '1');
-      el.setAttribute('marker-end', 'url(#arr)');
-    });
-  }
-})();`;
   }
 
   /**
@@ -2540,7 +2353,18 @@ ${this.embeddedJavaScript()}
    * Embedded JavaScript for interactivity
    */
   private embeddedJavaScript(): string {
-    return `    // Accordion toggle
+    return `    // Initialize Mermaid
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+
+    // Accordion toggle
     function toggleAccordion(id) {
       const content = document.getElementById(id);
       const icon = document.getElementById('icon-' + id);
