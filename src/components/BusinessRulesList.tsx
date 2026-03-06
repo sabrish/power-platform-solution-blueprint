@@ -402,7 +402,7 @@ export function BusinessRulesList({
             </ToggleButton>
           ))}
           {activeStateFilters.size > 0 && (
-            <Button appearance="subtle" size="small" onClick={() => setActiveStateFilters(new Set())}>
+            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
               Clear
             </Button>
           )}
@@ -421,7 +421,7 @@ export function BusinessRulesList({
             </ToggleButton>
           ))}
           {activeScopeFilters.size > 0 && (
-            <Button appearance="subtle" size="small" onClick={() => setActiveScopeFilters(new Set())}>
+            <Button appearance="transparent" size="small" onClick={() => setActiveScopeFilters(new Set())}>
               Clear
             </Button>
           )}

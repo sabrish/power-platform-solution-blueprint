@@ -277,7 +277,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
             </ToggleButton>
           ))}
           {activeTypeFilters.size > 0 && (
-            <Button appearance="subtle" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+            <Button appearance="transparent" size="small" onClick={() => setActiveTypeFilters(new Set())}>
               Clear
             </Button>
           )}
