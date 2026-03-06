@@ -10,11 +10,11 @@ Future development plans for Power Platform Solution Blueprint
 
 ### Baseline Comparison
 
-- Load previous blueprint JSON as comparison baseline
-- Detect added/removed/modified components
-- Risk assessment (Critical/High/Medium/Low)
-- Change log generation with recommendations
-- Side-by-side visual comparison in UI
+- [x] Load previous blueprint JSON as comparison baseline
+- [x] Detect added/removed/modified components
+- [x] Risk assessment (Critical/High/Medium/Low)
+- [x] Change log generation with recommendations
+- [x] Side-by-side visual comparison in UI
 - Use cases: Pre-deployment validation, governance, audit trails
 
 ### Command Line Interface (CLI)
