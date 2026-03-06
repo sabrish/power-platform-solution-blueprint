@@ -64,18 +64,12 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalS,
-    marginBottom: tokens.spacingVerticalS,
   },
   legendColor: {
     width: '16px',
     height: '16px',
     borderRadius: tokens.borderRadiusSmall,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
-  },
-  legendEntities: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-    marginTop: tokens.spacingVerticalXS,
   },
 });
 
@@ -248,10 +242,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
                 <div className={styles.legendColor} style={{ backgroundColor: pub.color }} />
                 <Text weight="semibold">{pub.publisherName}</Text>
                 <Badge appearance="outline" shape="rounded">{pub.entityCount}</Badge>
-              </div>
-              <div className={styles.legendEntities}>
-                {pub.entities.slice(0, 5).join(', ')}
-                {pub.entities.length > 5 && ` +${pub.entities.length - 5} more`}
               </div>
             </Card>
           ))}

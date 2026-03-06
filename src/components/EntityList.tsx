@@ -331,8 +331,60 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
   };
 
   const renderEntityDetails = (blueprint: EntityBlueprint) => {
+    const entity = blueprint.entity;
+    const publisherPrefix = getPublisherPrefix(entity.SchemaName || '');
+    const complexity = getEntityComplexity(blueprint);
+    const fieldCount = entity.Attributes?.length ?? 0;
+    const pluginCount = blueprint.plugins.length;
+    const flowCount = blueprint.flows.length;
+    const businessRuleCount = blueprint.businessRules.length;
+    const classicWfCount = classicWorkflowCountByEntity.get(entity.LogicalName) ?? 0;
+    const bpfCount = bpfCountByEntity.get(entity.LogicalName) ?? 0;
+    const complexityTooltip =
+      `Complexity = attributes (${fieldCount}) + plugins (${pluginCount}) + flows (${flowCount}) + ` +
+      `business rules (${businessRuleCount}) + classic workflows (${classicWfCount}) + BPFs (${bpfCount})`;
+
     return (
       <div className={styles.expandedDetails}>
+        <div className={styles.detailsGrid} style={{ marginBottom: tokens.spacingVerticalM }}>
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Complexity</Text>
+            <div>
+              <Tooltip content={complexityTooltip} relationship="description">
+                <Badge
+                  appearance="tint"
+                  shape="rounded"
+                  size="medium"
+                  color={complexity === 'High' ? 'danger' : complexity === 'Medium' ? 'warning' : 'success'}
+                >
+                  {complexity}
+                </Badge>
+              </Tooltip>
+            </div>
+          </div>
+          {publisherPrefix && (
+            <div className={styles.detailItem}>
+              <Text className={styles.detailLabel}>Publisher Prefix</Text>
+              <Text className={styles.detailValue} style={{ fontFamily: 'Consolas, Monaco, monospace' }}>
+                {publisherPrefix}_
+              </Text>
+            </div>
+          )}
+          <div className={styles.detailItem}>
+            <Text className={styles.detailLabel}>Source</Text>
+            <div style={{ display: 'flex', gap: tokens.spacingHorizontalXS, flexWrap: 'wrap' }}>
+              {entity.IsCustomEntity && (
+                <Badge appearance="filled" shape="rounded" color="brand">Custom</Badge>
+              )}
+              {entity.IsManaged && (
+                <Badge appearance="filled" shape="rounded" color="warning">Managed</Badge>
+              )}
+              {!entity.IsCustomEntity && !entity.IsManaged && (
+                <Badge appearance="outline" shape="rounded" color="subtle">Standard</Badge>
+              )}
+            </div>
+          </div>
+        </div>
         <SchemaView blueprint={blueprint} classicWorkflows={classicWorkflows} entitiesInScope={entitiesInScope} />
       </div>
     );
@@ -424,8 +476,6 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
             const description = filterDescription(entity.Description?.UserLocalizedLabel?.Label);
             const attributeCount = entity.Attributes?.length || 0;
             const entityFlagCounts = getEntityFlagCounts(blueprint);
-
-            const complexity = getEntityComplexity(blueprint);
             const publisherPrefix = getPublisherPrefix(entity.SchemaName || '');
 
             return (
@@ -469,26 +519,20 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                     <Text className={styles.attributeCount}>
                       {attributeCount} attr{attributeCount !== 1 ? 's' : ''}
                     </Text>
-                    <Tooltip content={`${complexity} complexity entity`} relationship="label">
-                      <Badge
-                        appearance="tint"
-                        shape="rounded"
-                        size="small"
-                        color={complexity === 'High' ? 'danger' : complexity === 'Medium' ? 'warning' : 'success'}
-                      >
-                        {complexity}
-                      </Badge>
-                    </Tooltip>
                     {publisherPrefix && (
-                      <Text className={styles.statBadge} style={{ fontFamily: 'Consolas, Monaco, monospace' }}>
+                      <Badge appearance="outline" shape="rounded" size="small" color="subtle">
                         {publisherPrefix}_
-                      </Text>
+                      </Badge>
                     )}
                     {entity.IsCustomEntity && (
-                      <Text className={styles.statBadge}>Custom</Text>
+                      <Badge appearance="tint" shape="rounded" size="small" color="brand">
+                        Custom
+                      </Badge>
                     )}
                     {entity.IsManaged && (
-                      <Text className={styles.statBadge}>Managed</Text>
+                      <Badge appearance="tint" shape="rounded" size="small" color="warning">
+                        Managed
+                      </Badge>
                     )}
                   </div>
                 </div>

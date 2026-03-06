@@ -14,8 +14,20 @@ import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-ico
 import type { PluginStep } from '../core';
 import { TruncatedText } from './TruncatedText';
 
-const STAGE_VALUES = ['Pre-Validation', 'Pre-Operation', 'Post-Operation', 'Asynchronous'];
+// These must exactly match PluginDiscovery.getStageName() output (no hyphens)
+const STAGE_VALUES = ['PreValidation', 'PreOperation', 'PostOperation', 'Asynchronous'];
 const STATE_VALUES = ['Enabled', 'Disabled'];
+
+/** Convert internal stageName to a human-readable display label */
+const formatStageLabel = (stageName: string): string => {
+  switch (stageName) {
+    case 'PreValidation': return 'Pre-Validation';
+    case 'PreOperation': return 'Pre-Operation';
+    case 'PostOperation': return 'Post-Operation';
+    case 'Asynchronous': return 'Async';
+    default: return stageName;
+  }
+};
 
 const useStyles = makeStyles({
   container: {
@@ -359,7 +371,7 @@ export function PluginsList({
               disabled={stageCounts[stage] === 0}
               onClick={() => toggleStageFilter(stage)}
             >
-              {stage}
+              {formatStageLabel(stage)}
             </ToggleButton>
           ))}
           {activeStageFilters.size > 0 && (

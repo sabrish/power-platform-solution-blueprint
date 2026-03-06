@@ -473,9 +473,17 @@ export function FlowsList({
                   <TruncatedText text={flow.definition.triggerEntity || flow.entity || ''} />
                 </Text>
               )}
-              <Badge appearance="tint" shape="rounded" color="brand" size="small">
-                {flow.definition.triggerType}
-              </Badge>
+              <div className={styles.badgeGroup}>
+                <Badge appearance="tint" shape="rounded" color="brand" size="small">
+                  {flow.definition.triggerType}
+                </Badge>
+                {flow.definition.triggerEvent !== 'Unknown' &&
+                  flow.definition.triggerEvent !== flow.definition.triggerType && (
+                  <Badge appearance="outline" shape="rounded" size="small">
+                    {flow.definition.triggerEvent}
+                  </Badge>
+                )}
+              </div>
               <Badge {...stateBadgeProps}>{flow.state}</Badge>
               <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                 {formatDate(flow.modifiedOn)}

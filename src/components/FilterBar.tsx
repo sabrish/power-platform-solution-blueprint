@@ -27,7 +27,7 @@ const useStyles = makeStyles({
   },
   row2: {
     display: 'flex',
-    gap: tokens.spacingHorizontalM,
+    gap: tokens.spacingHorizontalXL,
     flexWrap: 'wrap',
     alignItems: 'center',
   },
