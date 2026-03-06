@@ -23,9 +23,9 @@ export class BusinessRuleParser {
         if (result.conditions.length > 0 || result.actions.length > 0) {
           return result;
         }
-        // If JSON parsed but found nothing, still return it so the parse attempt
-        // is recorded — only fall through to XAML if parse itself threw.
-        return result;
+        // clientdata parsed but found no conditions or actions — it is likely
+        // visual designer metadata (positions, colours) rather than rule logic.
+        // Fall through to the XAML parser which holds the actual rule definition.
       } catch {
         // Fall through to XAML
       }
