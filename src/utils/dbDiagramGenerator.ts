@@ -24,15 +24,18 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
 
   for (const entityBlueprint of result.entities) {
     const tableName = entityBlueprint.entity.LogicalName.toLowerCase();
-    if (!isSystemEntity(tableName)) {
+    const attrs = entityBlueprint.entity.Attributes || [];
+    // Only include entities that have at least one attribute; dbdiagram.io
+    // requires every Table block to have at least one column definition.
+    if (!isSystemEntity(tableName) && attrs.length > 0) {
       exportedEntities.add(tableName);
 
       // Build attribute set for this entity
-      const attributes = new Set<string>();
-      for (const attr of entityBlueprint.entity.Attributes || []) {
-        attributes.add(attr.LogicalName.toLowerCase());
+      const attrSet = new Set<string>();
+      for (const attr of attrs) {
+        attrSet.add(attr.LogicalName.toLowerCase());
       }
-      entityAttributes.set(tableName, attributes);
+      entityAttributes.set(tableName, attrSet);
     }
   }
 
@@ -41,8 +44,9 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
     const entity = entityBlueprint.entity;
     const tableName = entity.LogicalName;
 
-    // Skip system entities (systemuser, team, businessunit, etc.)
-    if (isSystemEntity(tableName)) {
+    // Skip system entities and entities with no attributes (would produce empty
+    // Table blocks which dbdiagram.io rejects with "must have at least one column")
+    if (!exportedEntities.has(tableName.toLowerCase())) {
       continue;
     }
 
