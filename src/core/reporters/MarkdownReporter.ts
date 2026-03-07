@@ -115,6 +115,14 @@ export class MarkdownReporter {
     files.set('analysis/performance-risks.md', this.generatePerformanceRisks(result));
     files.set('analysis/migration-recommendations.md', this.generateMigrationRecommendations(result));
 
+    // Generate ERD SVG (grid layout, no external dependencies)
+    if (result.erd) {
+      const erdSvg = this.generateERDSvg(result.erd);
+      if (erdSvg) {
+        files.set('erd/erd.svg', erdSvg);
+      }
+    }
+
     // Calculate total size
     const totalSize = Array.from(files.values()).reduce(
       (sum, content) => sum + new TextEncoder().encode(content).length,
@@ -194,6 +202,19 @@ export class MarkdownReporter {
   private generateERDSection(erd: ERDDefinition): string {
     const sections: string[] = [];
 
+    // SVG image reference (erd/erd.svg is generated alongside README.md)
+    if (erd.graphData) {
+      const connectedIds = new Set<string>();
+      erd.graphData.edges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+      const hasConnectedNodes = erd.graphData.nodes.some(n => connectedIds.has(n.id));
+      if (hasConnectedNodes) {
+        sections.push('![Entity Relationship Diagram](erd/erd.svg)');
+        sections.push('');
+        sections.push(`> ${erd.totalEntities} entities · ${erd.graphData.edges.length} relationships`);
+        sections.push('');
+      }
+    }
+
     // Publisher legend
     if (erd.legend.length > 0) {
       sections.push(MarkdownFormatter.formatHeading('Publisher Legend', 3));
@@ -233,6 +254,83 @@ export class MarkdownReporter {
     }
 
     return sections.join('\n');
+  }
+
+  /**
+   * Generate a static SVG of the ERD using a grid layout.
+   * No external layout engine — nodes are sorted by degree and placed in a grid.
+   */
+  private generateERDSvg(erd: ERDDefinition): string {
+    const graphData = erd.graphData;
+    if (!graphData || graphData.nodes.length === 0) return '';
+
+    // Only include nodes that participate in at least one relationship
+    const connectedIds = new Set<string>();
+    graphData.edges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+    const nodes = graphData.nodes.filter(n => connectedIds.has(n.id));
+    if (nodes.length === 0) return '';
+
+    // Sort by degree so highly-connected nodes appear top-left
+    const degree = new Map<string, number>();
+    nodes.forEach(n => degree.set(n.id, 0));
+    graphData.edges.forEach(e => {
+      degree.set(e.source, (degree.get(e.source) ?? 0) + 1);
+      degree.set(e.target, (degree.get(e.target) ?? 0) + 1);
+    });
+    const sorted = [...nodes].sort((a, b) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0));
+
+    // Grid layout
+    const nodeW = 140, nodeH = 42, hGap = 80, vGap = 60, pad = 30;
+    const cellW = nodeW + hGap;
+    const cellH = nodeH + vGap;
+    const cols = Math.ceil(Math.sqrt(sorted.length));
+    const rows = Math.ceil(sorted.length / cols);
+    const svgW = cols * cellW + pad * 2;
+    const svgH = rows * cellH + pad * 2;
+
+    const positions = new Map<string, { x: number; y: number }>();
+    sorted.forEach((n, i) => {
+      positions.set(n.id, {
+        x: pad + (i % cols) * cellW + cellW / 2,
+        y: pad + Math.floor(i / cols) * cellH + cellH / 2,
+      });
+    });
+
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Edges first (nodes render on top)
+    const edgeParts: string[] = [];
+    const seen = new Set<string>();
+    for (const e of graphData.edges) {
+      const key = [e.source, e.target].sort().join(':') + ':' + e.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const s = positions.get(e.source);
+      const t = positions.get(e.target);
+      if (!s || !t) continue;
+      const dash = e.type === 'N-N' ? ' stroke-dasharray="6,3"' : '';
+      edgeParts.push(`<line x1="${s.x.toFixed(1)}" y1="${s.y.toFixed(1)}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"${dash}/>`);
+    }
+
+    // Nodes
+    const nodeParts: string[] = [];
+    for (const n of sorted) {
+      const pos = positions.get(n.id)!;
+      nodeParts.push(
+        `<rect x="${(pos.x - nodeW / 2).toFixed(1)}" y="${(pos.y - nodeH / 2).toFixed(1)}" width="${nodeW}" height="${nodeH}" rx="5" fill="${esc(n.color)}" stroke="${esc(n.strokeColor)}" stroke-width="1.5"/>`,
+        `<text x="${pos.x.toFixed(1)}" y="${(pos.y + 4).toFixed(1)}" text-anchor="middle" fill="${esc(n.textColor)}" font-size="10" font-weight="bold" font-family="system-ui,Arial,sans-serif">${esc(n.label)}</text>`
+      );
+    }
+
+    return [
+      `<?xml version="1.0" encoding="UTF-8"?>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`,
+      `<defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#aaa"/></marker></defs>`,
+      `<rect width="${svgW}" height="${svgH}" fill="#ffffff"/>`,
+      ...edgeParts,
+      ...nodeParts,
+      `</svg>`,
+    ].join('\n');
   }
 
   /**

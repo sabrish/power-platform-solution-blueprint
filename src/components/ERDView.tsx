@@ -3,9 +3,7 @@ import cytoscape from 'cytoscape';
 import type { Core, NodeSingular } from 'cytoscape';
 import {
   Text,
-  Title3,
   Card,
-  Badge,
   Button,
   ToggleButton,
   Input,
@@ -130,26 +128,6 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorBrandBackground2,
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     fontSize: tokens.fontSizeBase200,
-  },
-  legendSection: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  legendCard: {
-    padding: tokens.spacingVerticalM,
-  },
-  legendHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalS,
-  },
-  legendColor: {
-    width: '14px',
-    height: '14px',
-    borderRadius: tokens.borderRadiusSmall,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    flexShrink: 0,
   },
 });
 
@@ -707,15 +685,9 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             {hoveredEdge.type === '1-N' ? '1:N relationship' : 'N:N relationship'}
           </Text>
           {hoveredEdge.type === '1-N' && (
-            <>
-              <Text block style={{ fontSize: tokens.fontSizeBase200 }}>
-                <span style={{ color: tokens.colorNeutralForeground3 }}>Parent → Child: </span>
-                {hoveredEdge.target} → {hoveredEdge.source}
-              </Text>
-              <Text block style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, marginTop: '2px' }}>
-                {hoveredEdge.referencedAttribute} → {hoveredEdge.label}
-              </Text>
-            </>
+            <Text block style={{ fontSize: tokens.fontSizeBase200, wordBreak: 'break-all' }}>
+              {hoveredEdge.source}.{hoveredEdge.referencedAttribute} → {hoveredEdge.target}.{hoveredEdge.label}
+            </Text>
           )}
           {hoveredEdge.type === 'N-N' && hoveredEdge.intersectEntityName && (
             <Text block style={{ fontSize: tokens.fontSizeBase200 }}>
@@ -728,7 +700,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
       {/* ── Header ── */}
       <div>
-        <Title3>Entity Relationship Diagram</Title3>
+        <Text size={500} weight="semibold" block>Entity Relationship Diagram</Text>
         <Text style={{ color: tokens.colorNeutralForeground3 }}>
           {filteredNodes.length} entities · {graphData?.edges.length ?? 0} relationships in scope
           {isolatedEntityCount > 0 && ` · ${isolatedEntityCount} entity${isolatedEntityCount > 1 ? 'ies' : ''} with no relationships hidden`}
@@ -737,7 +709,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
       {hasGraph && (
         <>
-          {/* ── Toolbar row 1: Layout | Zoom | Search + Isolate | Exports ── */}
+          {/* ── Toolbar row 1: Layout | Zoom | Search + Isolate ── */}
           <div className={styles.toolbar}>
             {/* Layout */}
             <Text className={styles.toolbarLabel}>Layout:</Text>
@@ -807,30 +779,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
                 Isolate
               </Button>
             </Tooltip>
-
-            <div className={styles.divider} />
-
-            {/* Exports */}
-            <Tooltip content="Download PNG" relationship="label">
-              <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadPNG}>
-                PNG
-              </Button>
-            </Tooltip>
-            <Tooltip content="Download SVG" relationship="label">
-              <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadSVG}>
-                SVG
-              </Button>
-            </Tooltip>
-            <Tooltip content="Copy Mermaid code (for mermaid.live etc.)" relationship="label">
-              <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyMermaid}>
-                Mermaid
-              </Button>
-            </Tooltip>
-            <Tooltip content="Copy dbdiagram.io code" relationship="label">
-              <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
-                dbdiagram.io
-              </Button>
-            </Tooltip>
           </div>
 
           {/* ── Toolbar row 2: Publisher filter | Labels | Clear all ── */}
@@ -880,6 +828,34 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               </Button>
             )}
           </div>
+
+          {/* ── Toolbar row 3: Downloads | Copy ── */}
+          <div className={styles.toolbar}>
+            <Text className={styles.toolbarLabel}>Export:</Text>
+            <Tooltip content="Download PNG" relationship="label">
+              <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadPNG}>
+                PNG
+              </Button>
+            </Tooltip>
+            <Tooltip content="Download SVG" relationship="label">
+              <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadSVG}>
+                SVG
+              </Button>
+            </Tooltip>
+
+            <div className={styles.divider} />
+
+            <Tooltip content="Copy Mermaid code (for mermaid.live etc.)" relationship="label">
+              <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyMermaid}>
+                Mermaid
+              </Button>
+            </Tooltip>
+            <Tooltip content="Copy dbdiagram.io code" relationship="label">
+              <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
+                dbdiagram.io
+              </Button>
+            </Tooltip>
+          </div>
         </>
       )}
 
@@ -897,6 +873,13 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               </Button>
             </div>
           )}
+
+          {/* Usage hint — top of card */}
+          <div style={{ padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`, borderBottom: `1px solid ${tokens.colorNeutralStroke1}` }}>
+            <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+              Click node to select · Hover edge for details · Scroll to zoom · Drag to pan · Solid = 1:N · Dashed = N:N
+            </Text>
+          </div>
 
           {/* Canvas */}
           <div style={{ position: 'relative' }}>
@@ -937,12 +920,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             )}
           </div>
 
-          {/* Usage hint */}
-          <div style={{ padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`, borderTop: `1px solid ${tokens.colorNeutralStroke1}` }}>
-            <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
-              Click node to select · Hover edge for details · Scroll to zoom · Drag to pan · Solid = 1:N · Dashed = N:N
-            </Text>
-          </div>
         </Card>
       ) : (
         <Card>
@@ -952,31 +929,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         </Card>
       )}
 
-      {/* ── Publisher Legend ── */}
-      <div>
-        <Title3 style={{ marginBottom: tokens.spacingVerticalM }}>Publisher Color Legend</Title3>
-        <div className={styles.legendSection}>
-          {erd.legend.map((pub) => {
-            const isHidden = hiddenPublishers.has(pub.publisherPrefix);
-            return (
-              <Card
-                key={pub.publisherPrefix}
-                className={styles.legendCard}
-                style={{ opacity: isHidden ? 0.4 : 1, transition: 'opacity 0.15s' }}
-              >
-                <div className={styles.legendHeader}>
-                  <div className={styles.legendColor} style={{ backgroundColor: pub.color }} />
-                  <Text weight="semibold">{pub.publisherName}</Text>
-                  <Badge appearance="outline" shape="rounded">{pub.entityCount}</Badge>
-                  {isHidden && (
-                    <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>hidden</Text>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
