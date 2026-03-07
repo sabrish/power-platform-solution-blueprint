@@ -12,7 +12,7 @@ export class BusinessRuleParser {
   /**
    * Parse business rule — tries clientdata (JSON) first, then XAML
    */
-  static parse(xaml: string | null, clientdata: string | null = null): BusinessRuleDefinition {
+  static parse(xaml: string | null, clientdata: string | null = null, ruleName?: string): BusinessRuleDefinition {
     // Try JSON (clientdata) first — modern business rules store their definition here
     if (clientdata && clientdata.trim()) {
       try {
@@ -25,6 +25,12 @@ export class BusinessRuleParser {
         }
         // clientdata parsed but found no conditions or actions — it is likely
         // visual designer metadata (positions, colours) rather than rule logic.
+        // Log so the developer can inspect the actual structure.
+        console.debug(
+          `[BusinessRuleParser] "${ruleName ?? 'unknown'}" clientdata parsed but no conditions/actions found.`,
+          '\nTop-level keys:', Object.keys(json).join(', '),
+          '\nFirst 800 chars:', clientdata.slice(0, 800)
+        );
         // Fall through to the XAML parser which holds the actual rule definition.
       } catch {
         // Fall through to XAML
@@ -53,6 +59,14 @@ export class BusinessRuleParser {
       const actionCount = actions.length > 0
         ? actions.length
         : this.countXamlActions(xaml);
+
+      // Log when XAML parsing also finds nothing — helps diagnose format
+      if (conditionCount === 0 && actionCount === 0) {
+        console.debug(
+          `[BusinessRuleParser] "${ruleName ?? 'unknown'}" XAML parsing found 0 conditions and 0 actions.`,
+          '\nXAML first 800 chars:', xaml.slice(0, 800)
+        );
+      }
 
       // Synthesize placeholder conditions/actions when counts > 0 but parsing failed
       const finalConditions: Condition[] = conditions.length > 0
