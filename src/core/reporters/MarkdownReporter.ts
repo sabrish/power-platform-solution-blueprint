@@ -206,11 +206,12 @@ export class MarkdownReporter {
     if (erd.graphData) {
       const connectedIds = new Set<string>();
       erd.graphData.edges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
-      const hasConnectedNodes = erd.graphData.nodes.some(n => connectedIds.has(n.id));
+      const connectedNodeCount = erd.graphData.nodes.filter(n => connectedIds.has(n.id)).length;
+      const hasConnectedNodes = connectedNodeCount > 0;
       if (hasConnectedNodes) {
         sections.push('![Entity Relationship Diagram](erd/erd.svg)');
         sections.push('');
-        sections.push(`> ${erd.totalEntities} entities · ${erd.graphData.edges.length} relationships`);
+        sections.push(`> ${connectedNodeCount} entities · ${erd.graphData.edges.length} relationships`);
         sections.push('');
       }
     }
