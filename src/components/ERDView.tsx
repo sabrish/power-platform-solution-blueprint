@@ -512,8 +512,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
       cy.destroy();
       cyRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasGraph]);
+  }, [graphData, filteredNodes]);
 
   // ── Run layout ───────────────────────────────────────────────────────────
   const runLayout = useCallback((name: LayoutName) => {
@@ -930,7 +929,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
                   size="small"
                   appearance="subtle"
                   icon={<Dismiss24Regular />}
-                  onClick={() => { setSelectedNode(null); clearIsolationOn(cyRef.current!); setIsIsolated(false); }}
+                  onClick={() => { setSelectedNode(null); if (cyRef.current) clearIsolationOn(cyRef.current); setIsIsolated(false); }}
                 />
                 <Text block className={styles.infoPanelTitle}>{selectedNode.label}</Text>
                 <div className={styles.infoPanelRow}>
