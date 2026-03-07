@@ -529,7 +529,8 @@ export class BusinessRuleParser {
       setfieldvalue: 'SetValue',
       setfieldvisibility: 'ShowField',  // resolved below via value
       setfieldlock: 'LockField',        // resolved below via value
-      setfieldrequeired: 'SetRequired',
+      setfieldrequired: 'SetRequired',
+      setfieldrequeired: 'SetRequired', // misspelled variant kept for backward compatibility
       // Legacy XAML names
       show: 'ShowField',
       hide: 'HideField',

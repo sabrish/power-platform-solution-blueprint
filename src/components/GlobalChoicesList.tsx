@@ -292,7 +292,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
         itemLabel="global choices"
       >
         <Checkbox
-          label="Include managed only"
+          label="Show managed only"
           checked={showManagedOnly}
           onChange={(_, data) => setShowManagedOnly(data.checked === true)}
         />

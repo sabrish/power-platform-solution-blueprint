@@ -115,7 +115,7 @@ export class MarkdownReporter {
     files.set('analysis/performance-risks.md', this.generatePerformanceRisks(result));
     files.set('analysis/migration-recommendations.md', this.generateMigrationRecommendations(result));
 
-    // Generate ERD SVG (grid layout, no external dependencies)
+    // Generate ERD SVG (force-directed layout, no external dependencies)
     if (result.erd) {
       const erdSvg = this.generateERDSvg(result.erd);
       if (erdSvg) {
@@ -290,13 +290,16 @@ export class MarkdownReporter {
       });
     });
 
-    // Deduplicate edges for attraction force
+    // Deduplicate edges for attraction force only — prevents over-counting parallel
+    // relationships in the force simulation. SVG rendering uses the full edge list.
     const uniqueEdges: Array<{ source: string; target: string }> = [];
     const edgeSeen = new Set<string>();
     for (const e of graphData.edges) {
       const key = [e.source, e.target].sort().join(':');
       if (!edgeSeen.has(key)) { edgeSeen.add(key); uniqueEdges.push(e); }
     }
+    // All edges whose endpoints were placed (used for rendering)
+    const renderEdges = graphData.edges.filter(e => positions.has(e.source) && positions.has(e.target));
 
     // Run iterations with simulated annealing cooling
     const iterations = 120;
@@ -358,9 +361,9 @@ export class MarkdownReporter {
     const nodeW = 140, nodeH = 42;
     const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-    // Edges first (nodes render on top)
+    // Edges first (nodes render on top) — use full renderEdges to preserve parallel relationships
     const edgeParts: string[] = [];
-    for (const e of uniqueEdges) {
+    for (const e of renderEdges) {
       const s = positions.get(e.source);
       const t = positions.get(e.target);
       if (!s || !t) continue;
