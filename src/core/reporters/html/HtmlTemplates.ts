@@ -2,6 +2,8 @@
  * HTML Templates for Blueprint Report
  * Generates each section of the HTML report with embedded CSS and JavaScript
  */
+// Inline Cytoscape at build time — avoids CDN tracking-prevention blocks
+import cytoscapeSource from 'virtual:cytoscape-raw';
 import type {
   BlueprintResult,
   BlueprintMetadata,
@@ -37,7 +39,7 @@ export class HtmlTemplates {
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
   <title>${this.escapeHtml(title)}</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
+  <script>${cytoscapeSource}</script>
   <style>
 ${this.embeddedCSS()}
   </style>
@@ -139,7 +141,8 @@ ${this.embeddedCSS()}
       // Only use Cytoscape block when there are connected entities to display
       if (filteredGraphData.nodes.length > 0) {
       const isolatedCount = graphData.nodes.length - filteredGraphData.nodes.length;
-      const graphJson = JSON.stringify(filteredGraphData);
+      // Escape < to prevent </script> from prematurely closing the inline script tag
+      const graphJson = JSON.stringify(filteredGraphData).replace(/</g, '\\u003c');
 
       return `<section id="erd" class="content-section">
   <h2>Entity Relationship Diagram</h2>
@@ -149,7 +152,6 @@ ${this.embeddedCSS()}
     <span style="font-size:12px;color:#666;">Layout:</span>
     <button class="btn-sm" onclick="erdLayout('cose')">Smart</button>
     <button class="btn-sm" onclick="erdLayout('breadthfirst')">Hierarchical</button>
-    <button class="btn-sm" onclick="erdLayout('grid')">Grid</button>
     <button class="btn-sm" onclick="erdFit()">Fit</button>
     <span style="width:1px;height:20px;background:#ddd;margin:0 4px;align-self:center;display:inline-block;"></span>
     <input type="text" id="erdSearch" placeholder="Search entities…" oninput="erdSearch(this.value)"
@@ -2531,8 +2533,7 @@ ${this.embeddedJavaScript()}
       if (!_cy) return;
       var opts = {
         cose: { name: 'cose', animate: false, nodeRepulsion: function() { return 8000000; }, idealEdgeLength: function() { return 180; }, nodeOverlap: 60, gravity: 0.15, numIter: 1000 },
-        breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 60, spacingFactor: 2.0 },
-        grid: { name: 'grid', animate: false, padding: 60, spacingFactor: 2.0, avoidOverlap: true }
+        breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 60, spacingFactor: 2.0 }
       };
       var layout = _cy.layout(opts[name] || opts.cose);
       layout.on('layoutstop', function() { _cy.fit(undefined, 40); });
