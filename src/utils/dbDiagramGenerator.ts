@@ -17,18 +17,17 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
   // Track processed relationships to avoid duplicates
   const processedRelationships = new Set<string>();
 
-  // Build set of entities actually in the export (excluding system entities)
+  // ── Pass 1: build exportedEntities + entityAttributes ───────────────────
+  // All non-system entities go into exportedEntities so their relationships
+  // are always emitted.  entityAttributes is only populated for entities that
+  // have real attribute data; absence means "not yet discovered".
   const exportedEntities = new Set<string>();
-  // Build map of entity -> set of attribute names (to validate relationships)
-  // Only populated for entities that have attribute data; absence means unknown.
   const entityAttributes = new Map<string, Set<string>>();
 
   for (const entityBlueprint of result.entities) {
     const tableName = entityBlueprint.entity.LogicalName.toLowerCase();
     if (!isSystemEntity(tableName)) {
       exportedEntities.add(tableName);
-
-      // Build attribute set for this entity (only when attributes are available)
       const attrs = entityBlueprint.entity.Attributes || [];
       if (attrs.length > 0) {
         const attrSet = new Set<string>();
@@ -40,46 +39,74 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
     }
   }
 
-  // Process each entity (skip system entities)
+  // ── Pass 2: derive columns from relationship data for attribute-less entities ─
+  // For every entity that has no discovered attributes, we collect the column
+  // names that ManyToOne relationships reference on it.  This ensures the
+  // Table block contains exactly the columns that appear in Ref lines, so
+  // dbdiagram.io never sees "Column X does not exist in Table Y".
+  const relationshipColumns = new Map<string, Set<string>>();
+
+  for (const entityBlueprint of result.entities) {
+    for (const rel of entityBlueprint.entity.ManyToOneRelationships || []) {
+      if (isSystemRelationship(rel.SchemaName, rel.ReferencingAttribute, rel.ReferencedEntity, rel.ReferencingEntity)) {
+        continue;
+      }
+
+      const referencingName = rel.ReferencingEntity.toLowerCase();
+      const referencedName  = rel.ReferencedEntity.toLowerCase();
+
+      if (!exportedEntities.has(referencingName) || !exportedEntities.has(referencedName)) {
+        continue;
+      }
+
+      // Only collect relationship-derived columns for entities that have no
+      // real attribute data — entities with attributes use their own column list.
+      if (!entityAttributes.has(referencingName)) {
+        if (!relationshipColumns.has(referencingName)) {
+          relationshipColumns.set(referencingName, new Set());
+        }
+        relationshipColumns.get(referencingName)!.add(rel.ReferencingAttribute.toLowerCase());
+      }
+
+      if (!entityAttributes.has(referencedName)) {
+        if (!relationshipColumns.has(referencedName)) {
+          relationshipColumns.set(referencedName, new Set());
+        }
+        relationshipColumns.get(referencedName)!.add(rel.ReferencedAttribute.toLowerCase());
+      }
+    }
+  }
+
+  // ── Pass 3: generate Table blocks ───────────────────────────────────────
   for (const entityBlueprint of result.entities) {
     const entity = entityBlueprint.entity;
     const tableName = entity.LogicalName;
 
-    // Skip system entities
     if (isSystemEntity(tableName.toLowerCase())) {
       continue;
     }
 
     lines.push(`Table ${tableName} {`);
 
-    // Add table note with display name (escape single quotes)
     const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || tableName;
     lines.push(`  Note: '${displayName.replace(/'/g, "\\'")}'`);
     lines.push('');
 
-    // Add attributes — dbdiagram.io requires at least one column per Table block.
-    // If attribute data was not discovered, emit a placeholder column so the table
-    // remains valid and its relationships are still visible in the diagram.
     const attributes = entity.Attributes || [];
-    if (attributes.length === 0) {
-      lines.push(`  id uniqueidentifier [note: 'Attribute data not available']`);
-    } else {
+
+    if (attributes.length > 0) {
+      // Full attribute data available — emit all columns.
       for (const attr of attributes) {
         const columnName = attr.LogicalName;
         const dataType = mapAttributeTypeToDbType(attr.AttributeType);
         const constraints: string[] = [];
 
-        // Primary key
         if (attr.IsPrimaryId) {
           constraints.push('pk');
         }
-
-        // Required field
         if (attr.RequiredLevel?.Value === 'ApplicationRequired' || attr.RequiredLevel?.Value === 'SystemRequired') {
           constraints.push('not null');
         }
-
-        // Add note with display name
         const attrDisplayName = attr.DisplayName?.UserLocalizedLabel?.Label;
         if (attrDisplayName && attrDisplayName !== columnName) {
           constraints.push(`note: '${attrDisplayName.replace(/'/g, "\\'")}'`);
@@ -88,84 +115,78 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
         const constraintStr = constraints.length > 0 ? ` [${constraints.join(', ')}]` : '';
         lines.push(`  ${columnName} ${dataType}${constraintStr}`);
       }
+    } else {
+      const relCols = relationshipColumns.get(tableName.toLowerCase());
+      if (relCols && relCols.size > 0) {
+        // No attribute data but relationship columns are known — emit those so
+        // Ref lines reference valid columns.
+        for (const col of relCols) {
+          lines.push(`  ${col} uniqueidentifier`);
+        }
+      } else {
+        // No attribute or relationship data at all — safety-net placeholder.
+        lines.push(`  id uniqueidentifier [note: 'Attribute data not available']`);
+      }
     }
 
     lines.push('}');
     lines.push('');
   }
 
-  // Process relationships
+  // ── Pass 4: generate Ref lines ───────────────────────────────────────────
   lines.push('// Relationships');
   lines.push('');
+
+  // Helper: returns the effective column set for an entity (real attributes
+  // take priority; relationship-derived columns used as fallback).
+  const getEntityCols = (name: string): Set<string> | undefined =>
+    entityAttributes.get(name) ?? relationshipColumns.get(name);
 
   for (const entityBlueprint of result.entities) {
     const entity = entityBlueprint.entity;
 
-    // Many-to-One relationships (this entity references another)
-    const manyToOneRels = entity.ManyToOneRelationships || [];
-    for (const rel of manyToOneRels) {
-      // Skip system relationships
-      if (isSystemRelationship(
-        rel.SchemaName,
-        rel.ReferencingAttribute,
-        rel.ReferencedEntity,
-        rel.ReferencingEntity
-      )) {
+    // Many-to-One relationships
+    for (const rel of entity.ManyToOneRelationships || []) {
+      if (isSystemRelationship(rel.SchemaName, rel.ReferencingAttribute, rel.ReferencedEntity, rel.ReferencingEntity)) {
         continue;
       }
-
-      // Skip if either entity is not in the export
       if (!exportedEntities.has(rel.ReferencingEntity.toLowerCase()) ||
           !exportedEntities.has(rel.ReferencedEntity.toLowerCase())) {
         continue;
       }
 
-      // When attribute data is available for an entity, validate the attribute
-      // exists. When no attribute data was discovered, emit the Ref anyway so
-      // the relationship is still visible in the diagram.
-      const referencingAttrs = entityAttributes.get(rel.ReferencingEntity.toLowerCase());
-      const referencedAttrs = entityAttributes.get(rel.ReferencedEntity.toLowerCase());
-      if (referencingAttrs && !referencingAttrs.has(rel.ReferencingAttribute.toLowerCase())) {
+      // Only validate when column data is available; if no data exists for an
+      // entity the relationship is still emitted (better to show than omit).
+      const referencingCols = getEntityCols(rel.ReferencingEntity.toLowerCase());
+      const referencedCols  = getEntityCols(rel.ReferencedEntity.toLowerCase());
+      if (referencingCols && !referencingCols.has(rel.ReferencingAttribute.toLowerCase())) {
         continue;
       }
-      if (referencedAttrs && !referencedAttrs.has(rel.ReferencedAttribute.toLowerCase())) {
+      if (referencedCols && !referencedCols.has(rel.ReferencedAttribute.toLowerCase())) {
         continue;
       }
 
       const relKey = `${rel.ReferencingEntity}.${rel.ReferencingAttribute}->${rel.ReferencedEntity}.${rel.ReferencedAttribute}`;
       if (!processedRelationships.has(relKey)) {
         processedRelationships.add(relKey);
-        // Many-to-one: ReferencingEntity.ReferencingAttribute > ReferencedEntity.ReferencedAttribute
         lines.push(`Ref: ${rel.ReferencingEntity}.${rel.ReferencingAttribute} > ${rel.ReferencedEntity}.${rel.ReferencedAttribute}`);
       }
     }
 
-    // Many-to-Many relationships - documented as comments since they exist via intersection tables
-    const manyToManyRels = entity.ManyToManyRelationships || [];
-    for (const rel of manyToManyRels) {
-      // Skip system relationships
-      if (isSystemRelationship(
-        rel.SchemaName,
-        undefined,
-        rel.Entity1LogicalName,
-        rel.Entity2LogicalName
-      )) {
+    // Many-to-Many relationships — documented as comments
+    for (const rel of entity.ManyToManyRelationships || []) {
+      if (isSystemRelationship(rel.SchemaName, undefined, rel.Entity1LogicalName, rel.Entity2LogicalName)) {
         continue;
       }
-
-      // Skip if either entity is not in the export
       if (!exportedEntities.has(rel.Entity1LogicalName.toLowerCase()) ||
           !exportedEntities.has(rel.Entity2LogicalName.toLowerCase())) {
         continue;
       }
 
-      // Create a relationship key to avoid duplicates (both entities will have this relationship)
       const entities = [rel.Entity1LogicalName, rel.Entity2LogicalName].sort();
       const relKey = `${entities[0]}<>${entities[1]}:${rel.IntersectEntityName}`;
-
       if (!processedRelationships.has(relKey)) {
         processedRelationships.add(relKey);
-        // Document M:N as comment - actual relationship exists via intersection table
         lines.push(`// M:N: ${rel.Entity1LogicalName} <> ${rel.Entity2LogicalName} (via ${rel.IntersectEntityName})`);
       }
     }
