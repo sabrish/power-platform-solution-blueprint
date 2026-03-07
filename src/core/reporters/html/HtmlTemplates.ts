@@ -35,9 +35,28 @@ export class HtmlTemplates {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="Power Platform Solution Blueprint (PPSB)">
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; default-src 'self' 'unsafe-inline' data:">
   <title>${this.escapeHtml(title)}</title>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    // Prevent CDN library storage errors from blocking render in Edge
+    // when opened as a local file (file:// protocol).
+    // Must run BEFORE CDN scripts load so the shim is in place.
+    (function() {
+      try { localStorage.setItem('__test', '1'); localStorage.removeItem('__test'); }
+      catch(e) {
+        var noop = { getItem: function() { return null; }, setItem: function() {}, removeItem: function() {}, clear: function() {}, key: function() { return null; }, length: 0 };
+        try { Object.defineProperty(window, 'localStorage', { value: noop, writable: false }); } catch(_) {}
+        try { Object.defineProperty(window, 'sessionStorage', { value: noop, writable: false }); } catch(_) {}
+      }
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
+  <script>
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
+    }
+  </script>
   <style>
 ${this.embeddedCSS()}
   </style>
@@ -1071,7 +1090,6 @@ ${rows}
       const entityDisplay = rule.entityDisplayName || rule.entity;
       const conditions = rule.definition.conditions?.length || 0;
       const actions = rule.definition.actions?.length || 0;
-
       return `<tr>
   <td>${this.escapeHtml(rule.name)}</td>
   <td>${this.escapeHtml(entityDisplay)}</td>
@@ -1540,30 +1558,7 @@ ${sampleRows}
    * Generate embedded JavaScript
    */
   htmlScripts(): string {
-    // Diagnostic block runs in its own <script> tag so it always executes even
-    // if the main script has a parse error.  Output appears in DevTools console.
-    const diagnostic = `<script>
-(function() {
-  var logs = [];
-  logs.push('Cytoscape: ' + (typeof cytoscape !== 'undefined' ? 'loaded v' + (cytoscape.version || '?') : 'NOT loaded - CDN may be blocked'));
-  logs.push('Mermaid: ' + (typeof mermaid !== 'undefined' ? 'loaded' : 'not loaded'));
-  var erdEl = document.getElementById('erd-data');
-  if (erdEl) {
-    try {
-      var d = JSON.parse(erdEl.textContent);
-      logs.push('ERD data: OK (' + (d.nodes ? d.nodes.length : 0) + ' nodes, ' + (d.edges ? d.edges.length : 0) + ' edges)');
-    } catch (e) {
-      logs.push('ERD data: PARSE ERROR - ' + e.message);
-    }
-  } else {
-    logs.push('ERD data: element not found (Mermaid fallback in use)');
-  }
-  console.log('[Blueprint diagnostic]', logs.join(' | '));
-})();
-</script>`;
-
-    return `${diagnostic}
-<script>
+    return `<script>
 ${this.embeddedJavaScript()}
 </script>`;
   }
@@ -2430,11 +2425,19 @@ ${this.embeddedJavaScript()}
    * Embedded JavaScript for interactivity
    */
   private embeddedJavaScript(): string {
-    return `    // Read ERD graph data from the embedded JSON data-block.
+    return `    // HTML-escape helper — used for all data inserted into tooltip innerHTML.
+    var _esc = function(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+
+    // Read ERD graph data from the embedded JSON data-block.
     // Using <script type="application/json"> avoids all JS-parsing risks from
     // special characters in entity names / labels.
     var _erdDataEl = document.getElementById('erd-data');
     var ERD_GRAPH_DATA = _erdDataEl ? JSON.parse(_erdDataEl.textContent || 'null') : null;
+
+    // Trigger Mermaid rendering manually (startOnLoad: false was set in <head>)
+    if (typeof mermaid !== 'undefined') {
+      mermaid.run();
+    }
 
     // ── Cytoscape ERD interactive graph ─────────────────────────────────────
     var _cy = null;
@@ -2487,9 +2490,9 @@ ${this.embeddedJavaScript()}
         var isolateBtn = document.getElementById('isolateBtn');
         if (isolateBtn) isolateBtn.disabled = false;
         var tip = _getOrCreateTip();
-        var pub = n.data('publisherPrefix') ? '<br><span style="color:#666">Publisher: ' + n.data('publisherPrefix') + '</span>' : '';
+        var pub = n.data('publisherPrefix') ? '<br><span style="color:#666">Publisher: ' + _esc(n.data('publisherPrefix')) + '</span>' : '';
         var cnt = _cy.getElementById(n.data('id')).neighborhood('node').length;
-        tip.innerHTML = '<strong>' + n.data('label') + '</strong><br><span style="color:#888;font-size:11px;">' + n.data('id') + '</span>' + pub + '<br><span style="color:#666">Relationships: ' + cnt + '</span>';
+        tip.innerHTML = '<strong>' + _esc(n.data('label')) + '</strong><br><span style="color:#888;font-size:11px;">' + _esc(n.data('id')) + '</span>' + pub + '<br><span style="color:#666">Relationships: ' + cnt + '</span>';
         tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
         tip.style.top = (evt.originalEvent.clientY + 12) + 'px';
         tip.style.display = 'block';
@@ -2514,13 +2517,13 @@ ${this.embeddedJavaScript()}
         e.addClass('hovered');
         var tip = _getOrCreateTip();
         var type = e.data('type');
-        var content = '<strong style="word-break:break-all">' + e.data('id') + '</strong>';
+        var content = '<strong style="word-break:break-all">' + _esc(e.data('id')) + '</strong>';
         content += '<br><span style="color:#888;font-size:11px;">' + (type === 'N-N' ? 'N:N relationship' : '1:N relationship') + '</span>';
         if (type === '1-N') {
           var refAttr = e.data('referencedAttribute'); var relAttr = e.data('label');
-          content += '<br><span style="color:#555;word-break:break-all">' + e.data('source') + '.' + (refAttr || '') + ' &rarr; ' + e.data('target') + '.' + (relAttr || '') + '</span>';
+          content += '<br><span style="color:#555;word-break:break-all">' + _esc(e.data('source')) + '.' + _esc(refAttr || '') + ' &rarr; ' + _esc(e.data('target')) + '.' + _esc(relAttr || '') + '</span>';
         } else if (type === 'N-N' && e.data('intersectEntityName')) {
-          content += '<br><span style="color:#555">Via: ' + e.data('intersectEntityName') + '</span>';
+          content += '<br><span style="color:#555">Via: ' + _esc(e.data('intersectEntityName')) + '</span>';
         }
         tip.innerHTML = content;
         tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
@@ -2639,7 +2642,7 @@ ${this.embeddedJavaScript()}
         parts.push('<text x="'+(p.x+ox).toFixed(1)+'" y="'+(p.y+oy+4).toFixed(1)+'" text-anchor="middle" fill="'+n.data('textColor')+'" font-size="10" font-weight="bold" font-family="system-ui,sans-serif">'+esc(n.data('label'))+'</text>');
       });
       parts.push('</svg>');
-      var blob = new Blob([parts.join('\n')], { type: 'image/svg+xml' });
+      var blob = new Blob([parts.join('\\n')], { type: 'image/svg+xml' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a'); a.href = url; a.download = 'erd.svg'; a.click();
       URL.revokeObjectURL(url);
