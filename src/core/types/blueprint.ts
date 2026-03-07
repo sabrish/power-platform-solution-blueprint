@@ -512,8 +512,13 @@ export interface ERDEdge {
   id: string;
   source: string;
   target: string;
+  /** For 1-N: the referencing attribute (FK on the child/source side) */
   label: string;
   type: '1-N' | 'N-N';
+  /** For 1-N: the referenced attribute (PK on the parent/target side) */
+  referencedAttribute?: string;
+  /** For N-N: the intersection (junction) table name */
+  intersectEntityName?: string;
 }
 
 /**

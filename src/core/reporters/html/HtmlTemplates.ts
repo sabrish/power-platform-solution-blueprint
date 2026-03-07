@@ -128,10 +128,19 @@ ${this.embeddedCSS()}
     // Use Cytoscape interactive graph when graphData is available
     const graphData = erd.graphData;
     if (graphData && graphData.nodes.length > 0) {
-      const graphJson = JSON.stringify(graphData);
+      // Filter out entities with no relationships (same as in-app behaviour)
+      const connectedIds = new Set<string>();
+      graphData.edges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+      const filteredGraphData = {
+        nodes: graphData.nodes.filter(n => connectedIds.has(n.id)),
+        edges: graphData.edges,
+      };
+      const isolatedCount = graphData.nodes.length - filteredGraphData.nodes.length;
+      const graphJson = JSON.stringify(filteredGraphData);
+
       return `<section id="erd" class="content-section">
   <h2>Entity Relationship Diagram</h2>
-  <p>${erd.totalEntities} entities · ${erd.totalRelationships} relationships · ${graphData.edges.length} shown (excluding system relationships)</p>
+  <p>${filteredGraphData.nodes.length} entities · ${graphData.edges.length} relationships in scope${isolatedCount > 0 ? ` · ${isolatedCount} entities with no relationships not shown` : ''}</p>
   ${legendHtml}
   <div class="erd-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center;">
     <span style="font-size:12px;color:#666;">Layout:</span>
@@ -139,12 +148,21 @@ ${this.embeddedCSS()}
     <button class="btn-sm" onclick="erdLayout('breadthfirst')">Hierarchical</button>
     <button class="btn-sm" onclick="erdLayout('grid')">Grid</button>
     <button class="btn-sm" onclick="erdFit()">Fit</button>
+    <span style="width:1px;height:20px;background:#ddd;margin:0 4px;align-self:center;display:inline-block;"></span>
     <input type="text" id="erdSearch" placeholder="Search entities…" oninput="erdSearch(this.value)"
       style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:160px;">
+    <span style="font-size:12px;color:#666;">Hops:</span>
+    <button class="btn-sm" id="hop1Btn" style="font-weight:bold;" onclick="erdSetHops(1)">1</button>
+    <button class="btn-sm" id="hop2Btn" onclick="erdSetHops(2)">2</button>
+    <button class="btn-sm" id="hop3Btn" onclick="erdSetHops(3)">3</button>
+    <button class="btn-sm" id="isolateBtn" onclick="erdIsolate()" disabled>Isolate</button>
+    <button class="btn-sm" id="clearIsolateBtn" onclick="erdClearIsolate()" style="display:none;">Show all</button>
+    <span style="width:1px;height:20px;background:#ddd;margin:0 4px;align-self:center;display:inline-block;"></span>
     <button class="btn-sm" onclick="downloadErdPng()">⬇ PNG</button>
+    <button class="btn-sm" onclick="downloadErdSvg()">⬇ SVG</button>
   </div>
-  <div id="cy" style="width:100%;height:600px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;"></div>
-  <p style="font-size:11px;color:#888;margin-top:4px;">Click node to inspect · Scroll to zoom · Drag canvas to pan · Solid arrow = 1:N · Dashed = N:N</p>
+  <div id="cy" style="width:100%;height:700px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;position:relative;"></div>
+  <p style="font-size:11px;color:#888;margin-top:4px;">Click node to select · Hover edge for details · Scroll to zoom · Drag to pan · Solid = 1:N · Dashed = N:N</p>
   <script>
     var ERD_GRAPH_DATA = ${graphJson};
   </script>
@@ -2392,47 +2410,32 @@ ${this.embeddedJavaScript()}
 
     // ── Cytoscape ERD interactive graph ─────────────────────────────────────
     var _cy = null;
+    var _selectedNodeId = null;
+    var _isolateHops = 1;
+
     if (typeof cytoscape !== 'undefined' && typeof ERD_GRAPH_DATA !== 'undefined') {
       var stylesheet = [
         { selector: 'node', style: {
-            'background-color': 'data(color)',
-            'border-color': 'data(strokeColor)',
-            'border-width': 2,
-            'color': 'data(textColor)',
-            'label': 'data(label)',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'font-size': '10px',
-            'font-weight': 'bold',
-            'width': '120px',
-            'height': '36px',
-            'shape': 'round-rectangle',
-            'text-wrap': 'ellipsis',
-            'text-max-width': '110px'
+            'background-color': 'data(color)', 'border-color': 'data(strokeColor)', 'border-width': 2,
+            'color': 'data(textColor)', 'label': 'data(label)', 'text-valign': 'center', 'text-halign': 'center',
+            'font-size': '10px', 'font-weight': 'bold', 'width': '120px', 'height': '36px',
+            'shape': 'round-rectangle', 'text-wrap': 'ellipsis', 'text-max-width': '110px'
         }},
         { selector: 'node.highlighted', style: { 'border-width': 3, 'border-color': '#0078d4', 'z-index': 10 } },
         { selector: 'node.faded', style: { 'opacity': 0.15 } },
+        { selector: 'node.isolated-hidden', style: { 'display': 'none' } },
         { selector: 'edge', style: {
-            'width': 1.5,
-            'line-color': '#999',
-            'target-arrow-color': '#999',
-            'target-arrow-shape': 'triangle',
-            'curve-style': 'bezier',
-            'label': 'data(label)',
-            'font-size': '8px',
-            'color': '#666',
-            'text-background-color': '#fff',
-            'text-background-opacity': 0.8,
-            'text-background-padding': '2px',
-            'text-max-width': '80px',
-            'text-wrap': 'ellipsis'
+            'width': 1.5, 'line-color': '#aaa', 'target-arrow-color': '#aaa', 'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier', 'label': '', 'font-size': '8px', 'color': '#666',
+            'text-background-color': '#fff', 'text-background-opacity': 0.85, 'text-background-padding': '2px',
+            'text-max-width': '80px', 'text-wrap': 'ellipsis'
         }},
         { selector: 'edge[type = "N-N"]', style: {
-            'line-style': 'dashed',
-            'source-arrow-shape': 'triangle',
-            'source-arrow-color': '#999'
+            'line-style': 'dashed', 'source-arrow-shape': 'triangle', 'source-arrow-color': '#aaa'
         }},
-        { selector: 'edge.faded', style: { 'opacity': 0.1 } }
+        { selector: 'edge.hovered', style: { 'width': 3, 'line-color': '#0078d4', 'target-arrow-color': '#0078d4', 'source-arrow-color': '#0078d4', 'z-index': 10 } },
+        { selector: 'edge.faded', style: { 'opacity': 0.08 } },
+        { selector: 'edge.isolated-hidden', style: { 'display': 'none' } }
       ];
 
       var elements = {
@@ -2444,51 +2447,95 @@ ${this.embeddedJavaScript()}
         container: document.getElementById('cy'),
         elements: elements,
         style: stylesheet,
-        layout: { name: 'cose', animate: false, nodeRepulsion: function() { return 400000; }, idealEdgeLength: function() { return 100; } },
-        minZoom: 0.05,
-        maxZoom: 4,
-        wheelSensitivity: 0.3
+        layout: { name: 'cose', animate: false, nodeRepulsion: function() { return 8000000; }, idealEdgeLength: function() { return 180; }, nodeOverlap: 60, gravity: 0.15, numIter: 1000 },
+        minZoom: 0.05, maxZoom: 4, wheelSensitivity: 0.3
       });
 
-      // Click node — show tooltip
+      // ── Node click — select
       _cy.on('tap', 'node', function(evt) {
         var n = evt.target;
-        var tip = document.getElementById('erd-tip');
-        if (!tip) {
-          tip = document.createElement('div');
-          tip.id = 'erd-tip';
-          tip.style.cssText = 'position:fixed;background:#fff;border:1px solid #ccc;border-radius:6px;padding:8px 12px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:9999;max-width:220px;pointer-events:none;';
-          document.body.appendChild(tip);
-        }
+        _selectedNodeId = n.data('id');
+        var isolateBtn = document.getElementById('isolateBtn');
+        if (isolateBtn) isolateBtn.disabled = false;
+        var tip = _getOrCreateTip();
         var pub = n.data('publisherPrefix') ? '<br><span style="color:#666">Publisher: ' + n.data('publisherPrefix') + '</span>' : '';
-        var cnt = _cy.getElementById(n.id()).neighborhood('node').length;
+        var cnt = _cy.getElementById(n.data('id')).neighborhood('node').length;
         tip.innerHTML = '<strong>' + n.data('label') + '</strong><br><span style="color:#888;font-size:11px;">' + n.data('id') + '</span>' + pub + '<br><span style="color:#666">Relationships: ' + cnt + '</span>';
         tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
         tip.style.top = (evt.originalEvent.clientY + 12) + 'px';
         tip.style.display = 'block';
       });
 
+      // ── Background click — clear selection
       _cy.on('tap', function(evt) {
         if (evt.target === _cy) {
+          _selectedNodeId = null;
+          var isolateBtn = document.getElementById('isolateBtn');
+          if (isolateBtn) isolateBtn.disabled = true;
           var tip = document.getElementById('erd-tip');
           if (tip) tip.style.display = 'none';
           _cy.nodes().removeClass('highlighted faded');
           _cy.edges().removeClass('faded');
         }
       });
+
+      // ── Edge hover — tooltip
+      _cy.on('mouseover', 'edge', function(evt) {
+        var e = evt.target;
+        e.addClass('hovered');
+        var tip = _getOrCreateTip();
+        var type = e.data('type');
+        var content = '<strong style="word-break:break-all">' + e.data('id') + '</strong>';
+        content += '<br><span style="color:#888;font-size:11px;">' + (type === 'N-N' ? 'N:N relationship' : '1:N relationship') + '</span>';
+        if (type === '1-N') {
+          content += '<br><span style="color:#555">Parent → Child: ' + e.data('target') + ' → ' + e.data('source') + '</span>';
+          var refAttr = e.data('referencedAttribute'); var relAttr = e.data('label');
+          if (refAttr || relAttr) content += '<br><span style="color:#888;font-size:11px;">' + (refAttr || '') + ' → ' + (relAttr || '') + '</span>';
+        } else if (type === 'N-N' && e.data('intersectEntityName')) {
+          content += '<br><span style="color:#555">Via: ' + e.data('intersectEntityName') + '</span>';
+        }
+        tip.innerHTML = content;
+        tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
+        tip.style.top = (evt.originalEvent.clientY + 12) + 'px';
+        tip.style.display = 'block';
+      });
+
+      _cy.on('mousemove', 'edge', function(evt) {
+        var tip = document.getElementById('erd-tip');
+        if (tip) { tip.style.left = (evt.originalEvent.clientX + 12) + 'px'; tip.style.top = (evt.originalEvent.clientY + 12) + 'px'; }
+      });
+
+      _cy.on('mouseout', 'edge', function(evt) {
+        evt.target.removeClass('hovered');
+        var tip = document.getElementById('erd-tip');
+        if (tip) tip.style.display = 'none';
+      });
+    }
+
+    function _getOrCreateTip() {
+      var tip = document.getElementById('erd-tip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'erd-tip';
+        tip.style.cssText = 'position:fixed;background:#fff;border:1px solid #ccc;border-radius:6px;padding:8px 12px;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:9999;max-width:280px;pointer-events:none;line-height:1.5;';
+        document.body.appendChild(tip);
+      }
+      return tip;
     }
 
     function erdLayout(name) {
       if (!_cy) return;
       var opts = {
-        cose: { name: 'cose', animate: false, nodeRepulsion: function() { return 400000; }, idealEdgeLength: function() { return 100; } },
-        breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 30 },
-        grid: { name: 'grid', animate: false, padding: 30 }
+        cose: { name: 'cose', animate: false, nodeRepulsion: function() { return 8000000; }, idealEdgeLength: function() { return 180; }, nodeOverlap: 60, gravity: 0.15, numIter: 1000 },
+        breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 60, spacingFactor: 2.0 },
+        grid: { name: 'grid', animate: false, padding: 60, spacingFactor: 2.0, avoidOverlap: true }
       };
-      _cy.layout(opts[name] || opts.cose).run();
+      var layout = _cy.layout(opts[name] || opts.cose);
+      layout.on('layoutstop', function() { _cy.fit(undefined, 40); });
+      layout.run();
     }
 
-    function erdFit() { if (_cy) _cy.fit(undefined, 30); }
+    function erdFit() { if (_cy) _cy.fit(undefined, 40); }
 
     function erdSearch(q) {
       if (!_cy) return;
@@ -2503,13 +2550,72 @@ ${this.embeddedJavaScript()}
       _cy.edges().addClass('faded');
     }
 
+    function erdSetHops(h) {
+      _isolateHops = h;
+      ['hop1Btn','hop2Btn','hop3Btn'].forEach(function(id, i) {
+        var btn = document.getElementById(id);
+        if (btn) btn.style.fontWeight = (i + 1 === h) ? 'bold' : 'normal';
+      });
+    }
+
+    function erdIsolate() {
+      if (!_cy || !_selectedNodeId) return;
+      var node = _cy.getElementById(_selectedNodeId);
+      var collected = node;
+      var frontier = node;
+      for (var i = 0; i < _isolateHops; i++) {
+        var next = frontier.neighborhood();
+        collected = collected.union(next);
+        frontier = next;
+      }
+      _cy.elements().addClass('isolated-hidden');
+      collected.removeClass('isolated-hidden');
+      _cy.fit(collected, 60);
+      var btn = document.getElementById('clearIsolateBtn');
+      if (btn) btn.style.display = '';
+    }
+
+    function erdClearIsolate() {
+      if (!_cy) return;
+      _cy.elements().removeClass('isolated-hidden');
+      _cy.fit(undefined, 40);
+      var btn = document.getElementById('clearIsolateBtn');
+      if (btn) btn.style.display = 'none';
+    }
+
     function downloadErdPng() {
       if (!_cy) return;
       var png = _cy.png({ full: true, scale: 2, bg: '#fafafa' });
-      var a = document.createElement('a');
-      a.href = png;
-      a.download = 'entity-relationship-diagram.png';
-      a.click();
+      var a = document.createElement('a'); a.href = png; a.download = 'erd.png'; a.click();
+    }
+
+    function downloadErdSvg() {
+      if (!_cy) return;
+      var ext = _cy.elements(':visible').boundingBox({ includeLabels: false });
+      if (!ext || !isFinite(ext.x1)) return;
+      var pad = 50, W = Math.ceil(ext.x2 - ext.x1 + pad * 2), H = Math.ceil(ext.y2 - ext.y1 + pad * 2);
+      var ox = -ext.x1 + pad, oy = -ext.y1 + pad;
+      var esc = function(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      var parts = ['<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">',
+        '<defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#aaa"/></marker></defs>',
+        '<rect width="'+W+'" height="'+H+'" fill="#fafafa"/>'];
+      _cy.edges(':visible').forEach(function(e) {
+        var s = _cy.getElementById(e.data('source')), t = _cy.getElementById(e.data('target'));
+        if (s.empty() || t.empty()) return;
+        var dash = e.data('type') === 'N-N' ? ' stroke-dasharray="6,3"' : '';
+        parts.push('<line x1="'+(s.position().x+ox).toFixed(1)+'" y1="'+(s.position().y+oy).toFixed(1)+'" x2="'+(t.position().x+ox).toFixed(1)+'" y2="'+(t.position().y+oy).toFixed(1)+'" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"'+dash+'/>');
+      });
+      _cy.nodes(':visible').forEach(function(n) {
+        var p = n.position(), w = n.width(), h = n.height();
+        var x = (p.x+ox-w/2).toFixed(1), y = (p.y+oy-h/2).toFixed(1);
+        parts.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="5" fill="'+n.data('color')+'" stroke="'+n.data('strokeColor')+'" stroke-width="2"/>');
+        parts.push('<text x="'+(p.x+ox).toFixed(1)+'" y="'+(p.y+oy+4).toFixed(1)+'" text-anchor="middle" fill="'+n.data('textColor')+'" font-size="10" font-weight="bold" font-family="system-ui,sans-serif">'+esc(n.data('label'))+'</text>');
+      });
+      parts.push('</svg>');
+      var blob = new Blob([parts.join('\n')], { type: 'image/svg+xml' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'erd.svg'; a.click();
+      URL.revokeObjectURL(url);
     }
     // ── End Cytoscape ERD ──────────────────────────────────────────────────
 
