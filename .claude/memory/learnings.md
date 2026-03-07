@@ -6,14 +6,7 @@
 
 ## [2026-02-10] — Never use executeDataverseRequest or old toolboxAPI.dataverse path
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Never call `executeDataverseRequest()` (it does not exist) and never use `window.toolboxAPI.dataverse.queryData()` (old structure). Always use `window.dataverseAPI.queryData()`.
-**Context:** Pre-v0.5.1 code used the old API shape. The official `@pptb/types` package defines `window.dataverseAPI` as the correct global. Using the wrong path results in runtime errors.
-**Example:**
-- Wrong: `window.toolboxAPI.dataverse.queryData(...)`
-- Wrong: `window.executeDataverseRequest(...)`
-- Right: `window.dataverseAPI.queryData(...)`
+Promoted → PATTERN-005 in patterns-dataverse.md ([2026-02-10])
 
 ---
 
@@ -31,51 +24,25 @@
 
 ## [2026-02-10] — Monorepo workspace imports are forbidden
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Never use workspace package references (`@ppsb/core`, `@ppsb/pptb-tool`) in imports. Always use relative paths.
-**Context:** The project was refactored from a monorepo to a flat structure in v0.5.1. Workspace imports no longer resolve.
-**Example:**
-- Wrong: `import { BlueprintGenerator } from '@ppsb/core/generators/BlueprintGenerator'`
-- Right: `import { BlueprintGenerator } from './core/generators/BlueprintGenerator'`
+Captured → decisions.md [2026-02-10] Flat Structure
 
 ---
 
 ## [2026-02-11] — Dynamic imports break PPTB Desktop — use static imports for reporters
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Never use dynamic `import()` for reporters (MarkdownReporter, HtmlReporter, JsonReporter, ZipPackager). Always use static imports.
-**Context:** Dynamic imports create separate Vite chunks. PPTB Desktop serves the tool via `pptb-webview://` protocol, which cannot resolve dynamically chunked paths. This caused all export operations to fail silently in v0.7.1. Fixed in v0.7.2 by converting to static imports.
-**Example:**
-- Wrong: `const { MarkdownReporter } = await import('./reporters/MarkdownReporter');`
-- Right: `import { MarkdownReporter } from './reporters/MarkdownReporter';`
+Promoted → PATTERN-007 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
 ## [2026-02-11] — GUID formatting in OData filters — no quotes, no braces
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** In OData `$filter` strings, GUIDs must be raw (no single quotes, no curly braces). Always strip braces with `.replace(/[{}]/g, '')` before building the filter string.
-**Context:** Custom connector queries were broken in v0.7.1 because the filter was adding braces instead of removing them (`connectorid eq {guid}`). Classic workflow queries also failed. Dataverse returns GUIDs with braces; OData filters need them without.
-**Example:**
-- Wrong: `filter: \`connectorid eq '${id}'\`` (quoted)
-- Wrong: `filter: \`connectorid eq {${id}}\`` (braced)
-- Right: `const clean = id.replace(/[{}]/g, ''); filter: \`connectorid eq ${clean}\``
+Promoted → PATTERN-003 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
 ## [2026-02-11] — Metadata API does not support startswith() or orderBy
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** When querying `EntityDefinitions` (or any metadata endpoint), never use `startswith()`, `orderBy`, or complex OData functions. Fetch all matching records with basic equality filters only, then filter and sort in memory.
-**Context:** Publisher-scope queries were using `startswith(LogicalName, 'prefix_')` which caused "query parameter not supported" errors. Removed in v0.5.3.
-**Example:**
-- Wrong: `filter: "startswith(LogicalName, 'cr123_')"` — API error
-- Wrong: `orderBy: ['LogicalName']` — API error
-- Right: Fetch all with `filter: 'IsCustomEntity eq true'`, then `result.filter(e => e.LogicalName.startsWith('cr123_')).sort(...)`
+Promoted → PATTERN-004 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
@@ -93,25 +60,13 @@
 
 ## [2026-02-11] — Always batch large queries — HTTP 414/400 prevention
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Any query fetching 20+ records by GUID must use batching (`batchSize = 20`, or 10 for privilege queries). Never build a single OData filter with 20+ OR clauses.
-**Context:** Security role privileges (500-1000+ per role), form queries (100+ entities), field permissions, and workflow classification all caused HTTP 414/400 errors before batching was implemented in v0.5.3.
-**Example:**
-- Wrong: `const filter = ids.map(id => \`fieldid eq ${id}\`).join(' or ');` — 100+ ids = URL too long
-- Right: Loop in chunks of 20, collect all results
+Promoted → PATTERN-002 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
 ## [2026-02-11] — Publisher scope must not have separate query paths in discovery classes
 
-**Affects:** Architect, Developer
-**Severity:** High
-**Rule:** Publisher scope is always converted to solution IDs at the UI/conversion layer. Discovery classes only receive solution IDs. Never add publisher-specific methods to discovery classes.
-**Context:** The original implementation had `getEntitiesByPublisher()` which duplicated code and tried to use unsupported metadata API features. Removed in v0.5.3 (78 lines deleted).
-**Example:**
-- Wrong: Creating `discoverPluginsByPublisher(publisherPrefix)` in PluginDiscovery
-- Right: Resolve publisher → solution IDs in the hook/conversion layer, then call `discoverPlugins(solutionIds)`
+Promoted → PATTERN-006 in patterns-dataverse.md ([2026-02-11])
 
 ---
 

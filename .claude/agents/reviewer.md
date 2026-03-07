@@ -28,6 +28,11 @@ Before ANY review, read:
 7. `tsconfig.json` — confirm strict settings
 8. All files submitted for review
 
+> **WebFetch note:** WebFetch is available for verifying Microsoft documentation
+> references (PATTERN-016 URLs) when reviewing Dataverse component type codes or
+> API field names against official docs. Only use it when a specific component
+> type code or API shape is in question — do not fetch docs speculatively.
+
 Report: **"Review context loaded: [files read]"**
 
 ## Review Checklist

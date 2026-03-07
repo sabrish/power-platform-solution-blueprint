@@ -110,13 +110,13 @@ These are immediate blockers. If found anywhere outside a `.gitignore`d file, fl
   - Internal system names, internal URLs, or internal project codenames from client engagements
   - Real Dataverse org names or environment URLs from actual client environments
   - Real entity names or schema details from client systems
-  - Anything that could identify a specific Hitachi Solutions client or engagement
+  - Anything that could identify a specific employer client or engagement
 
 ---
 
 ### 🟡 HIGH — Infrastructure & Configuration Leakage
 
-- Real Azure resource names (`mycompany-prod-keyvault`, `hitachi-crm-servicebus`, etc.)
+- Real Azure resource names (`mycompany-prod-keyvault`, `mycompany-crm-servicebus`, etc.)
 - Real Azure region + resource group combinations that identify an environment
 - Internal DNS names or private network hostnames
 - Azure DevOps organisation URLs (`dev.azure.com/real-org-name`)
