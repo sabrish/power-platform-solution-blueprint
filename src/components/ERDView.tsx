@@ -7,6 +7,7 @@ import {
   Card,
   Badge,
   Button,
+  ToggleButton,
   Input,
   makeStyles,
   tokens,
@@ -89,7 +90,7 @@ const useStyles = makeStyles({
   },
   graphContainer: {
     width: '100%',
-    height: '600px',
+    height: '720px',
     backgroundColor: tokens.colorNeutralBackground2,
   },
   loadingOverlay: {
@@ -212,18 +213,25 @@ function buildCytoscapeStylesheet(): cytoscape.StylesheetJson {
       selector: 'edge',
       style: {
         'width': 1.5,
-        'line-color': '#999',
-        'target-arrow-color': '#999',
+        'line-color': '#aaa',
+        'target-arrow-color': '#aaa',
         'target-arrow-shape': 'triangle' as const,
         'curve-style': 'bezier' as const,
         'label': 'data(label)',
         'font-size': '8px',
         'color': '#666',
         'text-background-color': '#fff',
-        'text-background-opacity': 0.8,
+        'text-background-opacity': 0.85,
         'text-background-padding': '2px',
         'text-max-width': '80px',
         'text-wrap': 'ellipsis' as const,
+      },
+    },
+    {
+      // Labels hidden by default — toggled via React state
+      selector: 'edge.label-hidden',
+      style: {
+        'label': '',
       },
     },
     {
@@ -231,17 +239,29 @@ function buildCytoscapeStylesheet(): cytoscape.StylesheetJson {
       style: {
         'line-style': 'dashed' as const,
         'source-arrow-shape': 'triangle' as const,
-        'source-arrow-color': '#999',
+        'source-arrow-color': '#aaa',
       },
     },
     {
       selector: 'edge.faded',
       style: {
-        opacity: 0.1,
+        opacity: 0.08,
       },
     },
     {
       selector: 'edge.isolated-hidden',
+      style: {
+        display: 'none' as const,
+      },
+    },
+    {
+      selector: 'node.pub-hidden',
+      style: {
+        display: 'none' as const,
+      },
+    },
+    {
+      selector: 'edge.pub-hidden',
       style: {
         display: 'none' as const,
       },
@@ -275,6 +295,8 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
   const [isIsolated, setIsIsolated] = useState(false);
+  const [showEdgeLabels, setShowEdgeLabels] = useState(false);
+  const [hiddenPublishers, setHiddenPublishers] = useState<Set<string>>(new Set());
 
   const toasterId = useId('toaster');
   const { dispatchToast } = useToastController(toasterId);
@@ -311,11 +333,23 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
       container: graphRef.current,
       elements: { nodes, edges },
       style: buildCytoscapeStylesheet(),
-      layout: { name: 'cose', animate: false },
-      minZoom: 0.1,
+      layout: {
+        name: 'cose',
+        animate: false,
+        // Higher repulsion + longer ideal edges keeps nodes well spread
+        nodeRepulsion: () => 8000000,
+        idealEdgeLength: () => 180,
+        nodeOverlap: 60,
+        gravity: 0.15,
+        numIter: 1000,
+      },
+      minZoom: 0.05,
       maxZoom: 4,
       wheelSensitivity: 0.3,
     });
+
+    // Hide edge labels by default — user must opt in via Labels toggle
+    cy.edges().addClass('label-hidden');
 
     // Node click — show info + isolate
     cy.on('tap', 'node', (evt) => {
@@ -360,12 +394,22 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     setSelectedNode(null);
 
     const layoutOptions: Record<LayoutName, cytoscape.LayoutOptions> = {
-      cose: { name: 'cose', animate: false, nodeRepulsion: () => 400000, idealEdgeLength: () => 100 },
-      breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 30 },
-      grid: { name: 'grid', animate: false, padding: 30 },
+      cose: {
+        name: 'cose',
+        animate: false,
+        nodeRepulsion: () => 8000000,
+        idealEdgeLength: () => 180,
+        nodeOverlap: 60,
+        gravity: 0.15,
+        numIter: 1000,
+      },
+      breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 40, spacingFactor: 1.6 },
+      grid: { name: 'grid', animate: false, padding: 30, spacingFactor: 1.4 },
     };
 
-    cy.layout(layoutOptions[name]).run();
+    const layout = cy.layout(layoutOptions[name]);
+    layout.on('layoutstop', () => cy.fit(undefined, 40));
+    layout.run();
   }, []);
 
   const handleLayoutChange = (name: LayoutName) => {
@@ -393,6 +437,43 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
       }
     });
   }, [searchQuery]);
+
+  // ── Edge label toggle ────────────────────────────────────────────────────
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    if (showEdgeLabels) {
+      cy.edges().removeClass('label-hidden');
+    } else {
+      cy.edges().addClass('label-hidden');
+    }
+  }, [showEdgeLabels]);
+
+  // ── Publisher filter ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
+    cy.nodes().forEach((node) => {
+      const prefix = node.data('publisherPrefix') as string;
+      if (hiddenPublishers.has(prefix)) {
+        node.addClass('pub-hidden');
+      } else {
+        node.removeClass('pub-hidden');
+      }
+    });
+
+    // Hide edges where either endpoint is hidden
+    cy.edges().forEach((edge) => {
+      const srcHidden = hiddenPublishers.has(cy.getElementById(edge.data('source') as string).data('publisherPrefix') as string);
+      const tgtHidden = hiddenPublishers.has(cy.getElementById(edge.data('target') as string).data('publisherPrefix') as string);
+      if (srcHidden || tgtHidden) {
+        edge.addClass('pub-hidden');
+      } else {
+        edge.removeClass('pub-hidden');
+      }
+    });
+  }, [hiddenPublishers]);
 
   // ── Isolate node ─────────────────────────────────────────────────────────
   const isolateNode = useCallback(() => {
@@ -568,6 +649,53 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         </Tooltip>
       </div>
 
+      {/* Publisher filter row + Labels toggle */}
+      {hasGraph && (
+        <div className={styles.toolbar} style={{ gap: tokens.spacingHorizontalXS }}>
+          <Text className={styles.layoutLabel}>Publishers:</Text>
+          {erd.legend.map((pub) => {
+            const isHidden = hiddenPublishers.has(pub.publisherPrefix);
+            return (
+              <ToggleButton
+                key={pub.publisherPrefix}
+                size="small"
+                checked={!isHidden}
+                onClick={() => {
+                  setHiddenPublishers((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(pub.publisherPrefix)) {
+                      next.delete(pub.publisherPrefix);
+                    } else {
+                      next.add(pub.publisherPrefix);
+                    }
+                    return next;
+                  });
+                }}
+                style={{
+                  minWidth: 'unset',
+                  paddingLeft: tokens.spacingHorizontalS,
+                  paddingRight: tokens.spacingHorizontalS,
+                  borderLeft: `3px solid ${pub.color}`,
+                }}
+              >
+                {pub.publisherName} ({pub.entityCount})
+              </ToggleButton>
+            );
+          })}
+
+          <div className={styles.divider} />
+
+          <ToggleButton
+            size="small"
+            checked={showEdgeLabels}
+            onClick={() => setShowEdgeLabels((v) => !v)}
+            style={{ minWidth: 'unset' }}
+          >
+            Labels
+          </ToggleButton>
+        </div>
+      )}
+
       {/* Graph Card */}
       {hasGraph ? (
         <Card className={styles.graphCard}>
@@ -647,15 +775,23 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
       <div>
         <Title3 style={{ marginBottom: tokens.spacingVerticalM }}>Publisher Color Legend</Title3>
         <div className={styles.legendSection}>
-          {erd.legend.map((pub) => (
-            <Card key={pub.publisherPrefix} className={styles.legendCard}>
-              <div className={styles.legendHeader}>
-                <div className={styles.legendColor} style={{ backgroundColor: pub.color }} />
-                <Text weight="semibold">{pub.publisherName}</Text>
-                <Badge appearance="outline" shape="rounded">{pub.entityCount}</Badge>
-              </div>
-            </Card>
-          ))}
+          {erd.legend.map((pub) => {
+            const isHidden = hiddenPublishers.has(pub.publisherPrefix);
+            return (
+              <Card
+                key={pub.publisherPrefix}
+                className={styles.legendCard}
+                style={{ opacity: isHidden ? 0.4 : 1, transition: 'opacity 0.15s' }}
+              >
+                <div className={styles.legendHeader}>
+                  <div className={styles.legendColor} style={{ backgroundColor: pub.color }} />
+                  <Text weight="semibold">{pub.publisherName}</Text>
+                  <Badge appearance="outline" shape="rounded">{pub.entityCount}</Badge>
+                  {isHidden && <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>hidden</Text>}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>
