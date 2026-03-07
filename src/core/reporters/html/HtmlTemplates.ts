@@ -38,7 +38,6 @@ export class HtmlTemplates {
   <meta name="generator" content="Power Platform Solution Blueprint (PPSB)">
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
   <title>${this.escapeHtml(title)}</title>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>${cytoscapeSource}</script>
   <style>
 ${this.embeddedCSS()}
@@ -141,8 +140,12 @@ ${this.embeddedCSS()}
       // Only use Cytoscape block when there are connected entities to display
       if (filteredGraphData.nodes.length > 0) {
       const isolatedCount = graphData.nodes.length - filteredGraphData.nodes.length;
-      // Escape < to prevent </script> from prematurely closing the inline script tag
-      const graphJson = JSON.stringify(filteredGraphData).replace(/</g, '\\u003c');
+      // Escape characters that are unsafe in an inline <script> block:
+      // < and > prevent </script> tag injection; & prevents HTML entity confusion;
+      // U+2028 and U+2029 are line terminators in pre-ES2019 JS engines and
+      // are NOT escaped by JSON.stringify, so they must be escaped explicitly.
+      const graphJson = JSON.stringify(filteredGraphData)
+        .replace(/[<>&\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 
       return `<section id="erd" class="content-section">
   <h2>Entity Relationship Diagram</h2>
@@ -2404,17 +2407,7 @@ ${this.embeddedJavaScript()}
    * Embedded JavaScript for interactivity
    */
   private embeddedJavaScript(): string {
-    return `    // Initialize Mermaid (used as fallback when graphData unavailable)
-    if (typeof mermaid !== 'undefined') {
-      mermaid.initialize({
-        startOnLoad: true,
-        theme: 'default',
-        securityLevel: 'loose',
-        flowchart: { useMaxWidth: true, htmlLabels: true }
-      });
-    }
-
-    // ── Cytoscape ERD interactive graph ─────────────────────────────────────
+    return `    // ── Cytoscape ERD interactive graph ─────────────────────────────────────
     var _cy = null;
     var _selectedNodeId = null;
     var _isolateHops = 1;
