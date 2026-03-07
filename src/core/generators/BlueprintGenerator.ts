@@ -837,8 +837,6 @@ export class BlueprintGenerator {
       return [];
     }
 
-    console.warn(`⚠️ Found ${workflowIds.length} classic workflow(s) - migration to Power Automate is recommended`);
-
     try {
       // Report progress
       this.reportProgress({

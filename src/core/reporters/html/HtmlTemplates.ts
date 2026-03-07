@@ -35,8 +35,28 @@ export class HtmlTemplates {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="Power Platform Solution Blueprint (PPSB)">
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; default-src 'self' 'unsafe-inline' data:">
   <title>${this.escapeHtml(title)}</title>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    // Prevent CDN library storage errors from blocking render in Edge
+    // when opened as a local file (file:// protocol).
+    // Must run BEFORE CDN scripts load so the shim is in place.
+    (function() {
+      try { localStorage.setItem('__test', '1'); localStorage.removeItem('__test'); }
+      catch(e) {
+        var noop = { getItem: function() { return null; }, setItem: function() {}, removeItem: function() {}, clear: function() {}, key: function() { return null; }, length: 0 };
+        try { Object.defineProperty(window, 'localStorage', { value: noop, writable: false }); } catch(_) {}
+        try { Object.defineProperty(window, 'sessionStorage', { value: noop, writable: false }); } catch(_) {}
+      }
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
+  <script>
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
+    }
+  </script>
   <style>
 ${this.embeddedCSS()}
   </style>
@@ -124,7 +144,60 @@ ${this.embeddedCSS()}
 
     const legendHtml = this.generateLegendHtml(erd.legend);
 
-    // Use only the first diagram (comprehensive view with all entities) - matches UI behavior
+    // Use Cytoscape interactive graph when graphData is available
+    const graphData = erd.graphData;
+    if (graphData && graphData.nodes.length > 0) {
+      // Filter out entities with no relationships (same as in-app behaviour)
+      const connectedIds = new Set<string>();
+      graphData.edges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+      const filteredGraphData = {
+        nodes: graphData.nodes.filter(n => connectedIds.has(n.id)),
+        edges: graphData.edges,
+      };
+
+      // Only use Cytoscape block when there are connected entities to display
+      if (filteredGraphData.nodes.length > 0) {
+      const isolatedCount = graphData.nodes.length - filteredGraphData.nodes.length;
+      // Embed graph data as a JSON data-block (<script type="application/json">).
+      // The browser never evaluates this as JavaScript so there is zero risk of
+      // SyntaxError from entity names/labels containing <, >, &, U+2028, etc.
+      // The only escape required is to prevent the HTML parser from seeing
+      // </script inside the text, which we handle with the JSON-legal \/ escape.
+      const safeJson = JSON.stringify(filteredGraphData)
+        .replace(/<\/script/gi, '<\\/script');
+
+      return `<section id="erd" class="content-section">
+  <h2>Entity Relationship Diagram</h2>
+  <p>${filteredGraphData.nodes.length} entities · ${graphData.edges.length} relationships in scope${isolatedCount > 0 ? ` · ${isolatedCount} entities with no relationships not shown` : ''}</p>
+  ${legendHtml}
+  <div class="erd-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center;">
+    <span style="font-size:12px;color:#666;">Layout:</span>
+    <button class="btn-sm" onclick="erdLayout('cose')">Smart</button>
+    <button class="btn-sm" onclick="erdLayout('breadthfirst')">Hierarchical</button>
+    <button class="btn-sm" onclick="erdFit()">Fit</button>
+    <span style="width:1px;height:20px;background:#ddd;margin:0 4px;align-self:center;display:inline-block;"></span>
+    <input type="text" id="erdSearch" placeholder="Search entities…" oninput="erdSearch(this.value)"
+      style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:160px;">
+    <span style="font-size:12px;color:#666;">Hops:</span>
+    <button class="btn-sm" id="hop1Btn" style="font-weight:bold;" onclick="erdSetHops(1)">1</button>
+    <button class="btn-sm" id="hop2Btn" onclick="erdSetHops(2)">2</button>
+    <button class="btn-sm" id="hop3Btn" onclick="erdSetHops(3)">3</button>
+    <button class="btn-sm" id="isolateBtn" onclick="erdIsolate()" disabled>Isolate</button>
+    <button class="btn-sm" id="clearIsolateBtn" onclick="erdClearIsolate()" style="display:none;">Show all</button>
+    <span style="width:1px;height:20px;background:#ddd;margin:0 4px;align-self:center;display:inline-block;"></span>
+    <button class="btn-sm" onclick="downloadErdPng()">⬇ PNG</button>
+    <button class="btn-sm" onclick="downloadErdSvg()">⬇ SVG</button>
+  </div>
+  <div id="cy" style="width:100%;height:700px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;position:relative;"></div>
+  <p style="font-size:11px;color:#888;margin-top:4px;">Click node to select · Hover edge for details · Scroll to zoom · Drag to pan · Solid = 1:N · Dashed = N:N</p>
+  <script type="application/json" id="erd-data">
+${safeJson}
+  </script>
+</section>`;
+      } // end filteredGraphData.nodes.length > 0
+    } // end graphData.nodes.length > 0
+
+    // Fallback: Mermaid diagram
     const diagram = erd.diagrams[0];
     const diagramHtml = `<div class="erd-diagram">
   <h3>${this.escapeHtml(diagram.title)}</h3>
@@ -1017,7 +1090,6 @@ ${rows}
       const entityDisplay = rule.entityDisplayName || rule.entity;
       const conditions = rule.definition.conditions?.length || 0;
       const actions = rule.definition.actions?.length || 0;
-
       return `<tr>
   <td>${this.escapeHtml(rule.name)}</td>
   <td>${this.escapeHtml(entityDisplay)}</td>
@@ -2353,16 +2425,229 @@ ${this.embeddedJavaScript()}
    * Embedded JavaScript for interactivity
    */
   private embeddedJavaScript(): string {
-    return `    // Initialize Mermaid
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'default',
-      securityLevel: 'loose',
-      flowchart: {
-        useMaxWidth: true,
-        htmlLabels: true
+    return `    // HTML-escape helper — used for all data inserted into tooltip innerHTML.
+    var _esc = function(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+
+    // Read ERD graph data from the embedded JSON data-block.
+    // Using <script type="application/json"> avoids all JS-parsing risks from
+    // special characters in entity names / labels.
+    var _erdDataEl = document.getElementById('erd-data');
+    var ERD_GRAPH_DATA = _erdDataEl ? JSON.parse(_erdDataEl.textContent || 'null') : null;
+
+    // Trigger Mermaid rendering manually (startOnLoad: false was set in <head>)
+    if (typeof mermaid !== 'undefined') {
+      mermaid.run();
+    }
+
+    // ── Cytoscape ERD interactive graph ─────────────────────────────────────
+    var _cy = null;
+    var _selectedNodeId = null;
+    var _isolateHops = 1;
+
+    if (typeof cytoscape !== 'undefined' && ERD_GRAPH_DATA && ERD_GRAPH_DATA.nodes) {
+      var stylesheet = [
+        { selector: 'node', style: {
+            'background-color': 'data(color)', 'border-color': 'data(strokeColor)', 'border-width': 2,
+            'color': 'data(textColor)', 'label': 'data(label)', 'text-valign': 'center', 'text-halign': 'center',
+            'font-size': '10px', 'font-weight': 'bold', 'width': '120px', 'height': '36px',
+            'shape': 'round-rectangle', 'text-wrap': 'ellipsis', 'text-max-width': '110px'
+        }},
+        { selector: 'node.highlighted', style: { 'border-width': 3, 'border-color': '#0078d4', 'z-index': 10 } },
+        { selector: 'node.faded', style: { 'opacity': 0.15 } },
+        { selector: 'node.isolated-hidden', style: { 'display': 'none' } },
+        { selector: 'edge', style: {
+            'width': 1.5, 'line-color': '#aaa', 'target-arrow-color': '#aaa', 'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier', 'label': '', 'font-size': '8px', 'color': '#666',
+            'text-background-color': '#fff', 'text-background-opacity': 0.85, 'text-background-padding': '2px',
+            'text-max-width': '80px', 'text-wrap': 'ellipsis'
+        }},
+        { selector: 'edge[type = "N-N"]', style: {
+            'line-style': 'dashed', 'source-arrow-shape': 'triangle', 'source-arrow-color': '#aaa'
+        }},
+        { selector: 'edge.hovered', style: { 'width': 3, 'line-color': '#0078d4', 'target-arrow-color': '#0078d4', 'source-arrow-color': '#0078d4', 'z-index': 10 } },
+        { selector: 'edge.faded', style: { 'opacity': 0.08 } },
+        { selector: 'edge.isolated-hidden', style: { 'display': 'none' } }
+      ];
+
+      var elements = {
+        nodes: ERD_GRAPH_DATA.nodes.map(function(n) { return { data: n }; }),
+        edges: ERD_GRAPH_DATA.edges.map(function(e) { return { data: e }; })
+      };
+
+      _cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: elements,
+        style: stylesheet,
+        layout: { name: 'cose', animate: false, nodeRepulsion: function() { return 8000000; }, idealEdgeLength: function() { return 180; }, nodeOverlap: 60, gravity: 0.15, numIter: 1000 },
+        minZoom: 0.05, maxZoom: 4, wheelSensitivity: 0.3
+      });
+      _cy.fit(undefined, 40);
+
+      // ── Node click — select
+      _cy.on('tap', 'node', function(evt) {
+        var n = evt.target;
+        _selectedNodeId = n.data('id');
+        var isolateBtn = document.getElementById('isolateBtn');
+        if (isolateBtn) isolateBtn.disabled = false;
+        var tip = _getOrCreateTip();
+        var pub = n.data('publisherPrefix') ? '<br><span style="color:#666">Publisher: ' + _esc(n.data('publisherPrefix')) + '</span>' : '';
+        var cnt = _cy.getElementById(n.data('id')).neighborhood('node').length;
+        tip.innerHTML = '<strong>' + _esc(n.data('label')) + '</strong><br><span style="color:#888;font-size:11px;">' + _esc(n.data('id')) + '</span>' + pub + '<br><span style="color:#666">Relationships: ' + cnt + '</span>';
+        tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
+        tip.style.top = (evt.originalEvent.clientY + 12) + 'px';
+        tip.style.display = 'block';
+      });
+
+      // ── Background click — clear selection
+      _cy.on('tap', function(evt) {
+        if (evt.target === _cy) {
+          _selectedNodeId = null;
+          var isolateBtn = document.getElementById('isolateBtn');
+          if (isolateBtn) isolateBtn.disabled = true;
+          var tip = document.getElementById('erd-tip');
+          if (tip) tip.style.display = 'none';
+          _cy.nodes().removeClass('highlighted faded');
+          _cy.edges().removeClass('faded');
+        }
+      });
+
+      // ── Edge hover — tooltip
+      _cy.on('mouseover', 'edge', function(evt) {
+        var e = evt.target;
+        e.addClass('hovered');
+        var tip = _getOrCreateTip();
+        var type = e.data('type');
+        var content = '<strong style="word-break:break-all">' + _esc(e.data('id')) + '</strong>';
+        content += '<br><span style="color:#888;font-size:11px;">' + (type === 'N-N' ? 'N:N relationship' : '1:N relationship') + '</span>';
+        if (type === '1-N') {
+          var refAttr = e.data('referencedAttribute'); var relAttr = e.data('label');
+          content += '<br><span style="color:#555;word-break:break-all">' + _esc(e.data('source')) + '.' + _esc(refAttr || '') + ' &rarr; ' + _esc(e.data('target')) + '.' + _esc(relAttr || '') + '</span>';
+        } else if (type === 'N-N' && e.data('intersectEntityName')) {
+          content += '<br><span style="color:#555">Via: ' + _esc(e.data('intersectEntityName')) + '</span>';
+        }
+        tip.innerHTML = content;
+        tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
+        tip.style.top = (evt.originalEvent.clientY + 12) + 'px';
+        tip.style.display = 'block';
+      });
+
+      _cy.on('mousemove', 'edge', function(evt) {
+        var tip = document.getElementById('erd-tip');
+        if (tip) { tip.style.left = (evt.originalEvent.clientX + 12) + 'px'; tip.style.top = (evt.originalEvent.clientY + 12) + 'px'; }
+      });
+
+      _cy.on('mouseout', 'edge', function(evt) {
+        evt.target.removeClass('hovered');
+        var tip = document.getElementById('erd-tip');
+        if (tip) tip.style.display = 'none';
+      });
+    }
+
+    function _getOrCreateTip() {
+      var tip = document.getElementById('erd-tip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'erd-tip';
+        tip.style.cssText = 'position:fixed;background:#fff;border:1px solid #ccc;border-radius:6px;padding:8px 12px;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:9999;max-width:280px;pointer-events:none;line-height:1.5;';
+        document.body.appendChild(tip);
       }
-    });
+      return tip;
+    }
+
+    function erdLayout(name) {
+      if (!_cy) return;
+      var opts = {
+        cose: { name: 'cose', animate: false, nodeRepulsion: function() { return 8000000; }, idealEdgeLength: function() { return 180; }, nodeOverlap: 60, gravity: 0.15, numIter: 1000 },
+        breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 60, spacingFactor: 2.0 }
+      };
+      var layout = _cy.layout(opts[name] || opts.cose);
+      layout.on('layoutstop', function() { _cy.fit(undefined, 40); });
+      layout.run();
+    }
+
+    function erdFit() { if (_cy) _cy.fit(undefined, 40); }
+
+    function erdSearch(q) {
+      if (!_cy) return;
+      _cy.nodes().removeClass('highlighted faded');
+      _cy.edges().removeClass('faded');
+      if (!q) return;
+      var lq = q.toLowerCase();
+      _cy.nodes().forEach(function(n) {
+        var match = n.data('label').toLowerCase().indexOf(lq) >= 0 || n.data('id').toLowerCase().indexOf(lq) >= 0;
+        n.addClass(match ? 'highlighted' : 'faded');
+      });
+      _cy.edges().addClass('faded');
+    }
+
+    function erdSetHops(h) {
+      _isolateHops = h;
+      ['hop1Btn','hop2Btn','hop3Btn'].forEach(function(id, i) {
+        var btn = document.getElementById(id);
+        if (btn) btn.style.fontWeight = (i + 1 === h) ? 'bold' : 'normal';
+      });
+    }
+
+    function erdIsolate() {
+      if (!_cy || !_selectedNodeId) return;
+      var node = _cy.getElementById(_selectedNodeId);
+      var collected = node;
+      var frontier = node;
+      for (var i = 0; i < _isolateHops; i++) {
+        var next = frontier.neighborhood();
+        collected = collected.union(next);
+        frontier = next;
+      }
+      _cy.elements().addClass('isolated-hidden');
+      collected.removeClass('isolated-hidden');
+      _cy.fit(collected, 60);
+      var btn = document.getElementById('clearIsolateBtn');
+      if (btn) btn.style.display = '';
+    }
+
+    function erdClearIsolate() {
+      if (!_cy) return;
+      _cy.elements().removeClass('isolated-hidden');
+      _cy.fit(undefined, 40);
+      var btn = document.getElementById('clearIsolateBtn');
+      if (btn) btn.style.display = 'none';
+    }
+
+    function downloadErdPng() {
+      if (!_cy) return;
+      var png = _cy.png({ full: true, scale: 2, bg: '#fafafa' });
+      var a = document.createElement('a'); a.href = png; a.download = 'erd.png'; a.click();
+    }
+
+    function downloadErdSvg() {
+      if (!_cy) return;
+      var ext = _cy.elements(':visible').boundingBox({ includeLabels: false });
+      if (!ext || !isFinite(ext.x1)) return;
+      var pad = 50, W = Math.ceil(ext.x2 - ext.x1 + pad * 2), H = Math.ceil(ext.y2 - ext.y1 + pad * 2);
+      var ox = -ext.x1 + pad, oy = -ext.y1 + pad;
+      var esc = function(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      var parts = ['<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">',
+        '<defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#aaa"/></marker></defs>',
+        '<rect width="'+W+'" height="'+H+'" fill="#fafafa"/>'];
+      _cy.edges(':visible').forEach(function(e) {
+        var s = _cy.getElementById(e.data('source')), t = _cy.getElementById(e.data('target'));
+        if (s.empty() || t.empty()) return;
+        var dash = e.data('type') === 'N-N' ? ' stroke-dasharray="6,3"' : '';
+        parts.push('<line x1="'+(s.position().x+ox).toFixed(1)+'" y1="'+(s.position().y+oy).toFixed(1)+'" x2="'+(t.position().x+ox).toFixed(1)+'" y2="'+(t.position().y+oy).toFixed(1)+'" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"'+dash+'/>');
+      });
+      _cy.nodes(':visible').forEach(function(n) {
+        var p = n.position(), w = n.width(), h = n.height();
+        var x = (p.x+ox-w/2).toFixed(1), y = (p.y+oy-h/2).toFixed(1);
+        parts.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="5" fill="'+n.data('color')+'" stroke="'+n.data('strokeColor')+'" stroke-width="2"/>');
+        parts.push('<text x="'+(p.x+ox).toFixed(1)+'" y="'+(p.y+oy+4).toFixed(1)+'" text-anchor="middle" fill="'+n.data('textColor')+'" font-size="10" font-weight="bold" font-family="system-ui,sans-serif">'+esc(n.data('label'))+'</text>');
+      });
+      parts.push('</svg>');
+      var blob = new Blob([parts.join('\\n')], { type: 'image/svg+xml' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'erd.svg'; a.click();
+      URL.revokeObjectURL(url);
+    }
+    // ── End Cytoscape ERD ──────────────────────────────────────────────────
 
     // Accordion toggle
     function toggleAccordion(id) {

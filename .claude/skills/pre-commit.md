@@ -37,8 +37,16 @@ If the reviewer returns ❌ Changes required:
 
 Only run if Step 1 returned ✅ Approved or ⚠️ Approved with comments.
 
-Invoke the security-auditor with scope limited to the files being committed plus
-.claude/memory/ (memory files are always in scope for security audit).
+Invoke the security-auditor with scope limited to the files being committed.
+
+## Step 2b: Memory Audit (Always runs — unconditional)
+
+Invoke the **security-auditor** scoped exclusively to `.claude/memory/`.
+
+This runs regardless of what files are being committed and regardless of the
+Step 1 verdict. Memory files can accumulate sensitive data (connection strings,
+tenant IDs, credentials) captured from session context without the project owner
+noticing. This audit catches that.
 
 ## Step 3: Combined Verdict
 
@@ -48,7 +56,8 @@ Report to the project owner:
 ## Pre-Commit Gate Result
 
 **Reviewer:** [✅ Approved | ⚠️ Approved with comments | ❌ Changes required]
-**Security Audit:** [✅ CLEAN | ⚠️ FINDINGS REQUIRE ACTION | ❌ CRITICAL — blocked]
+**Security Audit (committed files):** [✅ CLEAN | ⚠️ FINDINGS REQUIRE ACTION | ❌ CRITICAL — blocked]
+**Memory Audit (.claude/memory/):** [✅ CLEAN | ⚠️ FINDINGS REQUIRE ACTION | ❌ CRITICAL — blocked]
 
 **Verdict:** [CLEAR TO COMMIT | COMMIT WITH CAVEATS: [list] | BLOCKED: [list blockers]]
 

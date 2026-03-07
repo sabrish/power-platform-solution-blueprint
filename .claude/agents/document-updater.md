@@ -35,10 +35,13 @@ skill provides the full prompt — you do not need to ask what to do.
 | `/trim-guides` | Cross-references DATAVERSE_OPTIMIZATION_GUIDE.md and UI_PATTERNS.md against pattern files; replaces duplicated content with "See PATTERN-XXX" references | When patterns reach ~20 entries |
 | `/release` | Runs the full release sequence (reviewer → security audit → version bump → build verification) — the orchestrator invokes this, not you directly, but you are called in Step 3 | When project owner says "prepare a release" |
 
-Note on `/release`: when invoked for Step 3 (version bump and documentation), you
-will receive an explicit task from the orchestrator specifying the target version.
-Update `package.json`, `CHANGELOG.md`, and `README.md` in that order and confirm
-all three show the same version number before reporting complete.
+Note on `/release`: when invoked for Step 3b (documentation), you will receive
+an explicit task from the orchestrator specifying the target version. The version
+bump itself (`npm version X.Y.Z --no-git-tag-version`, which updates both
+`package.json` and `npm-shrinkwrap.json`) has already been run by the developer
+agent in Step 3a before you are invoked. Your responsibility is `CHANGELOG.md`
+and `README.md` only. Confirm all four files (`package.json`, `npm-shrinkwrap.json`,
+`CHANGELOG.md`, `README.md`) show the same version number before reporting complete.
 
 Note on `/trim-guides`: when running this task, check against both
 `patterns-dataverse.md` and `patterns-ui.md` separately — one file per guide domain.

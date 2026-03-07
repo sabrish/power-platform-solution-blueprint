@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import {
   Text,
   Badge,
-  SearchBox,
   makeStyles,
   tokens,
+  Checkbox,
 } from '@fluentui/react-components';
+import { FilterBar } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular, Box20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
 
@@ -14,18 +15,6 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
-  },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
   },
   row: {
     display: 'grid',
@@ -136,6 +125,7 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
   const styles = useStyles();
   const [expandedPackage, setExpandedPackage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDisabledOnly, setShowDisabledOnly] = useState(false);
 
   // Group plugins by assemblyName
   const packages = useMemo<PluginPackage[]>(() => {
@@ -162,19 +152,25 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
     return result.sort((a, b) => a.assemblyName.localeCompare(b.assemblyName));
   }, [plugins]);
 
-  // Apply search filter
+  // Apply search and checkbox filters
   const filteredPackages = useMemo<PluginPackage[]>(() => {
+    let filtered = packages;
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return packages;
-    return packages.filter(pkg =>
-      pkg.assemblyName.toLowerCase().includes(q) ||
-      pkg.steps.some(s =>
-        s.name.toLowerCase().includes(q) ||
-        s.typeName.toLowerCase().includes(q) ||
-        s.entity.toLowerCase().includes(q)
-      )
-    );
-  }, [packages, searchQuery]);
+    if (q) {
+      filtered = filtered.filter(pkg =>
+        pkg.assemblyName.toLowerCase().includes(q) ||
+        pkg.steps.some(s =>
+          s.name.toLowerCase().includes(q) ||
+          s.typeName.toLowerCase().includes(q) ||
+          s.entity.toLowerCase().includes(q)
+        )
+      );
+    }
+    if (showDisabledOnly) {
+      filtered = filtered.filter(pkg => pkg.disabledCount > 0);
+    }
+    return filtered;
+  }, [packages, searchQuery, showDisabledOnly]);
 
   const toggleExpand = (assemblyName: string) => {
     setExpandedPackage(expandedPackage === assemblyName ? null : assemblyName);
@@ -192,17 +188,20 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
 
   return (
     <div className={styles.container}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search plugin packages..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search plugin packages..."
+        filteredCount={filteredPackages.length}
+        totalCount={packages.length}
+        itemLabel={packages.length !== 1 ? 'packages' : 'package'}
+      >
+        <Checkbox
+          label="Show only packages with disabled steps"
+          checked={showDisabledOnly}
+          onChange={(_, data) => setShowDisabledOnly(data.checked === true)}
         />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {filteredPackages.length} of {packages.length} package{packages.length !== 1 ? 's' : ''}
-        </Text>
-      </div>
+      </FilterBar>
 
       {filteredPackages.length === 0 && packages.length > 0 ? (
         <div className={styles.emptyState}>

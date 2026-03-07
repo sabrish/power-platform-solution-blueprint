@@ -9,8 +9,10 @@ import {
   Link,
   MessageBar,
   MessageBarBody,
-  SearchBox,
+  ToggleButton,
+  Button,
 } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import {
   ChevronDown20Regular,
   ChevronRight20Regular,
@@ -22,23 +24,21 @@ import type { ClassicWorkflow } from '../core';
 import { formatDate } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
 
+const WORKFLOW_MODE_VALUES = ['Background', 'RealTime'];
+const WORKFLOW_STATE_VALUES = ['Active', 'Draft'];
+
 const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   warning: {
     padding: tokens.spacingVerticalM,
@@ -85,6 +85,7 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: '2px',
     minWidth: 0,
+    wordBreak: 'break-word',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -153,6 +154,8 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   const styles = useStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeModeFilters, setActiveModeFilters] = useState<Set<string>>(new Set());
+  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     const order: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
@@ -163,15 +166,63 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
     });
   }, [workflows]);
 
+  const modeCounts = useMemo(() => {
+    const counts = Object.fromEntries(WORKFLOW_MODE_VALUES.map((m) => [m, 0]));
+    for (const w of sorted) counts[w.modeName] = (counts[w.modeName] ?? 0) + 1;
+    return counts;
+  }, [sorted]);
+
+  const stateCounts = useMemo(() => {
+    const counts = Object.fromEntries(WORKFLOW_STATE_VALUES.map((s) => [s, 0]));
+    for (const w of sorted) counts[w.state] = (counts[w.state] ?? 0) + 1;
+    return counts;
+  }, [sorted]);
+
+  // Apply ToggleButton filters
+  const toggleFilteredWorkflows = useMemo(() => {
+    let filtered = sorted;
+    if (activeModeFilters.size > 0) {
+      filtered = filtered.filter((w) => activeModeFilters.has(w.modeName));
+    }
+    if (activeStateFilters.size > 0) {
+      filtered = filtered.filter((w) => activeStateFilters.has(w.state));
+    }
+    return filtered;
+  }, [sorted, activeModeFilters, activeStateFilters]);
+
   const searchedWorkflows = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sorted;
-    return sorted.filter((w) =>
+    if (!q) return toggleFilteredWorkflows;
+    return toggleFilteredWorkflows.filter((w) =>
       w.name.toLowerCase().includes(q) ||
       (w.entity && w.entity.toLowerCase().includes(q)) ||
       (w.entityDisplayName && w.entityDisplayName.toLowerCase().includes(q))
     );
-  }, [sorted, searchQuery]);
+  }, [toggleFilteredWorkflows, searchQuery]);
+
+  const toggleModeFilter = (mode: string) => {
+    setActiveModeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(mode)) {
+        next.delete(mode);
+      } else {
+        next.add(mode);
+      }
+      return next;
+    });
+  };
+
+  const toggleStateFilter = (state: string) => {
+    setActiveStateFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(state)) {
+        next.delete(state);
+      } else {
+        next.add(state);
+      }
+      return next;
+    });
+  };
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -259,17 +310,53 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
         </Text>
       </div>
 
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search workflows..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedWorkflows.length} of {sorted.length} workflows
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search workflows..."
+        filteredCount={searchedWorkflows.length}
+        totalCount={sorted.length}
+        itemLabel="workflows"
+      >
+        <FilterGroup label="Mode:">
+          {WORKFLOW_MODE_VALUES.map((mode) => (
+            <ToggleButton
+              key={mode}
+              className={styles.filterButton}
+              size="small"
+              checked={activeModeFilters.has(mode)}
+              disabled={modeCounts[mode] === 0}
+              onClick={() => toggleModeFilter(mode)}
+            >
+              {mode}
+            </ToggleButton>
+          ))}
+          {activeModeFilters.size > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => setActiveModeFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+        <FilterGroup label="State:">
+          {WORKFLOW_STATE_VALUES.map((state) => (
+            <ToggleButton
+              key={state}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStateFilters.has(state)}
+              disabled={stateCounts[state] === 0}
+              onClick={() => toggleStateFilter(state)}
+            >
+              {state}
+            </ToggleButton>
+          ))}
+          {activeStateFilters.size > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
 
       <div className={styles.container}>
         {searchedWorkflows.length === 0 && sorted.length > 0 && (
@@ -302,7 +389,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
                 <Text className={styles.codeText}>
                   <TruncatedText text={workflow.entityDisplayName || workflow.entity} />
                 </Text>
-                <Badge appearance="filled" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'} size="small">
+                <Badge appearance="tint" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'} size="small">
                   {workflow.mode === 1 ? <><FlashFlow20Regular /> RealTime</> : <><Cloud20Regular /> Background</>}
                 </Badge>
                 <Badge appearance="filled" shape="rounded"

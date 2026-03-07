@@ -2,7 +2,7 @@
 
 > Complete architectural blueprints for your Power Platform solutions.
 
-![Version](https://img.shields.io/badge/version-0.8.0-blue)
+![Version](https://img.shields.io/badge/version-0.9.0-blue)
 ![Status](https://img.shields.io/badge/status-active%20development-green)
 
 Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.
@@ -42,7 +42,7 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 <details>
 <summary><b>📊 Analysis & Visualization</b> (click to expand)</summary>
 
-- **Entity Relationship Diagram (ERD)**: Mermaid diagram with publisher color-coding and relationship types
+- **Entity Relationship Diagram (ERD)**: Interactive Cytoscape.js force-directed graph with pan, zoom, node isolation, publisher filter, and PNG/SVG export
 - **Execution Pipeline**: Visual representation of client → sync → async automation flow per entity
 - **Cross-Entity Automation** *(Coming Soon)*: Advanced analysis mapping automation across entity boundaries with plugin decompilation and workflow parsing
 - **External Dependencies**: Detect and risk-assess all external API calls (flows, plugins, web resources)
@@ -168,7 +168,7 @@ Self-contained, interactive HTML documentation ready to share with stakeholders.
 - **Language**: TypeScript 5.x (strict mode)
 - **UI Framework**: React 18 + Vite 5
 - **Component Library**: Fluent UI v9 (Microsoft Design System)
-- **Diagrams**: Mermaid (ERD and execution pipelines)
+- **Diagrams**: Cytoscape.js (interactive ERD) · Mermaid (execution pipeline export in HTML/Markdown)
 - **Export**: JSZip (multi-file packages)
 - **Architecture**: Flat structure with separated core logic (`src/core/`) and React UI (`src/components/`)
 
@@ -260,7 +260,8 @@ The combination of AI tools accelerated development while maintaining high code 
 - **PPTB Desktop** - [Power Platform Toolbox](https://www.powerplatformtoolbox.com/) (platform for PPSB deployment)
 - **Microsoft Dataverse** - Data platform and APIs
 - **Fluent UI** - Microsoft's design system and React components
-- **Mermaid** - Diagram rendering engine for ERD and pipeline visualizations
+- **Cytoscape.js** - Interactive ERD graph engine (force-directed, pan/zoom/export)
+- **Mermaid** - Diagram rendering for execution pipeline visualizations in HTML/Markdown exports
 - **TypeScript** - Language and type system
 - **React** - UI framework
 - **Vite** - Build tool and development server

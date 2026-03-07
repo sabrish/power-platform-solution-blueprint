@@ -6,14 +6,7 @@
 
 ## [2026-02-10] — Never use executeDataverseRequest or old toolboxAPI.dataverse path
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Never call `executeDataverseRequest()` (it does not exist) and never use `window.toolboxAPI.dataverse.queryData()` (old structure). Always use `window.dataverseAPI.queryData()`.
-**Context:** Pre-v0.5.1 code used the old API shape. The official `@pptb/types` package defines `window.dataverseAPI` as the correct global. Using the wrong path results in runtime errors.
-**Example:**
-- Wrong: `window.toolboxAPI.dataverse.queryData(...)`
-- Wrong: `window.executeDataverseRequest(...)`
-- Right: `window.dataverseAPI.queryData(...)`
+Promoted → PATTERN-005 in patterns-dataverse.md ([2026-02-10])
 
 ---
 
@@ -31,51 +24,25 @@
 
 ## [2026-02-10] — Monorepo workspace imports are forbidden
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Never use workspace package references (`@ppsb/core`, `@ppsb/pptb-tool`) in imports. Always use relative paths.
-**Context:** The project was refactored from a monorepo to a flat structure in v0.5.1. Workspace imports no longer resolve.
-**Example:**
-- Wrong: `import { BlueprintGenerator } from '@ppsb/core/generators/BlueprintGenerator'`
-- Right: `import { BlueprintGenerator } from './core/generators/BlueprintGenerator'`
+Captured → decisions.md [2026-02-10] Flat Structure
 
 ---
 
 ## [2026-02-11] — Dynamic imports break PPTB Desktop — use static imports for reporters
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Never use dynamic `import()` for reporters (MarkdownReporter, HtmlReporter, JsonReporter, ZipPackager). Always use static imports.
-**Context:** Dynamic imports create separate Vite chunks. PPTB Desktop serves the tool via `pptb-webview://` protocol, which cannot resolve dynamically chunked paths. This caused all export operations to fail silently in v0.7.1. Fixed in v0.7.2 by converting to static imports.
-**Example:**
-- Wrong: `const { MarkdownReporter } = await import('./reporters/MarkdownReporter');`
-- Right: `import { MarkdownReporter } from './reporters/MarkdownReporter';`
+Promoted → PATTERN-007 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
 ## [2026-02-11] — GUID formatting in OData filters — no quotes, no braces
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** In OData `$filter` strings, GUIDs must be raw (no single quotes, no curly braces). Always strip braces with `.replace(/[{}]/g, '')` before building the filter string.
-**Context:** Custom connector queries were broken in v0.7.1 because the filter was adding braces instead of removing them (`connectorid eq {guid}`). Classic workflow queries also failed. Dataverse returns GUIDs with braces; OData filters need them without.
-**Example:**
-- Wrong: `filter: \`connectorid eq '${id}'\`` (quoted)
-- Wrong: `filter: \`connectorid eq {${id}}\`` (braced)
-- Right: `const clean = id.replace(/[{}]/g, ''); filter: \`connectorid eq ${clean}\``
+Promoted → PATTERN-003 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
 ## [2026-02-11] — Metadata API does not support startswith() or orderBy
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** When querying `EntityDefinitions` (or any metadata endpoint), never use `startswith()`, `orderBy`, or complex OData functions. Fetch all matching records with basic equality filters only, then filter and sort in memory.
-**Context:** Publisher-scope queries were using `startswith(LogicalName, 'prefix_')` which caused "query parameter not supported" errors. Removed in v0.5.3.
-**Example:**
-- Wrong: `filter: "startswith(LogicalName, 'cr123_')"` — API error
-- Wrong: `orderBy: ['LogicalName']` — API error
-- Right: Fetch all with `filter: 'IsCustomEntity eq true'`, then `result.filter(e => e.LogicalName.startsWith('cr123_')).sort(...)`
+Promoted → PATTERN-004 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
@@ -93,25 +60,13 @@
 
 ## [2026-02-11] — Always batch large queries — HTTP 414/400 prevention
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Any query fetching 20+ records by GUID must use batching (`batchSize = 20`, or 10 for privilege queries). Never build a single OData filter with 20+ OR clauses.
-**Context:** Security role privileges (500-1000+ per role), form queries (100+ entities), field permissions, and workflow classification all caused HTTP 414/400 errors before batching was implemented in v0.5.3.
-**Example:**
-- Wrong: `const filter = ids.map(id => \`fieldid eq ${id}\`).join(' or ');` — 100+ ids = URL too long
-- Right: Loop in chunks of 20, collect all results
+Promoted → PATTERN-002 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
 ## [2026-02-11] — Publisher scope must not have separate query paths in discovery classes
 
-**Affects:** Architect, Developer
-**Severity:** High
-**Rule:** Publisher scope is always converted to solution IDs at the UI/conversion layer. Discovery classes only receive solution IDs. Never add publisher-specific methods to discovery classes.
-**Context:** The original implementation had `getEntitiesByPublisher()` which duplicated code and tried to use unsupported metadata API features. Removed in v0.5.3 (78 lines deleted).
-**Example:**
-- Wrong: Creating `discoverPluginsByPublisher(publisherPrefix)` in PluginDiscovery
-- Right: Resolve publisher → solution IDs in the hook/conversion layer, then call `discoverPlugins(solutionIds)`
+Promoted → PATTERN-006 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
@@ -244,5 +199,157 @@
 **Example:**
 - Wrong: Bumping `package.json` to `0.8.0` and updating `CHANGELOG.md` but leaving the README badge on `0.7.2`
 - Right: Update `package.json`, `CHANGELOG.md`, and `README.md` badge in the same step; verify all three read `0.8.0` before proceeding
+
+---
+
+## [2026-03-05] — Filter control selection: Binary inclusion uses Checkbox, categorical multi-select uses ToggleButton
+
+**Affects:** Developer (UI), Reviewer
+**Severity:** High
+**Rule:** Choose filter controls based on the property's semantic nature, not just the number of values. A Checkbox filters for binary boolean inclusion (e.g., "Include X" where the inverse is just the default baseline, not a meaningful filter target). A ToggleButton group filters for categorical multi-select where all distinct values are independently useful filter targets, or where BOTH values of a binary property are equally useful. Never use a Checkbox where users would reasonably want to filter to either value independently.
+**Context:** Plugin Packages filter examples: "Include packages with disabled steps" is a checkbox (only the positive value is interesting; "without disabled steps" is the default). Plugin State (Enabled vs Disabled) is a ToggleButton (both values are equally useful filter targets). This distinction prevents filter UX that doesn't map to user intent.
+**Example:**
+- Wrong: Using Checkbox for "Plugin State" when both Enabled and Disabled are meaningful filters
+- Wrong: Using ToggleButton for "Include deprecated code" when only the positive value is a filter target
+- Right: Checkbox for "Include packages with disabled steps" (positive value only)
+- Right: ToggleButton for Plugin State (all values useful), Enabled/Disabled toggle (both values useful)
+
+---
+
+## [2026-03-05] — Plugin Stage filters are always categorical ToggleButton
+
+**Affects:** Developer (UI), Reviewer
+**Severity:** High
+**Rule:** Plugin Stage filters (Pre-Validation, Pre-Operation, Post-Operation, Async) must always use ToggleButton groups with OR logic, never Checkbox. Stage is a categorical classification property with 4 distinct values where all are equally meaningful filter targets, and combinations are valid. This is distinct from "surface the notable ones" exception properties (which use Checkbox).
+**Context:** Stage is a foundational property classification, not a boolean flag. Users filter by stage category. All 4 stage values define meaningful categories (e.g., "show only synchronous early-stage steps" = Pre-Validation + Pre-Operation). The key distinction: Checkboxes surface exceptions; ToggleButtons classify by category.
+**Example:**
+- Wrong: Using Checkbox for "Include Pre-Validation steps"
+- Right: ToggleButton group with all 4 stage values selectable via OR logic
+
+---
+
+## [2026-03-05] — Field Security Profiles: SearchBox only, no categorical filters
+
+**Affects:** Developer (UI), Reviewer
+**Severity:** Medium
+**Rule:** Field Security Profiles component list must use SearchBox only for filtering. Do not add categorical filter controls (Checkboxes, ToggleButtons, or dropdowns). This matches Security Roles behaviour and is intentional.
+**Context:** Field Security Profiles are identified and filtered primarily by name. There are no meaningful categorical dimensions (like Stage, State, or Type) that warrant filter controls.
+**Example:**
+- Wrong: Adding ToggleButton group for "Profile Type" or "Status" to Field Security Profiles filter bar
+- Right: SearchBox only
+
+---
+
+## [2026-03-05] — EntityList flag filter uses AND logic; all other categorical filters use OR logic
+
+**Affects:** Developer (UI), Reviewer
+**Severity:** High
+**Rule:** EntityList component has a unique ToggleButton filter labeled "Has all of:" which uses AND logic — the entity must have ALL selected flag types. All other section filters (State, Type, Stage, Mode, Scope, Status, Binding, and similar categorical properties) use OR logic — show items matching ANY selected value. EntityList's AND-logic implementation must not be copied or used as a template for other filters. Use property-name group labels (e.g., "Stage:", "State:") for OR-logic filters, never the "Has all of:" label pattern.
+**Context:** EntityList filters across multiple associated component dimensions (plugins, flows, rules, etc.), making AND logic appropriate for that specific case. It is the exception, not the pattern. All other categorical filters should follow the standard OR-logic expectation: show items where the property matches one of the selected values.
+**Example:**
+- Wrong: `<Text>Has all of:</Text>` label on a Stage filter (Stage uses OR logic)
+- Wrong: Using AND logic for a State filter
+- Right: EntityList uses "Has all of:" with AND logic for flag combinations
+- Right: Stage filter uses "Stage:" label with OR logic: show items where stage is Pre-Validation OR Pre-Operation OR...
+
+---
+
+## [2026-03-07] — Release tags must be created on main, not on feature branches
+
+**Affects:** Orchestrator, Developer
+**Severity:** Blocker
+**Rule:** Never create a git release tag on a feature branch or fix branch. Tags must only be created on `main` AFTER the PR is merged. If a tag is created on the wrong branch, it must be deleted (`git tag -d vX.Y.Z`) and re-applied post-merge on `main`.
+**Context:** The agent created `git tag v0.9.0` on the `fix/search-and-erd-fixes` branch before the PR was merged. The tag had to be deleted and will be re-applied after merge. Tags on branches produce misleading history and can point to commits that are never part of `main`.
+**Example:**
+- Wrong: `git tag v0.9.0` while on branch `fix/search-and-erd-fixes` (before PR merge)
+- Right: Merge the PR first, checkout `main`, pull, then `git tag v0.9.0 -m "Release v0.9.0"`
+
+---
+
+## [2026-03-07] — npm version also updates npm-shrinkwrap.json — include it in the release commit
+
+**Affects:** Developer, Orchestrator, Document Updater
+**Severity:** Blocker
+**Rule:** When running `npm version X.Y.Z --no-git-tag-version` to bump the version, npm automatically updates BOTH `package.json` AND `npm-shrinkwrap.json`. Both files must be included in the release commit. Never commit `package.json` and `CHANGELOG.md` alone — `npm-shrinkwrap.json` must be staged too.
+**Context:** After the version bump command, three files change: `package.json`, `npm-shrinkwrap.json`, and any other files updated in the same step. Omitting `npm-shrinkwrap.json` from the release commit leaves the published shrinkwrap out of sync with the declared version.
+**Example:**
+- Wrong: `git add package.json CHANGELOG.md && git commit -m "chore: release v0.9.0"` (shrinkwrap missing)
+- Right: `git add package.json npm-shrinkwrap.json CHANGELOG.md README.md && git commit -m "chore: release v0.9.0"`
+
+---
+
+## [2026-03-07] — Business rule clientdata is always XML, never JSON
+
+**Affects:** Developer
+**Severity:** Blocker
+**Rule:** The `clientdata` field on Dataverse `workflows` records for business rules is always XML format, not JSON. Never call `JSON.parse()` on `clientdata` — it will always throw. Detect the format with `clientdata.trimStart().startsWith('<')` before attempting any parse.
+**Context:** Business rule compiled output is wrapped in `<clientdata><clientcode><![CDATA[...compiled JS...]]></clientcode></clientdata>`. Attempting `JSON.parse()` throws every time. Contrast with BPF stage `processstage.clientdata` which IS JSON — the same field name on a different table has a different format.
+**Example:**
+- Wrong: `const parsed = JSON.parse(rule.clientdata)` — always throws for business rules
+- Right: `if (clientdata.trimStart().startsWith('<')) { /* extract CDATA JS content */ } else { /* unexpected */ }`
+
+---
+
+## [2026-03-07] — Business rule compiled-JS patterns (reference for parser work)
+
+**Affects:** Developer
+**Severity:** High
+**Rule:** When parsing compiled JavaScript from business rule `clientdata`, recognise these variable patterns exactly. Do not guess alternative shapes — Dataverse always compiles to these forms.
+**Context:** The Dataverse business rule compiler always emits variables in consistent patterns. A parser must handle all of them to correctly extract conditions and actions.
+**Example:**
+- Field-control vars: `var vN = v0.attributes.get('fieldname')` → fieldVarMap (key = vN, value = fieldname)
+- Value vars: `var vN = (vM) ? vM.getValue() : null` OR `var vN = (vM) ? vM.getUtcValue() : null` → valueVarMap
+- Derived vars (date normalisation): `var vN = (((vM) != undefined...) ? new Date(...) : null)` → derivedVarMap
+- Early-return guard: uses field-control vars with `== undefined` — these are NOT conditions, they are guard clauses and must be skipped when extracting conditions
+- Condition patterns: `!= undefined` (contains data), `== undefined` (does not contain data), `(vN)==(literal)` (equals), helper `vH((vN),('value'),function(){indexOf===-1})` (string contains / does not contain), `(vA) < (vB)` (comparison)
+- Action patterns: direct `.setVisible()`, `.setDisabled()`, `.setRequiredLevel()`, `.setValue()`, AND the delegate pattern `vN.controls.forEach(function(c,i){ c.setVisible(true) })` — both patterns must be handled
+
+---
+
+## [2026-03-07] — Debug artifacts must be removed before any release commit
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** Temporary debug fields, debug HTML blocks, and diagnostic console.log statements are acceptable during active development but must be fully removed before any release. The `/pre-commit` skill (reviewer + security-auditor) must catch these; reviewer must explicitly check for debug artifacts in every pre-release review.
+**Context:** Debug fields (`rawClientData`, `rawXaml` on `BusinessRuleDefinition`) and a `<details>` raw-data HTML block were present in a release candidate. A diagnostic `console.log` block in `htmlScripts()` was also included in production output. These had to be manually identified and removed.
+**Example:**
+- Wrong: Committing `rawClientData?: string` on a public-facing type interface in a release
+- Wrong: Leaving `<details><summary>Raw clientdata</summary>...</details>` in the HTML export template
+- Wrong: `console.log('DEBUG business rule clientdata:', rule.clientdata)` in production `htmlScripts()`
+- Right: Remove all `raw*` debug fields, `<details>` debug blocks, and diagnostic console.log before staging the release commit
+
+---
+
+## [2026-03-07] — Tooltip innerHTML values in embedded JS must be HTML-escaped
+
+**Affects:** Developer
+**Severity:** Blocker
+**Rule:** Any Cytoscape (or similar) tooltip content written via `tip.innerHTML = ...` must pass all graph data values through an HTML escape helper before insertion. Never insert raw `n.data(...)` or `e.data(...)` values directly into innerHTML.
+**Context:** Graph node and edge labels sourced from Dataverse (entity names, field names, relationship names) may contain `<`, `>`, `&`, or `"` characters, which would break the tooltip HTML structure or open an XSS vector.
+**Example:**
+- Wrong: `` tip.innerHTML = `<b>${n.data('label')}</b>`; ``
+- Right:
+```javascript
+var _esc = function(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+};
+// Then: tip.innerHTML = `<b>${_esc(n.data('label'))}</b>`;
+```
+
+---
+
+## [2026-03-07] — CDN library versions in HTML export must be pinned to specific versions
+
+**Affects:** Developer
+**Severity:** High
+**Rule:** All CDN `<script>` tags in the HTML export template must reference a specific pinned version (e.g., `mermaid@10.9.1`), never a floating major version (e.g., `mermaid@10`). Floating versions can silently update and break the exported HTML output.
+**Context:** The Cytoscape CDN reference was already pinned to `@3.33.1`. The Mermaid CDN reference was using floating `@10` which can silently pull in a breaking minor update. All CDN libraries in the export must follow the same pinned-version convention.
+**Example:**
+- Wrong: `<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>`
+- Right: `<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>`
 
 ---

@@ -554,7 +554,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             {selectedTab === 'globalChoices' && hasResults('globalChoices') && (
               <GlobalChoicesList
                 globalChoices={result.globalChoices}
-                onSelectChoice={() => {}} // Unused - list handles expansion internally
               />
             )}
 

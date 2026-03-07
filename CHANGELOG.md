@@ -5,6 +5,35 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-03-07
+
+### Added
+- **Interactive ERD** — replaced Mermaid diagram with a full Cytoscape.js force-directed graph
+  - Pan, zoom, and click-to-select nodes with relationship counts in tooltip
+  - Isolate node (show only selected entity and its direct neighbours)
+  - Publisher filter to show/hide entities by publisher prefix
+  - Edge hover shows relationship name and referenced/referencing attribute
+  - Export as PNG or SVG from the hint bar
+- **Universal Search / Filter Bar** — standardised two-row filter bar across all component list tabs
+  - Every tab now has a search box filtering by name/entity/trigger as appropriate
+  - Plugin list gains a message dropdown filter in addition to text search
+  - Flow list detects Dataverse triggers via connector `apiId`
+
+### Fixed
+- **Business Rule Parser** — complete rewrite of the compiled-JS parser for Dataverse business rules
+  - Detects all condition types: contains data, does not contain data, equals (boolean/option set/integer/string), string contains/does not contain, field comparisons (< > <= >=)
+  - Detects all action types: setRequiredLevel, setVisible, setDisabled, setValue, setNotification (ShowError) — including the `controls.forEach` delegate pattern Dataverse uses for visibility/disabled actions
+  - Handles double-wrapped parens `((vN))`, `getUtcValue()`, date-derived variables, and helper comparator functions
+- **HTML Export SyntaxError** — `parts.join('\n')` had a literal newline inside the template literal, causing `Uncaught SyntaxError` in the exported HTML script block; fixed by escaping as `'\\n'`
+- **HTML Export — Edge Storage Warnings** — added localStorage/sessionStorage shim before CDN scripts load, preventing "Tracking Prevention blocked access to storage" warnings when opening exported HTML in Edge
+- **HTML Export — Mermaid Init** — set `startOnLoad: false` and call `mermaid.run()` manually to prevent Mermaid touching storage during auto-init
+- **HTML Export — XSS Defence** — Cytoscape tooltip `innerHTML` values now passed through `_esc()` HTML-escape helper
+- **HTML Export — CDN Version Pinned** — Mermaid CDN pinned to `10.9.1` (was floating `@10`)
+- **ERD JSON Escaping** — ERD graph data now embedded in `<script type="application/json">` data-block, avoiding all JS-parsing issues from special characters in entity/relationship names
+- **DB Diagram (dbdiagram.io export)** — fixed attribute-less entities producing empty `Table {}` blocks; derives columns from relationship data as fallback
+- **UI Polish** — badge colour collision fix, plugin stage labels, flow trigger badges, entity complexity display, ERD legend, entity description row, attribute counts, filter spacing
+- **Classic Workflow Migration Log** — removed `console.warn` migration recommendation log from production output
+
 ## [0.8.0] - 2026-03-03
 
 ### Added

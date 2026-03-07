@@ -6,11 +6,30 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
+  ToggleButton,
+  Button,
+  Dropdown,
+  Option,
 } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
 import { TruncatedText } from './TruncatedText';
+
+// These must exactly match PluginDiscovery.getStageName() output (no hyphens)
+const STAGE_VALUES = ['PreValidation', 'PreOperation', 'PostOperation', 'Asynchronous'];
+const STATE_VALUES = ['Enabled', 'Disabled'];
+
+/** Convert internal stageName to a human-readable display label */
+const formatStageLabel = (stageName: string): string => {
+  switch (stageName) {
+    case 'PreValidation': return 'Pre-Validation';
+    case 'PreOperation': return 'Pre-Operation';
+    case 'PostOperation': return 'Post-Operation';
+    case 'Asynchronous': return 'Async';
+    default: return stageName;
+  }
+};
 
 const useStyles = makeStyles({
   container: {
@@ -18,17 +37,12 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -135,6 +149,9 @@ export function PluginsList({
   const styles = useStyles();
   const [expandedPluginId, setExpandedPluginId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeStageFilters, setActiveStageFilters] = useState<Set<string>>(new Set());
+  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
+  const [selectedMessage, setSelectedMessage] = useState<string>('');
 
   // Filter plugins by entity if specified
   const filteredPlugins = useMemo(() => {
@@ -152,17 +169,76 @@ export function PluginsList({
     });
   }, [filteredPlugins]);
 
+  // Sorted unique message names in the base dataset (for the message dropdown)
+  const availableMessages = useMemo(() => {
+    const msgs = new Set<string>();
+    for (const p of sortedPlugins) if (p.message) msgs.add(p.message);
+    return [...msgs].sort();
+  }, [sortedPlugins]);
+
+  // Count per stage / state in the base dataset (drives disabled state on filter buttons)
+  const stageCounts = useMemo(() => {
+    const counts = Object.fromEntries(STAGE_VALUES.map((s) => [s, 0]));
+    for (const p of sortedPlugins) counts[p.stageName] = (counts[p.stageName] ?? 0) + 1;
+    return counts;
+  }, [sortedPlugins]);
+
+  const stateCounts = useMemo(() => {
+    const counts = Object.fromEntries(STATE_VALUES.map((s) => [s, 0]));
+    for (const p of sortedPlugins) counts[p.state] = (counts[p.state] ?? 0) + 1;
+    return counts;
+  }, [sortedPlugins]);
+
+  // Apply ToggleButton filters then search
+  const toggleFilteredPlugins = useMemo(() => {
+    let filtered = sortedPlugins;
+    if (selectedMessage) {
+      filtered = filtered.filter((p) => p.message === selectedMessage);
+    }
+    if (activeStageFilters.size > 0) {
+      filtered = filtered.filter((p) => activeStageFilters.has(p.stageName));
+    }
+    if (activeStateFilters.size > 0) {
+      filtered = filtered.filter((p) => activeStateFilters.has(p.state));
+    }
+    return filtered;
+  }, [sortedPlugins, selectedMessage, activeStageFilters, activeStateFilters]);
+
   // Apply search filter
   const searchedPlugins = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sortedPlugins;
-    return sortedPlugins.filter((p) =>
+    if (!q) return toggleFilteredPlugins;
+    return toggleFilteredPlugins.filter((p) =>
       p.name.toLowerCase().includes(q) ||
       p.entity.toLowerCase().includes(q) ||
       p.assemblyName.toLowerCase().includes(q) ||
       p.typeName.toLowerCase().includes(q)
     );
-  }, [sortedPlugins, searchQuery]);
+  }, [toggleFilteredPlugins, searchQuery]);
+
+  const toggleStageFilter = (stage: string) => {
+    setActiveStageFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(stage)) {
+        next.delete(stage);
+      } else {
+        next.add(stage);
+      }
+      return next;
+    });
+  };
+
+  const toggleStateFilter = (state: string) => {
+    setActiveStateFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(state)) {
+        next.delete(state);
+      } else {
+        next.add(state);
+      }
+      return next;
+    });
+  };
 
   const getStageBadgeColor = (stage: number): string => {
     const stageColors: Record<number, string> = {
@@ -290,17 +366,67 @@ export function PluginsList({
 
   return (
     <div className={styles.container}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search plugins..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedPlugins.length} of {sortedPlugins.length} plugins
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search plugins..."
+        filteredCount={searchedPlugins.length}
+        totalCount={sortedPlugins.length}
+        itemLabel="plugins"
+      >
+        <FilterGroup label="Message:">
+          <Dropdown
+            size="small"
+            style={{ minWidth: '130px' }}
+            value={selectedMessage || 'All'}
+            selectedOptions={selectedMessage ? [selectedMessage] : []}
+            onOptionSelect={(_, data) => setSelectedMessage(data.optionValue === '' ? '' : (data.optionValue ?? ''))}
+          >
+            <Option value="">All</Option>
+            {availableMessages.map((msg) => (
+              <Option key={msg} value={msg}>{msg}</Option>
+            ))}
+          </Dropdown>
+        </FilterGroup>
+        <FilterGroup label="Stage:">
+          {STAGE_VALUES.map((stage) => (
+            <ToggleButton
+              key={stage}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStageFilters.has(stage)}
+              disabled={stageCounts[stage] === 0}
+              onClick={() => toggleStageFilter(stage)}
+            >
+              {formatStageLabel(stage)}
+            </ToggleButton>
+          ))}
+          {activeStageFilters.size > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => setActiveStageFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+        <FilterGroup label="State:">
+          {STATE_VALUES.map((state) => (
+            <ToggleButton
+              key={state}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStateFilters.has(state)}
+              disabled={stateCounts[state] === 0}
+              onClick={() => toggleStateFilter(state)}
+            >
+              {state}
+            </ToggleButton>
+          ))}
+          {activeStateFilters.size > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
       {searchedPlugins.length === 0 && sortedPlugins.length > 0 ? (
         <div className={styles.emptyState}>
           <Text>No plugins match your search.</Text>
@@ -343,7 +469,7 @@ export function PluginsList({
               >
                 {plugin.stageName}
               </Badge>
-              <Badge appearance={plugin.mode === 0 ? 'outline' : 'filled'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium" shape="rounded">
+              <Badge appearance={plugin.mode === 0 ? 'outline' : 'tint'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium" shape="rounded">
                 {plugin.modeName}
               </Badge>
               <Badge appearance="filled" shape="rounded" color={plugin.state === 'Enabled' ? 'success' : 'important'} size="medium">

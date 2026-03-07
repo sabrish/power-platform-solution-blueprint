@@ -33,18 +33,32 @@ Invoke the **security-auditor** agent.
 
 ## Step 3: Version Bump and Documentation
 
+### Step 3a — Developer agent: Version bump
+
+Invoke the **developer** agent to run:
+
+```
+npm version X.Y.Z --no-git-tag-version
+```
+
+This updates **both** `package.json` and `npm-shrinkwrap.json` to the target
+version automatically. Do not proceed to Step 3b until the developer confirms
+both files are updated.
+
+### Step 3b — Document-updater agent: Documentation
+
 Invoke the **document-updater** agent with these exact tasks:
 
-1. Bump version in `package.json` to the target version
-2. Finalise `CHANGELOG.md`: move the `## [Unreleased]` section to a versioned
+1. Finalise `CHANGELOG.md`: move the `## [Unreleased]` section to a versioned
    entry `## [X.Y.Z] — YYYY-MM-DD` with today's date
-3. Update `README.md`: update the shields.io version badge at the top and any
+2. Update `README.md`: update the shields.io version badge at the top and any
    inline version references to the target version
-4. Verify all three files match — `package.json` version field, `CHANGELOG.md`
-   latest entry header, and `README.md` badge must ALL show the same version
-   number. This is a release blocker if they do not match.
+3. Verify all **four** files match — `package.json` version field,
+   `npm-shrinkwrap.json` version field, `CHANGELOG.md` latest entry header,
+   and `README.md` badge must ALL show the same version number. This is a
+   release blocker if they do not match.
 
-Do not proceed to Step 4 until the document-updater confirms all three files
+Do not proceed to Step 4 until the document-updater confirms all four files
 are consistent.
 
 ---
@@ -55,11 +69,6 @@ Invoke the **developer** agent with these exact tasks, in this exact order:
 
 1. `pnpm typecheck` — must pass with zero errors. Stop if any errors.
 2. `pnpm build` — must complete successfully. Stop if it fails.
-3. `npm shrinkwrap` — regenerates npm-shrinkwrap.json to capture the updated
-   version from package.json. Must use `npm`, never `pnpm`. See NPM_SHRINKWRAP_GENERATION.md.
-
-**Critical:** npm shrinkwrap MUST run after Step 3 (version bump). Running it
-before will capture the old version number in npm-shrinkwrap.json.
 
 ---
 
@@ -73,10 +82,9 @@ Confirm all four steps passed, then print the following — do not run any of th
 All checks passed:
 ✅ Code review
 ✅ Security audit
-✅ Version bump — package.json, CHANGELOG.md, README.md all show v[VERSION]
+✅ Version bump — package.json, npm-shrinkwrap.json, CHANGELOG.md, README.md all show v[VERSION]
 ✅ pnpm typecheck — zero errors
 ✅ pnpm build — succeeded
-✅ npm shrinkwrap — regenerated
 
 Run these commands to publish:
 

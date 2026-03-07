@@ -1,6 +1,6 @@
 # PPSB User Guide
 
-Complete guide for using Power Platform Solution Blueprint (PPSB) v0.5
+Complete guide for using Power Platform Solution Blueprint (PPSB) v0.9
 
 ## Table of Contents
 
@@ -258,19 +258,23 @@ At the top, you'll see:
 ### Entity Relationship Diagram (ERD)
 
 **What it shows**:
-- All entities as boxes
-- Relationships as connecting lines (1:N, N:1, N:N with cardinality symbols)
-- Publisher color-coding (each publisher gets a unique color)
+- All entities as nodes in a force-directed graph
+- Relationships as connecting edges (hover to see relationship name and referenced/referencing attribute)
+- Publisher color-coding (each publisher gets a unique color, shown in the legend)
 
 **Interactive Features**:
-- **Zoom**: Browser zoom (Ctrl+scroll)
-- **Legend**: Publisher colors with entity counts
-- **Quick Links Table**: Click entity name to jump to details
+- **Pan**: Click and drag the canvas to move around
+- **Zoom**: Scroll wheel or pinch-to-zoom
+- **Select**: Click a node to highlight it and see relationship counts in a tooltip
+- **Isolate node**: Click "Isolate" in the hint bar to show only the selected entity and its direct neighbours; click "Show all" to restore
+- **Publisher filter**: Toggle publishers on/off in the hint bar to hide/show their entities
+- **Export**: Download the diagram as PNG or SVG using the hint bar buttons
 
 **Tips**:
-- Use legend to understand publisher distribution
-- Look for disconnected entities (no relationships)
-- Identify central entities (many relationships)
+- Use the publisher filter to focus on a single publisher's entities
+- Isolate a central entity to understand its immediate relationship context
+- Hover over an edge to see the relationship name and field details
+- Look for highly connected nodes — these are entities with broad dependencies
 
 ### Tabs
 
@@ -378,7 +382,7 @@ Choose one or more formats:
 - Index.md (home page)
 - Entities/ folder (one .md per entity)
 - Plugins.md, Flows.md, etc.
-- ERD.md with Mermaid diagram
+- ERD.md with Mermaid ER diagram (static, for wiki rendering)
 
 **How to use**:
 1. Extract ZIP
@@ -415,8 +419,9 @@ Choose one or more formats:
 - Interactive navigation sidebar
 - Searchable (Ctrl+F)
 - Accordion sections
-- Embedded Mermaid diagrams
-- Works offline (no external dependencies except Mermaid CDN)
+- Interactive ERD (Cytoscape.js, pinned CDN version 3.33.1)
+- Execution pipeline diagrams (Mermaid, pinned CDN version 10.9.1)
+- Requires internet access to load Cytoscape.js and Mermaid from CDN (jsdelivr.net)
 
 **How to use**:
 - Email to stakeholders
@@ -540,7 +545,7 @@ Single-file HTML with:
 - **Sidebar Navigation**: Smooth scrolling links
 - **Sections**: Collapsible accordions
 - **Tables**: Sortable columns
-- **Diagrams**: Embedded Mermaid rendering
+- **Diagrams**: Execution pipeline diagrams rendered via Mermaid (CDN, pinned to 10.9.1)
 - **Search**: Browser Ctrl+F works
 - **Print**: CSS optimized for PDF export
 
@@ -693,17 +698,17 @@ Common issues and solutions.
 
 ### Issue: ERD Not Rendering
 
-**Symptoms**: ERD section shows error or empty.
+**Symptoms**: ERD section shows error or is empty.
 
-**Cause**: Mermaid syntax error or browser compatibility.
+**Cause**: Browser compatibility or Cytoscape.js initialisation error.
 
 **Solution**:
 1. Check browser console for errors
-2. Try different browser (Chrome recommended)
-3. Verify relationships exist (isolated entities won't show relationships)
-4. Export HTML and open separately
+2. Try different browser (Chrome or Edge recommended)
+3. Verify entities exist in the selected scope — an empty scope produces an empty graph
+4. Refresh the tool and regenerate the blueprint
 
-**Prevention**: Use latest Chrome/Edge for best compatibility.
+**Prevention**: Use the latest Chrome or Edge for best compatibility.
 
 ### Issue: Export Download Fails
 
@@ -863,7 +868,7 @@ A: Open HTML export and use browser print (Ctrl+P). Select "Save as PDF" for dig
 A: Check permissions, reduce scope, ensure stable network, retry. If persists, report issue with error details.
 
 **Q: ERD won't render. Why?**
-A: Check browser (Chrome recommended), verify relationships exist, try HTML export separately.
+A: Check browser (Chrome or Edge recommended), verify the selected scope contains entities, refresh and regenerate.
 
 **Q: Export is huge (>100MB). Normal?**
 A: For 500+ entity environments, yes. Reduce scope or use Markdown (splits into smaller files).
