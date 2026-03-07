@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-02-26 (migrated from CHANGELOG.md, docs/roadmap.md, CLAUDE.md)
+**Last updated:** 2026-03-07
 
 ---
 
@@ -18,19 +18,19 @@
 
 ## Current Version
 
-**v0.7.2** (released 2026-02-23)
+**v0.9.0** (released 2026-03-07)
 
 ---
 
-## What is Working (as of v0.7.2)
+## What is Working (as of v0.9.0)
 
 ### Core Discovery
 - Entity schema discovery (fields, relationships, keys, alternate keys)
 - Plugin discovery with full registration details and execution order
 - Power Automate flow discovery with trigger and connection analysis
-- Business rule discovery and XAML parsing
+- Business rule discovery with full compiled-JS parser (all condition and action types)
 - Classic workflow discovery with migration recommendations
-- Business Process Flow documentation (stages and steps — BPF step count fixed in v0.7.2)
+- Business Process Flow documentation (stages and steps)
 - JavaScript web resource analysis with external call detection
 - Custom API documentation with parameters
 - Environment variable discovery and value tracking
@@ -44,22 +44,25 @@
 
 ### UI
 - Scope Selector: By Publisher (multi-select) and By Solution (default, multi-select)
-- Entity list with search
-- Component Browser with card-row expandable pattern
+- Entity list with flag-based filter bar (AND logic) and search
+- Component Browser with card-row expandable pattern (PATTERN-001)
+- Plugin Packages tab grouping plugin steps by assembly
+- Clickable Dashboard summary cards that select the corresponding Component Browser tab
+- Compact Component Browser tabs (icon + count when unselected; full label + count when selected)
+- Universal search/filter bar on every component list tab
 - Results Dashboard with tabbed view
-- ERD using Mermaid (single all-entities diagram with publisher color-coding)
+- Interactive ERD: Cytoscape.js force-directed graph with pan/zoom, node isolation, publisher filter, edge hover (relationship name + attribute), PNG/SVG export
 - Export: JSON, Markdown, HTML, ZIP (all static imports — dynamic imports broken under pptb-webview://)
-- Real-time progress reporting with phase-specific labels (plugins/flows/business rules/entities)
+- Real-time progress reporting with phase-specific labels
 
-### Fixed in v0.7.2
-- BPF step count now reads `processstage.clientdata` JSON array correctly
-- All exports work under PPTB Desktop (converted from dynamic to static imports)
-- Text overflow in component lists fixed (`minWidth: 0`, `wordBreak: 'break-word'`, `overflowWrap: 'anywhere'`)
-- Classic workflow and custom connector OData query compatibility
-- Business rule placeholder description text filtered out
-- Theme toggle removed; theme handling consolidated into ThemeContext
-- `PptbDataverseClient` now receives environment URL from `toolContext.connectionUrl`
-- `solutionNames` added to blueprint metadata
+### Key fixes since v0.7.2
+- Business rule parser completely rewritten — covers all condition/action patterns including `controls.forEach` delegate, double-wrapped parens, date-derived variables
+- HTML export: SyntaxError fix (`\n` escaping), Edge storage shim, Mermaid pinned to 10.9.1, `startOnLoad: false`, tooltip XSS defence (`_esc()`), ERD data in JSON data-block
+- ERD replaced: Mermaid static diagram → Cytoscape.js interactive graph
+- DB diagram (dbdiagram.io export): attribute-less entities now get fallback columns from relationship data
+- Security role privilege matrix reads `depthValue` (numeric) correctly
+- Entity badge counts, filter bar visibility, AND filter logic, managed/custom badges all corrected
+- Classic workflow migration log `console.warn` removed from production
 
 ---
 
@@ -96,7 +99,8 @@ src/
 - React 18 + Vite 5 + TypeScript (strict mode)
 - Fluent UI v9 (`@fluentui/react-components`, `@fluentui/react-icons`)
 - `@pptb/types` v1.0.19+ (official PPTB Desktop type definitions)
-- Mermaid (ERD rendering)
+- Cytoscape.js (interactive ERD graph)
+- Mermaid (execution pipeline diagrams in HTML/Markdown exports; CDN, pinned to 10.9.1)
 - JSZip (ZIP packaging)
 - pnpm (package manager)
 

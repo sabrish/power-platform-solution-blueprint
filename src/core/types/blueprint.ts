@@ -239,6 +239,7 @@ export interface Flow {
 export interface FlowDefinition {
   triggerType: 'Dataverse' | 'Manual' | 'Scheduled' | 'Other';
   triggerEvent: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Manual' | 'Scheduled' | 'Unknown';
+  triggerEntity: string | null;
   triggerConditions: string | null;
   scopeType: 'User' | 'BusinessUnit' | 'Organization' | 'Unknown';
   actionsCount: number;
@@ -493,6 +494,42 @@ export interface BlueprintMetadata {
 }
 
 /**
+ * Node in the ERD graph data model (used by the interactive viewer)
+ */
+export interface ERDNode {
+  id: string;
+  label: string;
+  publisherPrefix: string;
+  color: string;
+  strokeColor: string;
+  textColor: string;
+}
+
+/**
+ * Edge in the ERD graph data model (used by the interactive viewer)
+ */
+export interface ERDEdge {
+  id: string;
+  source: string;
+  target: string;
+  /** For 1-N: the referencing attribute (FK on the child/source side) */
+  label: string;
+  type: '1-N' | 'N-N';
+  /** For 1-N: the referenced attribute (PK on the parent/target side) */
+  referencedAttribute?: string;
+  /** For N-N: the intersection (junction) table name */
+  intersectEntityName?: string;
+}
+
+/**
+ * Graph data for the ERD interactive viewer
+ */
+export interface ERDGraphData {
+  nodes: ERDNode[];
+  edges: ERDEdge[];
+}
+
+/**
  * ERD (Entity Relationship Diagram) definition
  */
 export interface ERDDefinition {
@@ -502,6 +539,7 @@ export interface ERDDefinition {
   totalEntities: number;
   totalRelationships: number;
   warnings?: string[];
+  graphData?: ERDGraphData;
 }
 
 /**

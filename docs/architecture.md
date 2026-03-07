@@ -206,7 +206,8 @@ Analyzers take discovered data and produce insights:
 ### Generators
 
 **ERDGenerator**:
-- Builds Mermaid ERD diagram
+- Builds a Cytoscape.js-compatible graph dataset (nodes + edges) for the interactive in-app ERD
+- Produces a Mermaid ER diagram string for Markdown export (ERD.md) and the HTML export's static fallback
 - Color-codes entities by publisher
 - Creates legend and quick links table
 
@@ -229,7 +230,10 @@ Analyzers take discovered data and produce insights:
 - Interactive navigation sidebar
 - Accordion sections
 - Sortable tables (client-side JavaScript)
-- Mermaid rendering via CDN
+- Execution pipeline diagrams rendered via Mermaid CDN (pinned to 10.9.1, `startOnLoad: false`)
+- localStorage/sessionStorage shim to prevent Edge Tracking Prevention storage warnings
+- XSS defence: all tooltip values passed through an `_esc()` HTML-escape helper
+- ERD graph data embedded in `<script type="application/json">` to avoid JS-parsing issues with special characters
 
 **JsonReporter**:
 - Serializes BlueprintResult to JSON
@@ -260,7 +264,7 @@ App
 └── ResultsDashboard
     ├── SummaryCards
     ├── ERDView
-    │   └── MermaidDiagram
+    │   └── CytoscapeERD (interactive force-directed graph)
     ├── Tabs
     │   ├── EntitiesTab
     │   │   └── EntityDetailView (modal)
@@ -679,9 +683,9 @@ interface IReporter {
 **Problem**: Large ERD (500+ entities) causes browser lag
 
 **Solution**:
-- Render ERD only when section expanded
-- Use `IntersectionObserver` to detect visibility
-- Defer Mermaid rendering until needed
+- The in-app ERD uses Cytoscape.js, which renders a force-directed canvas and handles large graphs natively
+- The Cytoscape instance is mounted only when the ERD section is first viewed
+- HTML export execution pipeline diagrams (Mermaid) use `startOnLoad: false` and are triggered via `mermaid.run()` to avoid premature initialisation
 
 ### List Rendering
 
@@ -908,4 +912,4 @@ PPSB architecture emphasizes:
 
 ---
 
-*Last updated: 2026-03-02 — updated API layer description, DataGrid → card-row correction, static import constraint, metadata $orderby caveat, typed cache. Flat-structure migration documented in Section 2 (since v0.5.1).*
+*Last updated: 2026-03-07 — ERDGenerator updated for Cytoscape.js interactive graph (v0.9.0); HtmlReporter notes updated for Mermaid CDN pinning, storage shim, XSS defence, and JSON data-block embedding; lazy rendering section updated for Cytoscape; component hierarchy updated (MermaidDiagram → CytoscapeERD). Prior: 2026-03-02 — API layer description, DataGrid → card-row correction, static import constraint, metadata $orderby caveat, typed cache.*

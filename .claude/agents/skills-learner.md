@@ -87,6 +87,8 @@ When promoting manually:
 
 ### 3. One-Time Memory Migration
 
+**Guard:** Only run this task if `.claude/memory/` does not exist or `.claude/memory/project.md` is empty. If memory files are already populated, stop and inform the project owner that migration has already been completed. Do not overwrite existing memory files.
+
 When invoked with "migrate memory", process the existing project MD files:
 
 **Source files to process:**

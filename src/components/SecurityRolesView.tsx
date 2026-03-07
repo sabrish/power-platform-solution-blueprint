@@ -17,8 +17,8 @@ import {
   AccordionHeader,
   AccordionItem,
   AccordionPanel,
-  SearchBox,
 } from '@fluentui/react-components';
+import { FilterBar } from './FilterBar';
 import type { SecurityRoleDetail } from '../core';
 
 const useStyles = makeStyles({
@@ -31,18 +31,6 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalM,
-  },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
   },
   accordionItem: {
     marginBottom: tokens.spacingVerticalS,
@@ -121,7 +109,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
 
   // Render entity permissions table for a role
   const renderEntityPermissionsTable = (role: SecurityRoleDetail) => {
-    const privilegeTypes = ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share'];
+    const privilegeTypes = ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share'] as const;
 
     const depthLabelMap: Record<number, string> = {
       0: 'None',
@@ -190,7 +178,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                       <Text weight="semibold">{entityPerm.entityLogicalName}</Text>
                     </td>
                     {privilegeTypes.map((type) => {
-                      const priv = privMap.get(type as any);
+                      const priv = privMap.get(type);
 
                       // If privilege doesn't exist at all, show empty cell
                       if (!priv) {
@@ -243,17 +231,14 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
         </div>
       ) : (
         <>
-          <div className={styles.filters}>
-            <SearchBox
-              className={styles.searchBox}
-              placeholder="Search security roles..."
-              value={searchQuery}
-              onChange={(_, data) => setSearchQuery(data.value || '')}
-            />
-            <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-              {filteredRoles.length} of {securityRoles.length} roles
-            </Text>
-          </div>
+          <FilterBar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search security roles..."
+            filteredCount={filteredRoles.length}
+            totalCount={securityRoles.length}
+            itemLabel="roles"
+          />
 
           <div className={styles.section}>
             <DataGrid

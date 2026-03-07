@@ -1,23 +1,34 @@
 import { useState, useMemo } from 'react';
-import { DataGrid, DataGridBody, DataGridRow, DataGridHeader, DataGridHeaderCell, DataGridCell, TableCellLayout,
-  TableColumnDefinition, createTableColumn, Badge, SearchBox, Text, tokens, makeStyles } from '@fluentui/react-components';
+import {
+  DataGrid,
+  DataGridBody,
+  DataGridRow,
+  DataGridHeader,
+  DataGridHeaderCell,
+  DataGridCell,
+  TableCellLayout,
+  TableColumnDefinition,
+  createTableColumn,
+  Badge,
+  tokens,
+  makeStyles,
+  ToggleButton,
+  Button,
+} from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import { PlugConnected20Regular } from '@fluentui/react-icons';
 import type { ConnectionReference } from '../core';
 import { TruncatedText } from './TruncatedText';
 
+const CONN_STATUS_VALUES = ['Connected', 'Not Connected'];
+
 const useStyles = makeStyles({
-  filters: {
-    display: 'flex',
-    gap: '12px',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: '12px',
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-    marginBottom: '16px',
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
 });
 
@@ -30,17 +41,48 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
   const styles = useStyles();
   const [selectedRef, setSelectedRef] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(new Set());
+
   const sorted = useMemo(() => [...connectionReferences].sort((a, b) => a.name.localeCompare(b.name)), [connectionReferences]);
 
+  const statusCounts = useMemo(() => {
+    const counts = Object.fromEntries(CONN_STATUS_VALUES.map((s) => [s, 0]));
+    for (const r of sorted) {
+      const key = r.connectionId ? 'Connected' : 'Not Connected';
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [sorted]);
+
+  const toggleStatusFilter = (status: string) => {
+    setActiveStatusFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  };
+
   const filteredRefs = useMemo(() => {
+    let filtered = sorted;
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return sorted;
-    return sorted.filter((r) =>
-      r.name.toLowerCase().includes(q) ||
-      (r.displayName && r.displayName.toLowerCase().includes(q)) ||
-      (r.connectorDisplayName && r.connectorDisplayName.toLowerCase().includes(q))
-    );
-  }, [sorted, searchQuery]);
+    if (q) {
+      filtered = filtered.filter((r) =>
+        r.name.toLowerCase().includes(q) ||
+        (r.displayName && r.displayName.toLowerCase().includes(q)) ||
+        (r.connectorDisplayName && r.connectorDisplayName.toLowerCase().includes(q))
+      );
+    }
+    if (activeStatusFilters.size > 0) {
+      filtered = filtered.filter((r) =>
+        activeStatusFilters.has(r.connectionId ? 'Connected' : 'Not Connected')
+      );
+    }
+    return filtered;
+  }, [sorted, searchQuery, activeStatusFilters]);
 
   const columns: TableColumnDefinition<ConnectionReference>[] = [
     createTableColumn<ConnectionReference>({
@@ -85,17 +127,35 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
 
   return (
     <div style={{ marginTop: '16px' }}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search connection references..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {filteredRefs.length} of {sorted.length} references
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search connection references..."
+        filteredCount={filteredRefs.length}
+        totalCount={sorted.length}
+        itemLabel="references"
+        style={{ marginBottom: '16px' }}
+      >
+        <FilterGroup label="Status:">
+          {CONN_STATUS_VALUES.map((status) => (
+            <ToggleButton
+              key={status}
+              className={styles.filterButton}
+              size="small"
+              checked={activeStatusFilters.has(status)}
+              disabled={statusCounts[status] === 0}
+              onClick={() => toggleStatusFilter(status)}
+            >
+              {status}
+            </ToggleButton>
+          ))}
+          {activeStatusFilters.size > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => setActiveStatusFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+      </FilterBar>
       <DataGrid items={filteredRefs} columns={columns} sortable selectionMode="single" selectedItems={selectedRef ? [selectedRef] : []}
         getRowId={(item) => item.id} focusMode="composite">
         <DataGridHeader><DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow></DataGridHeader>

@@ -115,6 +115,14 @@ export class MarkdownReporter {
     files.set('analysis/performance-risks.md', this.generatePerformanceRisks(result));
     files.set('analysis/migration-recommendations.md', this.generateMigrationRecommendations(result));
 
+    // Generate ERD SVG (force-directed layout, no external dependencies)
+    if (result.erd) {
+      const erdSvg = this.generateERDSvg(result.erd);
+      if (erdSvg) {
+        files.set('erd/erd.svg', erdSvg);
+      }
+    }
+
     // Calculate total size
     const totalSize = Array.from(files.values()).reduce(
       (sum, content) => sum + new TextEncoder().encode(content).length,
@@ -194,6 +202,20 @@ export class MarkdownReporter {
   private generateERDSection(erd: ERDDefinition): string {
     const sections: string[] = [];
 
+    // SVG image reference (erd/erd.svg is generated alongside README.md)
+    if (erd.graphData) {
+      const connectedIds = new Set<string>();
+      erd.graphData.edges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+      const connectedNodeCount = erd.graphData.nodes.filter(n => connectedIds.has(n.id)).length;
+      const hasConnectedNodes = connectedNodeCount > 0;
+      if (hasConnectedNodes) {
+        sections.push('![Entity Relationship Diagram](erd/erd.svg)');
+        sections.push('');
+        sections.push(`> ${connectedNodeCount} entities · ${erd.graphData.edges.length} relationships`);
+        sections.push('');
+      }
+    }
+
     // Publisher legend
     if (erd.legend.length > 0) {
       sections.push(MarkdownFormatter.formatHeading('Publisher Legend', 3));
@@ -233,6 +255,142 @@ export class MarkdownReporter {
     }
 
     return sections.join('\n');
+  }
+
+  /**
+   * Generate a static SVG of the ERD using a force-directed layout (Fruchterman-Reingold).
+   * Mirrors the "Smart" layout used in the interactive viewer.
+   */
+  private generateERDSvg(erd: ERDDefinition): string {
+    const graphData = erd.graphData;
+    if (!graphData || graphData.nodes.length === 0) return '';
+
+    // Only include nodes that participate in at least one relationship
+    const connectedIds = new Set<string>();
+    graphData.edges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+    const nodes = graphData.nodes.filter(n => connectedIds.has(n.id));
+    if (nodes.length === 0) return '';
+
+    // Canvas size scales with node count
+    const n = nodes.length;
+    const canvasW = Math.max(900, Math.ceil(Math.sqrt(n)) * 220);
+    const canvasH = Math.max(700, Math.ceil(Math.sqrt(n)) * 180);
+    const pad = 80;
+
+    // Fruchterman-Reingold force-directed layout
+    const k = Math.sqrt((canvasW * canvasH) / n) * 0.9; // optimal distance
+    const positions = new Map<string, { x: number; y: number }>();
+
+    // Initialise on a circle to avoid symmetry collapse
+    const r = Math.min(canvasW, canvasH) * 0.35;
+    nodes.forEach((node, i) => {
+      const angle = (2 * Math.PI * i) / n;
+      positions.set(node.id, {
+        x: canvasW / 2 + r * Math.cos(angle),
+        y: canvasH / 2 + r * Math.sin(angle),
+      });
+    });
+
+    // Deduplicate edges for attraction force only — prevents over-counting parallel
+    // relationships in the force simulation. SVG rendering uses the full edge list.
+    const uniqueEdges: Array<{ source: string; target: string }> = [];
+    const edgeSeen = new Set<string>();
+    for (const e of graphData.edges) {
+      const key = [e.source, e.target].sort().join(':');
+      if (!edgeSeen.has(key)) { edgeSeen.add(key); uniqueEdges.push(e); }
+    }
+    // All edges whose endpoints were placed (used for rendering)
+    const renderEdges = graphData.edges.filter(e => positions.has(e.source) && positions.has(e.target));
+
+    // Run iterations with simulated annealing cooling
+    const iterations = 120;
+    let temp = canvasW / 8;
+    const cooling = temp / (iterations + 1);
+
+    for (let iter = 0; iter < iterations; iter++) {
+      const disp = new Map<string, { dx: number; dy: number }>();
+      nodes.forEach(nd => disp.set(nd.id, { dx: 0, dy: 0 }));
+
+      // Repulsive forces between all node pairs
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = positions.get(nodes[i].id)!;
+          const b = positions.get(nodes[j].id)!;
+          const dx = a.x - b.x || 0.01;
+          const dy = a.y - b.y || 0.01;
+          const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+          const f = (k * k) / dist;
+          const da = disp.get(nodes[i].id)!;
+          const db = disp.get(nodes[j].id)!;
+          da.dx += (dx / dist) * f;
+          da.dy += (dy / dist) * f;
+          db.dx -= (dx / dist) * f;
+          db.dy -= (dy / dist) * f;
+        }
+      }
+
+      // Attractive forces along edges
+      for (const e of uniqueEdges) {
+        const a = positions.get(e.source);
+        const b = positions.get(e.target);
+        if (!a || !b) continue;
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        const f = (dist * dist) / k;
+        const da = disp.get(e.source)!;
+        const db = disp.get(e.target)!;
+        da.dx -= (dx / dist) * f;
+        da.dy -= (dy / dist) * f;
+        db.dx += (dx / dist) * f;
+        db.dy += (dy / dist) * f;
+      }
+
+      // Apply displacements capped by temperature, clamped to canvas
+      for (const nd of nodes) {
+        const pos = positions.get(nd.id)!;
+        const d = disp.get(nd.id)!;
+        const dist = Math.max(1, Math.sqrt(d.dx * d.dx + d.dy * d.dy));
+        const move = Math.min(dist, temp);
+        pos.x = Math.max(pad, Math.min(canvasW - pad, pos.x + (d.dx / dist) * move));
+        pos.y = Math.max(pad, Math.min(canvasH - pad, pos.y + (d.dy / dist) * move));
+      }
+
+      temp -= cooling;
+    }
+
+    const nodeW = 140, nodeH = 42;
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Edges first (nodes render on top) — use full renderEdges to preserve parallel relationships
+    const edgeParts: string[] = [];
+    for (const e of renderEdges) {
+      const s = positions.get(e.source);
+      const t = positions.get(e.target);
+      if (!s || !t) continue;
+      const dash = (e as { type?: string }).type === 'N-N' ? ' stroke-dasharray="6,3"' : '';
+      edgeParts.push(`<line x1="${s.x.toFixed(1)}" y1="${s.y.toFixed(1)}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"${dash}/>`);
+    }
+
+    // Nodes
+    const nodeParts: string[] = [];
+    for (const nd of nodes) {
+      const pos = positions.get(nd.id)!;
+      nodeParts.push(
+        `<rect x="${(pos.x - nodeW / 2).toFixed(1)}" y="${(pos.y - nodeH / 2).toFixed(1)}" width="${nodeW}" height="${nodeH}" rx="5" fill="${esc(nd.color)}" stroke="${esc(nd.strokeColor)}" stroke-width="1.5"/>`,
+        `<text x="${pos.x.toFixed(1)}" y="${(pos.y + 4).toFixed(1)}" text-anchor="middle" fill="${esc(nd.textColor)}" font-size="10" font-weight="bold" font-family="system-ui,Arial,sans-serif">${esc(nd.label)}</text>`
+      );
+    }
+
+    return [
+      `<?xml version="1.0" encoding="UTF-8"?>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`,
+      `<defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#aaa"/></marker></defs>`,
+      `<rect width="${canvasW}" height="${canvasH}" fill="#ffffff"/>`,
+      ...edgeParts,
+      ...nodeParts,
+      `</svg>`,
+    ].join('\n');
   }
 
   /**
