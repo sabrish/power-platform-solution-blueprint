@@ -411,7 +411,7 @@ export class ERDGenerator {
           const key = `${entity.LogicalName}->${rel.ReferencingEntity}:${rel.SchemaName}`;
           if (!processed.has(key)) {
             processed.add(key);
-            edges.push({ id: rel.SchemaName, source: entity.LogicalName, target: rel.ReferencingEntity, label: rel.ReferencingAttribute, type: '1-N' });
+            edges.push({ id: rel.SchemaName, source: entity.LogicalName, target: rel.ReferencingEntity, label: rel.ReferencingAttribute, type: '1-N', referencedAttribute: rel.ReferencedAttribute });
           }
         }
       }
@@ -423,7 +423,7 @@ export class ERDGenerator {
           const key2 = `${rel.Entity2LogicalName}<->${rel.Entity1LogicalName}:${rel.SchemaName}`;
           if (!processed.has(key1) && !processed.has(key2)) {
             processed.add(key1);
-            edges.push({ id: rel.SchemaName, source: rel.Entity1LogicalName, target: rel.Entity2LogicalName, label: rel.Entity1IntersectAttribute, type: 'N-N' });
+            edges.push({ id: rel.SchemaName, source: rel.Entity1LogicalName, target: rel.Entity2LogicalName, label: rel.Entity1IntersectAttribute, type: 'N-N', intersectEntityName: rel.IntersectEntityName });
           }
         }
       }

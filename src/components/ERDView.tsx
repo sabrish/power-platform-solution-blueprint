@@ -33,6 +33,7 @@ import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
 
 // ─── Layout names ────────────────────────────────────────────────────────────
 type LayoutName = 'cose' | 'breadthfirst' | 'grid';
+type IsolateHops = 1 | 2 | 3;
 
 const LAYOUT_LABELS: Record<LayoutName, string> = {
   cose: 'Smart',
@@ -45,33 +46,18 @@ const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalL,
+    gap: tokens.spacingVerticalM,
   },
   toolbar: {
     display: 'flex',
-    gap: tokens.spacingHorizontalS,
+    gap: tokens.spacingHorizontalXS,
     flexWrap: 'wrap',
     alignItems: 'center',
   },
-  layoutGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalXS,
-    alignItems: 'center',
-  },
-  layoutLabel: {
+  toolbarLabel: {
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground3,
-    marginRight: tokens.spacingHorizontalXS,
-  },
-  layoutButton: {
-    minWidth: 'unset',
-  },
-  layoutButtonActive: {
-    backgroundColor: tokens.colorBrandBackground,
-    color: tokens.colorNeutralForegroundOnBrand,
-    ':hover': {
-      backgroundColor: tokens.colorBrandBackgroundHover,
-    },
+    flexShrink: 0,
   },
   divider: {
     width: '1px',
@@ -79,6 +65,7 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralStroke1,
     margin: `0 ${tokens.spacingHorizontalXS}`,
     alignSelf: 'center',
+    flexShrink: 0,
   },
   searchBox: {
     width: '180px',
@@ -135,6 +122,15 @@ const useStyles = makeStyles({
   infoPanelLabel: {
     color: tokens.colorNeutralForeground3,
   },
+  isolatedBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
+    backgroundColor: tokens.colorBrandBackground2,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    fontSize: tokens.fontSizeBase200,
+  },
   legendSection: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -155,18 +151,9 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     flexShrink: 0,
   },
-  isolatedBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalS,
-    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
-    backgroundColor: tokens.colorBrandBackground2,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
-    fontSize: tokens.fontSizeBase200,
-  },
 });
 
-// ─── Helper: build Cytoscape style array from graph data ─────────────────────
+// ─── Cytoscape stylesheet ────────────────────────────────────────────────────
 function buildCytoscapeStylesheet(): cytoscape.StylesheetJson {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return [
@@ -199,15 +186,15 @@ function buildCytoscapeStylesheet(): cytoscape.StylesheetJson {
     },
     {
       selector: 'node.faded',
-      style: {
-        opacity: 0.2,
-      },
+      style: { opacity: 0.2 },
     },
     {
       selector: 'node.isolated-hidden',
-      style: {
-        display: 'none' as const,
-      },
+      style: { display: 'none' as const },
+    },
+    {
+      selector: 'node.pub-hidden',
+      style: { display: 'none' as const },
     },
     {
       selector: 'edge',
@@ -228,11 +215,8 @@ function buildCytoscapeStylesheet(): cytoscape.StylesheetJson {
       },
     },
     {
-      // Labels hidden by default — toggled via React state
       selector: 'edge.label-hidden',
-      style: {
-        'label': '',
-      },
+      style: { 'label': '' },
     },
     {
       selector: 'edge[type = "N-N"]',
@@ -243,34 +227,116 @@ function buildCytoscapeStylesheet(): cytoscape.StylesheetJson {
       },
     },
     {
-      selector: 'edge.faded',
+      selector: 'edge.hovered',
       style: {
-        opacity: 0.08,
+        'width': 3,
+        'line-color': '#0078d4',
+        'target-arrow-color': '#0078d4',
+        'source-arrow-color': '#0078d4',
+        'z-index': 10,
       },
+    },
+    {
+      selector: 'edge.faded',
+      style: { opacity: 0.08 },
     },
     {
       selector: 'edge.isolated-hidden',
-      style: {
-        display: 'none' as const,
-      },
-    },
-    {
-      selector: 'node.pub-hidden',
-      style: {
-        display: 'none' as const,
-      },
+      style: { display: 'none' as const },
     },
     {
       selector: 'edge.pub-hidden',
-      style: {
-        display: 'none' as const,
-      },
+      style: { display: 'none' as const },
     },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ] as any;
 }
 
-// ─── Selected node info type ──────────────────────────────────────────────────
+// ─── SVG export helper ───────────────────────────────────────────────────────
+function downloadAsSVG(cy: Core): void {
+  const ext = cy.elements(':visible').boundingBox({ includeLabels: false });
+  if (!ext || !isFinite(ext.x1)) return;
+
+  const pad = 50;
+  const W = Math.ceil(ext.x2 - ext.x1 + pad * 2);
+  const H = Math.ceil(ext.y2 - ext.y1 + pad * 2);
+  const ox = -ext.x1 + pad;
+  const oy = -ext.y1 + pad;
+
+  const escXml = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Edges first (nodes render on top)
+  const edgeParts: string[] = [];
+  cy.edges(':visible').forEach((e) => {
+    const src = cy.getElementById(e.data('source') as string);
+    const tgt = cy.getElementById(e.data('target') as string);
+    if (src.empty() || tgt.empty()) return;
+    const sx = (src.position().x + ox).toFixed(1);
+    const sy = (src.position().y + oy).toFixed(1);
+    const tx = (tgt.position().x + ox).toFixed(1);
+    const ty = (tgt.position().y + oy).toFixed(1);
+    const dash = e.data('type') === 'N-N' ? ' stroke-dasharray="6,3"' : '';
+    edgeParts.push(
+      `<line x1="${sx}" y1="${sy}" x2="${tx}" y2="${ty}" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"${dash}/>`
+    );
+  });
+
+  // Nodes
+  const nodeParts: string[] = [];
+  cy.nodes(':visible').forEach((n) => {
+    const pos = n.position();
+    const w = n.width();
+    const h = n.height();
+    const x = (pos.x + ox - w / 2).toFixed(1);
+    const y = (pos.y + oy - h / 2).toFixed(1);
+    const cx = (pos.x + ox).toFixed(1);
+    const cy2 = (pos.y + oy + 4).toFixed(1);
+    const fill = n.data('color') as string;
+    const stroke = n.data('strokeColor') as string;
+    const tc = n.data('textColor') as string;
+    const lbl = escXml(n.data('label') as string);
+    nodeParts.push(
+      `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${fill}" stroke="${stroke}" stroke-width="2"/>` +
+      `<text x="${cx}" y="${cy2}" text-anchor="middle" fill="${tc}" font-size="10" font-weight="bold" font-family="system-ui,sans-serif">${lbl}</text>`
+    );
+  });
+
+  const svg = [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
+    `<defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#aaa"/></marker></defs>`,
+    `<rect width="${W}" height="${H}" fill="#fafafa"/>`,
+    ...edgeParts,
+    ...nodeParts,
+    `</svg>`,
+  ].join('\n');
+
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'entity-relationship-diagram.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── N-hop neighborhood ───────────────────────────────────────────────────────
+function getNHopCollection(cy: Core, nodeId: string, hops: IsolateHops) {
+  const start = cy.getElementById(nodeId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let collected: any = start;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let frontier: any = start;
+  for (let i = 0; i < hops; i++) {
+    const next = frontier.neighborhood();
+    collected = collected.union(next);
+    frontier = next;
+  }
+  return collected as cytoscape.CollectionReturnValue;
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface NodeInfo {
   id: string;
   label: string;
@@ -278,7 +344,16 @@ interface NodeInfo {
   connectedCount: number;
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+interface EdgeHoverInfo {
+  id: string;
+  type: '1-N' | 'N-N';
+  source: string;
+  target: string;
+  label: string;
+  referencedAttribute?: string;
+  intersectEntityName?: string;
+}
+
 export interface ERDViewProps {
   erd: ERDDefinition;
   blueprintResult: BlueprintResult;
@@ -295,20 +370,30 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
   const [isIsolated, setIsIsolated] = useState(false);
+  const [isolateHops, setIsolateHops] = useState<IsolateHops>(1);
   const [showEdgeLabels, setShowEdgeLabels] = useState(false);
   const [hiddenPublishers, setHiddenPublishers] = useState<Set<string>>(new Set());
+  const [hoveredEdge, setHoveredEdge] = useState<EdgeHoverInfo | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
   const toasterId = useId('toaster');
   const { dispatchToast } = useToastController(toasterId);
 
   const graphData = erd.graphData;
-  const hasGraph = !!(graphData && graphData.nodes.length > 0);
+
+  // Filter out nodes that have no edges (not involved in any relationship)
+  const connectedNodeIds = new Set<string>();
+  graphData?.edges.forEach((e) => { connectedNodeIds.add(e.source); connectedNodeIds.add(e.target); });
+  const filteredNodes = graphData?.nodes.filter((n) => connectedNodeIds.has(n.id)) ?? [];
+  const isolatedEntityCount = (graphData?.nodes.length ?? 0) - filteredNodes.length;
+
+  const hasGraph = filteredNodes.length > 0;
 
   // ── Initialize Cytoscape ────────────────────────────────────────────────
   useEffect(() => {
-    if (!hasGraph || !graphRef.current) return;
+    if (!hasGraph || !graphRef.current || !graphData) return;
 
-    const nodes = graphData.nodes.map((n) => ({
+    const nodes = filteredNodes.map((n) => ({
       data: {
         id: n.id,
         label: n.label,
@@ -326,6 +411,8 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         target: e.target,
         label: e.label,
         type: e.type,
+        referencedAttribute: e.referencedAttribute ?? '',
+        intersectEntityName: e.intersectEntityName ?? '',
       },
     }));
 
@@ -336,7 +423,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
       layout: {
         name: 'cose',
         animate: false,
-        // Higher repulsion + longer ideal edges keeps nodes well spread
         nodeRepulsion: () => 8000000,
         idealEdgeLength: () => 180,
         nodeOverlap: 60,
@@ -348,29 +434,57 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
       wheelSensitivity: 0.3,
     });
 
-    // Hide edge labels by default — user must opt in via Labels toggle
+    // Hide edge labels by default
     cy.edges().addClass('label-hidden');
 
-    // Node click — show info + isolate
+    // Node click — select
     cy.on('tap', 'node', (evt) => {
       const node = evt.target as NodeSingular;
-      const nodeData = node.data();
+      const d = node.data();
       const connected = node.neighborhood('node');
       setSelectedNode({
-        id: nodeData.id as string,
-        label: nodeData.label as string,
-        publisherPrefix: nodeData.publisherPrefix as string,
+        id: d.id as string,
+        label: d.label as string,
+        publisherPrefix: d.publisherPrefix as string,
         connectedCount: connected.length,
       });
     });
 
-    // Background click — clear selection
+    // Background tap — clear selection
     cy.on('tap', (evt) => {
       if (evt.target === cy) {
         setSelectedNode(null);
-        clearIsolation(cy);
+        clearIsolationOn(cy);
         setIsIsolated(false);
       }
+    });
+
+    // Edge hover — tooltip
+    cy.on('mouseover', 'edge', (evt) => {
+      const e = evt.target;
+      e.addClass('hovered');
+      const me = evt.originalEvent as MouseEvent;
+      setHoveredEdge({
+        id: e.data('id') as string,
+        type: e.data('type') as '1-N' | 'N-N',
+        source: e.data('source') as string,
+        target: e.data('target') as string,
+        label: e.data('label') as string,
+        referencedAttribute: (e.data('referencedAttribute') as string) || undefined,
+        intersectEntityName: (e.data('intersectEntityName') as string) || undefined,
+      });
+      setTooltipPos({ x: me.clientX + 14, y: me.clientY + 14 });
+    });
+
+    cy.on('mousemove', 'edge', (evt) => {
+      const me = evt.originalEvent as MouseEvent;
+      setTooltipPos({ x: me.clientX + 14, y: me.clientY + 14 });
+    });
+
+    cy.on('mouseout', 'edge', (evt) => {
+      evt.target.removeClass('hovered');
+      setHoveredEdge(null);
+      setTooltipPos(null);
     });
 
     cyRef.current = cy;
@@ -388,12 +502,11 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     const cy = cyRef.current;
     if (!cy) return;
 
-    // Remove isolation before re-layout
-    cy.elements().removeClass('isolated-hidden');
+    clearIsolationOn(cy);
     setIsIsolated(false);
     setSelectedNode(null);
 
-    const layoutOptions: Record<LayoutName, cytoscape.LayoutOptions> = {
+    const opts: Record<LayoutName, cytoscape.LayoutOptions> = {
       cose: {
         name: 'cose',
         animate: false,
@@ -403,11 +516,23 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         gravity: 0.15,
         numIter: 1000,
       },
-      breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 40, spacingFactor: 1.6 },
-      grid: { name: 'grid', animate: false, padding: 30, spacingFactor: 1.4 },
+      breadthfirst: {
+        name: 'breadthfirst',
+        animate: false,
+        directed: true,
+        padding: 60,
+        spacingFactor: 2.0,
+      },
+      grid: {
+        name: 'grid',
+        animate: false,
+        padding: 60,
+        spacingFactor: 2.0,
+        avoidOverlap: true,
+      },
     };
 
-    const layout = cy.layout(layoutOptions[name]);
+    const layout = cy.layout(opts[name]);
     layout.on('layoutstop', () => cy.fit(undefined, 40));
     layout.run();
   }, []);
@@ -421,20 +546,13 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
-
     cy.nodes().removeClass('highlighted faded');
-
     const q = searchQuery.trim().toLowerCase();
     if (!q) return;
-
     cy.nodes().forEach((node) => {
-      const label = (node.data('label') as string).toLowerCase();
+      const lbl = (node.data('label') as string).toLowerCase();
       const id = (node.data('id') as string).toLowerCase();
-      if (label.includes(q) || id.includes(q)) {
-        node.addClass('highlighted');
-      } else {
-        node.addClass('faded');
-      }
+      node.addClass(lbl.includes(q) || id.includes(q) ? 'highlighted' : 'faded');
     });
   }, [searchQuery]);
 
@@ -463,44 +581,53 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
       }
     });
 
-    // Hide edges where either endpoint is hidden
     cy.edges().forEach((edge) => {
-      const srcHidden = hiddenPublishers.has(cy.getElementById(edge.data('source') as string).data('publisherPrefix') as string);
-      const tgtHidden = hiddenPublishers.has(cy.getElementById(edge.data('target') as string).data('publisherPrefix') as string);
+      const srcHidden = hiddenPublishers.has(
+        cy.getElementById(edge.data('source') as string).data('publisherPrefix') as string
+      );
+      const tgtHidden = hiddenPublishers.has(
+        cy.getElementById(edge.data('target') as string).data('publisherPrefix') as string
+      );
       if (srcHidden || tgtHidden) {
         edge.addClass('pub-hidden');
       } else {
         edge.removeClass('pub-hidden');
       }
     });
+
   }, [hiddenPublishers]);
 
-  // ── Isolate node ─────────────────────────────────────────────────────────
+  // ── Isolate ──────────────────────────────────────────────────────────────
   const isolateNode = useCallback(() => {
     const cy = cyRef.current;
     if (!cy || !selectedNode) return;
 
-    const node = cy.getElementById(selectedNode.id);
-    if (!node || node.empty()) return;
-
-    const neighborhood = node.closedNeighborhood();
+    const collected = getNHopCollection(cy, selectedNode.id, isolateHops);
     cy.elements().addClass('isolated-hidden');
-    neighborhood.removeClass('isolated-hidden');
+    collected.removeClass('isolated-hidden');
     setIsIsolated(true);
+    cy.fit(collected, 60);
+  }, [selectedNode, isolateHops]);
 
-    cy.fit(neighborhood, 60);
-  }, [selectedNode]);
-
-  const clearIsolation = (cy: Core) => {
+  function clearIsolationOn(cy: Core) {
     cy.elements().removeClass('isolated-hidden');
-  };
+  }
 
   const handleClearIsolation = () => {
     const cy = cyRef.current;
     if (!cy) return;
-    clearIsolation(cy);
+    clearIsolationOn(cy);
     setIsIsolated(false);
-    cy.fit(undefined, 30);
+    cy.fit(undefined, 40);
+  };
+
+  // ── Clear all filters ────────────────────────────────────────────────────
+  const hasActiveFilters = searchQuery.trim() !== '' || hiddenPublishers.size > 0;
+
+  const handleClearAllFilters = () => {
+    setSearchQuery('');
+    setHiddenPublishers(new Set());
+    if (isIsolated) handleClearIsolation();
   };
 
   // ── Zoom controls ────────────────────────────────────────────────────────
@@ -509,28 +636,28 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     if (!cy) return;
     cy.zoom({ level: cy.zoom() * 1.2, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
   };
-
   const handleZoomOut = () => {
     const cy = cyRef.current;
     if (!cy) return;
     cy.zoom({ level: cy.zoom() / 1.2, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
   };
+  const handleFit = () => { cyRef.current?.fit(undefined, 40); };
 
-  const handleFit = () => {
-    const cy = cyRef.current;
-    if (!cy) return;
-    cy.fit(undefined, 30);
-  };
-
-  // ── Download PNG ─────────────────────────────────────────────────────────
+  // ── PNG download ─────────────────────────────────────────────────────────
   const handleDownloadPNG = () => {
     const cy = cyRef.current;
     if (!cy) return;
-    const dataUrl = cy.png({ full: true, scale: 2, bg: '#f5f5f5' });
+    const url = cy.png({ full: true, scale: 2, bg: '#fafafa' });
     const a = document.createElement('a');
-    a.href = dataUrl;
+    a.href = url;
     a.download = 'entity-relationship-diagram.png';
     a.click();
+  };
+
+  // ── SVG download ─────────────────────────────────────────────────────────
+  const handleDownloadSVG = () => {
+    const cy = cyRef.current;
+    if (cy) downloadAsSVG(cy);
   };
 
   // ── Copy Mermaid ─────────────────────────────────────────────────────────
@@ -539,7 +666,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     if (diagram) {
       navigator.clipboard.writeText(diagram.mermaidDiagram);
       dispatchToast(
-        <Toast><ToastTitle action={<Checkmark24Regular />}>Mermaid code copied to clipboard</ToastTitle></Toast>,
+        <Toast><ToastTitle action={<Checkmark24Regular />}>Mermaid code copied</ToastTitle></Toast>,
         { intent: 'success', timeout: 2000 }
       );
     }
@@ -547,8 +674,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
   // ── Copy dbdiagram.io ─────────────────────────────────────────────────────
   const handleCopyDbDiagram = () => {
-    const code = generateDbDiagramCode(blueprintResult);
-    navigator.clipboard.writeText(code);
+    navigator.clipboard.writeText(generateDbDiagramCode(blueprintResult));
     dispatchToast(
       <Toast><ToastTitle action={<Checkmark24Regular />}>dbdiagram.io code copied! Paste at https://dbdiagram.io/d</ToastTitle></Toast>,
       { intent: 'success', timeout: 3000 }
@@ -559,40 +685,77 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     <div className={styles.container}>
       <Toaster toasterId={toasterId} />
 
-      {/* Header */}
+      {/* ── Edge hover tooltip (fixed, portal-like) ── */}
+      {hoveredEdge && tooltipPos && (
+        <div style={{
+          position: 'fixed',
+          left: tooltipPos.x,
+          top: tooltipPos.y,
+          backgroundColor: tokens.colorNeutralBackground1,
+          border: `1px solid ${tokens.colorNeutralStroke1}`,
+          borderRadius: tokens.borderRadiusMedium,
+          padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+          boxShadow: tokens.shadow8,
+          zIndex: 9999,
+          maxWidth: '300px',
+          pointerEvents: 'none',
+        }}>
+          <Text weight="semibold" block style={{ marginBottom: '2px', wordBreak: 'break-all' }}>
+            {hoveredEdge.id}
+          </Text>
+          <Text block style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, marginBottom: tokens.spacingVerticalXS }}>
+            {hoveredEdge.type === '1-N' ? '1:N relationship' : 'N:N relationship'}
+          </Text>
+          {hoveredEdge.type === '1-N' && (
+            <>
+              <Text block style={{ fontSize: tokens.fontSizeBase200 }}>
+                <span style={{ color: tokens.colorNeutralForeground3 }}>Parent → Child: </span>
+                {hoveredEdge.target} → {hoveredEdge.source}
+              </Text>
+              <Text block style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, marginTop: '2px' }}>
+                {hoveredEdge.referencedAttribute} → {hoveredEdge.label}
+              </Text>
+            </>
+          )}
+          {hoveredEdge.type === 'N-N' && hoveredEdge.intersectEntityName && (
+            <Text block style={{ fontSize: tokens.fontSizeBase200 }}>
+              <span style={{ color: tokens.colorNeutralForeground3 }}>Via: </span>
+              {hoveredEdge.intersectEntityName}
+            </Text>
+          )}
+        </div>
+      )}
+
+      {/* ── Header ── */}
       <div>
         <Title3>Entity Relationship Diagram</Title3>
         <Text style={{ color: tokens.colorNeutralForeground3 }}>
-          {erd.totalEntities} entities · {erd.totalRelationships} relationships
-          {hasGraph && ` · ${graphData.edges.length} shown`}
+          {filteredNodes.length} entities · {graphData?.edges.length ?? 0} relationships in scope
+          {isolatedEntityCount > 0 && ` · ${isolatedEntityCount} entity${isolatedEntityCount > 1 ? 'ies' : ''} with no relationships hidden`}
         </Text>
       </div>
 
-      {/* Toolbar */}
-      <div className={styles.toolbar}>
-        {/* Layout selector */}
-        {hasGraph && (
-          <div className={styles.layoutGroup}>
-            <Text className={styles.layoutLabel}>Layout:</Text>
+      {hasGraph && (
+        <>
+          {/* ── Toolbar row 1: Layout | Zoom | Search + Isolate | Exports ── */}
+          <div className={styles.toolbar}>
+            {/* Layout */}
+            <Text className={styles.toolbarLabel}>Layout:</Text>
             {(Object.keys(LAYOUT_LABELS) as LayoutName[]).map((name) => (
               <Button
                 key={name}
                 size="small"
                 appearance={activeLayout === name ? 'primary' : 'secondary'}
-                className={styles.layoutButton}
+                style={{ minWidth: 'unset' }}
                 onClick={() => handleLayoutChange(name)}
               >
                 {LAYOUT_LABELS[name]}
               </Button>
             ))}
-          </div>
-        )}
 
-        {hasGraph && <div className={styles.divider} />}
+            <div className={styles.divider} />
 
-        {/* Zoom controls */}
-        {hasGraph && (
-          <>
+            {/* Zoom */}
             <Tooltip content="Zoom in" relationship="label">
               <Button size="small" appearance="subtle" icon={<ZoomIn24Regular />} onClick={handleZoomIn} />
             </Tooltip>
@@ -602,114 +765,140 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             <Tooltip content="Fit to screen" relationship="label">
               <Button size="small" appearance="subtle" icon={<ZoomFit24Regular />} onClick={handleFit} />
             </Tooltip>
-          </>
-        )}
 
-        {hasGraph && <div className={styles.divider} />}
+            <div className={styles.divider} />
 
-        {/* Search */}
-        {hasGraph && (
-          <Input
-            className={styles.searchBox}
-            size="small"
-            placeholder="Search entities..."
-            contentBefore={<Search24Regular style={{ fontSize: '14px' }} />}
-            value={searchQuery}
-            onChange={(_, d) => setSearchQuery(d.value)}
-            contentAfter={
-              searchQuery
-                ? <Dismiss24Regular
-                    style={{ fontSize: '14px', cursor: 'pointer' }}
-                    onClick={() => setSearchQuery('')}
-                  />
-                : undefined
-            }
-          />
-        )}
+            {/* Search */}
+            <Input
+              className={styles.searchBox}
+              size="small"
+              placeholder="Search entities..."
+              contentBefore={<Search24Regular style={{ fontSize: '14px' }} />}
+              value={searchQuery}
+              onChange={(_, d) => setSearchQuery(d.value)}
+              contentAfter={
+                searchQuery
+                  ? <Dismiss24Regular style={{ fontSize: '14px', cursor: 'pointer' }} onClick={() => setSearchQuery('')} />
+                  : undefined
+              }
+            />
 
-        {hasGraph && <div className={styles.divider} />}
-
-        {/* Export / copy */}
-        {hasGraph && (
-          <Tooltip content="Download as PNG" relationship="label">
-            <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadPNG}>
-              PNG
-            </Button>
-          </Tooltip>
-        )}
-        <Tooltip content="Copy Mermaid code for external tools (e.g. mermaid.live)" relationship="label">
-          <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyMermaid}>
-            Mermaid
-          </Button>
-        </Tooltip>
-        <Tooltip content="Copy dbdiagram.io code" relationship="label">
-          <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
-            dbdiagram.io
-          </Button>
-        </Tooltip>
-      </div>
-
-      {/* Publisher filter row + Labels toggle */}
-      {hasGraph && (
-        <div className={styles.toolbar} style={{ gap: tokens.spacingHorizontalXS }}>
-          <Text className={styles.layoutLabel}>Publishers:</Text>
-          {erd.legend.map((pub) => {
-            const isHidden = hiddenPublishers.has(pub.publisherPrefix);
-            return (
-              <ToggleButton
-                key={pub.publisherPrefix}
+            {/* Hops selector + Isolate (next to search) */}
+            <Text className={styles.toolbarLabel} style={{ marginLeft: tokens.spacingHorizontalXS }}>Hops:</Text>
+            {([1, 2, 3] as IsolateHops[]).map((h) => (
+              <Button
+                key={h}
                 size="small"
-                checked={!isHidden}
-                onClick={() => {
-                  setHiddenPublishers((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(pub.publisherPrefix)) {
-                      next.delete(pub.publisherPrefix);
-                    } else {
-                      next.add(pub.publisherPrefix);
-                    }
-                    return next;
-                  });
-                }}
-                style={{
-                  minWidth: 'unset',
-                  paddingLeft: tokens.spacingHorizontalS,
-                  paddingRight: tokens.spacingHorizontalS,
-                  borderLeft: `3px solid ${pub.color}`,
-                }}
+                appearance={isolateHops === h ? 'primary' : 'secondary'}
+                style={{ minWidth: '28px', padding: '0 6px' }}
+                onClick={() => setIsolateHops(h)}
               >
-                {pub.publisherName} ({pub.entityCount})
-              </ToggleButton>
-            );
-          })}
+                {h}
+              </Button>
+            ))}
+            <Tooltip content={selectedNode ? `Isolate "${selectedNode.label}" and its ${isolateHops}-hop neighbors` : 'Click a node first'} relationship="label">
+              <Button
+                size="small"
+                appearance="secondary"
+                style={{ minWidth: 'unset' }}
+                disabled={!selectedNode || isIsolated}
+                onClick={isolateNode}
+              >
+                Isolate
+              </Button>
+            </Tooltip>
 
-          <div className={styles.divider} />
+            <div className={styles.divider} />
 
-          <ToggleButton
-            size="small"
-            checked={showEdgeLabels}
-            onClick={() => setShowEdgeLabels((v) => !v)}
-            style={{ minWidth: 'unset' }}
-          >
-            Labels
-          </ToggleButton>
-        </div>
+            {/* Exports */}
+            <Tooltip content="Download PNG" relationship="label">
+              <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadPNG}>
+                PNG
+              </Button>
+            </Tooltip>
+            <Tooltip content="Download SVG" relationship="label">
+              <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadSVG}>
+                SVG
+              </Button>
+            </Tooltip>
+            <Tooltip content="Copy Mermaid code (for mermaid.live etc.)" relationship="label">
+              <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyMermaid}>
+                Mermaid
+              </Button>
+            </Tooltip>
+            <Tooltip content="Copy dbdiagram.io code" relationship="label">
+              <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
+                dbdiagram.io
+              </Button>
+            </Tooltip>
+          </div>
+
+          {/* ── Toolbar row 2: Publisher filter | Labels | Clear all ── */}
+          <div className={styles.toolbar}>
+            <Text className={styles.toolbarLabel}>Publishers:</Text>
+            {erd.legend.map((pub) => {
+              const isHidden = hiddenPublishers.has(pub.publisherPrefix);
+              return (
+                <ToggleButton
+                  key={pub.publisherPrefix}
+                  size="small"
+                  checked={!isHidden}
+                  style={{
+                    minWidth: 'unset',
+                    paddingLeft: tokens.spacingHorizontalS,
+                    paddingRight: tokens.spacingHorizontalS,
+                    borderLeft: `3px solid ${pub.color}`,
+                  }}
+                  onClick={() =>
+                    setHiddenPublishers((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(pub.publisherPrefix)) next.delete(pub.publisherPrefix);
+                      else next.add(pub.publisherPrefix);
+                      return next;
+                    })
+                  }
+                >
+                  {pub.publisherName} ({pub.entityCount})
+                </ToggleButton>
+              );
+            })}
+
+            <div className={styles.divider} />
+
+            <ToggleButton
+              size="small"
+              checked={showEdgeLabels}
+              onClick={() => setShowEdgeLabels((v) => !v)}
+              style={{ minWidth: 'unset' }}
+            >
+              Labels
+            </ToggleButton>
+
+            {hasActiveFilters && (
+              <Button size="small" appearance="subtle" onClick={handleClearAllFilters}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+        </>
       )}
 
-      {/* Graph Card */}
+      {/* ── Graph card ── */}
       {hasGraph ? (
         <Card className={styles.graphCard}>
           {/* Isolation banner */}
           {isIsolated && (
             <div className={styles.isolatedBanner}>
-              <Text>Showing neighbors of <strong>{selectedNode?.label}</strong></Text>
+              <Text>
+                Showing {isolateHops}-hop neighborhood of <strong>{selectedNode?.label}</strong>
+              </Text>
               <Button size="small" appearance="subtle" icon={<Dismiss24Regular />} onClick={handleClearIsolation}>
                 Show all
               </Button>
             </div>
           )}
 
-          {/* Cytoscape canvas */}
+          {/* Canvas */}
           <div style={{ position: 'relative' }}>
             <div ref={graphRef} className={styles.graphContainer} />
 
@@ -727,12 +916,12 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
                   size="small"
                   appearance="subtle"
                   icon={<Dismiss24Regular />}
-                  onClick={() => { setSelectedNode(null); clearIsolation(cyRef.current!); setIsIsolated(false); }}
+                  onClick={() => { setSelectedNode(null); clearIsolationOn(cyRef.current!); setIsIsolated(false); }}
                 />
                 <Text block className={styles.infoPanelTitle}>{selectedNode.label}</Text>
                 <div className={styles.infoPanelRow}>
                   <Text className={styles.infoPanelLabel}>Logical name</Text>
-                  <Text>{selectedNode.id}</Text>
+                  <Text style={{ wordBreak: 'break-all' }}>{selectedNode.id}</Text>
                 </div>
                 {selectedNode.publisherPrefix && (
                   <div className={styles.infoPanelRow}>
@@ -744,14 +933,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
                   <Text className={styles.infoPanelLabel}>Relationships</Text>
                   <Text>{selectedNode.connectedCount}</Text>
                 </div>
-                <Button
-                  size="small"
-                  style={{ marginTop: tokens.spacingVerticalS, width: '100%' }}
-                  onClick={isolateNode}
-                  disabled={isIsolated}
-                >
-                  Isolate
-                </Button>
               </div>
             )}
           </div>
@@ -759,19 +940,19 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
           {/* Usage hint */}
           <div style={{ padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`, borderTop: `1px solid ${tokens.colorNeutralStroke1}` }}>
             <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
-              Click a node to inspect · Scroll or pinch to zoom · Drag canvas to pan · Solid arrow = 1:N · Dashed = N:N
+              Click node to select · Hover edge for details · Scroll to zoom · Drag to pan · Solid = 1:N · Dashed = N:N
             </Text>
           </div>
         </Card>
       ) : (
         <Card>
           <div style={{ padding: tokens.spacingVerticalXL, textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-            <Text>No relationship data available for interactive graph.</Text>
+            <Text>No relationship data available.</Text>
           </div>
         </Card>
       )}
 
-      {/* Publisher Legend */}
+      {/* ── Publisher Legend ── */}
       <div>
         <Title3 style={{ marginBottom: tokens.spacingVerticalM }}>Publisher Color Legend</Title3>
         <div className={styles.legendSection}>
@@ -787,7 +968,9 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
                   <div className={styles.legendColor} style={{ backgroundColor: pub.color }} />
                   <Text weight="semibold">{pub.publisherName}</Text>
                   <Badge appearance="outline" shape="rounded">{pub.entityCount}</Badge>
-                  {isHidden && <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>hidden</Text>}
+                  {isHidden && (
+                    <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>hidden</Text>
+                  )}
                 </div>
               </Card>
             );
