@@ -20,22 +20,23 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
   // Build set of entities actually in the export (excluding system entities)
   const exportedEntities = new Set<string>();
   // Build map of entity -> set of attribute names (to validate relationships)
+  // Only populated for entities that have attribute data; absence means unknown.
   const entityAttributes = new Map<string, Set<string>>();
 
   for (const entityBlueprint of result.entities) {
     const tableName = entityBlueprint.entity.LogicalName.toLowerCase();
-    const attrs = entityBlueprint.entity.Attributes || [];
-    // Only include entities that have at least one attribute; dbdiagram.io
-    // requires every Table block to have at least one column definition.
-    if (!isSystemEntity(tableName) && attrs.length > 0) {
+    if (!isSystemEntity(tableName)) {
       exportedEntities.add(tableName);
 
-      // Build attribute set for this entity
-      const attrSet = new Set<string>();
-      for (const attr of attrs) {
-        attrSet.add(attr.LogicalName.toLowerCase());
+      // Build attribute set for this entity (only when attributes are available)
+      const attrs = entityBlueprint.entity.Attributes || [];
+      if (attrs.length > 0) {
+        const attrSet = new Set<string>();
+        for (const attr of attrs) {
+          attrSet.add(attr.LogicalName.toLowerCase());
+        }
+        entityAttributes.set(tableName, attrSet);
       }
-      entityAttributes.set(tableName, attrSet);
     }
   }
 
@@ -44,9 +45,8 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
     const entity = entityBlueprint.entity;
     const tableName = entity.LogicalName;
 
-    // Skip system entities and entities with no attributes (would produce empty
-    // Table blocks which dbdiagram.io rejects with "must have at least one column")
-    if (!exportedEntities.has(tableName.toLowerCase())) {
+    // Skip system entities
+    if (isSystemEntity(tableName.toLowerCase())) {
       continue;
     }
 
@@ -57,31 +57,37 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
     lines.push(`  Note: '${displayName.replace(/'/g, "\\'")}'`);
     lines.push('');
 
-    // Add attributes
+    // Add attributes — dbdiagram.io requires at least one column per Table block.
+    // If attribute data was not discovered, emit a placeholder column so the table
+    // remains valid and its relationships are still visible in the diagram.
     const attributes = entity.Attributes || [];
-    for (const attr of attributes) {
-      const columnName = attr.LogicalName;
-      const dataType = mapAttributeTypeToDbType(attr.AttributeType);
-      const constraints: string[] = [];
+    if (attributes.length === 0) {
+      lines.push(`  id uniqueidentifier [note: 'Attribute data not available']`);
+    } else {
+      for (const attr of attributes) {
+        const columnName = attr.LogicalName;
+        const dataType = mapAttributeTypeToDbType(attr.AttributeType);
+        const constraints: string[] = [];
 
-      // Primary key
-      if (attr.IsPrimaryId) {
-        constraints.push('pk');
+        // Primary key
+        if (attr.IsPrimaryId) {
+          constraints.push('pk');
+        }
+
+        // Required field
+        if (attr.RequiredLevel?.Value === 'ApplicationRequired' || attr.RequiredLevel?.Value === 'SystemRequired') {
+          constraints.push('not null');
+        }
+
+        // Add note with display name
+        const attrDisplayName = attr.DisplayName?.UserLocalizedLabel?.Label;
+        if (attrDisplayName && attrDisplayName !== columnName) {
+          constraints.push(`note: '${attrDisplayName.replace(/'/g, "\\'")}'`);
+        }
+
+        const constraintStr = constraints.length > 0 ? ` [${constraints.join(', ')}]` : '';
+        lines.push(`  ${columnName} ${dataType}${constraintStr}`);
       }
-
-      // Required field
-      if (attr.RequiredLevel?.Value === 'ApplicationRequired' || attr.RequiredLevel?.Value === 'SystemRequired') {
-        constraints.push('not null');
-      }
-
-      // Add note with display name
-      const attrDisplayName = attr.DisplayName?.UserLocalizedLabel?.Label;
-      if (attrDisplayName && attrDisplayName !== columnName) {
-        constraints.push(`note: '${attrDisplayName.replace(/'/g, "\\'")}'`);
-      }
-
-      const constraintStr = constraints.length > 0 ? ` [${constraints.join(', ')}]` : '';
-      lines.push(`  ${columnName} ${dataType}${constraintStr}`);
     }
 
     lines.push('}');
@@ -114,11 +120,15 @@ export function generateDbDiagramCode(result: BlueprintResult): string {
         continue;
       }
 
-      // Skip if either attribute doesn't exist in the entity definition
+      // When attribute data is available for an entity, validate the attribute
+      // exists. When no attribute data was discovered, emit the Ref anyway so
+      // the relationship is still visible in the diagram.
       const referencingAttrs = entityAttributes.get(rel.ReferencingEntity.toLowerCase());
       const referencedAttrs = entityAttributes.get(rel.ReferencedEntity.toLowerCase());
-      if (!referencingAttrs?.has(rel.ReferencingAttribute.toLowerCase()) ||
-          !referencedAttrs?.has(rel.ReferencedAttribute.toLowerCase())) {
+      if (referencingAttrs && !referencingAttrs.has(rel.ReferencingAttribute.toLowerCase())) {
+        continue;
+      }
+      if (referencedAttrs && !referencedAttrs.has(rel.ReferencedAttribute.toLowerCase())) {
         continue;
       }
 
