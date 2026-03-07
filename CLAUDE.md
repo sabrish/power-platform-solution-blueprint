@@ -8,7 +8,7 @@ classic workflows, BPFs, web resources, custom APIs, security roles, and more �
 as Markdown, JSON, HTML, or ZIP. It is a flat-structure, single-package React/TypeScript app
 served under the `pptb-webview://` protocol from `dist/index.html`.
 
-**Stack:** TypeScript 5.x (strict) · React 18 · Vite 5 · Fluent UI v9 · `@pptb/types` v1.0.19+ · pnpm · Mermaid · JSZip
+**Stack:** TypeScript 5.x (strict) · React 18 · Vite 5 · Fluent UI v9 · `@pptb/types` v1.0.19+ · pnpm · Cytoscape.js · Mermaid · JSZip
 
 **APIs:** `window.dataverseAPI` for all Dataverse calls · `await window.toolboxAPI.getToolContext()`
 for tool context · NEVER use `window.toolboxAPI.dataverse.*` or `executeDataverseRequest()` — both do not exist.

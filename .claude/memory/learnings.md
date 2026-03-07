@@ -298,3 +298,103 @@
 - Right: Stage filter uses "Stage:" label with OR logic: show items where stage is Pre-Validation OR Pre-Operation OR...
 
 ---
+
+## [2026-03-07] — Release tags must be created on main, not on feature branches
+
+**Affects:** Orchestrator, Developer
+**Severity:** Blocker
+**Rule:** Never create a git release tag on a feature branch or fix branch. Tags must only be created on `main` AFTER the PR is merged. If a tag is created on the wrong branch, it must be deleted (`git tag -d vX.Y.Z`) and re-applied post-merge on `main`.
+**Context:** The agent created `git tag v0.9.0` on the `fix/search-and-erd-fixes` branch before the PR was merged. The tag had to be deleted and will be re-applied after merge. Tags on branches produce misleading history and can point to commits that are never part of `main`.
+**Example:**
+- Wrong: `git tag v0.9.0` while on branch `fix/search-and-erd-fixes` (before PR merge)
+- Right: Merge the PR first, checkout `main`, pull, then `git tag v0.9.0 -m "Release v0.9.0"`
+
+---
+
+## [2026-03-07] — npm version also updates npm-shrinkwrap.json — include it in the release commit
+
+**Affects:** Developer, Orchestrator, Document Updater
+**Severity:** Blocker
+**Rule:** When running `npm version X.Y.Z --no-git-tag-version` to bump the version, npm automatically updates BOTH `package.json` AND `npm-shrinkwrap.json`. Both files must be included in the release commit. Never commit `package.json` and `CHANGELOG.md` alone — `npm-shrinkwrap.json` must be staged too.
+**Context:** After the version bump command, three files change: `package.json`, `npm-shrinkwrap.json`, and any other files updated in the same step. Omitting `npm-shrinkwrap.json` from the release commit leaves the published shrinkwrap out of sync with the declared version.
+**Example:**
+- Wrong: `git add package.json CHANGELOG.md && git commit -m "chore: release v0.9.0"` (shrinkwrap missing)
+- Right: `git add package.json npm-shrinkwrap.json CHANGELOG.md README.md && git commit -m "chore: release v0.9.0"`
+
+---
+
+## [2026-03-07] — Business rule clientdata is always XML, never JSON
+
+**Affects:** Developer
+**Severity:** Blocker
+**Rule:** The `clientdata` field on Dataverse `workflows` records for business rules is always XML format, not JSON. Never call `JSON.parse()` on `clientdata` — it will always throw. Detect the format with `clientdata.trimStart().startsWith('<')` before attempting any parse.
+**Context:** Business rule compiled output is wrapped in `<clientdata><clientcode><![CDATA[...compiled JS...]]></clientcode></clientdata>`. Attempting `JSON.parse()` throws every time. Contrast with BPF stage `processstage.clientdata` which IS JSON — the same field name on a different table has a different format.
+**Example:**
+- Wrong: `const parsed = JSON.parse(rule.clientdata)` — always throws for business rules
+- Right: `if (clientdata.trimStart().startsWith('<')) { /* extract CDATA JS content */ } else { /* unexpected */ }`
+
+---
+
+## [2026-03-07] — Business rule compiled-JS patterns (reference for parser work)
+
+**Affects:** Developer
+**Severity:** High
+**Rule:** When parsing compiled JavaScript from business rule `clientdata`, recognise these variable patterns exactly. Do not guess alternative shapes — Dataverse always compiles to these forms.
+**Context:** The Dataverse business rule compiler always emits variables in consistent patterns. A parser must handle all of them to correctly extract conditions and actions.
+**Example:**
+- Field-control vars: `var vN = v0.attributes.get('fieldname')` → fieldVarMap (key = vN, value = fieldname)
+- Value vars: `var vN = (vM) ? vM.getValue() : null` OR `var vN = (vM) ? vM.getUtcValue() : null` → valueVarMap
+- Derived vars (date normalisation): `var vN = (((vM) != undefined...) ? new Date(...) : null)` → derivedVarMap
+- Early-return guard: uses field-control vars with `== undefined` — these are NOT conditions, they are guard clauses and must be skipped when extracting conditions
+- Condition patterns: `!= undefined` (contains data), `== undefined` (does not contain data), `(vN)==(literal)` (equals), helper `vH((vN),('value'),function(){indexOf===-1})` (string contains / does not contain), `(vA) < (vB)` (comparison)
+- Action patterns: direct `.setVisible()`, `.setDisabled()`, `.setRequiredLevel()`, `.setValue()`, AND the delegate pattern `vN.controls.forEach(function(c,i){ c.setVisible(true) })` — both patterns must be handled
+
+---
+
+## [2026-03-07] — Debug artifacts must be removed before any release commit
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** Temporary debug fields, debug HTML blocks, and diagnostic console.log statements are acceptable during active development but must be fully removed before any release. The `/pre-commit` skill (reviewer + security-auditor) must catch these; reviewer must explicitly check for debug artifacts in every pre-release review.
+**Context:** Debug fields (`rawClientData`, `rawXaml` on `BusinessRuleDefinition`) and a `<details>` raw-data HTML block were present in a release candidate. A diagnostic `console.log` block in `htmlScripts()` was also included in production output. These had to be manually identified and removed.
+**Example:**
+- Wrong: Committing `rawClientData?: string` on a public-facing type interface in a release
+- Wrong: Leaving `<details><summary>Raw clientdata</summary>...</details>` in the HTML export template
+- Wrong: `console.log('DEBUG business rule clientdata:', rule.clientdata)` in production `htmlScripts()`
+- Right: Remove all `raw*` debug fields, `<details>` debug blocks, and diagnostic console.log before staging the release commit
+
+---
+
+## [2026-03-07] — Tooltip innerHTML values in embedded JS must be HTML-escaped
+
+**Affects:** Developer
+**Severity:** Blocker
+**Rule:** Any Cytoscape (or similar) tooltip content written via `tip.innerHTML = ...` must pass all graph data values through an HTML escape helper before insertion. Never insert raw `n.data(...)` or `e.data(...)` values directly into innerHTML.
+**Context:** Graph node and edge labels sourced from Dataverse (entity names, field names, relationship names) may contain `<`, `>`, `&`, or `"` characters, which would break the tooltip HTML structure or open an XSS vector.
+**Example:**
+- Wrong: `` tip.innerHTML = `<b>${n.data('label')}</b>`; ``
+- Right:
+```javascript
+var _esc = function(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+};
+// Then: tip.innerHTML = `<b>${_esc(n.data('label'))}</b>`;
+```
+
+---
+
+## [2026-03-07] — CDN library versions in HTML export must be pinned to specific versions
+
+**Affects:** Developer
+**Severity:** High
+**Rule:** All CDN `<script>` tags in the HTML export template must reference a specific pinned version (e.g., `mermaid@10.9.1`), never a floating major version (e.g., `mermaid@10`). Floating versions can silently update and break the exported HTML output.
+**Context:** The Cytoscape CDN reference was already pinned to `@3.33.1`. The Mermaid CDN reference was using floating `@10` which can silently pull in a breaking minor update. All CDN libraries in the export must follow the same pinned-version convention.
+**Example:**
+- Wrong: `<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>`
+- Right: `<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>`
+
+---
