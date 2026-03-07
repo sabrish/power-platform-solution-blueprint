@@ -128,6 +128,43 @@ const useStyles = makeStyles({
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     fontSize: tokens.fontSizeBase200,
   },
+  // Hint text + export buttons bar at top of graph card
+  hintBar: {
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: tokens.spacingHorizontalS,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    minHeight: '40px',
+  },
+  hintActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2px',
+    flexShrink: 0,
+  },
+  // Zoom controls overlay on the graph canvas
+  zoomOverlay: {
+    position: 'absolute',
+    bottom: tokens.spacingVerticalM,
+    left: tokens.spacingHorizontalM,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    zIndex: 5,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: '2px',
+    boxShadow: tokens.shadow4,
+    opacity: 0.75,
+    transition: 'opacity 0.15s ease',
+    ':hover': {
+      opacity: 1,
+    },
+  },
 });
 
 // ─── Cytoscape stylesheet ────────────────────────────────────────────────────
@@ -719,19 +756,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
             <div className={styles.divider} />
 
-            {/* Zoom */}
-            <Tooltip content="Zoom in" relationship="label">
-              <Button size="small" appearance="subtle" icon={<ZoomIn24Regular />} onClick={handleZoomIn} />
-            </Tooltip>
-            <Tooltip content="Zoom out" relationship="label">
-              <Button size="small" appearance="subtle" icon={<ZoomOut24Regular />} onClick={handleZoomOut} />
-            </Tooltip>
-            <Tooltip content="Fit to screen" relationship="label">
-              <Button size="small" appearance="subtle" icon={<ZoomFit24Regular />} onClick={handleFit} />
-            </Tooltip>
-
-            <div className={styles.divider} />
-
             {/* Search */}
             <Input
               className={styles.searchBox}
@@ -821,33 +845,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             )}
           </div>
 
-          {/* ── Toolbar row 3: Downloads | Copy ── */}
-          <div className={styles.toolbar}>
-            <Text className={styles.toolbarLabel}>Export:</Text>
-            <Tooltip content="Download PNG" relationship="label">
-              <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadPNG}>
-                PNG
-              </Button>
-            </Tooltip>
-            <Tooltip content="Download SVG" relationship="label">
-              <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadSVG}>
-                SVG
-              </Button>
-            </Tooltip>
-
-            <div className={styles.divider} />
-
-            <Tooltip content="Copy Mermaid code (for mermaid.live etc.)" relationship="label">
-              <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyMermaid}>
-                Mermaid
-              </Button>
-            </Tooltip>
-            <Tooltip content="Copy dbdiagram.io code" relationship="label">
-              <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
-                dbdiagram.io
-              </Button>
-            </Tooltip>
-          </div>
         </>
       )}
 
@@ -866,16 +863,54 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             </div>
           )}
 
-          {/* Usage hint — top of card */}
-          <div style={{ padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`, borderBottom: `1px solid ${tokens.colorNeutralStroke1}` }}>
+          {/* Usage hint + export buttons bar */}
+          <div className={styles.hintBar}>
             <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
               Click node to select · Hover edge for details · Scroll to zoom · Drag to pan · Solid = 1:N · Dashed = N:N
             </Text>
+            <div className={styles.hintActions}>
+              <Tooltip content="Download PNG" relationship="label">
+                <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadPNG}>
+                  PNG
+                </Button>
+              </Tooltip>
+              <Tooltip content="Download SVG" relationship="label">
+                <Button size="small" appearance="subtle" icon={<ArrowDownload24Regular />} onClick={handleDownloadSVG}>
+                  SVG
+                </Button>
+              </Tooltip>
+              <div className={styles.divider} />
+              <Tooltip content="Copy Mermaid code (for mermaid.live etc.)" relationship="label">
+                <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyMermaid}>
+                  Mermaid
+                </Button>
+              </Tooltip>
+              <Tooltip content="Copy dbdiagram.io code" relationship="label">
+                <Button size="small" appearance="subtle" icon={<Copy24Regular />} onClick={handleCopyDbDiagram}>
+                  dbdiagram.io
+                </Button>
+              </Tooltip>
+            </div>
           </div>
 
           {/* Canvas */}
           <div style={{ position: 'relative' }}>
             <div ref={graphRef} className={styles.graphContainer} />
+
+            {/* Zoom overlay — bottom-left of canvas */}
+            {!isInitializing && (
+              <div className={styles.zoomOverlay}>
+                <Tooltip content="Zoom in" relationship="label">
+                  <Button size="small" appearance="subtle" icon={<ZoomIn24Regular />} onClick={handleZoomIn} />
+                </Tooltip>
+                <Tooltip content="Zoom out" relationship="label">
+                  <Button size="small" appearance="subtle" icon={<ZoomOut24Regular />} onClick={handleZoomOut} />
+                </Tooltip>
+                <Tooltip content="Fit to screen" relationship="label">
+                  <Button size="small" appearance="subtle" icon={<ZoomFit24Regular />} onClick={handleFit} />
+                </Tooltip>
+              </div>
+            )}
 
             {isInitializing && (
               <div className={styles.loadingOverlay}>

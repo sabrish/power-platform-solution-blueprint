@@ -2,8 +2,6 @@
  * HTML Templates for Blueprint Report
  * Generates each section of the HTML report with embedded CSS and JavaScript
  */
-// Inline Cytoscape at build time — avoids CDN tracking-prevention blocks
-import cytoscapeSource from 'virtual:cytoscape-raw';
 import type {
   BlueprintResult,
   BlueprintMetadata,
@@ -38,7 +36,8 @@ export class HtmlTemplates {
   <meta name="generator" content="Power Platform Solution Blueprint (PPSB)">
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
   <title>${this.escapeHtml(title)}</title>
-  <script>${cytoscapeSource}</script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
   <style>
 ${this.embeddedCSS()}
   </style>
@@ -2407,7 +2406,12 @@ ${this.embeddedJavaScript()}
    * Embedded JavaScript for interactivity
    */
   private embeddedJavaScript(): string {
-    return `    // ── Cytoscape ERD interactive graph ─────────────────────────────────────
+    return `    // Initialize Mermaid (used as fallback when graphData unavailable)
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+    }
+
+    // ── Cytoscape ERD interactive graph ─────────────────────────────────────
     var _cy = null;
     var _selectedNodeId = null;
     var _isolateHops = 1;
