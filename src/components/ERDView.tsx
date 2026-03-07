@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import cytoscape from 'cytoscape';
 import type { Core, NodeSingular } from 'cytoscape';
 import {
@@ -395,11 +395,15 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
   const graphData = erd.graphData;
 
-  // Filter out nodes that have no edges (not involved in any relationship)
-  const connectedNodeIds = new Set<string>();
-  graphData?.edges.forEach((e) => { connectedNodeIds.add(e.source); connectedNodeIds.add(e.target); });
-  const filteredNodes = graphData?.nodes.filter((n) => connectedNodeIds.has(n.id)) ?? [];
-  const isolatedEntityCount = (graphData?.nodes.length ?? 0) - filteredNodes.length;
+  // Filter out nodes that have no edges (not involved in any relationship).
+  // Memoised on graphData edges/nodes so it only recomputes when the graph changes,
+  // not on every search/selection state update.
+  const { filteredNodes, isolatedEntityCount } = useMemo(() => {
+    const ids = new Set<string>();
+    graphData?.edges.forEach((e) => { ids.add(e.source); ids.add(e.target); });
+    const filtered = graphData?.nodes.filter((n) => ids.has(n.id)) ?? [];
+    return { filteredNodes: filtered, isolatedEntityCount: (graphData?.nodes.length ?? 0) - filtered.length };
+  }, [graphData?.edges, graphData?.nodes]);
 
   const hasGraph = filteredNodes.length > 0;
 

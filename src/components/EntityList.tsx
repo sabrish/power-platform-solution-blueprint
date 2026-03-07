@@ -197,16 +197,20 @@ export interface EntityListProps {
   businessProcessFlows?: BusinessProcessFlow[];
 }
 
-const getEntityComplexity = (blueprint: EntityBlueprint): 'High' | 'Medium' | 'Low' => {
+const getEntityComplexity = (
+  blueprint: EntityBlueprint,
+  classicWfCount: number,
+  bpfCount: number,
+): 'High' | 'Medium' | 'Low' => {
   const fieldCount = blueprint.entity.Attributes?.length ?? 0;
   const pluginCount = blueprint.plugins.length;
   const flowCount = blueprint.flows.length;
   const businessRuleCount = blueprint.businessRules.length;
 
-  if (fieldCount >= 50 || pluginCount >= 5 || flowCount >= 5 || businessRuleCount >= 5) {
+  if (fieldCount >= 50 || pluginCount >= 5 || flowCount >= 5 || businessRuleCount >= 5 || classicWfCount >= 3 || bpfCount >= 3) {
     return 'High';
   }
-  if (fieldCount >= 20 || pluginCount >= 2 || flowCount >= 2 || businessRuleCount >= 2) {
+  if (fieldCount >= 20 || pluginCount >= 2 || flowCount >= 2 || businessRuleCount >= 2 || classicWfCount >= 1 || bpfCount >= 1) {
     return 'Medium';
   }
   return 'Low';
@@ -334,13 +338,13 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
   const renderEntityDetails = (blueprint: EntityBlueprint) => {
     const entity = blueprint.entity;
     const publisherPrefix = getPublisherPrefix(entity.SchemaName || '');
-    const complexity = getEntityComplexity(blueprint);
     const fieldCount = entity.Attributes?.length ?? 0;
     const pluginCount = blueprint.plugins.length;
     const flowCount = blueprint.flows.length;
     const businessRuleCount = blueprint.businessRules.length;
     const classicWfCount = classicWorkflowCountByEntity.get(entity.LogicalName) ?? 0;
     const bpfCount = bpfCountByEntity.get(entity.LogicalName) ?? 0;
+    const complexity = getEntityComplexity(blueprint, classicWfCount, bpfCount);
     const complexityTooltip =
       `Complexity = attributes (${fieldCount}) + plugins (${pluginCount}) + flows (${flowCount}) + ` +
       `business rules (${businessRuleCount}) + classic workflows (${classicWfCount}) + BPFs (${bpfCount})`;

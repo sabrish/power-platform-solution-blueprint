@@ -419,8 +419,9 @@ Choose one or more formats:
 - Interactive navigation sidebar
 - Searchable (Ctrl+F)
 - Accordion sections
+- Interactive ERD (Cytoscape.js, pinned CDN version 3.33.1)
 - Execution pipeline diagrams (Mermaid, pinned CDN version 10.9.1)
-- Works offline (no external dependencies except the pinned Mermaid CDN script)
+- Requires internet access to load Cytoscape.js and Mermaid from CDN (jsdelivr.net)
 
 **How to use**:
 - Email to stakeholders

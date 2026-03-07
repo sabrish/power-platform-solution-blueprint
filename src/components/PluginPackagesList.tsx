@@ -197,7 +197,7 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
         itemLabel={packages.length !== 1 ? 'packages' : 'package'}
       >
         <Checkbox
-          label="Include packages with disabled steps"
+          label="Show only packages with disabled steps"
           checked={showDisabledOnly}
           onChange={(_, data) => setShowDisabledOnly(data.checked === true)}
         />
