@@ -37,6 +37,7 @@ export class HtmlTemplates {
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
   <title>${this.escapeHtml(title)}</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.31.0/dist/cytoscape.min.js"></script>
   <style>
 ${this.embeddedCSS()}
   </style>
@@ -124,7 +125,33 @@ ${this.embeddedCSS()}
 
     const legendHtml = this.generateLegendHtml(erd.legend);
 
-    // Use only the first diagram (comprehensive view with all entities) - matches UI behavior
+    // Use Cytoscape interactive graph when graphData is available
+    const graphData = erd.graphData;
+    if (graphData && graphData.nodes.length > 0) {
+      const graphJson = JSON.stringify(graphData);
+      return `<section id="erd" class="content-section">
+  <h2>Entity Relationship Diagram</h2>
+  <p>${erd.totalEntities} entities · ${erd.totalRelationships} relationships · ${graphData.edges.length} shown (excluding system relationships)</p>
+  ${legendHtml}
+  <div class="erd-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center;">
+    <span style="font-size:12px;color:#666;">Layout:</span>
+    <button class="btn-sm" onclick="erdLayout('cose')">Smart</button>
+    <button class="btn-sm" onclick="erdLayout('breadthfirst')">Hierarchical</button>
+    <button class="btn-sm" onclick="erdLayout('grid')">Grid</button>
+    <button class="btn-sm" onclick="erdFit()">Fit</button>
+    <input type="text" id="erdSearch" placeholder="Search entities…" oninput="erdSearch(this.value)"
+      style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:160px;">
+    <button class="btn-sm" onclick="downloadErdPng()">⬇ PNG</button>
+  </div>
+  <div id="cy" style="width:100%;height:600px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;"></div>
+  <p style="font-size:11px;color:#888;margin-top:4px;">Click node to inspect · Scroll to zoom · Drag canvas to pan · Solid arrow = 1:N · Dashed = N:N</p>
+  <script>
+    var ERD_GRAPH_DATA = ${graphJson};
+  </script>
+</section>`;
+    }
+
+    // Fallback: Mermaid diagram
     const diagram = erd.diagrams[0];
     const diagramHtml = `<div class="erd-diagram">
   <h3>${this.escapeHtml(diagram.title)}</h3>
@@ -2353,16 +2380,138 @@ ${this.embeddedJavaScript()}
    * Embedded JavaScript for interactivity
    */
   private embeddedJavaScript(): string {
-    return `    // Initialize Mermaid
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'default',
-      securityLevel: 'loose',
-      flowchart: {
-        useMaxWidth: true,
-        htmlLabels: true
-      }
-    });
+    return `    // Initialize Mermaid (used as fallback when graphData unavailable)
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { useMaxWidth: true, htmlLabels: true }
+      });
+    }
+
+    // ── Cytoscape ERD interactive graph ─────────────────────────────────────
+    var _cy = null;
+    if (typeof cytoscape !== 'undefined' && typeof ERD_GRAPH_DATA !== 'undefined') {
+      var stylesheet = [
+        { selector: 'node', style: {
+            'background-color': 'data(color)',
+            'border-color': 'data(strokeColor)',
+            'border-width': 2,
+            'color': 'data(textColor)',
+            'label': 'data(label)',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'font-size': '10px',
+            'font-weight': 'bold',
+            'width': '120px',
+            'height': '36px',
+            'shape': 'round-rectangle',
+            'text-wrap': 'ellipsis',
+            'text-max-width': '110px'
+        }},
+        { selector: 'node.highlighted', style: { 'border-width': 3, 'border-color': '#0078d4', 'z-index': 10 } },
+        { selector: 'node.faded', style: { 'opacity': 0.15 } },
+        { selector: 'edge', style: {
+            'width': 1.5,
+            'line-color': '#999',
+            'target-arrow-color': '#999',
+            'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier',
+            'label': 'data(label)',
+            'font-size': '8px',
+            'color': '#666',
+            'text-background-color': '#fff',
+            'text-background-opacity': 0.8,
+            'text-background-padding': '2px',
+            'text-max-width': '80px',
+            'text-wrap': 'ellipsis'
+        }},
+        { selector: 'edge[type = "N-N"]', style: {
+            'line-style': 'dashed',
+            'source-arrow-shape': 'triangle',
+            'source-arrow-color': '#999'
+        }},
+        { selector: 'edge.faded', style: { 'opacity': 0.1 } }
+      ];
+
+      var elements = {
+        nodes: ERD_GRAPH_DATA.nodes.map(function(n) { return { data: n }; }),
+        edges: ERD_GRAPH_DATA.edges.map(function(e) { return { data: e }; })
+      };
+
+      _cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: elements,
+        style: stylesheet,
+        layout: { name: 'cose', animate: false, nodeRepulsion: function() { return 400000; }, idealEdgeLength: function() { return 100; } },
+        minZoom: 0.05,
+        maxZoom: 4,
+        wheelSensitivity: 0.3
+      });
+
+      // Click node — show tooltip
+      _cy.on('tap', 'node', function(evt) {
+        var n = evt.target;
+        var tip = document.getElementById('erd-tip');
+        if (!tip) {
+          tip = document.createElement('div');
+          tip.id = 'erd-tip';
+          tip.style.cssText = 'position:fixed;background:#fff;border:1px solid #ccc;border-radius:6px;padding:8px 12px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:9999;max-width:220px;pointer-events:none;';
+          document.body.appendChild(tip);
+        }
+        var pub = n.data('publisherPrefix') ? '<br><span style="color:#666">Publisher: ' + n.data('publisherPrefix') + '</span>' : '';
+        var cnt = _cy.getElementById(n.id()).neighborhood('node').length;
+        tip.innerHTML = '<strong>' + n.data('label') + '</strong><br><span style="color:#888;font-size:11px;">' + n.data('id') + '</span>' + pub + '<br><span style="color:#666">Relationships: ' + cnt + '</span>';
+        tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
+        tip.style.top = (evt.originalEvent.clientY + 12) + 'px';
+        tip.style.display = 'block';
+      });
+
+      _cy.on('tap', function(evt) {
+        if (evt.target === _cy) {
+          var tip = document.getElementById('erd-tip');
+          if (tip) tip.style.display = 'none';
+          _cy.nodes().removeClass('highlighted faded');
+          _cy.edges().removeClass('faded');
+        }
+      });
+    }
+
+    function erdLayout(name) {
+      if (!_cy) return;
+      var opts = {
+        cose: { name: 'cose', animate: false, nodeRepulsion: function() { return 400000; }, idealEdgeLength: function() { return 100; } },
+        breadthfirst: { name: 'breadthfirst', animate: false, directed: true, padding: 30 },
+        grid: { name: 'grid', animate: false, padding: 30 }
+      };
+      _cy.layout(opts[name] || opts.cose).run();
+    }
+
+    function erdFit() { if (_cy) _cy.fit(undefined, 30); }
+
+    function erdSearch(q) {
+      if (!_cy) return;
+      _cy.nodes().removeClass('highlighted faded');
+      _cy.edges().removeClass('faded');
+      if (!q) return;
+      var lq = q.toLowerCase();
+      _cy.nodes().forEach(function(n) {
+        var match = n.data('label').toLowerCase().indexOf(lq) >= 0 || n.data('id').toLowerCase().indexOf(lq) >= 0;
+        n.addClass(match ? 'highlighted' : 'faded');
+      });
+      _cy.edges().addClass('faded');
+    }
+
+    function downloadErdPng() {
+      if (!_cy) return;
+      var png = _cy.png({ full: true, scale: 2, bg: '#fafafa' });
+      var a = document.createElement('a');
+      a.href = png;
+      a.download = 'entity-relationship-diagram.png';
+      a.click();
+    }
+    // ── End Cytoscape ERD ──────────────────────────────────────────────────
 
     // Accordion toggle
     function toggleAccordion(id) {
