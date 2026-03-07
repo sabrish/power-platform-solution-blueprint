@@ -117,7 +117,7 @@ export class BusinessRuleDiscovery {
    */
   private mapRecordToBusinessRule(record: BusinessRuleRecord): BusinessRule {
     // Parse business rule definition — tries clientdata (JSON) first, falls back to XAML
-    const definition = BusinessRuleParser.parse(record.xaml ?? null, record.clientdata ?? null);
+    const definition = BusinessRuleParser.parse(record.xaml ?? null, record.clientdata ?? null, record.name);
 
     // Determine state
     let state: BusinessRule['state'] = 'Draft';

@@ -2,7 +2,6 @@
  * HTML Templates for Blueprint Report
  * Generates each section of the HTML report with embedded CSS and JavaScript
  */
-import cytoscapeSource from 'virtual:cytoscape-raw';
 import type {
   BlueprintResult,
   BlueprintMetadata,
@@ -37,7 +36,8 @@ export class HtmlTemplates {
   <meta name="generator" content="Power Platform Solution Blueprint (PPSB)">
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
   <title>${this.escapeHtml(title)}</title>
-  <script>${cytoscapeSource}</script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
   <style>
 ${this.embeddedCSS()}
   </style>
@@ -1540,7 +1540,30 @@ ${sampleRows}
    * Generate embedded JavaScript
    */
   htmlScripts(): string {
-    return `<script>
+    // Diagnostic block runs in its own <script> tag so it always executes even
+    // if the main script has a parse error.  Output appears in DevTools console.
+    const diagnostic = `<script>
+(function() {
+  var logs = [];
+  logs.push('Cytoscape: ' + (typeof cytoscape !== 'undefined' ? 'loaded v' + (cytoscape.version || '?') : 'NOT loaded - CDN may be blocked'));
+  logs.push('Mermaid: ' + (typeof mermaid !== 'undefined' ? 'loaded' : 'not loaded'));
+  var erdEl = document.getElementById('erd-data');
+  if (erdEl) {
+    try {
+      var d = JSON.parse(erdEl.textContent);
+      logs.push('ERD data: OK (' + (d.nodes ? d.nodes.length : 0) + ' nodes, ' + (d.edges ? d.edges.length : 0) + ' edges)');
+    } catch (e) {
+      logs.push('ERD data: PARSE ERROR - ' + e.message);
+    }
+  } else {
+    logs.push('ERD data: element not found (Mermaid fallback in use)');
+  }
+  console.log('[Blueprint diagnostic]', logs.join(' | '));
+})();
+</script>`;
+
+    return `${diagnostic}
+<script>
 ${this.embeddedJavaScript()}
 </script>`;
   }
