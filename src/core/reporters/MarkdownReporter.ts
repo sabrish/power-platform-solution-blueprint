@@ -257,8 +257,8 @@ export class MarkdownReporter {
   }
 
   /**
-   * Generate a static SVG of the ERD using a grid layout.
-   * No external layout engine — nodes are sorted by degree and placed in a grid.
+   * Generate a static SVG of the ERD using a force-directed layout (Fruchterman-Reingold).
+   * Mirrors the "Smart" layout used in the interactive viewer.
    */
   private generateERDSvg(erd: ERDDefinition): string {
     const graphData = erd.graphData;
@@ -270,63 +270,119 @@ export class MarkdownReporter {
     const nodes = graphData.nodes.filter(n => connectedIds.has(n.id));
     if (nodes.length === 0) return '';
 
-    // Sort by degree so highly-connected nodes appear top-left
-    const degree = new Map<string, number>();
-    nodes.forEach(n => degree.set(n.id, 0));
-    graphData.edges.forEach(e => {
-      degree.set(e.source, (degree.get(e.source) ?? 0) + 1);
-      degree.set(e.target, (degree.get(e.target) ?? 0) + 1);
-    });
-    const sorted = [...nodes].sort((a, b) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0));
+    // Canvas size scales with node count
+    const n = nodes.length;
+    const canvasW = Math.max(900, Math.ceil(Math.sqrt(n)) * 220);
+    const canvasH = Math.max(700, Math.ceil(Math.sqrt(n)) * 180);
+    const pad = 80;
 
-    // Grid layout
-    const nodeW = 140, nodeH = 42, hGap = 80, vGap = 60, pad = 30;
-    const cellW = nodeW + hGap;
-    const cellH = nodeH + vGap;
-    const cols = Math.ceil(Math.sqrt(sorted.length));
-    const rows = Math.ceil(sorted.length / cols);
-    const svgW = cols * cellW + pad * 2;
-    const svgH = rows * cellH + pad * 2;
-
+    // Fruchterman-Reingold force-directed layout
+    const k = Math.sqrt((canvasW * canvasH) / n) * 0.9; // optimal distance
     const positions = new Map<string, { x: number; y: number }>();
-    sorted.forEach((n, i) => {
-      positions.set(n.id, {
-        x: pad + (i % cols) * cellW + cellW / 2,
-        y: pad + Math.floor(i / cols) * cellH + cellH / 2,
+
+    // Initialise on a circle to avoid symmetry collapse
+    const r = Math.min(canvasW, canvasH) * 0.35;
+    nodes.forEach((node, i) => {
+      const angle = (2 * Math.PI * i) / n;
+      positions.set(node.id, {
+        x: canvasW / 2 + r * Math.cos(angle),
+        y: canvasH / 2 + r * Math.sin(angle),
       });
     });
 
+    // Deduplicate edges for attraction force
+    const uniqueEdges: Array<{ source: string; target: string }> = [];
+    const edgeSeen = new Set<string>();
+    for (const e of graphData.edges) {
+      const key = [e.source, e.target].sort().join(':');
+      if (!edgeSeen.has(key)) { edgeSeen.add(key); uniqueEdges.push(e); }
+    }
+
+    // Run iterations with simulated annealing cooling
+    const iterations = 120;
+    let temp = canvasW / 8;
+    const cooling = temp / (iterations + 1);
+
+    for (let iter = 0; iter < iterations; iter++) {
+      const disp = new Map<string, { dx: number; dy: number }>();
+      nodes.forEach(nd => disp.set(nd.id, { dx: 0, dy: 0 }));
+
+      // Repulsive forces between all node pairs
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = positions.get(nodes[i].id)!;
+          const b = positions.get(nodes[j].id)!;
+          const dx = a.x - b.x || 0.01;
+          const dy = a.y - b.y || 0.01;
+          const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+          const f = (k * k) / dist;
+          const da = disp.get(nodes[i].id)!;
+          const db = disp.get(nodes[j].id)!;
+          da.dx += (dx / dist) * f;
+          da.dy += (dy / dist) * f;
+          db.dx -= (dx / dist) * f;
+          db.dy -= (dy / dist) * f;
+        }
+      }
+
+      // Attractive forces along edges
+      for (const e of uniqueEdges) {
+        const a = positions.get(e.source);
+        const b = positions.get(e.target);
+        if (!a || !b) continue;
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        const f = (dist * dist) / k;
+        const da = disp.get(e.source)!;
+        const db = disp.get(e.target)!;
+        da.dx -= (dx / dist) * f;
+        da.dy -= (dy / dist) * f;
+        db.dx += (dx / dist) * f;
+        db.dy += (dy / dist) * f;
+      }
+
+      // Apply displacements capped by temperature, clamped to canvas
+      for (const nd of nodes) {
+        const pos = positions.get(nd.id)!;
+        const d = disp.get(nd.id)!;
+        const dist = Math.max(1, Math.sqrt(d.dx * d.dx + d.dy * d.dy));
+        const move = Math.min(dist, temp);
+        pos.x = Math.max(pad, Math.min(canvasW - pad, pos.x + (d.dx / dist) * move));
+        pos.y = Math.max(pad, Math.min(canvasH - pad, pos.y + (d.dy / dist) * move));
+      }
+
+      temp -= cooling;
+    }
+
+    const nodeW = 140, nodeH = 42;
     const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     // Edges first (nodes render on top)
     const edgeParts: string[] = [];
-    const seen = new Set<string>();
-    for (const e of graphData.edges) {
-      const key = [e.source, e.target].sort().join(':') + ':' + e.id;
-      if (seen.has(key)) continue;
-      seen.add(key);
+    for (const e of uniqueEdges) {
       const s = positions.get(e.source);
       const t = positions.get(e.target);
       if (!s || !t) continue;
-      const dash = e.type === 'N-N' ? ' stroke-dasharray="6,3"' : '';
+      const dash = (e as { type?: string }).type === 'N-N' ? ' stroke-dasharray="6,3"' : '';
       edgeParts.push(`<line x1="${s.x.toFixed(1)}" y1="${s.y.toFixed(1)}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"${dash}/>`);
     }
 
     // Nodes
     const nodeParts: string[] = [];
-    for (const n of sorted) {
-      const pos = positions.get(n.id)!;
+    for (const nd of nodes) {
+      const pos = positions.get(nd.id)!;
       nodeParts.push(
-        `<rect x="${(pos.x - nodeW / 2).toFixed(1)}" y="${(pos.y - nodeH / 2).toFixed(1)}" width="${nodeW}" height="${nodeH}" rx="5" fill="${esc(n.color)}" stroke="${esc(n.strokeColor)}" stroke-width="1.5"/>`,
-        `<text x="${pos.x.toFixed(1)}" y="${(pos.y + 4).toFixed(1)}" text-anchor="middle" fill="${esc(n.textColor)}" font-size="10" font-weight="bold" font-family="system-ui,Arial,sans-serif">${esc(n.label)}</text>`
+        `<rect x="${(pos.x - nodeW / 2).toFixed(1)}" y="${(pos.y - nodeH / 2).toFixed(1)}" width="${nodeW}" height="${nodeH}" rx="5" fill="${esc(nd.color)}" stroke="${esc(nd.strokeColor)}" stroke-width="1.5"/>`,
+        `<text x="${pos.x.toFixed(1)}" y="${(pos.y + 4).toFixed(1)}" text-anchor="middle" fill="${esc(nd.textColor)}" font-size="10" font-weight="bold" font-family="system-ui,Arial,sans-serif">${esc(nd.label)}</text>`
       );
     }
 
     return [
       `<?xml version="1.0" encoding="UTF-8"?>`,
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`,
       `<defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#aaa"/></marker></defs>`,
-      `<rect width="${svgW}" height="${svgH}" fill="#ffffff"/>`,
+      `<rect width="${canvasW}" height="${canvasH}" fill="#ffffff"/>`,
       ...edgeParts,
       ...nodeParts,
       `</svg>`,

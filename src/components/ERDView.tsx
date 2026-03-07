@@ -30,13 +30,12 @@ import type { ERDDefinition, BlueprintResult } from '../core';
 import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
 
 // ─── Layout names ────────────────────────────────────────────────────────────
-type LayoutName = 'cose' | 'breadthfirst' | 'grid';
+type LayoutName = 'cose' | 'breadthfirst';
 type IsolateHops = 1 | 2 | 3;
 
 const LAYOUT_LABELS: Record<LayoutName, string> = {
   cose: 'Smart',
   breadthfirst: 'Hierarchical',
-  grid: 'Grid',
 };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
@@ -500,13 +499,6 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         directed: true,
         padding: 60,
         spacingFactor: 2.0,
-      },
-      grid: {
-        name: 'grid',
-        animate: false,
-        padding: 60,
-        spacingFactor: 2.0,
-        avoidOverlap: true,
       },
     };
 
