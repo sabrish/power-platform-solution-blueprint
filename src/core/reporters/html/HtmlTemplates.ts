@@ -37,7 +37,7 @@ export class HtmlTemplates {
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
   <title>${this.escapeHtml(title)}</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.31.0/dist/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
   <style>
 ${this.embeddedCSS()}
   </style>
@@ -135,6 +135,9 @@ ${this.embeddedCSS()}
         nodes: graphData.nodes.filter(n => connectedIds.has(n.id)),
         edges: graphData.edges,
       };
+
+      // Only use Cytoscape block when there are connected entities to display
+      if (filteredGraphData.nodes.length > 0) {
       const isolatedCount = graphData.nodes.length - filteredGraphData.nodes.length;
       const graphJson = JSON.stringify(filteredGraphData);
 
@@ -167,7 +170,8 @@ ${this.embeddedCSS()}
     var ERD_GRAPH_DATA = ${graphJson};
   </script>
 </section>`;
-    }
+      } // end filteredGraphData.nodes.length > 0
+    } // end graphData.nodes.length > 0
 
     // Fallback: Mermaid diagram
     const diagram = erd.diagrams[0];
@@ -2450,6 +2454,7 @@ ${this.embeddedJavaScript()}
         layout: { name: 'cose', animate: false, nodeRepulsion: function() { return 8000000; }, idealEdgeLength: function() { return 180; }, nodeOverlap: 60, gravity: 0.15, numIter: 1000 },
         minZoom: 0.05, maxZoom: 4, wheelSensitivity: 0.3
       });
+      _cy.fit(undefined, 40);
 
       // ── Node click — select
       _cy.on('tap', 'node', function(evt) {
@@ -2488,9 +2493,8 @@ ${this.embeddedJavaScript()}
         var content = '<strong style="word-break:break-all">' + e.data('id') + '</strong>';
         content += '<br><span style="color:#888;font-size:11px;">' + (type === 'N-N' ? 'N:N relationship' : '1:N relationship') + '</span>';
         if (type === '1-N') {
-          content += '<br><span style="color:#555">Parent → Child: ' + e.data('target') + ' → ' + e.data('source') + '</span>';
           var refAttr = e.data('referencedAttribute'); var relAttr = e.data('label');
-          if (refAttr || relAttr) content += '<br><span style="color:#888;font-size:11px;">' + (refAttr || '') + ' → ' + (relAttr || '') + '</span>';
+          content += '<br><span style="color:#555;word-break:break-all">' + e.data('source') + '.' + (refAttr || '') + ' &rarr; ' + e.data('target') + '.' + (relAttr || '') + '</span>';
         } else if (type === 'N-N' && e.data('intersectEntityName')) {
           content += '<br><span style="color:#555">Via: ' + e.data('intersectEntityName') + '</span>';
         }
