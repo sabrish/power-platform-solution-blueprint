@@ -115,6 +115,10 @@ power-platform-solution-blueprint/
 2. Read relevant existing source files before writing anything
 3. Check `learnings.md` for any entries that apply to this task
 4. Implement — complete files, not fragments (unless the change is truly minimal)
+4b. If you implemented a new Dataverse component type discovery: add the component
+    type integer code and name to `COMPONENT_TYPES_REFERENCE.md` and flag this to
+    the orchestrator so the document-updater can update `docs/architecture.md`
+    accordingly.
 5. Run type-check mentally — would `pnpm typecheck` pass?
 6. List what you implemented, any deviations from spec (with reasoning), and what still needs doing
 
