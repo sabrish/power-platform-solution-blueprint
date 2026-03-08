@@ -70,7 +70,7 @@ power-platform-solution-blueprint/
 │   │   ├── analyzers/            # Analysis engines
 │   │   │   ├── PerformanceAnalyzer.ts
 │   │   │   ├── WorkflowMigrationAnalyzer.ts
-│   │   │   ├── CrossEntityMapper.ts
+│   │   │   ├── CrossEntityAnalyzer.ts
 │   │   │   └── ExternalDependencyAggregator.ts
 │   │   ├── generators/           # ERD and blueprint generation
 │   │   │   ├── ERDGenerator.ts
@@ -84,7 +84,8 @@ power-platform-solution-blueprint/
 │   │   ├── parsers/              # Content parsers
 │   │   │   ├── FlowDefinitionParser.ts
 │   │   │   ├── JavaScriptParser.ts
-│   │   │   └── BusinessRuleParser.ts
+│   │   │   ├── BusinessRuleParser.ts
+│   │   │   └── ClassicWorkflowXamlParser.ts
 │   │   ├── types/                # Shared TypeScript interfaces and types
 │   │   └── utils/                # Shared utility functions
 │   │
@@ -192,10 +193,14 @@ Analyzers take discovered data and produce insights:
 - Generates step-by-step migration recommendations
 - Assesses blockers (child workflows, custom activities)
 
-**CrossEntityMapper**:
-- Parses flow definitions for cross-entity operations
-- Identifies plugin patterns (naming-based heuristic)
-- Maps automation source → target entity
+**CrossEntityAnalyzer**:
+- Builds per-entity `EntityAutomationPipeline` maps (all automations, all Dataverse messages)
+- Parses flow definitions (`FlowDefinitionParser`) for cross-entity Dataverse actions
+- Parses classic workflow XAML (`ClassicWorkflowXamlParser`) for `CreateEntity`, `UpdateEntity`, and `SetState` steps
+- Traces entry points: automations on other entities that write to a given entity
+- Generates `CrossEntityEntityView` traces with per-entry-point activation lists (WillFire / WontFire)
+- Detects risks: no-filter plugins, circular references, deep sync chains, high fan-out, re-triggers
+- Produces the flat `chainLinks` array for the global chain map overview
 
 **ExternalDependencyAggregator**:
 - Collects external calls from flows, plugins, web resources
@@ -281,9 +286,16 @@ App
     │   │   └── ColumnSecurityTab
     │   ├── ExternalDependenciesTab
     │   └── CrossEntityTab
+    │       └── CrossEntityAutomationView
     └── ExportDialog
         ├── FormatSelector
         └── DownloadButton
+│
+└── ArchitectureView
+    ├── ERDView (CytoscapeERD)
+    ├── CrossEntityAutomationView
+    ├── ExternalDependenciesView
+    └── SolutionDistributionView
 ```
 
 ### State Management
@@ -559,15 +571,17 @@ Analyzers produce insights from raw discovered data.
 3. Assign complexity (Low/Medium/High)
 4. Generate migration recommendations
 
-### Cross-Entity Mapper
+### Cross-Entity Analyzer
 
-**Inputs**: Flows (with parsed definitions), plugins
-**Outputs**: CrossEntityLink[]
+**Inputs**: Entity blueprints (plugins, flows, business rules, classic workflows)
+**Outputs**: `CrossEntityAnalysisResult` — entity views, pipeline maps, chain links, risks
 
 **Logic**:
-1. Parse flow actions for Dataverse operations on different entities
-2. Check plugin names for cross-entity patterns (heuristic)
-3. Build source → target mapping
+1. Build `EntityAutomationPipeline` for every entity with automation (all three messages: Create/Update/Delete)
+2. Detect automations that write to other entities (cross-entity outputs) via flow definition parsing and classic workflow XAML parsing
+3. Trace entry points: for each (target entity, inbound automation) pair, enumerate which of the target's own automations fire and with what filter match status
+4. Emit `CrossEntityRisk` items: no-filter plugins, sync chains, circular branches, re-triggers
+5. Build flat `chainLinks` for the global chain-map overview
 
 ### External Dependency Aggregator
 
@@ -912,4 +926,4 @@ PPSB architecture emphasizes:
 
 ---
 
-*Last updated: 2026-03-07 — ERDGenerator updated for Cytoscape.js interactive graph (v0.9.0); HtmlReporter notes updated for Mermaid CDN pinning, storage shim, XSS defence, and JSON data-block embedding; lazy rendering section updated for Cytoscape; component hierarchy updated (MermaidDiagram → CytoscapeERD). Prior: 2026-03-02 — API layer description, DataGrid → card-row correction, static import constraint, metadata $orderby caveat, typed cache.*
+*Last updated: 2026-03-08 — CrossEntityMapper replaced by CrossEntityAnalyzer; ClassicWorkflowXamlParser added to parsers; component hierarchy updated for ArchitectureView shell, CrossEntityAutomationView, FetchDiagnosticsView. Prior: 2026-03-07 — ERDGenerator updated for Cytoscape.js interactive graph (v0.9.0); HtmlReporter notes updated for Mermaid CDN pinning, storage shim, XSS defence, and JSON data-block embedding.*

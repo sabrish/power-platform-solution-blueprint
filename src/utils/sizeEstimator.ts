@@ -102,6 +102,9 @@ export function estimateJsonSize(result: BlueprintResult): number {
   // Cross-entity analysis
   if (result.crossEntityAnalysis) {
     size += result.crossEntityAnalysis.chainLinks.length * 200;
+    size += result.crossEntityAnalysis.entityViews.size * 800;   // traces + activations per entity
+    size += result.crossEntityAnalysis.allEntityPipelines.size * 500; // pipeline steps per entity
+    size += result.crossEntityAnalysis.risks.length * 100;
   }
 
   // External endpoints
