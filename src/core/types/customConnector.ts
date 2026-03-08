@@ -23,8 +23,3 @@ export interface CustomConnector {
 /**
  * Color mapping for custom connector types
  */
-export const CUSTOM_CONNECTOR_TYPE_COLORS = {
-  custom: 'brand',
-  certified: 'success',
-  shared: 'warning',
-} as const;

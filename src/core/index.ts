@@ -1,19 +1,12 @@
 // Types
 export type { Publisher, Solution, EntityMetadata, PluginStep, ImageDefinition } from './types.js';
-export { STAGE_COLORS } from './types.js';
 export type { ClassicWorkflow, MigrationRecommendation, MigrationFeature } from './types/classicWorkflow.js';
 export type { BusinessProcessFlow, BPFDefinition, BPFStage, BPFStep } from './types/businessProcessFlow.js';
-export { BPF_STATE_COLORS } from './types/businessProcessFlow.js';
 export type { CustomAPI, CustomAPIParameter, CustomAPIParameterType } from './types/customApi.js';
-export { CUSTOM_API_BINDING_COLORS, CUSTOM_API_TYPE_COLORS } from './types/customApi.js';
 export type { EnvironmentVariable, EnvironmentVariableValue, EnvironmentVariableType } from './types/environmentVariable.js';
-export { ENV_VAR_TYPE_COLORS } from './types/environmentVariable.js';
 export type { ConnectionReference } from './types/connectionReference.js';
-export { CONNECTION_STATUS_COLORS } from './types/connectionReference.js';
 export type { GlobalChoice, GlobalChoiceOption } from './types/globalChoice.js';
-export { GLOBAL_CHOICE_STATUS_COLORS } from './types/globalChoice.js';
 export type { CustomConnector } from './types/customConnector.js';
-export { CUSTOM_CONNECTOR_TYPE_COLORS } from './types/customConnector.js';
 export type {
   ProgressPhase,
   ProgressInfo,
@@ -50,7 +43,6 @@ export type {
   ERDEdge,
   PublisherLegend,
   EntityQuickLink,
-  CrossEntityLink,
   ExternalEndpoint,
   RiskFactor,
   ExternalCallSource,
@@ -63,7 +55,6 @@ export type {
   MarkdownExport,
   ExportProgress,
 } from './types/blueprint.js';
-export { WEB_RESOURCE_TYPE_NAMES } from './types/blueprint.js';
 export type {
   ComponentInventory,
   WorkflowInventory,
