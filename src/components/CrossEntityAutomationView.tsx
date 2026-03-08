@@ -303,6 +303,128 @@ const useStyles = makeStyles({
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: tokens.spacingVerticalM,
   },
   monoText: { fontFamily: 'Consolas, Monaco, monospace', fontSize: tokens.fontSizeBase200 },
+
+  /* ── Banner inner layout ── */
+  bannerContent: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS },
+  bannerTitleRow: { display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS },
+
+  /* ── Global Chain Map sub-view container ── */
+  chainMapContainer: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM },
+
+  /* ── Filter badge row wrappers (two identical divs in chain map) ── */
+  filterBadgeRow: { display: 'flex', gap: tokens.spacingHorizontalXS },
+
+  /* ── Clickable badge (cursor override) ── */
+  badgeCursor: { cursor: 'pointer' },
+
+  /* ── Chain map automation cell ── */
+  chainAutoCell: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXXS },
+  chainAutoBadge: { width: 'fit-content' },
+
+  /* ── Trace confidence badge (very small) ── */
+  tinyBadge: { fontSize: '9px' },
+
+  /* ── Trace divider (dashed horizontal separator between entry points) ── */
+  traceDivider: {
+    borderTop: `1px dashed ${tokens.colorNeutralStroke2}`,
+    margin: `${tokens.spacingVerticalS} 0`,
+  },
+
+  /* ── Step mode badge / no-filter badge (9px + flexShrink) ── */
+  stepBadge: { fontSize: '9px', flexShrink: 0 },
+
+  /* ── Filtering attributes text shown inside a step row ── */
+  stepFilterText: { fontSize: '9px', color: tokens.colorNeutralForeground3, flexShrink: 0 },
+
+  /* ── Empty pipeline message (no automations) ── */
+  emptyPipelineText: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+    padding: `${tokens.spacingVerticalXS} 0`,
+  },
+
+  /* ── Won't-fire item: overflow-safe name ── */
+  wontFireItemName: {
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: tokens.fontSizeBase100,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  wontFireItemStage: { fontSize: '9px', color: tokens.colorNeutralForeground3 },
+  wontFireItemFilter: {
+    fontSize: '9px',
+    color: tokens.colorNeutralForeground3,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+
+  /* ── Entry-point field context strip ── */
+  entryFieldsRow: {
+    marginTop: tokens.spacingVerticalXS,
+    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground3,
+  },
+  entryFieldPill: {
+    fontFamily: 'monospace',
+    marginRight: tokens.spacingHorizontalXS,
+    backgroundColor: tokens.colorNeutralBackground3,
+    padding: `0 3px`,
+    borderRadius: tokens.borderRadiusSmall,
+  },
+
+  /* ── ChildEntitySection header text elements ── */
+  childArrow: { fontSize: '10px' },
+  childEntityName: { fontSize: tokens.fontSizeBase300 },
+  childLogicalName: { fontFamily: 'monospace', fontSize: '10px', color: tokens.colorNeutralForeground3 },
+  childStepCount: { fontSize: '9px', color: tokens.colorNeutralForeground3 },
+
+  /* ── FieldMatchVerdict: "WillFireNoFilter" advisory text ── */
+  noFilterAdvisory: { fontSize: '9px', color: tokens.colorPaletteRedForeground1 },
+
+  /* ── FieldPills row layout ── */
+  fieldPillRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '3px',
+    flexWrap: 'wrap',
+    marginTop: tokens.spacingVerticalXXS,
+  },
+  fieldPillLabel: { fontSize: '9px', color: tokens.colorNeutralForeground3 },
+
+  /* ── Entity header: logical name mono text ── */
+  entityLogicalName: {
+    fontFamily: 'monospace',
+    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground3,
+  },
+
+  /* ── Entity header: entry point preview line ── */
+  entityEntryPreview: { fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 },
+
+  /* ── Entity header: right-side count + chevron text ── */
+  entityHeaderCount: {
+    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground3,
+    flexShrink: 0,
+    marginLeft: tokens.spacingHorizontalS,
+  },
+
+  /* ── Empty-state icons ── */
+  emptyStateIconLarge: { fontSize: '48px' },
+  emptyStateIconMedium: { fontSize: '32px' },
+
+  /* ── Stats card subtext (small muted label below a large number) ── */
+  statsSubtext: { fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 },
+
+  /* ── Risk card header row ── */
+  riskCardHeader: { display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS },
+
+  /* ── Risk description text ── */
+  riskDescription: { fontSize: tokens.fontSizeBase200, wordBreak: 'break-word' },
 });
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -332,8 +454,8 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
       <div className={styles.container}>
         <div className={styles.banner}>
           <Lightbulb24Regular className={styles.bannerIcon} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+          <div className={styles.bannerContent}>
+            <div className={styles.bannerTitleRow}>
             <Text weight="semibold">Detection Coverage Notice</Text>
             <Badge appearance="filled" color="warning" size="small">Preview</Badge>
           </div>
@@ -344,7 +466,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
           </div>
         </div>
         <div className={styles.emptyState}>
-          <Info16Regular style={{ fontSize: '48px' }} />
+          <Info16Regular className={styles.emptyStateIconLarge} />
           <Title3>No Cross-Entity Automation Detected</Title3>
           <Text>
             No flows or classic workflows were found writing to a Dataverse entity.
@@ -391,8 +513,8 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
       {/* Banner */}
       <div className={styles.banner}>
         <Lightbulb24Regular className={styles.bannerIcon} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+        <div className={styles.bannerContent}>
+          <div className={styles.bannerTitleRow}>
             <Text weight="semibold">Detection Coverage Notice</Text>
             <Badge appearance="filled" color="warning" size="small">Preview</Badge>
           </div>
@@ -408,17 +530,17 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
         <Card className={styles.statsCard}>
           <Text weight="semibold">Entities w/ Automation</Text>
           <Text style={{ fontSize: tokens.fontSizeHero700 }}>{analysis.allEntityPipelines.size}</Text>
-          <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>In pipeline view</Text>
+          <Text className={styles.statsSubtext}>In pipeline view</Text>
         </Card>
         <Card className={styles.statsCard}>
           <Text weight="semibold">Cross-Entity Writes</Text>
           <Text style={{ fontSize: tokens.fontSizeHero700 }}>{analysis.totalBranches}</Text>
-          <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Discovered branches</Text>
+          <Text className={styles.statsSubtext}>Discovered branches</Text>
         </Card>
         <Card className={styles.statsCard}>
           <Text weight="semibold">Target Entities</Text>
           <Text style={{ fontSize: tokens.fontSizeHero700 }}>{analysis.entityViews.size}</Text>
-          <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Receive external writes</Text>
+          <Text className={styles.statsSubtext}>Receive external writes</Text>
         </Card>
         <Card className={styles.statsCard}>
           <Text weight="semibold" style={{ color: analysis.noFilterPluginCount > 0 ? tokens.colorPaletteRedForeground1 : undefined }}>
@@ -427,7 +549,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
           <Text style={{ fontSize: tokens.fontSizeHero700, color: analysis.noFilterPluginCount > 0 ? tokens.colorPaletteRedForeground1 : undefined }}>
             {analysis.noFilterPluginCount}
           </Text>
-          <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Fire on ALL updates</Text>
+          <Text className={styles.statsSubtext}>Fire on ALL updates</Text>
         </Card>
         <Card className={styles.statsCard}>
           <Text weight="semibold" style={{ color: highRisks.length > 0 ? tokens.colorPaletteRedForeground1 : undefined }}>
@@ -439,7 +561,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
         </Card>
         <Card className={styles.statsCard}>
           <Text weight="semibold">{analysis.chainLinks.filter(l => l.automationType === 'Flow').length}</Text>
-          <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Flow Entry Points</Text>
+          <Text className={styles.statsSubtext}>Flow Entry Points</Text>
         </Card>
       </div>
 
@@ -450,7 +572,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
           <div className={styles.statsGrid}>
             {highRisks.map((risk, i) => (
               <Card key={i} className={styles.riskCard}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
+                <div className={styles.riskCardHeader}>
                   <Warning24Regular style={{ color: tokens.colorPaletteRedForeground1 }} />
                   <Badge appearance="filled" color={
                     risk.type === 'ReTrigger' ? 'danger' :
@@ -459,16 +581,16 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                     'warning'
                   }>{risk.type}</Badge>
                 </div>
-                <Text style={{ fontSize: tokens.fontSizeBase200, wordBreak: 'break-word' }}>{risk.description}</Text>
+                <Text className={styles.riskDescription}>{risk.description}</Text>
               </Card>
             ))}
             {mediumRisks.map((risk, i) => (
               <Card key={i} className={styles.riskCardMedium}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
+                <div className={styles.riskCardHeader}>
                   <Warning24Regular style={{ color: tokens.colorPaletteYellowForeground2 }} />
                   <Badge appearance="filled" color="warning">{risk.type}</Badge>
                 </div>
-                <Text style={{ fontSize: tokens.fontSizeBase200, wordBreak: 'break-word' }}>{risk.description}</Text>
+                <Text className={styles.riskDescription}>{risk.description}</Text>
               </Card>
             ))}
           </div>
@@ -507,7 +629,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
           {/* Empty state: no cross-entity links at all and filter is on */}
           {analysis.entityViews.size === 0 && !showAllEntities && (
             <div className={styles.emptyState}>
-              <Info16Regular style={{ fontSize: '32px' }} />
+              <Info16Regular className={styles.emptyStateIconMedium} />
               <Text weight="semibold">No cross-entity automation found</Text>
               <Text style={{ fontSize: tokens.fontSizeBase200 }}>
                 Check "Show all entities with automation" to see all entity automation pipelines.
@@ -586,7 +708,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
 
       {/* ── Sub-view 2: Global Chain Map ── */}
       {subView === 'map' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM }}>
+        <div className={styles.chainMapContainer}>
           {/* Search bar */}
           <div className={styles.filterBar}>
             <Input
@@ -602,26 +724,26 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
           {/* Type and operation filter badges */}
           <div className={styles.filterRow}>
             <Text weight="semibold">Filter:</Text>
-            <div style={{ display: 'flex', gap: tokens.spacingHorizontalXS }}>
+            <div className={styles.filterBadgeRow}>
               {['all', 'Flow', 'ClassicWorkflow'].map(t => (
                 <Badge
                   key={t}
                   appearance={filterType === t ? 'filled' : 'outline'}
                   color={filterType === t ? 'brand' : 'informative'}
-                  style={{ cursor: 'pointer' }}
+                  className={styles.badgeCursor}
                   onClick={() => setFilterType(t)}
                 >
                   {t === 'all' ? 'All Types' : t}
                 </Badge>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: tokens.spacingHorizontalXS }}>
+            <div className={styles.filterBadgeRow}>
               {['all', 'Create', 'Update', 'Delete'].map(op => (
                 <Badge
                   key={op}
                   appearance={filterOperation === op ? 'filled' : 'outline'}
                   color={filterOperation === op ? 'brand' : op === 'Create' ? 'success' : op === 'Delete' ? 'danger' : 'warning'}
-                  style={{ cursor: 'pointer' }}
+                  className={styles.badgeCursor}
                   onClick={() => setFilterOperation(op)}
                 >
                   {op === 'all' ? 'All Ops' : op}
@@ -654,9 +776,9 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                       <br />
                       <Text className={styles.monoText} style={{ color: tokens.colorNeutralForeground3 }}>{link.targetEntity}</Text>
                     </div>
-                    <div key={`auto-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXXS }}>
+                    <div key={`auto-${i}`} className={styles.chainAutoCell}>
                       <Text style={{ wordBreak: 'break-word' }}>{link.automationName}</Text>
-                      <Badge appearance="outline" color={link.automationType === 'Flow' ? 'success' : 'important'} style={{ width: 'fit-content' }}>
+                      <Badge appearance="outline" color={link.automationType === 'Flow' ? 'success' : 'important'} className={styles.chainAutoBadge}>
                         {link.automationType}
                       </Badge>
                     </div>
@@ -705,7 +827,7 @@ function EntityPipelineRow({
         <div className={styles.entityInfo}>
           <div className={styles.entityNameRow}>
             <Text weight="semibold">{view.entityDisplayName}</Text>
-            <Text style={{ fontFamily: 'monospace', fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+            <Text className={styles.entityLogicalName}>
               {logicalName}
             </Text>
             {firstTrace && <OperationBadge operation={firstTrace.entryPoint.operation} />}
@@ -715,7 +837,7 @@ function EntityPipelineRow({
           </div>
 
           {firstTrace && (
-            <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+            <Text className={styles.entityEntryPreview}>
               &larr; {typeIcon(firstTrace.entryPoint.automationType === 'ClassicWorkflow' ? 'ClassicWorkflow' : 'Flow')}{' '}
               {firstTrace.entryPoint.automationName}
               {' '}(from {firstTrace.entryPoint.sourceEntityDisplayName})
@@ -724,7 +846,7 @@ function EntityPipelineRow({
 
         </div>
 
-        <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, flexShrink: 0, marginLeft: tokens.spacingHorizontalS }}>
+        <Text className={styles.entityHeaderCount}>
           {expanded ? '▲' : '▼'} {willFireCount}
         </Text>
       </div>
@@ -740,7 +862,7 @@ function EntityPipelineRow({
                   <strong>{trace.entryPoint.automationName}</strong>
                   {' '}— {trace.entryPoint.sourceEntityDisplayName} &rarr; <strong>{trace.entryPoint.operation}</strong>
                   {' '}
-                  <Badge appearance="tint" color="informative" style={{ fontSize: '9px' }}>
+                  <Badge appearance="tint" color="informative" className={styles.tinyBadge}>
                     {trace.entryPoint.confidence}
                   </Badge>
                   {ti < view.traces.length - 1 && (
@@ -755,7 +877,7 @@ function EntityPipelineRow({
                 parentEntityDisplayName={view.entityDisplayName}
               />
               {ti < view.traces.length - 1 && (
-                <div style={{ borderTop: `1px dashed ${tokens.colorNeutralStroke2}`, margin: '8px 0' }} />
+                <div className={styles.traceDivider} />
               )}
             </div>
           ))}
@@ -790,7 +912,7 @@ function EntityMessagePipelineRow({
         <div className={styles.entityInfo}>
           <div className={styles.entityNameRow}>
             <Text weight="semibold">{pipeline.entityDisplayName}</Text>
-            <Text style={{ fontFamily: 'monospace', fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+            <Text className={styles.entityLogicalName}>
               {pipeline.entityLogicalName}
             </Text>
             {pipeline.messagePipelines.map(mp => (
@@ -803,7 +925,7 @@ function EntityMessagePipelineRow({
 
         </div>
 
-        <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, flexShrink: 0, marginLeft: tokens.spacingHorizontalS }}>
+        <Text className={styles.entityHeaderCount}>
           {expanded ? '▲' : '▼'} {totalSteps}
         </Text>
       </div>
@@ -819,7 +941,7 @@ function EntityMessagePipelineRow({
               )}
               <MessagePipelineSteps mp={mp} analysis={analysis} color={color} entityDisplayName={pipeline.entityDisplayName} />
               {mpi < pipeline.messagePipelines.length - 1 && (
-                <div style={{ borderTop: `1px dashed ${tokens.colorNeutralStroke2}`, margin: '8px 0' }} />
+                <div className={styles.traceDivider} />
               )}
             </div>
           ))}
@@ -862,16 +984,16 @@ function MessagePipelineSteps({
                 <span className={styles.stepName}>{step.automationName}</span>
                 {step.stageName && <span className={styles.stepStage}>{step.stageName}</span>}
                 {step.rank !== undefined && <span className={styles.stepStage}>#{step.rank}</span>}
-                <Badge appearance="tint" color={step.mode === 'Sync' ? 'warning' : 'success'} style={{ fontSize: '9px', flexShrink: 0 }}>
+                <Badge appearance="tint" color={step.mode === 'Sync' ? 'warning' : 'success'} className={styles.stepBadge}>
                   {step.mode}
                 </Badge>
                 {step.firesForAllUpdates && (
                   <Tooltip content="No filtering attributes — fires on ALL updates" relationship="description">
-                    <Badge appearance="filled" color="danger" style={{ fontSize: '9px', flexShrink: 0 }}>&#9888; No filter</Badge>
+                    <Badge appearance="filled" color="danger" className={styles.stepBadge}>&#9888; No filter</Badge>
                   </Tooltip>
                 )}
                 {step.filteringAttributes.length > 0 && !step.firesForAllUpdates && mp.message === 'Update' && (
-                  <Text style={{ fontSize: '9px', color: tokens.colorNeutralForeground3, flexShrink: 0 }}>
+                  <Text className={styles.stepFilterText}>
                     filters: {step.filteringAttributes.slice(0, 3).join(', ')}
                     {step.filteringAttributes.length > 3 && ` +${step.filteringAttributes.length - 3}`}
                   </Text>
@@ -914,7 +1036,7 @@ function MessagePipelineSteps({
       })}
 
       {mp.steps.length === 0 && (
-        <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3, padding: '4px 0' }}>
+        <Text className={styles.emptyPipelineText}>
           No automations registered for {mp.message}.
         </Text>
       )}
@@ -955,7 +1077,7 @@ function TracePipeline({
       ))}
 
       {willFire.length === 0 && (
-        <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3, padding: '4px 0' }}>
+        <Text className={styles.emptyPipelineText}>
           No automations registered on this entity for this message.
         </Text>
       )}
@@ -968,16 +1090,16 @@ function TracePipeline({
           </button>
           {showWontFire && wontFire.map((act, i) => (
             <div key={i} className={styles.wontFireItem}>
-              <span style={{ fontSize: tokens.fontSizeBase100 }}>{typeIcon(act.automationType)}</span>
-              <Badge appearance="outline" color="informative" style={{ fontSize: '9px' }}>{act.automationType}</Badge>
-              <Text style={{ fontWeight: tokens.fontWeightSemibold, fontSize: tokens.fontSizeBase100, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span>{typeIcon(act.automationType)}</span>
+              <Badge appearance="outline" color="informative" className={styles.tinyBadge}>{act.automationType}</Badge>
+              <Text className={styles.wontFireItemName}>
                 {act.automationName}
               </Text>
               {act.stageName && (
-                <Text style={{ fontSize: '9px', color: tokens.colorNeutralForeground3 }}>{act.stageName}</Text>
+                <Text className={styles.wontFireItemStage}>{act.stageName}</Text>
               )}
               {act.filteringAttributes.length > 0 && (
-                <Text style={{ fontSize: '9px', color: tokens.colorNeutralForeground3, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <Text className={styles.wontFireItemFilter}>
                   — filter: {act.filteringAttributes.join(', ')} (not in [{trace.entryPoint.fields.join(', ')}])
                 </Text>
               )}
@@ -988,9 +1110,9 @@ function TracePipeline({
 
       {/* Entry point field context */}
       {trace.entryPoint.fields.length > 0 && (
-        <div style={{ marginTop: '4px', fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+        <div className={styles.entryFieldsRow}>
           Entry fields: {trace.entryPoint.fields.slice(0, 8).map(f => (
-            <span key={f} style={{ fontFamily: 'monospace', marginRight: '4px', backgroundColor: tokens.colorNeutralBackground3, padding: '0 3px', borderRadius: '2px' }}>{f}</span>
+            <span key={f} className={styles.entryFieldPill}>{f}</span>
           ))}
           {trace.entryPoint.fields.length > 8 && <span>+{trace.entryPoint.fields.length - 8} more</span>}
         </div>
@@ -1044,12 +1166,12 @@ function StepBlock({
           {activation.rank !== undefined && (
             <span className={styles.stepStage}>#{activation.rank}</span>
           )}
-          <Badge appearance="tint" color={activation.mode === 'Sync' ? 'warning' : 'success'} style={{ fontSize: '9px', flexShrink: 0 }}>
+          <Badge appearance="tint" color={activation.mode === 'Sync' ? 'warning' : 'success'} className={styles.stepBadge}>
             {activation.mode}
           </Badge>
           {activation.firingStatus === 'WillFireNoFilter' && (
             <Tooltip content="No filtering attributes — fires on ALL updates" relationship="description">
-              <Badge appearance="filled" color="danger" style={{ fontSize: '9px', flexShrink: 0 }}>&#9888; No filter</Badge>
+              <Badge appearance="filled" color="danger" className={styles.stepBadge}>&#9888; No filter</Badge>
             </Tooltip>
           )}
         </div>
@@ -1119,13 +1241,13 @@ function ChildEntitySection({
         style={{ borderLeft: `3px solid ${accentColor}`, borderColor: `${accentColor}` }}
         onClick={() => setOpen(o => !o)}
       >
-        <span style={{ fontSize: '10px', color: accentColor }}>&#8627;</span>
-        <Text weight="semibold" style={{ fontSize: '12px' }}>{entityView.entityDisplayName}</Text>
-        <Text style={{ fontFamily: 'monospace', fontSize: '10px', color: tokens.colorNeutralForeground3 }}>
+        <span className={styles.childArrow} style={{ color: accentColor }}>&#8627;</span>
+        <Text weight="semibold" className={styles.childEntityName}>{entityView.entityDisplayName}</Text>
+        <Text className={styles.childLogicalName}>
           {entityView.entityLogicalName}
         </Text>
         <OperationBadge operation={trace.entryPoint.operation} />
-        <Text style={{ fontSize: '9px', color: tokens.colorNeutralForeground3 }}>
+        <Text className={styles.childStepCount}>
           {willFire.length} step{willFire.length !== 1 ? 's' : ''} &bull; {open ? '▲' : `▶ expand (${stepCount})`}
         </Text>
       </div>
@@ -1211,7 +1333,7 @@ function FieldMatchVerdict({
         <div className={styles.matchVerdict} style={{ color: tokens.colorPaletteRedForeground1 }}>
           &#9888;&#65039; WILL FIRE — no filtering attributes, fires on ALL updates
         </div>
-        <Text style={{ fontSize: '9px', color: tokens.colorPaletteRedForeground1 }}>
+        <Text className={styles.noFilterAdvisory}>
           Add filtering attributes to this {activation.automationType.toLowerCase()} to improve performance.
         </Text>
       </div>
@@ -1240,8 +1362,8 @@ function FieldPills({
   return (
     <div>
       {showEntry && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexWrap: 'wrap', marginTop: '2px' }}>
-          <Text style={{ fontSize: '9px', color: tokens.colorNeutralForeground3 }}>Updated:</Text>
+        <div className={styles.fieldPillRow}>
+          <Text className={styles.fieldPillLabel}>Updated:</Text>
           {entryFields.slice(0, 6).map(f => (
             <span key={f} className={matchedSet.has(f.toLowerCase()) ? styles.mpillHit : styles.mpillMiss}>
               {f}{matchedSet.has(f.toLowerCase()) ? ' ✔' : ''}
@@ -1251,8 +1373,8 @@ function FieldPills({
         </div>
       )}
       {showFilter && filterFields.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexWrap: 'wrap', marginTop: '2px' }}>
-          <Text style={{ fontSize: '9px', color: tokens.colorNeutralForeground3 }}>Filter:</Text>
+        <div className={styles.fieldPillRow}>
+          <Text className={styles.fieldPillLabel}>Filter:</Text>
           {filterFields.slice(0, 6).map(f => (
             <span key={f} className={matchedSet.has(f.toLowerCase()) ? styles.mpillHit : styles.mpillMiss}>
               {f}{matchedSet.has(f.toLowerCase()) ? ' ✔' : ''}
@@ -1273,19 +1395,21 @@ function TypeBadge({ type }: { type: AutomationActivation['automationType'] | Pi
     : type === 'Flow' ? 'success'
     : type === 'BusinessRule' ? 'brand'
     : 'warning';
+  const styles = useStyles();
   return (
-    <Badge appearance="outline" color={color} style={{ fontSize: '9px', flexShrink: 0 }}>
+    <Badge appearance="outline" color={color} className={styles.stepBadge}>
       {typeIcon(type)} {type}
     </Badge>
   );
 }
 
 function OperationBadge({ operation }: { operation: string }) {
+  const styles = useStyles();
   return (
     <Badge
       appearance="tint"
       color={operation === 'Create' ? 'success' : operation === 'Delete' ? 'danger' : 'warning'}
-      style={{ fontSize: '9px', flexShrink: 0 }}
+      className={styles.stepBadge}
     >
       {operation}
     </Badge>

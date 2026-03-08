@@ -115,7 +115,7 @@ export class ClassicWorkflowXamlParser {
       const entityName = this.extractEntityName(attrs);
       if (entityName) {
         results.push({
-          operation: 'Delete', // SetState = state/status transition
+          operation: 'Update', // SetState = state/status transition (Update, not Delete)
           targetEntity: entityName,
           fields: ['statecode', 'statuscode'],
           confidence: 'Low', // Lower confidence since it may be the workflow's own entity

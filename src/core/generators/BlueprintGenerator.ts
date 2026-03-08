@@ -782,8 +782,8 @@ export class BlueprintGenerator {
     const flowsByEntity = new Map<string, Flow[]>();
 
     for (const flow of flows) {
-      if (!flow.entity) {
-        // Flows without an entity go in a special "global" bucket
+      if (!flow.entity || flow.entity === 'none') {
+        // Flows without an entity (or with the literal "none" from Dataverse) are skipped
         continue;
       }
 
