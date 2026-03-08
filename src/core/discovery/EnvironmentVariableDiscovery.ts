@@ -1,5 +1,7 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { EnvironmentVariable, EnvironmentVariableValue } from '../types/environmentVariable.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 
 /**
  * Raw Environment Variable Definition from Dataverse
@@ -43,10 +45,16 @@ interface RawEnvironmentVariableValue {
 export class EnvironmentVariableDiscovery {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger
+  ) {
     this.client = client;
     this.onProgress = onProgress;
+    this.logger = logger;
   }
 
   /**
@@ -60,94 +68,98 @@ export class EnvironmentVariableDiscovery {
     }
 
     try {
-      const batchSize = 20;
-      const allResults: RawEnvironmentVariableDefinition[] = [];
-
-      for (let i = 0; i < envVarIds.length; i += batchSize) {
-        const batch = envVarIds.slice(i, i + batchSize);
-        const filterClauses = batch.map((id) => {
-          const cleanGuid = id.replace(/[{}]/g, '');
-          return `environmentvariabledefinitionid eq ${cleanGuid}`;
-        });
-        const filter = filterClauses.join(' or ');
-
-        const result = await this.client.query<RawEnvironmentVariableDefinition>(
-          'environmentvariabledefinitions',
-          {
-            select: [
-              'environmentvariabledefinitionid',
-              'schemaname',
-              'displayname',
-              'description',
-              'type',
-              'defaultvalue',
-              'ismanaged',
-              'isrequired',
-              'iscustomizable',
-              'hint',
-              'createdon',
-              'modifiedon',
-              '_ownerid_value',
-            ],
-            filter,
-            orderBy: ['schemaname asc'],
-          }
-        );
-
-        allResults.push(...result.value);
-
-        // Report progress after each batch
-        if (this.onProgress) {
-          this.onProgress(allResults.length, envVarIds.length);
+      // Pass 1 — fetch all definitions
+      const { results: allDefs } = await withAdaptiveBatch<string, RawEnvironmentVariableDefinition>(
+        envVarIds,
+        async (batch) => {
+          const filter = batch
+            .map(id => `environmentvariabledefinitionid eq ${id.replace(/[{}]/g, '')}`)
+            .join(' or ');
+          const result = await this.client.query<RawEnvironmentVariableDefinition>(
+            'environmentvariabledefinitions',
+            {
+              select: [
+                'environmentvariabledefinitionid', 'schemaname', 'displayname', 'description',
+                'type', 'defaultvalue', 'ismanaged', 'isrequired', 'iscustomizable',
+                'hint', 'createdon', 'modifiedon', '_ownerid_value',
+              ],
+              filter,
+              orderBy: ['schemaname'],
+            }
+          );
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Environment Variable Discovery',
+          entitySet: 'environmentvariabledefinitions',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
         }
+      );
+
+      if (allDefs.length === 0) return [];
+
+      // Pass 2 — batch-fetch all values for all definitions, then group in memory
+      const defIds = allDefs.map(d => d.environmentvariabledefinitionid);
+      const idToName = new Map(allDefs.map(d => [d.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, ''), d.schemaname]));
+
+      const { results: allValues } = await withAdaptiveBatch<string, RawEnvironmentVariableValue>(
+        defIds,
+        async (batch) => {
+          const filter = batch
+            .map(id => `_environmentvariabledefinitionid_value eq ${id.replace(/[{}]/g, '')}`)
+            .join(' or ');
+          const result = await this.client.query<RawEnvironmentVariableValue>(
+            'environmentvariablevalues',
+            {
+              select: [
+                'environmentvariablevalueid', 'schemaname', 'value',
+                '_environmentvariabledefinitionid_value', 'createdon', 'modifiedon', '_ownerid_value',
+              ],
+              filter,
+              orderBy: ['createdon desc'],
+            }
+          );
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Environment Variable Discovery',
+          entitySet: 'environmentvariablevalues',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(
+            Math.floor(allDefs.length / 2) + Math.floor(done / 2),
+            total
+          ),
+          getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
+        }
+      );
+
+      // Group values by definition ID (normalized)
+      const valuesByDefId = new Map<string, RawEnvironmentVariableValue[]>();
+      for (const val of allValues) {
+        const defId = val._environmentvariabledefinitionid_value.toLowerCase().replace(/[{}]/g, '');
+        if (!valuesByDefId.has(defId)) valuesByDefId.set(defId, []);
+        valuesByDefId.get(defId)!.push(val);
       }
 
-      // For each definition, fetch its values
-      const environmentVariables: EnvironmentVariable[] = [];
-      for (const rawDef of allResults) {
-        const values = await this.getValuesForDefinition(rawDef.environmentvariabledefinitionid);
+      this.onProgress?.(allDefs.length, allDefs.length);
 
-        // Find current value (there should typically be only one active value per environment)
+      return allDefs.map(rawDef => {
+        const defId = rawDef.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, '');
+        const rawValues = valuesByDefId.get(defId) ?? [];
+        const values = rawValues.map(v => this.mapToEnvironmentVariableValue(v));
+        // Sort by createdon desc (already ordered from query but ensure consistency)
+        values.sort((a, b) => b.createdOn.localeCompare(a.createdOn));
         const currentValue = values.length > 0 ? values[0] : null;
+        return this.mapToEnvironmentVariable(rawDef, values, currentValue);
+      });
 
-        environmentVariables.push(
-          this.mapToEnvironmentVariable(rawDef, values, currentValue)
-        );
-      }
-
-      return environmentVariables;
     } catch (error) {
       throw new Error(
         `Failed to retrieve Environment Variables: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
-    }
-  }
-
-  /**
-   * Get values for an Environment Variable Definition
-   */
-  private async getValuesForDefinition(definitionId: string): Promise<EnvironmentVariableValue[]> {
-    try {
-      const result = await this.client.query<RawEnvironmentVariableValue>(
-        'environmentvariablevalues',
-        {
-          select: [
-            'environmentvariablevalueid',
-            'schemaname',
-            'value',
-            '_environmentvariabledefinitionid_value',
-            'createdon',
-            'modifiedon',
-            '_ownerid_value',
-          ],
-          filter: `_environmentvariabledefinitionid_value eq ${definitionId.replace(/[{}]/g, '')}`,
-          orderBy: ['createdon desc'],
-        }
-      );
-
-      return result.value.map((raw) => this.mapToEnvironmentVariableValue(raw));
-    } catch (error) {
-      return [];
     }
   }
 
@@ -206,18 +218,12 @@ export class EnvironmentVariableDiscovery {
    */
   private getType(type: number): 'String' | 'Number' | 'Boolean' | 'JSON' | 'DataSource' {
     switch (type) {
-      case 100000000:
-        return 'String';
-      case 100000001:
-        return 'Number';
-      case 100000002:
-        return 'Boolean';
-      case 100000003:
-        return 'JSON';
-      case 100000004:
-        return 'DataSource';
-      default:
-        return 'String';
+      case 100000000: return 'String';
+      case 100000001: return 'Number';
+      case 100000002: return 'Boolean';
+      case 100000003: return 'JSON';
+      case 100000004: return 'DataSource';
+      default: return 'String';
     }
   }
 

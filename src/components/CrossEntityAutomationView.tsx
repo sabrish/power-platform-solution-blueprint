@@ -37,7 +37,13 @@ import type {
 import type { EntityBlueprint } from '../core';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Entity accent colour palette — cycles per entity in display order
+   Entity accent colour palette — cycles per entity in display order.
+   Intentional hardcoded values: Fluent UI tokens do not provide a cycling
+   multi-entity palette. Values match Fluent UI brand colours:
+   blue=colorBrandBackground, green=colorPaletteGreenBackground2,
+   orange=colorPaletteMarigoldBackground2, purple=colorPaletteVioletBackground2,
+   teal=colorPaletteTealBackground2, pink=colorPaletteMagentaBackground2,
+   hot pink=colorPaletteHotPinkBackground2, dark teal=colorPaletteDarkGreenBackground2
 ───────────────────────────────────────────────────────────────────────── */
 const ENTITY_COLORS = [
   '#0078d4', '#107c10', '#ca5010', '#8764b8',
@@ -121,18 +127,6 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     borderTop: 'none',
     borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-  },
-
-  /* Step pills shown when entity is collapsed */
-  stepPills: { display: 'flex', gap: '3px', flexWrap: 'nowrap', overflow: 'hidden', marginTop: '2px' },
-  stepPill: {
-    display: 'inline-flex', alignItems: 'center', gap: '3px',
-    padding: '2px 6px', borderRadius: '4px',
-    fontSize: tokens.fontSizeBase100, whiteSpace: 'nowrap',
-    maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis',
-    border: `1px solid ${tokens.colorNeutralStroke2}`,
-    backgroundColor: tokens.colorNeutralBackground3,
-    color: tokens.colorNeutralForeground2,
   },
 
   /* Trace sub-header (shown when entity has multiple entry points) */
@@ -700,9 +694,6 @@ function EntityPipelineRow({
     (sum, t) => sum + t.activations.filter(a => a.firingStatus !== 'WontFire').length, 0
   );
 
-  // Step pills for collapsed state (from first trace's will-fire activations)
-  const pillActivations = firstTrace?.activations.filter(a => a.firingStatus !== 'WontFire') ?? [];
-
   return (
     <div className={styles.entityRow}>
       {/* Header */}
@@ -731,33 +722,6 @@ function EntityPipelineRow({
             </Text>
           )}
 
-          {!expanded && pillActivations.length > 0 && (
-            <div className={styles.stepPills}>
-              {pillActivations.slice(0, 5).map((act, i) => (
-                <span key={i} className={styles.stepPill}
-                  style={{
-                    backgroundColor:
-                      act.automationType === 'Plugin' ? 'rgba(167,139,250,0.1)' :
-                      act.automationType === 'Flow' ? 'rgba(59,130,246,0.1)' :
-                      act.automationType === 'BusinessRule' ? 'rgba(16,185,129,0.1)' :
-                      'rgba(245,158,11,0.1)',
-                    borderColor:
-                      act.automationType === 'Plugin' ? 'rgba(167,139,250,0.25)' :
-                      act.automationType === 'Flow' ? 'rgba(59,130,246,0.25)' :
-                      act.automationType === 'BusinessRule' ? 'rgba(16,185,129,0.25)' :
-                      'rgba(245,158,11,0.25)',
-                  }}
-                >
-                  {typeIcon(act.automationType)} {act.automationName}
-                  {act.downstream && <span style={{ color }}> &rarr;1</span>}
-                  {act.firingStatus === 'WillFireNoFilter' && <span style={{ color: tokens.colorPaletteRedForeground1 }}> &#9888;</span>}
-                </span>
-              ))}
-              {pillActivations.length > 5 && (
-                <span className={styles.stepPill}>+{pillActivations.length - 5} more</span>
-              )}
-            </div>
-          )}
         </div>
 
         <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, flexShrink: 0, marginLeft: tokens.spacingHorizontalS }}>
@@ -816,9 +780,6 @@ function EntityMessagePipelineRow({
   const styles = useStyles();
   const totalSteps = pipeline.messagePipelines.reduce((sum, mp) => sum + mp.steps.length, 0);
 
-  const allSteps = pipeline.messagePipelines.flatMap(mp => mp.steps);
-  const pillSteps = allSteps.slice(0, 5);
-
   return (
     <div className={styles.entityRow}>
       <div
@@ -840,33 +801,6 @@ function EntityMessagePipelineRow({
             )}
           </div>
 
-          {!expanded && pillSteps.length > 0 && (
-            <div className={styles.stepPills}>
-              {pillSteps.map((step, i) => (
-                <span key={i} className={styles.stepPill}
-                  style={{
-                    backgroundColor:
-                      step.automationType === 'Plugin' ? 'rgba(167,139,250,0.1)' :
-                      step.automationType === 'Flow' ? 'rgba(59,130,246,0.1)' :
-                      step.automationType === 'BusinessRule' ? 'rgba(16,185,129,0.1)' :
-                      'rgba(245,158,11,0.1)',
-                    borderColor:
-                      step.automationType === 'Plugin' ? 'rgba(167,139,250,0.25)' :
-                      step.automationType === 'Flow' ? 'rgba(59,130,246,0.25)' :
-                      step.automationType === 'BusinessRule' ? 'rgba(16,185,129,0.25)' :
-                      'rgba(245,158,11,0.25)',
-                  }}
-                >
-                  {typeIcon(step.automationType)} {step.automationName}
-                  {step.downstream && <span style={{ color }}> &rarr;1</span>}
-                  {step.firesForAllUpdates && <span style={{ color: tokens.colorPaletteRedForeground1 }}> &#9888;</span>}
-                </span>
-              ))}
-              {allSteps.length > 5 && (
-                <span className={styles.stepPill}>+{allSteps.length - 5} more</span>
-              )}
-            </div>
-          )}
         </div>
 
         <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, flexShrink: 0, marginLeft: tokens.spacingHorizontalS }}>
@@ -1349,7 +1283,7 @@ function TypeBadge({ type }: { type: AutomationActivation['automationType'] | Pi
 function OperationBadge({ operation }: { operation: string }) {
   return (
     <Badge
-      appearance="filled"
+      appearance="tint"
       color={operation === 'Create' ? 'success' : operation === 'Delete' ? 'danger' : 'warning'}
       style={{ fontSize: '9px', flexShrink: 0 }}
     >

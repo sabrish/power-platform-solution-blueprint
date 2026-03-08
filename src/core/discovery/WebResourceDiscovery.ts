@@ -1,6 +1,8 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { WebResource } from '../types/blueprint.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
 import { JavaScriptParser } from '../parsers/JavaScriptParser.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 
 interface WebResourceRecord {
   webresourceid: string;
@@ -14,131 +16,114 @@ interface WebResourceRecord {
   '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
-/**
- * Discovers Web Resources (JavaScript, HTML, CSS, etc.)
- */
 export class WebResourceDiscovery {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger
+  ) {
     this.client = client;
     this.onProgress = onProgress;
+    this.logger = logger;
   }
 
-  /**
-   * Get web resources by IDs
-   */
   async getWebResourcesByIds(resourceIds: string[]): Promise<WebResource[]> {
-    if (resourceIds.length === 0) {
-      return [];
-    }
+    if (resourceIds.length === 0) return [];
 
     try {
-      const batchSize = 20;
-      const allResults: WebResourceRecord[] = [];
-
-      // Pass 1: fetch metadata only (no content) — avoids large payload timeouts
-      for (let i = 0; i < resourceIds.length; i += batchSize) {
-        const batch = resourceIds.slice(i, i + batchSize);
-        const filterClauses = batch.map((id) => `webresourceid eq ${id}`);
-        const filter = filterClauses.join(' or ');
-
-        const response = await this.client.query<WebResourceRecord>('webresourceset', {
-          select: [
-            'webresourceid',
-            'name',
-            'displayname',
-            'webresourcetype',
-            'description',
-            'modifiedon',
-            'createdon',
-          ],
-          filter,
-        });
-
-        allResults.push(...response.value);
-
-        if (this.onProgress) {
-          this.onProgress(allResults.length, resourceIds.length);
+      // Pass 1 — metadata only (no content), adaptive batches of 20
+      const { results: allResults } = await withAdaptiveBatch<string, WebResourceRecord>(
+        resourceIds,
+        async (batch) => {
+          const filter = batch.map(id => `webresourceid eq ${id}`).join(' or ');
+          const response = await this.client.query<WebResourceRecord>('webresourceset', {
+            select: [
+              'webresourceid', 'name', 'displayname', 'webresourcetype',
+              'description', 'modifiedon', 'createdon',
+            ],
+            filter,
+          });
+          return response.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Web Resource Discovery',
+          entitySet: 'webresourceset (metadata)',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
         }
-      }
+      );
 
-      // Pass 2: fetch content for JS resources only (type=3), small batches
-      // Only JS needs content for analysis; images/CSS/HTML do not
-      const jsIds = allResults
-        .filter((r) => r.webresourcetype === 3)
-        .map((r) => r.webresourceid);
+      // Pass 2 — fetch content for JS resources only (type === 3), small batches
+      const jsResources = allResults.filter(r => r.webresourcetype === 3);
+      const jsIds = jsResources.map(r => r.webresourceid);
+      const idToName = new Map(jsResources.map(r => [r.webresourceid.toLowerCase(), r.name]));
       const contentMap = new Map<string, string>();
 
       if (jsIds.length > 0) {
-        const contentBatchSize = 5;
-        try {
-          for (let i = 0; i < jsIds.length; i += contentBatchSize) {
-            const batch = jsIds.slice(i, i + contentBatchSize);
-            const filterClauses = batch.map((id) => `webresourceid eq ${id}`);
-            const filter = filterClauses.join(' or ');
-
+        const { results: cdRecords } = await withAdaptiveBatch<string, { webresourceid: string; content: string | null }>(
+          jsIds,
+          async (batch) => {
+            const filter = batch.map(id => `webresourceid eq ${id}`).join(' or ');
             const response = await this.client.query<{ webresourceid: string; content: string | null }>(
               'webresourceset',
               { select: ['webresourceid', 'content'], filter }
             );
-
-            for (const rec of response.value) {
-              if (rec.content) {
-                contentMap.set(rec.webresourceid, rec.content);
-              }
-            }
+            return response.value;
+          },
+          {
+            initialBatchSize: 5,
+            step: 'Web Resource Discovery',
+            entitySet: 'webresourceset (content)',
+            logger: this.logger,
+            onProgress: (done, total) => this.onProgress?.(
+              Math.floor(allResults.length / 2) + Math.floor(done / 2),
+              total
+            ),
+            getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase()) ?? id).join(', '),
           }
-        } catch {
-          // Content fetch failed — JS analysis will be skipped but metadata is intact
+        );
+
+        for (const rec of cdRecords) {
+          if (rec.content) contentMap.set(rec.webresourceid, rec.content);
         }
       }
 
-      // Map to WebResource, merging JS content where available
-      return allResults.map((record) =>
+      this.onProgress?.(allResults.length, allResults.length);
+
+      return allResults.map(record =>
         this.mapRecordToWebResource({
           ...record,
           content: contentMap.get(record.webresourceid) ?? null,
         })
       );
+
     } catch (error) {
       throw error;
     }
   }
 
-  /**
-   * Map web resource record to WebResource object
-   */
   private mapRecordToWebResource(record: WebResourceRecord): WebResource {
-    // Get type name
     const typeName = this.getTypeName(record.webresourcetype);
-
-    // Decode content if it's a text-based resource
     let content: string | null = null;
     let contentSize = 0;
 
     if (record.content) {
-      // Content is base64 encoded
       contentSize = record.content.length;
-
-      // Decode for text resources
       if (this.isTextResource(record.webresourcetype)) {
-        try {
-          content = atob(record.content);
-        } catch (error) {
-          content = null;
-        }
+        try { content = atob(record.content); } catch { content = null; }
       }
     }
 
-    // Analyze JavaScript if applicable
     let analysis = null;
     let hasExternalCalls = false;
     let isDeprecated = false;
 
     if (record.webresourcetype === 3 && content) {
-      // JavaScript resource
       analysis = JavaScriptParser.parse(content, record.name);
       hasExternalCalls = analysis.externalCalls.length > 0;
       isDeprecated = analysis.usesDeprecatedXrmPage;
@@ -162,32 +147,15 @@ export class WebResourceDiscovery {
     };
   }
 
-  /**
-   * Get type name from web resource type number
-   */
   private getTypeName(type: number): string {
     const typeNames: Record<number, string> = {
-      1: 'HTML',
-      2: 'CSS',
-      3: 'JavaScript',
-      4: 'XML',
-      5: 'PNG',
-      6: 'JPG',
-      7: 'GIF',
-      9: 'XSL',
-      10: 'ICO',
-      11: 'SVG',
-      12: 'RESX',
+      1: 'HTML', 2: 'CSS', 3: 'JavaScript', 4: 'XML',
+      5: 'PNG', 6: 'JPG', 7: 'GIF', 9: 'XSL', 10: 'ICO', 11: 'SVG', 12: 'RESX',
     };
-
     return typeNames[type] || 'Unknown';
   }
 
-  /**
-   * Check if resource type is text-based
-   */
   private isTextResource(type: number): boolean {
-    // Text-based types: HTML, CSS, JS, XML, XSL, RESX, SVG
     return [1, 2, 3, 4, 9, 11, 12].includes(type);
   }
 }

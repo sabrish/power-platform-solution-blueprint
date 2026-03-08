@@ -5,6 +5,8 @@
  * Field security profiles control which users can read/update/create specific fields.
  */
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 
 /**
  * Field Security Profile
@@ -56,43 +58,62 @@ export interface FieldSecurityProfilePermission {
   canUpdate: boolean;
 }
 
+interface RawFieldPermission {
+  fieldpermissionid: string;
+  entityname: string;
+  attributelogicalname: string;
+  canread: number;
+  cancreate: number;
+  canupdate: number;
+  fieldsecurityprofileid: string;
+  // Expanded navigation property
+  fieldsecurityprofileid_nav?: { name?: string };
+}
+
 export class FieldSecurityProfileDiscovery {
-  constructor(private client: IDataverseClient) {}
+  private readonly client: IDataverseClient;
+  private logger?: FetchLogger;
+
+  constructor(client: IDataverseClient, logger?: FetchLogger) {
+    this.client = client;
+    this.logger = logger;
+  }
 
   /**
    * Get all field security profiles
    */
   async getFieldSecurityProfiles(): Promise<FieldSecurityProfile[]> {
-    const query = `fieldsecurityprofiles?$select=fieldsecurityprofileid,name,description&$orderby=name`;
-    const result = await this.client.query<FieldSecurityProfile>(query);
+    const result = await this.client.query<FieldSecurityProfile>('fieldsecurityprofiles', {
+      select: ['fieldsecurityprofileid', 'name', 'description'],
+      orderBy: ['name'],
+    });
     return result.value;
   }
 
   /**
-   * Get field permissions for specific entities
+   * Get field permissions for specific entities — batched to avoid HTTP 414
    */
   async getFieldPermissions(entityLogicalNames: string[]): Promise<FieldPermission[]> {
     if (entityLogicalNames.length === 0) return [];
 
-    // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
-    // With 100+ entities, URL can exceed limits
-    const batchSize = 20;
-    const allPermissions: any[] = [];
-
-    for (let i = 0; i < entityLogicalNames.length; i += batchSize) {
-      const batch = entityLogicalNames.slice(i, i + batchSize);
-      const entityFilters = batch
-        .map(name => `entityname eq '${name}'`)
-        .join(' or ');
-
-      const query = `fieldpermissions?$select=fieldpermissionid,entityname,attributelogicalname,canread,cancreate,canupdate,fieldsecurityprofileid&$expand=fieldsecurityprofileid($select=name)&$filter=${entityFilters}`;
-
-      const result = await this.client.query<any>(query);
-      allPermissions.push(...result.value);
-    }
+    const { results: allPermissions } = await withAdaptiveBatch<string, RawFieldPermission>(
+      entityLogicalNames,
+      async (batch) => {
+        const entityFilters = batch.map(name => `entityname eq '${name}'`).join(' or ');
+        const query = `fieldpermissions?$select=fieldpermissionid,entityname,attributelogicalname,canread,cancreate,canupdate,fieldsecurityprofileid&$expand=fieldsecurityprofileid($select=name)&$filter=${entityFilters}`;
+        const result = await this.client.query<RawFieldPermission>(query);
+        return result.value;
+      },
+      {
+        initialBatchSize: 20,
+        step: 'Field Security Profile Discovery',
+        entitySet: 'fieldpermissions',
+        logger: this.logger,
+      }
+    );
 
     // Flatten the expanded profile name
-    return allPermissions.map((fp: any) => ({
+    return allPermissions.map((fp) => ({
       fieldpermissionid: fp.fieldpermissionid,
       entityname: fp.entityname,
       attributelogicalname: fp.attributelogicalname,
@@ -100,7 +121,7 @@ export class FieldSecurityProfileDiscovery {
       cancreate: fp.cancreate,
       canupdate: fp.canupdate,
       fieldsecurityprofileid: fp.fieldsecurityprofileid,
-      fieldsecurityprofilename: fp.fieldsecurityprofileid?.name || 'Unknown Profile',
+      fieldsecurityprofilename: fp.fieldsecurityprofileid_nav?.name || 'Unknown Profile',
     }));
   }
 
@@ -158,12 +179,12 @@ export class FieldSecurityProfileDiscovery {
     const result = new Map<string, EntityFieldSecurity>();
 
     for (const entityName of entityLogicalNames) {
-      const permissions = entityMap.get(entityName) || [];
+      const entityPerms = entityMap.get(entityName) || [];
 
       // Group by field
       const fieldMap = new Map<string, FieldSecurityProfilePermission[]>();
 
-      for (const permission of permissions) {
+      for (const permission of entityPerms) {
         const profiles = fieldMap.get(permission.attributelogicalname) || [];
         profiles.push({
           profileId: permission.fieldsecurityprofileid,

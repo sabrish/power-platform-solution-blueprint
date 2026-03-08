@@ -5,6 +5,7 @@ import {
   type BlueprintResult,
   type ProgressInfo,
   type BlueprintScope,
+  type FetchLogEntry,
 } from '../core';
 import type { ScopeSelection } from '../types/scope';
 
@@ -12,7 +13,9 @@ interface UseBlueprintResult {
   generate: () => Promise<void>;
   result: BlueprintResult | null;
   progress: ProgressInfo | null;
+  recentFetches: FetchLogEntry[];
   isGenerating: boolean;
+  isCancelling: boolean;
   error: Error | null;
   cancel: () => void;
   reset: () => void;
@@ -48,25 +51,34 @@ function convertScope(scope: ScopeSelection): BlueprintScope {
 export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
   const [result, setResult] = useState<BlueprintResult | null>(null);
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
+  const [recentFetches, setRecentFetches] = useState<FetchLogEntry[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const generatorRef = useRef<BlueprintGenerator | null>(null);
+  // Throttle fetch entry updates — only re-render at most every 400ms
+  const fetchBufRef = useRef<FetchLogEntry[]>([]);
+  const fetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset state when scope changes (e.g., when user clicks "Change Selection")
   useEffect(() => {
     setResult(null);
     setError(null);
     setProgress(null);
+    setRecentFetches([]);
   }, [scope]);
 
   const generate = useCallback(async () => {
     try {
       setIsGenerating(true);
+      setIsCancelling(false);
       setError(null);
       setResult(null);
       setProgress(null);
+      setRecentFetches([]);
+      fetchBufRef.current = [];
 
       if (!window.toolboxAPI) {
         throw new Error('PPTB Desktop API not available.');
@@ -89,6 +101,15 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
         onProgress: (progressInfo) => {
           setProgress(progressInfo);
         },
+        onFetchEntry: (entry) => {
+          fetchBufRef.current = [...fetchBufRef.current.slice(-19), entry];
+          if (!fetchTimerRef.current) {
+            fetchTimerRef.current = setTimeout(() => {
+              setRecentFetches([...fetchBufRef.current]);
+              fetchTimerRef.current = null;
+            }, 400);
+          }
+        },
         signal: abortController.signal,
       });
 
@@ -110,12 +131,18 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
       }
     } finally {
       setIsGenerating(false);
+      setIsCancelling(false);
       abortControllerRef.current = null;
+      if (fetchTimerRef.current) {
+        clearTimeout(fetchTimerRef.current);
+        fetchTimerRef.current = null;
+      }
     }
   }, [scope]);
 
   const cancel = useCallback(() => {
     if (abortControllerRef.current) {
+      setIsCancelling(true);
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
@@ -137,7 +164,9 @@ export function useBlueprint(scope: ScopeSelection): UseBlueprintResult {
     generate,
     result,
     progress,
+    recentFetches,
     isGenerating,
+    isCancelling,
     error,
     cancel,
     reset,

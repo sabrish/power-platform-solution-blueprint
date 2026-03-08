@@ -1,6 +1,8 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { GlobalChoice, GlobalChoiceOption } from '../types/globalChoice.js';
 import type { ProgressPhase } from '../types/blueprint.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 
 interface RawGlobalOptionSet {
   MetadataId: string;
@@ -34,13 +36,21 @@ interface RawGlobalOptionSet {
  * Discovery service for Global Choices (Option Sets)
  */
 export class GlobalChoiceDiscovery {
+  private logger?: FetchLogger;
+
   constructor(
     private client: IDataverseClient,
-    private onProgress?: (phase: ProgressPhase, current: number, total: number) => void
-  ) {}
+    private onProgress?: (phase: ProgressPhase, current: number, total: number) => void,
+    logger?: FetchLogger
+  ) {
+    this.logger = logger;
+  }
 
   /**
-   * Discover all global option sets by their IDs
+   * Discover all global option sets by their IDs.
+   * The Dataverse GlobalOptionSetDefinitions metadata API does not support batch $filter —
+   * each ID must be fetched individually via a direct path query.
+   * withAdaptiveBatch with initialBatchSize=1 provides logging and retry for each item.
    */
   async discoverGlobalChoices(globalChoiceIds: string[]): Promise<GlobalChoice[]> {
     if (globalChoiceIds.length === 0) {
@@ -49,58 +59,37 @@ export class GlobalChoiceDiscovery {
 
     this.onProgress?.('discovering', 0, globalChoiceIds.length);
 
-    const globalChoices: GlobalChoice[] = [];
+    const { results: globalChoices } = await withAdaptiveBatch<string, GlobalChoice>(
+      globalChoiceIds,
+      async (batch) => {
+        // Metadata API does not support batch $filter on GlobalOptionSetDefinitions —
+        // each must be fetched individually. batch size is kept at 1 (see initialBatchSize below).
+        const id = batch[0];
+        const cleanId = id.replace(/[{}]/g, '');
+        const response = await this.client.queryMetadata<RawGlobalOptionSet>(
+          `GlobalOptionSetDefinitions(${cleanId})`,
+          {}
+        );
 
-    // Fetch global option sets in batches to avoid URL length limits
-    const batchSize = 20;
-    for (let i = 0; i < globalChoiceIds.length; i += batchSize) {
-      const batch = globalChoiceIds.slice(i, i + batchSize);
-      const batchResults = await this.fetchGlobalChoicesBatch(batch);
-      globalChoices.push(...batchResults);
-      this.onProgress?.('discovering', i + batch.length, globalChoiceIds.length);
-    }
+        if (response.value && Array.isArray(response.value) && response.value.length > 0) {
+          return [this.mapToGlobalChoice(response.value[0])];
+        } else if (response.value && !Array.isArray(response.value)) {
+          // Handle case where API returns single object instead of array
+          return [this.mapToGlobalChoice(response.value as unknown as RawGlobalOptionSet)];
+        }
+        return [];
+      },
+      {
+        // The metadata API requires individual calls — fix batch size at 1
+        initialBatchSize: 1,
+        step: 'Global Choice Discovery',
+        entitySet: 'GlobalOptionSetDefinitions',
+        logger: this.logger,
+        onProgress: (done, total) => this.onProgress?.('discovering', done, total),
+      }
+    );
 
     return globalChoices;
-  }
-
-  /**
-   * Fetch a batch of global option sets
-   */
-  private async fetchGlobalChoicesBatch(ids: string[]): Promise<GlobalChoice[]> {
-    try {
-      const globalChoices: GlobalChoice[] = [];
-
-      // Fetch each global option set individually from metadata API
-      for (const id of ids) {
-        try {
-          // Query metadata by MetadataId - $filter not supported on GlobalOptionSetDefinitions
-          // Use direct path query (Options should be included by default)
-          const cleanId = id.replace(/[{}]/g, '');
-          const response = await this.client.queryMetadata<RawGlobalOptionSet>(
-            `GlobalOptionSetDefinitions(${cleanId})`,
-            {}
-          );
-
-          // Direct path query returns single object, not array
-          if (response.value && Array.isArray(response.value) && response.value.length > 0) {
-            const mapped = this.mapToGlobalChoice(response.value[0]);
-            globalChoices.push(mapped);
-          } else if (response.value && !Array.isArray(response.value)) {
-            // Handle case where API returns single object instead of array
-            const mapped = this.mapToGlobalChoice(response.value as any);
-            globalChoices.push(mapped);
-          }
-        } catch (error) {
-          console.warn('Failed to fetch global choice:', error instanceof Error ? error.message : 'Unknown error');
-          // Continue with other global choices even if one fails
-        }
-      }
-
-      return globalChoices;
-    } catch (error) {
-      console.error('Error fetching global choices batch:', error instanceof Error ? error.message : 'Unknown error');
-      return [];
-    }
   }
 
   /**

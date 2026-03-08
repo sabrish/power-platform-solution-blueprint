@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import {
+  Badge,
   Button,
   Title2,
   Title3,
@@ -17,6 +18,8 @@ import {
   CheckmarkCircle24Regular,
   ArrowDownload24Regular,
   ArrowLeft24Regular,
+  Warning24Regular,
+  ErrorCircle24Regular,
 } from '@fluentui/react-icons';
 import type { BlueprintResult, CustomAPI, ConnectionReference } from '../core';
 import type { ScopeSelection } from '../types/scope';
@@ -43,6 +46,7 @@ import { SolutionDistributionView } from './SolutionDistributionView';
 import { ExportDialog } from './ExportDialog';
 import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
+import { FetchDiagnosticsView } from './FetchDiagnosticsView';
 import { Footer } from './Footer';
 
 const useStyles = makeStyles({
@@ -144,6 +148,24 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalM,
+  },
+  warningsPanel: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalS,
+    padding: tokens.spacingVerticalM,
+    borderRadius: tokens.borderRadiusMedium,
+    border: `1px solid ${tokens.colorStatusWarningBorderActive}`,
+    backgroundColor: tokens.colorStatusWarningBackground1,
+  },
+  warningsPanelError: {
+    border: `1px solid ${tokens.colorStatusDangerBorderActive}`,
+    backgroundColor: tokens.colorStatusDangerBackground1,
+  },
+  warningRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: tokens.spacingHorizontalS,
   },
   browserSection: {
     marginTop: tokens.spacingVerticalXL,
@@ -366,6 +388,40 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         </div>
       </div>
 
+      {/* Step warnings — complete failures and partial failures from batch processing */}
+      {result.stepWarnings && result.stepWarnings.length > 0 && (() => {
+        const hasFullFailures = result.stepWarnings!.some(w => !w.partial);
+        return (
+          <div className={`${styles.warningsPanel}${hasFullFailures ? ` ${styles.warningsPanelError}` : ''}`}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+              {hasFullFailures
+                ? <ErrorCircle24Regular style={{ color: tokens.colorStatusDangerForeground1, flexShrink: 0 }} />
+                : <Warning24Regular style={{ color: tokens.colorStatusWarningForeground1, flexShrink: 0 }} />
+              }
+              <Text weight="semibold" style={{ color: hasFullFailures ? tokens.colorStatusDangerForeground1 : tokens.colorStatusWarningForeground1 }}>
+                {hasFullFailures ? 'Some components could not be loaded' : 'Some data may be incomplete'}
+              </Text>
+              <Badge color="danger" size="small" style={{ marginLeft: 'auto' }}>
+                {result.stepWarnings!.length} {result.stepWarnings!.length === 1 ? 'issue' : 'issues'}
+              </Badge>
+            </div>
+            {result.stepWarnings!.map((w, i) => (
+              <div key={i} className={styles.warningRow}>
+                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2, minWidth: '110px', fontWeight: tokens.fontWeightSemibold }}>
+                  {w.step}
+                </Text>
+                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
+                  {w.message}
+                </Text>
+              </div>
+            ))}
+            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+              Open the <strong>Fetch Log</strong> tab for full API call details.
+            </Text>
+          </div>
+        );
+      })()}
+
       {/* Main Tabs */}
       <div className={styles.mainTabsSection}>
         <TabList
@@ -389,6 +445,17 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
           )}
 
           <Tab value="crossEntity">🔗 Cross-Entity Automation</Tab>
+
+          {(result.fetchLog && result.fetchLog.length > 0) && (
+            <Tab value="fetchLog">
+              🔬 Fetch Log
+              {result.fetchLog.some(e => e.status === 'failed') && (
+                <Badge color="danger" size="small" style={{ marginLeft: '4px' }}>
+                  {result.fetchLog.filter(e => e.status === 'failed').length}
+                </Badge>
+              )}
+            </Tab>
+          )}
         </TabList>
       </div>
 
@@ -618,6 +685,13 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             analysis={result.crossEntityAnalysis}
             blueprints={result.entities}
           />
+        </div>
+      )}
+
+      {/* Fetch Log Tab Content */}
+      {mainTab === 'fetchLog' && (
+        <div className={styles.tabContent}>
+          <FetchDiagnosticsView entries={result.fetchLog ?? []} />
         </div>
       )}
 

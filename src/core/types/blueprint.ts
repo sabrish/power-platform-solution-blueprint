@@ -4,6 +4,7 @@
 import type { PluginStep } from '../types.js';
 import type { EntityFieldSecurity } from '../discovery/FieldSecurityProfileDiscovery.js';
 import type { SecurityRoleDetail } from '../discovery/SecurityRoleDiscovery.js';
+import type { FetchLogEntry } from '../utils/FetchLogger.js';
 
 /**
  * Progress phases during blueprint generation
@@ -33,6 +34,7 @@ export interface ProgressInfo {
 export interface GeneratorOptions {
   includeSystemEntities: boolean;
   onProgress?: (progress: ProgressInfo) => void;
+  onFetchEntry?: (entry: FetchLogEntry) => void;
   signal?: AbortSignal;
 }
 
@@ -700,6 +702,20 @@ export interface DataverseAction {
 }
 
 /**
+ * Warning recorded when a discovery step fails partially or fully.
+ * The blueprint continues — the affected section is empty or partial.
+ */
+export interface StepWarning {
+  /** Human-readable step name, e.g. "Security Roles" */
+  step: string;
+  message: string;
+  /** true if some data was returned before the failure */
+  partial: boolean;
+  /** Number of items that could not be fetched */
+  failedCount?: number;
+}
+
+/**
  * Complete blueprint result
  */
 export interface BlueprintResult {
@@ -731,6 +747,10 @@ export interface BlueprintResult {
   fieldSecurityProfiles?: import('../discovery/FieldSecurityProfileDiscovery.js').FieldSecurityProfile[];
   attributeMaskingRules?: import('../discovery/ColumnSecurityDiscovery.js').AttributeMaskingRule[];
   columnSecurityProfiles?: import('../discovery/ColumnSecurityDiscovery.js').ColumnSecurityProfile[];
+  /** Warnings from steps that failed or returned partial data */
+  stepWarnings?: StepWarning[];
+  /** Full fetch diagnostic log — every batched API call made during generation */
+  fetchLog?: FetchLogEntry[];
 }
 
 /**
