@@ -21,6 +21,12 @@ import type {
   ERDDefinition,
   EntityQuickLink,
 } from '../types/blueprint.js';
+import type {
+  CrossEntityAnalysisResult,
+  CrossEntityEntityView,
+  CrossEntityTrace,
+  AutomationActivation,
+} from '../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../types/classicWorkflow.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
 import type { CustomAPI } from '../types/customApi.js';
@@ -52,8 +58,25 @@ export class MarkdownReporter {
       files.set('summary/external-integrations.md', this.generateExternalIntegrations(result));
     }
 
-    // Always generate cross-entity automation (shows "Coming Soon" if not available)
+    // Generate cross-entity automation summary
     files.set('summary/cross-entity-automation.md', this.generateCrossEntityAutomation(result));
+
+    // Generate per-entity cross-entity trace files (only if entity has entry points)
+    if (result.crossEntityAnalysis) {
+      for (const blueprint of result.entities) {
+        const logicalName = blueprint.entity.LogicalName.toLowerCase();
+        if (result.crossEntityAnalysis.entityViews.has(logicalName)) {
+          files.set(
+            `entities/${blueprint.entity.LogicalName}/cross-entity-trace.md`,
+            this.generateEntityCrossEntityTrace(
+              blueprint,
+              result.crossEntityAnalysis.entityViews.get(logicalName)!,
+              result.crossEntityAnalysis
+            )
+          );
+        }
+      }
+    }
 
     if (result.solutionDistribution && result.solutionDistribution.length > 0) {
       files.set('summary/solution-distribution.md', this.generateSolutionDistribution(result));
@@ -454,7 +477,7 @@ export class MarkdownReporter {
       MarkdownFormatter.formatLink('All Business Process Flows', 'summary/all-business-process-flows.md'),
       MarkdownFormatter.formatLink('External Integrations', 'summary/external-integrations.md'),
       MarkdownFormatter.formatLink('Solution Distribution', 'summary/solution-distribution.md'),
-      MarkdownFormatter.formatLink('Cross-Entity Automation (Coming Soon)', 'summary/cross-entity-automation.md'),
+      MarkdownFormatter.formatLink('Cross-Entity Automation', 'summary/cross-entity-automation.md'),
     ]));
     sections.push('');
 
@@ -1031,48 +1054,203 @@ export class MarkdownReporter {
   /**
    * Generate summary/cross-entity-automation.md
    */
-  private generateCrossEntityAutomation(_result: BlueprintResult): string {
+  private generateCrossEntityAutomation(result: BlueprintResult): string {
     const sections: string[] = [];
+    const analysis = result.crossEntityAnalysis;
 
-    sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation (Coming Soon)', 1));
-    sections.push('');
-
-    // Coming Soon Banner
-    sections.push('## 💡 Coming Soon: Advanced Cross-Entity Analysis');
-    sections.push('');
-    sections.push('This feature is currently in development and will provide comprehensive analysis of automation that operates across multiple entities.');
-    sections.push('');
-    sections.push('**Planned capabilities:**');
-    sections.push('- Plugin assembly decompilation (ILSpy integration) for cross-entity operations');
-    sections.push('- Classic workflow XAML parsing to identify entity relationships');
-    sections.push('- Business rule condition and action analysis');
-    sections.push('- Synchronous operation detection for performance impact');
-    sections.push('- Complete data flow mapping between entities');
-    sections.push('');
-    sections.push('Check [our GitHub repository](https://github.com/sabrish/power-platform-solution-blueprint) for updates.');
+    sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation', 1));
     sections.push('');
 
-    // Sample Data Section
-    sections.push('---');
-    sections.push('');
-    sections.push('## Sample Data');
-    sections.push('');
-    sections.push('_The table below demonstrates what this feature will look like when completed:_');
+    // Detection coverage notice
+    sections.push('> **Detection Coverage:** Cross-entity traces are detected from Power Automate flow definitions (JSON) and Classic Workflow XAML. Plugin decompilation is not included — plugins are shown with firing-status analysis based on filtering attributes.');
     sections.push('');
 
-    const headers = ['Source Entity', 'Target Entity', 'Type', 'Automation', 'Operation', 'Mode'];
-    const sampleRows = [
-      ['Contact', 'Account', 'Flow', 'Update Account when Contact Changes', 'Update', 'Async'],
-      ['Opportunity', 'Quote', 'Plugin', 'Generate Quote from Opportunity', 'Create', 'Sync ⚠️'],
-      ['Case', 'Email', 'Flow', 'Send Email on Case Resolution', 'Create', 'Async'],
+    if (!analysis || analysis.totalEntryPoints === 0) {
+      sections.push('No cross-entity automation entry points detected in this solution scope.');
+      sections.push('');
+      return sections.join('\n');
+    }
+
+    // Stats
+    sections.push('## Summary');
+    sections.push('');
+    const statsHeaders = ['Metric', 'Value'];
+    const statsRows = [
+      ['Entry Points Detected', String(analysis.totalEntryPoints)],
+      ['Target Entities', String(analysis.entityViews.size)],
+      ['Downstream Branches', String(analysis.totalBranches)],
+      ['Chain Links', String(analysis.chainLinks.length)],
+      ['Total Risks', String(analysis.risks.length)],
+      ['High Severity Risks', String(analysis.risks.filter(r => r.severity === 'High').length)],
     ];
-
-    sections.push(MarkdownFormatter.formatTable(headers, sampleRows));
+    sections.push(MarkdownFormatter.formatTable(statsHeaders, statsRows));
     sections.push('');
-    sections.push('_⚠️ Synchronous cross-entity operations may impact performance_');
+
+    // Risk table
+    if (analysis.risks.length > 0) {
+      sections.push('## Risks');
+      sections.push('');
+      const highRisks = analysis.risks.filter(r => r.severity === 'High');
+      const medRisks = analysis.risks.filter(r => r.severity === 'Medium');
+
+      if (highRisks.length > 0) {
+        sections.push('### High Severity');
+        sections.push('');
+        const riskHeaders = ['Type', 'Description', 'Automation'];
+        const riskRows = highRisks.map(r => [r.type, r.description, r.automationName || '—']);
+        sections.push(MarkdownFormatter.formatTable(riskHeaders, riskRows));
+        sections.push('');
+      }
+
+      if (medRisks.length > 0) {
+        sections.push('### Medium Severity');
+        sections.push('');
+        const riskHeaders = ['Type', 'Description', 'Automation'];
+        const riskRows = medRisks.map(r => [r.type, r.description, r.automationName || '—']);
+        sections.push(MarkdownFormatter.formatTable(riskHeaders, riskRows));
+        sections.push('');
+      }
+    }
+
+    // Mermaid global overview diagram
+    sections.push('## Global Automation Chain');
+    sections.push('');
+    const mermaidLines: string[] = ['```mermaid', 'graph LR'];
+    const addedNodes = new Set<string>();
+    for (const link of analysis.chainLinks) {
+      const srcId = link.sourceEntity.replace(/[^a-z0-9]/gi, '_');
+      const tgtId = link.targetEntity.replace(/[^a-z0-9]/gi, '_');
+      if (!addedNodes.has(srcId)) {
+        mermaidLines.push(`    ${srcId}["${link.sourceEntityDisplayName}"]`);
+        addedNodes.add(srcId);
+      }
+      if (!addedNodes.has(tgtId)) {
+        mermaidLines.push(`    ${tgtId}["${link.targetEntityDisplayName}"]`);
+        addedNodes.add(tgtId);
+      }
+      const edgeLabel = `${link.operation}`;
+      mermaidLines.push(`    ${srcId} -->|"${edgeLabel}"| ${tgtId}`);
+    }
+    mermaidLines.push('```');
+    sections.push(mermaidLines.join('\n'));
+    sections.push('');
+
+    // Chain links table
+    sections.push('## Chain Links');
+    sections.push('');
+    const chainHeaders = ['Source Entity', 'Automation', 'Type', '→', 'Target Entity', 'Operation', 'Mode'];
+    const chainRows = analysis.chainLinks.map(l => [
+      l.sourceEntityDisplayName,
+      l.automationName,
+      l.automationType,
+      '→',
+      l.targetEntityDisplayName,
+      l.operation,
+      l.isAsynchronous ? 'Async' : 'Sync',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(chainHeaders, chainRows));
     sections.push('');
 
     return sections.join('\n');
+  }
+
+  /**
+   * Generate entities/{entity}/cross-entity-trace.md
+   */
+  private generateEntityCrossEntityTrace(
+    blueprint: EntityBlueprint,
+    view: CrossEntityEntityView,
+    _analysis: CrossEntityAnalysisResult
+  ): string {
+    const sections: string[] = [];
+    const displayName = blueprint.entity.DisplayName?.UserLocalizedLabel?.Label || blueprint.entity.LogicalName;
+
+    sections.push(MarkdownFormatter.formatHeading(`Cross-Entity Trace — ${displayName}`, 1));
+    sections.push('');
+    sections.push(`**Entity:** \`${blueprint.entity.LogicalName}\``);
+    sections.push(`**Entry Points:** ${view.traces.length}`);
+    sections.push('');
+
+    for (const trace of view.traces) {
+      sections.push(this.formatTraceDetails(trace));
+    }
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Format a single cross-entity trace as a markdown details block
+   */
+  private formatTraceDetails(trace: CrossEntityTrace): string {
+    const lines: string[] = [];
+    const { entryPoint, activations, risks } = trace;
+
+    lines.push(`<details>`);
+    lines.push(`<summary><strong>${entryPoint.automationName}</strong> (${entryPoint.automationType} — ${entryPoint.operation} from ${entryPoint.sourceEntityDisplayName})</summary>`);
+    lines.push('');
+    lines.push(`**Source:** ${entryPoint.sourceEntityDisplayName} (\`${entryPoint.sourceEntity}\`)`);
+    lines.push(`**Operation:** ${entryPoint.operation}`);
+    lines.push(`**Type:** ${entryPoint.automationType}`);
+    lines.push(`**Mode:** ${entryPoint.isAsynchronous ? 'Asynchronous' : 'Synchronous'}`);
+    lines.push(`**Confidence:** ${entryPoint.confidence}`);
+    if (entryPoint.isScheduled) lines.push('**Scheduled:** Yes');
+    if (entryPoint.isOnDemand) lines.push('**On Demand:** Yes');
+    if (entryPoint.fields.length > 0) {
+      lines.push(`**Fields Set:** \`${entryPoint.fields.join('`, `')}\``);
+    }
+    lines.push('');
+
+    // Risks
+    if (risks.length > 0) {
+      lines.push('**Risks:**');
+      for (const risk of risks) {
+        lines.push(`- ⚠️ **${risk.type}** (${risk.severity}): ${risk.description}`);
+      }
+      lines.push('');
+    }
+
+    // Activation table
+    lines.push('**Activation Analysis:**');
+    lines.push('');
+    const actHeaders = ['Automation', 'Type', 'Stage', 'Mode', 'Fires?', 'Matched Fields'];
+    const actRows = activations.map(act => [
+      act.automationName,
+      act.automationType,
+      act.stageName || '—',
+      act.mode,
+      this.formatFiringStatus(act),
+      act.matchedFields.length > 0 ? act.matchedFields.join(', ') : '—',
+    ]);
+    lines.push(MarkdownFormatter.formatTable(actHeaders, actRows));
+    lines.push('');
+
+    // Downstream branches
+    const withDownstream = activations.filter(a => a.downstream);
+    if (withDownstream.length > 0) {
+      lines.push('**Downstream Branches:**');
+      for (const act of withDownstream) {
+        const ds = act.downstream!;
+        lines.push(`- \`${act.automationName}\` → **${ds.targetEntityDisplayName}** (\`${ds.targetEntity}\`) — ${ds.operation}`);
+        if (ds.fields.length > 0) {
+          lines.push(`  - Fields: \`${ds.fields.join('`, `')}\``);
+        }
+      }
+      lines.push('');
+    }
+
+    lines.push('</details>');
+    lines.push('');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Format firing status for markdown
+   */
+  private formatFiringStatus(act: AutomationActivation): string {
+    if (act.firingStatus === 'WillFire') return '✅ Yes';
+    if (act.firingStatus === 'WontFire') return '❌ No (field mismatch)';
+    return '⚠️ Yes (no filter — fires always)';
   }
 
   /**

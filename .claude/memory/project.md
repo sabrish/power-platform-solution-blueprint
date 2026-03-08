@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-07
+**Last updated:** 2026-03-07 (session 2)
 
 ---
 
@@ -119,7 +119,39 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
-- **Cross-Entity Automation tab:** Shows "Coming Soon" preview with sample data. Full implementation requires plugin decompilation (ILSpy) and deeper XAML parsing.
+### Cross-Entity Automation Trace (branch: `feat/cross-entity-automation`) — UNCOMMITTED
+
+Active development. Build passes (`pnpm typecheck && pnpm build` clean). No commit made yet.
+
+**What is implemented and working:**
+
+- `CrossEntityAnalyzer.ts` — completely rewritten with source-centric entry-point scan:
+  - `discoverAllEntryPoints()` groups triggers by *target* entity, not by blueprints list — catches flows writing to out-of-scope entities (e.g. `msnfp_awards`, `connections`)
+  - Accepts `allFlows` as a third argument to `analyze()` — unscoped flows (scheduled, manual, no primary entity) are scanned separately
+  - Unscoped flows use synthetic `sourceEntity` labels: `"(scheduled)"` → "Scheduled Flow", `"(manual)"` → "Manual / On-Demand Flow", `"(unscoped)"` → "Solution Flow"
+  - `primaryentity = "none"` (literal string, not null) is now treated the same as null — guards present in both `discoverAllEntryPoints` and `allFlowsById` building
+- `BlueprintGenerator.ts` — passes flat `flows` array as third argument to `CrossEntityAnalyzer.analyze()`
+- `CrossEntityAutomationView.tsx` — completely rewritten to pipeline accordion UI:
+  - Entity accordion rows with 8-color cycling left accent
+  - Collapsed view shows step-type pills (abbreviated activation overview)
+  - Expanded view: numbered steps, TypeBadge, stage, Sync/Async, warning for no filter
+  - Branch block attached right of steps that write to another entity (colored border matching downstream entity accent, target name + operation + field pills)
+  - Field-match verdict below each step (green/dimmed/red with hit/miss field pills)
+  - Inline nested child pipeline (max depth 2) with "↩ back to Parent" return marker
+  - "Won't fire" collapsible section at bottom per entity
+
+**Still pending:**
+- Project owner has not yet confirmed the new UI looks correct in the app
+- Debug `console.log` statements in `FlowDefinitionParser.ts` and `CrossEntityAnalyzer.ts` must be removed once detection is confirmed working (see learnings.md [2026-03-07] debug artifacts rule)
+- No commit made — awaiting user confirmation of UI
+
+**Modified files (all uncommitted):**
+- `src/core/analyzers/CrossEntityAnalyzer.ts`
+- `src/core/generators/BlueprintGenerator.ts`
+- `src/components/CrossEntityAutomationView.tsx`
+
+### Other Known Limitations
+
 - **Canvas Apps:** Metadata only (no component-level analysis available from API)
 - **Custom Pages:** Metadata only
 - **Power Pages:** Only if deployed to Dataverse

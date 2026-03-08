@@ -246,6 +246,8 @@ export interface FlowDefinition {
   externalCalls: ExternalCall[];
   connectionReferences: string[];
   dataverseActions?: DataverseAction[];
+  /** Child flow IDs referenced by "Run a Child Flow" actions */
+  childFlowIds?: string[];
 }
 
 /**
@@ -583,6 +585,8 @@ export interface EntityQuickLink {
 
 /**
  * Cross-entity automation link
+ * @deprecated Use CrossEntityAnalysisResult from crossEntityTrace.ts instead.
+ * Kept for JSON backward compatibility only.
  */
 export interface CrossEntityLink {
   sourceEntity: string;
@@ -691,6 +695,8 @@ export interface DataverseAction {
   targetEntity: string;
   actionName: string;
   confidence: 'High' | 'Medium' | 'Low';
+  /** Fields being set (only populated for Create/Update operations) */
+  fields?: string[];
 }
 
 /**
@@ -718,7 +724,7 @@ export interface BlueprintResult {
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
   erd?: ERDDefinition;
-  crossEntityLinks?: CrossEntityLink[];
+  crossEntityAnalysis?: import('./crossEntityTrace.js').CrossEntityAnalysisResult;
   externalEndpoints?: ExternalEndpoint[];
   solutionDistribution?: SolutionDistribution[];
   securityRoles?: SecurityRoleDetail[];
