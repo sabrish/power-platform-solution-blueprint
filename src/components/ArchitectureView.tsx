@@ -45,6 +45,9 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalM,
     color: tokens.colorNeutralForeground3,
   },
+  emptyStateIcon: {
+    fontSize: tokens.fontSizeHero900,
+  },
 });
 
 export interface ArchitectureViewProps {
@@ -76,7 +79,7 @@ export function ArchitectureView({ result, onBack }: ArchitectureViewProps) {
         </Button>
 
         <div className={styles.emptyState}>
-          <Text style={{ fontSize: '48px' }}>📊</Text>
+          <Text className={styles.emptyStateIcon}>📊</Text>
           <Title2>No Architecture Analysis Available</Title2>
           <Text>
             Architecture analysis features are not available for this blueprint.
