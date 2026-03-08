@@ -14,6 +14,7 @@ interface RawClassicWorkflow {
   triggeroncreate: boolean;
   triggeronupdateattributelist: string | null; // comma-separated attribute names; null/empty = not triggered on update
   triggerondelete: boolean;
+  xaml?: string;
   ondemand: boolean;
   scope: number;
   primaryentity: string;
@@ -78,6 +79,7 @@ export class ClassicWorkflowDiscovery {
             'ismanaged',
             'createdon',
             'modifiedon',
+            'xaml',
             '_ownerid_value',
           ],
           filter,
@@ -129,7 +131,10 @@ export class ClassicWorkflowDiscovery {
       entityDisplayName: raw['_primaryentity_value@OData.Community.Display.V1.FormattedValue'] || null,
       state: this.getStateName(raw.statecode),
       isManaged: raw.ismanaged,
-      xaml: '',
+      xaml: raw.xaml || '',
+      triggerOnUpdateAttributes: raw.triggeronupdateattributelist
+        ? raw.triggeronupdateattributelist.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [],
       owner: raw['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedBy: raw['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
       modifiedOn: raw.modifiedon,

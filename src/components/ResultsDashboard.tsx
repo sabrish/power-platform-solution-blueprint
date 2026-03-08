@@ -37,7 +37,7 @@ import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
 import { GlobalChoicesList } from './GlobalChoicesList';
 import { CustomConnectorsList } from './CustomConnectorsList';
 import { ERDView } from './ERDView';
-import { CrossEntityMapView } from './CrossEntityMapView';
+import { CrossEntityAutomationView } from './CrossEntityAutomationView';
 import { ExternalDependenciesView } from './ExternalDependenciesView';
 import { SolutionDistributionView } from './SolutionDistributionView';
 import { ExportDialog } from './ExportDialog';
@@ -388,7 +388,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             <Tab value="solutionDist">📦 Solution Distribution</Tab>
           )}
 
-          <Tab value="crossEntity">🔗 Cross-Entity Automation (Coming Soon)</Tab>
+          <Tab value="crossEntity">🔗 Cross-Entity Automation</Tab>
         </TabList>
       </div>
 
@@ -614,7 +614,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       {/* Cross-Entity Automation Tab Content */}
       {mainTab === 'crossEntity' && (
         <div className={styles.tabContent}>
-          <CrossEntityMapView links={result.crossEntityLinks || []} />
+          <CrossEntityAutomationView
+            analysis={result.crossEntityAnalysis}
+            blueprints={result.entities}
+          />
         </div>
       )}
 

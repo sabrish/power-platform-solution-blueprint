@@ -1,4 +1,5 @@
 import type { IDataverseClient, QueryOptions, QueryResult } from './IDataverseClient.js';
+import { withRetry } from '../utils/withRetry.js';
 
 /**
  * PPTB Dataverse API interface (matches official @pptb/types DataverseAPI.API)
@@ -35,7 +36,10 @@ export class PptbDataverseClient implements IDataverseClient {
       const queryString = this.buildQueryString(options);
       const odataQuery = queryString ? `${entitySet}?${queryString}` : entitySet;
 
-      const response = await this.dataverseApi.queryData(odataQuery, 'primary');
+      const response = await withRetry(
+        () => this.dataverseApi.queryData(odataQuery, 'primary'),
+        { maxAttempts: 3 }
+      );
 
       return this.parseResponse<T>(response);
     } catch (error) {
@@ -53,7 +57,10 @@ export class PptbDataverseClient implements IDataverseClient {
       const queryString = this.buildQueryString(options);
       const odataQuery = queryString ? `${metadataPath}?${queryString}` : metadataPath;
 
-      const response = await this.dataverseApi.queryData(odataQuery, 'primary');
+      const response = await withRetry(
+        () => this.dataverseApi.queryData(odataQuery, 'primary'),
+        { maxAttempts: 3 }
+      );
 
       return this.parseResponse<T>(response);
     } catch (error) {

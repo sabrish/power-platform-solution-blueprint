@@ -99,9 +99,9 @@ export function estimateJsonSize(result: BlueprintResult): number {
     size += JSON.stringify(result.erd).length;
   }
 
-  // Cross-entity links
-  if (result.crossEntityLinks) {
-    size += result.crossEntityLinks.length * 200;
+  // Cross-entity analysis
+  if (result.crossEntityAnalysis) {
+    size += result.crossEntityAnalysis.chainLinks.length * 200;
   }
 
   // External endpoints

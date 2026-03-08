@@ -12,9 +12,9 @@ import type {
   Flow,
   BusinessRule,
   WebResource,
-  CrossEntityLink,
   ExternalEndpoint,
 } from '../../types/blueprint.js';
+import type { CrossEntityAnalysisResult } from '../../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../../types/classicWorkflow.js';
 import type { CustomAPI } from '../../types/customApi.js';
 import type { EnvironmentVariable } from '../../types/environmentVariable.js';
@@ -87,7 +87,7 @@ ${this.embeddedCSS()}
     <li><a href="#connection-references">🔗 Connection References</a></li>
     <li><a href="#security">🔒 Security</a></li>
     <li><a href="#external-dependencies">🌍 External Dependencies</a></li>
-    <li><a href="#cross-entity">🔀 Cross-Entity Automation (Coming Soon)</a></li>
+    <li><a href="#cross-entity">🔗 Cross-Entity Automation</a></li>
   </ul>
   <div class="nav-footer">
     <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">🖨️ Print</button>
@@ -1474,74 +1474,84 @@ ${rows}
   /**
    * Generate cross-entity automation section
    */
-  htmlCrossEntitySection(_links: CrossEntityLink[] | undefined): string {
-    // Always show Coming Soon banner with sample data
-    const sampleRows = `<tr>
-  <td>Contact</td>
-  <td>Account</td>
-  <td><span class="badge badge-success">Flow</span></td>
-  <td>Update Account when Contact Changes</td>
-  <td>Update</td>
-  <td><span class="badge badge-success">Async</span></td>
-</tr>
-<tr>
-  <td>Opportunity</td>
-  <td>Quote</td>
-  <td><span class="badge badge-brand">Plugin</span></td>
-  <td>Generate Quote from Opportunity</td>
-  <td>Create</td>
-  <td><span class="badge badge-warning">Sync ⚠️</span></td>
-</tr>
-<tr>
-  <td>Case</td>
-  <td>Email</td>
-  <td><span class="badge badge-success">Flow</span></td>
-  <td>Send Email on Case Resolution</td>
-  <td>Create</td>
-  <td><span class="badge badge-success">Async</span></td>
-</tr>`;
+  htmlCrossEntitySection(analysis: CrossEntityAnalysisResult | undefined): string {
+    const coverageNotice = `<div style="padding: 12px; background-color: #e8f4fd; border-left: 4px solid #2196f3; border-radius: 4px; margin-bottom: 16px;">
+      <strong>Detection Coverage:</strong> Cross-entity traces are detected from Power Automate flow definitions (JSON) and Classic Workflow XAML.
+      Plugin decompilation is not included — plugins are shown with firing-status analysis based on filtering attributes.
+    </div>`;
+
+    if (!analysis || analysis.totalEntryPoints === 0) {
+      return `<section id="cross-entity" class="content-section">
+  <h2>🔗 Cross-Entity Automation</h2>
+  ${coverageNotice}
+  <p>No cross-entity automation entry points detected in this solution scope.</p>
+</section>`;
+    }
+
+    // Stats
+    const statsHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;">
+      <div class="stats-card"><div class="stats-value">${analysis.totalEntryPoints}</div><div class="stats-label">Entry Points</div></div>
+      <div class="stats-card"><div class="stats-value">${analysis.entityViews.size}</div><div class="stats-label">Target Entities</div></div>
+      <div class="stats-card"><div class="stats-value">${analysis.totalBranches}</div><div class="stats-label">Downstream Branches</div></div>
+      <div class="stats-card"><div class="stats-value" style="color:#d32f2f">${analysis.risks.filter(r => r.severity === 'High').length}</div><div class="stats-label">High Risks</div></div>
+    </div>`;
+
+    // Risks
+    const risksHtml = analysis.risks.length > 0 ? `
+      <h3>Performance &amp; Risk Warnings</h3>
+      ${analysis.risks.map(r => `
+        <div style="padding:10px;border-left:4px solid ${r.severity === 'High' ? '#d32f2f' : '#f57c00'};background:${r.severity === 'High' ? '#ffebee' : '#fff8e1'};border-radius:4px;margin-bottom:8px;">
+          <strong>${this.htmlEscape(r.type)}</strong> (${r.severity}) ${r.automationName ? `— ${this.htmlEscape(r.automationName)}` : ''}<br/>
+          <span>${this.htmlEscape(r.description)}</span>
+        </div>`).join('')}` : '';
+
+    // Chain links table rows
+    const chainRows = analysis.chainLinks.map(l => `<tr>
+      <td>${this.htmlEscape(l.sourceEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.sourceEntity)}</small></td>
+      <td>${this.htmlEscape(l.automationName)}<br/><span class="badge badge-${l.automationType === 'Flow' ? 'success' : 'warning'}">${l.automationType}</span></td>
+      <td>→</td>
+      <td>${this.htmlEscape(l.targetEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.targetEntity)}</small></td>
+      <td><span class="badge badge-${l.operation === 'Create' ? 'success' : l.operation === 'Delete' ? 'danger' : 'warning'}">${l.operation}</span></td>
+      <td><span class="badge badge-${l.isAsynchronous ? 'success' : 'warning'}">${l.isAsynchronous ? 'Async' : 'Sync'}</span></td>
+    </tr>`).join('');
 
     return `<section id="cross-entity" class="content-section">
-  <h2>💡 Cross-Entity Automation - Coming Soon</h2>
-
-  <div style="padding: 20px; background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px; margin-bottom: 20px;">
-    <h3 style="margin-top: 0;">Advanced Cross-Entity Analysis in Development</h3>
-    <p>This feature is currently being developed and will provide comprehensive analysis of automation that operates across multiple entities.</p>
-    <p><strong>Planned capabilities:</strong></p>
-    <ul>
-      <li>Plugin assembly decompilation (ILSpy integration) for cross-entity operations</li>
-      <li>Classic workflow XAML parsing to identify entity relationships</li>
-      <li>Business rule condition and action analysis</li>
-      <li>Synchronous operation detection for performance impact</li>
-      <li>Complete data flow mapping between entities</li>
-    </ul>
-    <p>Check <a href="https://github.com/sabrish/power-platform-solution-blueprint" target="_blank" rel="noopener noreferrer">our GitHub repository</a> for updates.</p>
-  </div>
-
-  <div style="padding: 12px; background-color: #f5f5f5; border-radius: 4px; margin-bottom: 16px; font-style: italic;">
-    <strong>💡 Sample Data Below</strong> - This demonstrates what the feature will look like when completed
-  </div>
-
+  <h2>🔗 Cross-Entity Automation</h2>
+  ${coverageNotice}
+  ${statsHtml}
+  ${risksHtml}
+  <h3>Chain Links</h3>
   <div class="table-container">
     <table class="data-table sortable" id="cross-entity-table">
       <thead>
         <tr>
           <th onclick="sortTable('cross-entity-table', 0)">Source Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 1)">Target Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 2)">Type <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 3)">Name <span class="sort-indicator"></span></th>
+          <th onclick="sortTable('cross-entity-table', 1)">Automation <span class="sort-indicator"></span></th>
+          <th></th>
+          <th onclick="sortTable('cross-entity-table', 3)">Target Entity <span class="sort-indicator"></span></th>
           <th onclick="sortTable('cross-entity-table', 4)">Operation <span class="sort-indicator"></span></th>
           <th>Mode</th>
         </tr>
       </thead>
       <tbody>
-${sampleRows}
+        ${chainRows}
       </tbody>
     </table>
   </div>
-
   <p style="margin-top: 16px; color: #666; font-style: italic;">⚠️ Synchronous cross-entity operations may impact performance</p>
 </section>`;
+  }
+
+  /**
+   * HTML-escape a string to prevent XSS
+   */
+  private htmlEscape(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**

@@ -14,7 +14,7 @@ import {
 import { ArrowLeft24Regular } from '@fluentui/react-icons';
 import type { BlueprintResult } from '../core';
 import { ERDView } from './ERDView';
-import { CrossEntityMapView } from './CrossEntityMapView';
+import { CrossEntityAutomationView } from './CrossEntityAutomationView';
 import { ExternalDependenciesView } from './ExternalDependenciesView';
 import { SolutionDistributionView } from './SolutionDistributionView';
 
@@ -58,7 +58,7 @@ export function ArchitectureView({ result, onBack }: ArchitectureViewProps) {
 
   // Check what features are available
   const hasERD = !!result.erd;
-  const hasCrossEntity = !!(result.crossEntityLinks && result.crossEntityLinks.length > 0);
+  const hasCrossEntity = !!(result.crossEntityAnalysis && result.crossEntityAnalysis.totalEntryPoints > 0);
   const hasExternalDeps = !!(result.externalEndpoints && result.externalEndpoints.length > 0);
   const hasSolutionDist = !!(result.solutionDistribution && result.solutionDistribution.length > 0);
 
@@ -123,7 +123,7 @@ export function ArchitectureView({ result, onBack }: ArchitectureViewProps) {
 
           {hasCrossEntity && (
             <Tab value="crossEntity">
-              Cross-Entity Automation ({result.crossEntityLinks!.length})
+              Cross-Entity Automation ({result.crossEntityAnalysis!.totalEntryPoints})
             </Tab>
           )}
 
@@ -147,7 +147,10 @@ export function ArchitectureView({ result, onBack }: ArchitectureViewProps) {
           )}
 
           {selectedTab === 'crossEntity' && hasCrossEntity && (
-            <CrossEntityMapView links={result.crossEntityLinks!} />
+            <CrossEntityAutomationView
+              analysis={result.crossEntityAnalysis!}
+              blueprints={result.entities}
+            />
           )}
 
           {selectedTab === 'externalDeps' && hasExternalDeps && (

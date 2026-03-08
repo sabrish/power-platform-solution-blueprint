@@ -71,7 +71,15 @@ export class JsonReporter {
       webResources: result.webResources,
       webResourcesByType: this.mapToObject(result.webResourcesByType),
       erd: result.erd,
-      crossEntityLinks: result.crossEntityLinks,
+      crossEntityAnalysis: result.crossEntityAnalysis
+        ? {
+            entityViews: this.mapToObject(result.crossEntityAnalysis.entityViews),
+            chainLinks: result.crossEntityAnalysis.chainLinks,
+            totalEntryPoints: result.crossEntityAnalysis.totalEntryPoints,
+            totalBranches: result.crossEntityAnalysis.totalBranches,
+            risks: result.crossEntityAnalysis.risks,
+          }
+        : undefined,
       externalEndpoints: result.externalEndpoints,
       solutionDistribution: result.solutionDistribution,
       securityRoles: result.securityRoles,

@@ -342,6 +342,30 @@ var _esc = function(s) {
 
 ---
 
+## [2026-03-07] — CrossEntityAnalyzer must use source-centric scan, not blueprint-centric scan
+
+**Affects:** Developer, Architect
+**Severity:** High
+**Rule:** When discovering flow entry points for cross-entity automation tracing, always scan flows as the starting point and group by their *target* entity. Do NOT iterate over blueprints as targets and match flows into them — this misses flows that write to entities not in the current blueprint scope (e.g., out-of-scope entities like `msnfp_awards`, `connections`). Additionally, pass the full flat `flows` array separately to handle unscoped flows (scheduled, manual, no primary entity) which never appear on any `EntityBlueprint.flows` list.
+**Context:** The initial implementation of `discoverEntryPoints` iterated over blueprints as target entities, so flows pointing at out-of-scope targets were silently dropped. The fix (`discoverAllEntryPoints`) groups by target entity derived from flow definitions directly — even entities not in blueprints appear in the chain. A third `allFlows` argument was added to `CrossEntityAnalyzer.analyze()` to cover unscoped flows.
+**Example:**
+- Wrong: `for (const bp of blueprints) { matchFlowsInto(bp) }` — drops out-of-scope targets
+- Right: `for (const flow of allFlows) { groupByTarget(flow) }` — source-centric, captures all targets
+
+---
+
+## [2026-03-07] — Dataverse flow primaryentity returns literal "none" for unscoped flows, not null
+
+**Affects:** Developer
+**Severity:** High
+**Rule:** When reading `primaryentity` from Dataverse `workflows` records for Power Automate flows, the field returns the literal string `"none"` (not null, not undefined) for flows that have no primary entity (scheduled, manual, or unbound flows). A null check alone (`if (!flow.entity)`) will pass for `"none"` because a non-empty string is truthy, causing `"none"` to be used as the entity name in downstream logic. Always treat `flow.entity === 'none'` the same as null.
+**Context:** `CrossEntityAnalyzer` was using `"none"` as the source entity label because the null guard `if (flow.entity)` evaluated true for the literal string `"none"`. Fixed by adding an explicit `|| flow.entity === 'none'` check everywhere `primaryentity` is consumed.
+**Example:**
+- Wrong: `if (!flow.entity) { /* skip unscoped */ }` — passes for `"none"`, pollutes entity labels
+- Right: `if (!flow.entity || flow.entity === 'none') { /* skip or handle as unscoped */ }`
+
+---
+
 ## [2026-03-07] — CDN library versions in HTML export must be pinned to specific versions
 
 **Affects:** Developer

@@ -50,7 +50,7 @@ export class HtmlReporter {
     const environmentVariables = this.templates.htmlEnvironmentVariablesTable(result.environmentVariables);
     const connectionReferences = this.templates.htmlConnectionReferencesTable(result.connectionReferences);
     const externalDependencies = this.templates.htmlExternalDependenciesSection(result.externalEndpoints);
-    const crossEntity = this.templates.htmlCrossEntitySection(result.crossEntityLinks);
+    const crossEntity = this.templates.htmlCrossEntitySection(result.crossEntityAnalysis);
     const security = this.templates.htmlSecuritySection(
       result.securityRoles,
       result.fieldSecurityProfiles,

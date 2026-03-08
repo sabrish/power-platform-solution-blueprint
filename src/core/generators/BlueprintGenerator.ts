@@ -12,7 +12,7 @@ import { FormDiscovery } from '../discovery/FormDiscovery.js';
 import { WebResourceDiscovery } from '../discovery/WebResourceDiscovery.js';
 import { WorkflowMigrationAnalyzer } from '../analyzers/WorkflowMigrationAnalyzer.js';
 import { ERDGenerator } from '../generators/ERDGenerator.js';
-import { CrossEntityMapper } from '../analyzers/CrossEntityMapper.js';
+import { CrossEntityAnalyzer } from '../analyzers/CrossEntityAnalyzer.js';
 import { ExternalDependencyAggregator } from '../analyzers/ExternalDependencyAggregator.js';
 import { SolutionDistributionAnalyzer } from '../analyzers/SolutionDistributionAnalyzer.js';
 import { SecurityRoleDiscovery } from '../discovery/SecurityRoleDiscovery.js';
@@ -214,15 +214,15 @@ export class BlueprintGenerator {
         message: 'ERD generated',
       });
 
-      // 10.2: Map cross-entity automation
-      const crossEntityMapper = new CrossEntityMapper();
-      const crossEntityLinks = crossEntityMapper.mapCrossEntityAutomation(entityBlueprints);
+      // 10.2: Analyze cross-entity automation
+      const crossEntityAnalyzer = new CrossEntityAnalyzer();
+      const crossEntityAnalysis = crossEntityAnalyzer.analyze(entityBlueprints, classicWorkflows, flows);
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
         current: 2,
         total: 4,
-        message: 'Cross-entity automation mapped',
+        message: 'Cross-entity automation analyzed',
       });
 
       // 10.3: Aggregate external dependencies
@@ -368,7 +368,7 @@ export class BlueprintGenerator {
         webResources,
         webResourcesByType,
         erd,
-        crossEntityLinks,
+        crossEntityAnalysis: crossEntityAnalysis.totalEntryPoints > 0 ? crossEntityAnalysis : undefined,
         externalEndpoints,
         solutionDistribution,
         securityRoles: securityRoles.length > 0 ? securityRoles : undefined,

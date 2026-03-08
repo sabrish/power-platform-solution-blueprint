@@ -121,10 +121,26 @@ export type {
 export { BlueprintGenerator } from './generators/BlueprintGenerator.js';
 export type { ScopeSelection as BlueprintScope } from './generators/BlueprintGenerator.js';
 
+// Cross-entity trace types
+export type {
+  CrossEntityEntryPoint,
+  AutomationActivation,
+  CrossEntityBranch,
+  CrossEntityTrace,
+  CrossEntityEntityView,
+  CrossEntityRisk,
+  CrossEntityAnalysisResult,
+  CrossEntityChainLink,
+  EntityAutomationPipeline,
+  MessagePipeline,
+  PipelineStep,
+} from './types/crossEntityTrace.js';
+
 // Analyzers
 export { ExecutionOrderCalculator } from './analyzers/ExecutionOrderCalculator.js';
 export { PerformanceAnalyzer } from './analyzers/PerformanceAnalyzer.js';
 export { WorkflowMigrationAnalyzer } from './analyzers/WorkflowMigrationAnalyzer.js';
+export { CrossEntityAnalyzer } from './analyzers/CrossEntityAnalyzer.js';
 
 // Reporters
 export { HtmlReporter } from './reporters/HtmlReporter.js';
