@@ -42,7 +42,7 @@ After running PPSB, you'll have:
 - Custom APIs, environment variables, connection references
 - Security roles with permission matrices
 - External dependency analysis with risk assessment
-- Cross-entity automation mapping *(Coming Soon - preview with sample data)*
+- Cross-entity automation mapping (traces automation chains across entity boundaries)
 - Solution distribution breakdown
 
 ---
@@ -196,7 +196,7 @@ PPSB goes through multiple phases:
 
 #### Phase 5: Analysis (10-30 seconds)
 - Generates ERD with publisher color-coding
-- Maps cross-entity automation *(preview - full implementation coming soon)*
+- Maps cross-entity automation (entry points, activation pipelines, risk detection)
 - Analyzes external dependencies
 - Scores entity complexity
 - Identifies performance risks
@@ -320,15 +320,37 @@ Click tabs to explore different aspects:
 - Called from (flows, plugins, web resources)
 - Confidence levels
 
-#### Cross-Entity Automation Tab (Coming Soon)
-*This tab displays a preview with sample data showing planned functionality:*
-- Advanced automation analysis with plugin decompilation
-- Workflow XAML parsing for cross-entity detection
-- Business rule condition and action analysis
-- Source → Target entity mapping with operation types
-- Synchronous operation warnings for performance impact
+#### Fetch Diagnostics Tab
 
-*Full implementation will include plugin assembly decompilation (ILSpy), classic workflow XAML parsing, and comprehensive business rule analysis. Currently shows sample data to demonstrate future capabilities.*
+Available after generation completes. Shows every Dataverse API call made during the blueprint generation run.
+
+**Summary Bar**: Total calls, successful, failed, and retried counts.
+
+**Call Log Table**: One row per API call with status badge (Success / Failed / Retried), discovery phase, OData query URL, duration in milliseconds, and error detail for failed calls.
+
+**Filtering**: Filter by status or search by URL / phase name.
+
+**Use for**: Troubleshooting permission errors, identifying slow queries, diagnosing why certain components are missing from results.
+
+#### Cross-Entity Automation Tab
+
+Shows automation chains that cross entity boundaries — when a flow or classic workflow running on Entity A writes to Entity B and triggers Entity B's own plugins and rules.
+
+**Global Chain Map**: Force-directed graph of all source → target entity edges. Filter by automation type (Flow / Classic Workflow) or operation (Create / Update / Delete).
+
+**Per-Entity Pipeline View**: Select any entity to see:
+- **Entry Points**: Which automations on other entities write to this entity (operation, fields, async/sync, confidence)
+- **Activation Trace**: For each entry point, every registered automation on the target entity with fire/won't-fire status and matched filter attributes
+- **Downstream Branches**: If an activation itself writes to a third entity, the branch is shown inline
+
+**Risks Panel**: Detected issues across all traces:
+- **No Filter Attributes** (High) — plugins that fire on ALL updates, not just relevant fields
+- **Deep Sync Chain** (High) — synchronous automation chains that block the user transaction
+- **Circular Reference** (High) — Entity A writes to Entity B which writes back to Entity A
+- **High Fan-Out** (Medium) — one entry point triggers many activations
+- **Re-Trigger** (Medium) — an activation writes back to the same entity it lives on
+
+**Note**: Cross-entity detection is based on flow definition JSON parsing and classic workflow XAML parsing. Plugin cross-entity writes are not yet detected (plugin assembly decompilation is not available in the browser context).
 
 ### Entity Detail View
 
@@ -493,7 +515,7 @@ Deep dive into exported documentation structure.
 │   ├── AttributeMasking.md      # Attribute masking rules
 │   └── ColumnSecurity.md        # Column security profiles
 ├── ExternalDependencies.md      # External API analysis
-└── CrossEntityAutomation.md     # Cross-entity automation (Coming Soon preview)
+└── CrossEntityAutomation.md     # Cross-entity automation chain map and risk summary
 ```
 
 ### JSON Structure
@@ -624,7 +646,7 @@ Real-world scenarios and how to use PPSB.
 2. Review "External Dependencies" tab
 3. Filter for synchronous plugins
 4. Identify plugins with external calls (blocks user transactions)
-5. Check "Cross-Entity Automation" tab *(coming soon - will show complex automation chains)*
+5. Check "Cross-Entity Automation" tab for deep sync chains and no-filter plugins that fire on all updates
 6. Prioritize refactoring:
    - Move external calls to async
    - Break execution chains
