@@ -382,23 +382,6 @@ export interface JavaScriptAnalysis {
 }
 
 /**
- * Web resource type name mapping
- */
-export const WEB_RESOURCE_TYPE_NAMES = {
-  1: 'HTML',
-  2: 'CSS',
-  3: 'JavaScript',
-  4: 'XML',
-  5: 'PNG',
-  6: 'JPG',
-  7: 'GIF',
-  9: 'XSL',
-  10: 'ICO',
-  11: 'SVG',
-  12: 'RESX',
-} as const;
-
-/**
  * Execution pipeline for an entity event
  */
 export interface ExecutionPipeline {
@@ -583,24 +566,6 @@ export interface EntityQuickLink {
   flowCount: number;
   businessRuleCount: number;
   complexity: 'High' | 'Medium' | 'Low';
-}
-
-/**
- * Cross-entity automation link
- * @deprecated Use CrossEntityAnalysisResult from crossEntityTrace.ts instead.
- * Kept for JSON backward compatibility only.
- */
-export interface CrossEntityLink {
-  sourceEntity: string;
-  sourceEntityDisplayName: string;
-  targetEntity: string;
-  targetEntityDisplayName: string;
-  automationType: 'Plugin' | 'Flow' | 'BusinessRule' | 'ClassicWorkflow';
-  automationName: string;
-  automationId: string;
-  operation: string; // Create, Update, Delete, Read
-  description: string;
-  isAsynchronous: boolean;
 }
 
 /**

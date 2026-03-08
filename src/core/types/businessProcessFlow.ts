@@ -60,7 +60,3 @@ export interface BPFStep {
 /**
  * BPF state colors for UI
  */
-export const BPF_STATE_COLORS = {
-  Active: '#107C10',
-  Draft: '#FFB900',
-} as const;

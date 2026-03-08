@@ -61,16 +61,6 @@ export type CustomAPIParameterType =
 /**
  * Custom API binding type colors for UI
  */
-export const CUSTOM_API_BINDING_COLORS = {
-  Global: '#0078D4', // Blue
-  Entity: '#107C10', // Green
-  EntityCollection: '#E3008C', // Magenta
-} as const;
-
 /**
  * Custom API type colors for UI
  */
-export const CUSTOM_API_TYPE_COLORS = {
-  Function: '#0078D4', // Blue - Functions are read-only
-  Action: '#E3008C', // Magenta - Actions can modify data
-} as const;

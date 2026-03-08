@@ -50,10 +50,3 @@ export type EnvironmentVariableType = 'String' | 'Number' | 'Boolean' | 'JSON' |
 /**
  * Environment Variable type colors for UI
  */
-export const ENV_VAR_TYPE_COLORS = {
-  String: '#0078D4',
-  Number: '#107C10',
-  Boolean: '#E3008C',
-  JSON: '#FFB900',
-  DataSource: '#8764B8',
-} as const;

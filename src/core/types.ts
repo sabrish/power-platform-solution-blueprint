@@ -89,13 +89,3 @@ export interface PluginStep {
   stateCode: number;
   state: 'Enabled' | 'Disabled';
 }
-
-/**
- * Stage color constants for plugin visualization
- */
-export const STAGE_COLORS = {
-  10: '#0078D4', // PreValidation - Blue
-  20: '#2B579A', // PreOperation - Navy
-  40: '#107C10', // PostOperation - Green
-  50: '#5C2D91', // Asynchronous - Purple
-} as const;
