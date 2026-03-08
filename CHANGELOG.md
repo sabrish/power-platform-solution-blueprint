@@ -5,6 +5,55 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`withAdaptiveBatch` + `FetchLogger` wired to all remaining discovery classes** — BusinessRuleDiscovery,
+  BusinessProcessFlowDiscovery, ConnectionReferenceDiscovery, EnvironmentVariableDiscovery,
+  GlobalChoiceDiscovery, FieldSecurityProfileDiscovery, and CustomConnectorDiscovery converted from
+  manual for-loop batching to `withAdaptiveBatch` with retry, adaptive batch sizing, and `FetchLogger`
+  support; all batch calls now appear in the Fetch Diagnostics tab
+- **`CrossEntityAutomationView`** — pipeline accordion UI replacing the "Coming Soon" placeholder
+  - Entity accordion rows with 8-colour cycling left accent
+  - Expanded view: numbered steps, type badge, stage, Sync/Async indicator, and "no filter" warning
+  - Branch block attached to steps that write to another entity, showing target name, operation, and field pills
+  - Field-match verdict below each step (hit/miss field pills)
+  - Inline nested child pipeline (max depth 2) with return marker
+  - "Won't fire" collapsible section per entity
+- **`ClassicWorkflowXamlParser`** — new parser for classic workflow XAML definitions
+- **`crossEntityTrace.ts`** — new type definitions for the cross-entity automation trace pipeline
+
+### Changed
+- **N+1 query patterns eliminated** — EnvironmentVariableDiscovery (values per definition) and
+  CustomAPIDiscovery (parameters per API) now use a single batched pass grouped in memory, reducing
+  API call volume significantly for large solutions
+- **All discovery class instantiations in `BlueprintGenerator` now receive `this.logger`** — every
+  batch call is visible in the Fetch Diagnostics tab
+- **6 dynamic imports converted to static imports in `BlueprintGenerator`** — BusinessProcessFlowDiscovery,
+  EnvironmentVariableDiscovery, ConnectionReferenceDiscovery, GlobalChoiceDiscovery,
+  CustomConnectorDiscovery, and ColumnSecurityDiscovery; eliminates a class of load failures under
+  the `pptb-webview://` protocol
+- **`SolutionComponentDiscovery`** — `solutioncomponents` and workflow classification queries are now
+  logged and use adaptive batching
+- **`CustomAPIDiscovery`** — main API fetch and parameter fetches now use `withAdaptiveBatch`
+- **`CustomAPIsList`** rewritten from `DataGrid` to card-row pattern (PATTERN-001 compliance)
+- **`ConnectionReferencesList`** rewritten from `DataGrid` to card-row pattern (PATTERN-001 compliance)
+- **Badge appearances standardised** — `appearance="tint"` applied to all semantic badges across
+  Custom APIs, Connection References, and the Cross-Entity Automation view
+- **Cross-Entity Automation view — operation badges** changed from `filled` to `tint` appearance for
+  lighter, theme-aware rendering
+- **Cross-Entity Automation view — collapsed entity rows** no longer show step-type pills; simplified
+  header reduces visual noise
+
+### Fixed
+- **Processing screen feed** — detail column now shows entity, form, and plugin names instead of
+  positional "items X–Y of Z" text
+- **Form discovery progress** — progress now updates incrementally through the form phase instead of
+  remaining at 0% for the entire phase
+- **Cancel button feedback** — immediately shows "Cancelling, please wait…" on click rather than
+  waiting for the current operation to finish
+- **Fetch Diagnostics table** — hover state no longer shows a white background in dark mode
+
 ## [0.9.0] - 2026-03-07
 
 ### Added

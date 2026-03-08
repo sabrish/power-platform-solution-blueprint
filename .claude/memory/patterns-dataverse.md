@@ -168,21 +168,24 @@ Never create separate publisher-specific query methods in discovery classes.
 
 ---
 
-## PATTERN-007 — Static Imports for Reporters
+## PATTERN-007 — Static Imports Only in BlueprintGenerator (Reporters and Discovery Classes)
 
 **Source:** decisions.md, CHANGELOG v0.7.2
 **Applies to:** Developer
 
-All reporters and the ZipPackager must use static imports. Dynamic `import()` creates chunks unreachable under `pptb-webview://`.
+All imports in `BlueprintGenerator.ts` — reporters, ZipPackager, and discovery classes — must be static. Dynamic `import()` creates chunks unreachable under `pptb-webview://`. This applies to the entire file, not just reporters.
 
 ```typescript
 // CORRECT — static import
 import { MarkdownReporter } from './reporters/MarkdownReporter';
 import { HtmlReporter } from './reporters/HtmlReporter';
 import { ZipPackager } from './reporters/ZipPackager';
+import { PluginDiscovery } from './discovery/PluginDiscovery';
+import { FlowDiscovery } from './discovery/FlowDiscovery';
 
 // WRONG — dynamic import (breaks PPTB Desktop)
 const { MarkdownReporter } = await import('./reporters/MarkdownReporter');
+const { PluginDiscovery } = await import('./discovery/PluginDiscovery');
 ```
 
 ---
@@ -301,6 +304,47 @@ window.dataverseAPI.buildLabel(text, languageCode?)  // Creates properly formatt
   ```json
   "features": { "multiConnection": "required" | "optional" }
   ```
+
+---
+
+## PATTERN-017 — FetchLogger Must Be Wired Through All Batching Discovery Classes
+
+**Source:** learnings.md [2026-03-08]
+**Applies to:** Developer, Reviewer
+
+Every discovery class that calls `withAdaptiveBatch` must accept a `FetchLogger` in its constructor and pass it to every `withAdaptiveBatch` call. `BlueprintGenerator` initialises the logger at the top of `generate()` and must pass `this.logger` to every qualifying discovery class constructor.
+
+### Required constructor signature
+```typescript
+constructor(
+  private client: PptbDataverseClient,
+  private onProgress: ProgressCallback,
+  private logger: FetchLogger,
+) {}
+```
+
+### Required withAdaptiveBatch call shape
+```typescript
+await withAdaptiveBatch(ids, async (batch) => {
+  // ... query logic ...
+}, {
+  step: 'descriptive-step-name',
+  entitySet: 'logicalname_of_table',
+  logger: this.logger,
+  getBatchLabel: (id) => labelMap.get(id),  // omit on first pass; provide on second pass
+});
+```
+
+### Exempt classes (single non-batched queries only)
+PublisherDiscovery, SolutionDiscovery, EntityDiscovery, SchemaDiscovery.
+
+### BlueprintGenerator wiring
+```typescript
+this.logger = new FetchLogger();
+const plugins = new PluginDiscovery(this.client, onProgress, this.logger);
+const flows   = new FlowDiscovery(this.client, onProgress, this.logger);
+// ... all batching discovery classes ...
+```
 
 ---
 

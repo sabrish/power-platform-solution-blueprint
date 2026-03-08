@@ -1,4 +1,6 @@
-import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
+import type { IDataverseClient, QueryOptions } from '../dataverse/IDataverseClient.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { ComponentType, WorkflowCategory, type ComponentInventory, type ComponentInventoryWithSolutions, type WorkflowInventory, type WorkflowInventoryWithSolutions } from '../types/components.js';
 
 /**
@@ -24,9 +26,11 @@ interface WorkflowRecord {
  */
 export class SolutionComponentDiscovery {
   private readonly client: IDataverseClient;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient) {
+  constructor(client: IDataverseClient, logger?: FetchLogger) {
     this.client = client;
+    this.logger = logger;
   }
 
   /**
@@ -81,11 +85,24 @@ export class SolutionComponentDiscovery {
         return `_solutionid_value eq '${guidWithBraces}'`;
       }).join(' or ');
 
+      const queryStart = Date.now();
       const result = await this.client.query<SolutionComponent>('solutioncomponents', {
         select: ['objectid', 'componenttype', '_solutionid_value', 'rootcomponentbehavior'],
         filter: solutionFilters,
       });
-
+      this.logger?.log({
+        timestamp: new Date(queryStart),
+        step: 'Solution Component Discovery',
+        entitySet: 'solutioncomponents',
+        filterSummary: `${solutionIds.length} solution(s)`,
+        batchIndex: 1,
+        batchTotal: 1,
+        batchSize: solutionIds.length,
+        status: 'success',
+        attempts: 1,
+        durationMs: Date.now() - queryStart,
+        resultCount: result.value.length,
+      });
 
       // Group by component type (deduplicates across solutions)
       for (const component of result.value) {
@@ -240,65 +257,107 @@ export class SolutionComponentDiscovery {
     };
 
     try {
+      const logQuery = async <T extends object>(
+        entitySet: string,
+        queryOptions: QueryOptions,
+        step: string
+      ): Promise<{ value: T[] }> => {
+        const t0 = Date.now();
+        const r = await this.client.query<T>(entitySet, queryOptions);
+        this.logger?.log({
+          timestamp: new Date(t0),
+          step,
+          entitySet,
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0,
+          resultCount: r.value.length,
+        });
+        return r;
+      };
+
       // Query plugins (SDK Message Processing Steps) - all plugins
-      const pluginsResult = await this.client.query<{ sdkmessageprocessingstepid: string }>('sdkmessageprocessingsteps', {
-        select: ['sdkmessageprocessingstepid'],
-      });
+      const pluginsResult = await logQuery<{ sdkmessageprocessingstepid: string }>(
+        'sdkmessageprocessingsteps',
+        { select: ['sdkmessageprocessingstepid'] },
+        'Solution Component Discovery'
+      );
       inventory.pluginIds = pluginsResult.value.map(p => p.sdkmessageprocessingstepid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query workflows (all categories) - all workflows
-      const workflowsResult = await this.client.query<{ workflowid: string }>('workflows', {
-        select: ['workflowid'],
-      });
+      const workflowsResult = await logQuery<{ workflowid: string }>(
+        'workflows',
+        { select: ['workflowid'] },
+        'Solution Component Discovery'
+      );
       inventory.workflowIds = workflowsResult.value.map(w => w.workflowid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query web resources - all
-      const webResourcesResult = await this.client.query<{ webresourceid: string }>('webresourceset', {
-        select: ['webresourceid'],
-      });
+      const webResourcesResult = await logQuery<{ webresourceid: string }>(
+        'webresourceset',
+        { select: ['webresourceid'] },
+        'Solution Component Discovery'
+      );
       inventory.webResourceIds = webResourcesResult.value.map(w => w.webresourceid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query custom APIs - all
-      const customApisResult = await this.client.query<{ customapiid: string }>('customapis', {
-        select: ['customapiid'],
-      });
+      const customApisResult = await logQuery<{ customapiid: string }>(
+        'customapis',
+        { select: ['customapiid'] },
+        'Solution Component Discovery'
+      );
       inventory.customApiIds = customApisResult.value.map(c => c.customapiid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query environment variables - all
-      const envVarsResult = await this.client.query<{ environmentvariabledefinitionid: string }>('environmentvariabledefinitions', {
-        select: ['environmentvariabledefinitionid'],
-      });
+      const envVarsResult = await logQuery<{ environmentvariabledefinitionid: string }>(
+        'environmentvariabledefinitions',
+        { select: ['environmentvariabledefinitionid'] },
+        'Solution Component Discovery'
+      );
       inventory.environmentVariableIds = envVarsResult.value.map(e => e.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query connection references - all
-      const connRefsResult = await this.client.query<{ connectionreferenceid: string }>('connectionreferences', {
-        select: ['connectionreferenceid'],
-      });
+      const connRefsResult = await logQuery<{ connectionreferenceid: string }>(
+        'connectionreferences',
+        { select: ['connectionreferenceid'] },
+        'Solution Component Discovery'
+      );
       inventory.connectionReferenceIds = connRefsResult.value.map(c => c.connectionreferenceid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query custom connectors - all customizable
-      const customConnectorsResult = await this.client.query<{ connectorid: string }>('connectors', {
-        select: ['connectorid'],
-        filter: 'iscustomizable/Value eq true',
-      });
+      const customConnectorsResult = await logQuery<{ connectorid: string }>(
+        'connectors',
+        { select: ['connectorid'], filter: 'iscustomizable/Value eq true' },
+        'Solution Component Discovery'
+      );
       inventory.customConnectorIds = customConnectorsResult.value.map(c => c.connectorid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query security roles - all
-      const securityRolesResult = await this.client.query<{ roleid: string }>('roles', {
-        select: ['roleid'],
-      });
+      const securityRolesResult = await logQuery<{ roleid: string }>(
+        'roles',
+        { select: ['roleid'] },
+        'Solution Component Discovery'
+      );
       inventory.securityRoleIds = securityRolesResult.value.map(r => r.roleid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query field security profiles - all
-      const fieldSecurityProfilesResult = await this.client.query<{ fieldsecurityprofileid: string }>('fieldsecurityprofiles', {
-        select: ['fieldsecurityprofileid'],
-      });
+      const fieldSecurityProfilesResult = await logQuery<{ fieldsecurityprofileid: string }>(
+        'fieldsecurityprofiles',
+        { select: ['fieldsecurityprofileid'] },
+        'Solution Component Discovery'
+      );
       inventory.fieldSecurityProfileIds = fieldSecurityProfilesResult.value.map(f => f.fieldsecurityprofileid.toLowerCase().replace(/[{}]/g, ''));
 
       // Canvas apps - all
-      const canvasAppsResult = await this.client.query<{ canvasappid: string }>('canvasapps', {
-        select: ['canvasappid'],
-      });
+      const canvasAppsResult = await logQuery<{ canvasappid: string }>(
+        'canvasapps',
+        { select: ['canvasappid'] },
+        'Solution Component Discovery'
+      );
       inventory.canvasAppIds = canvasAppsResult.value.map(c => c.canvasappid.toLowerCase().replace(/[{}]/g, ''));
 
       // For entities and attributes, we'll use the metadata API via EntityDiscovery
@@ -352,23 +411,26 @@ export class SolutionComponentDiscovery {
 
       // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
       // Large solutions can have 100+ workflows
-      const batchSize = 20;
-      const allWorkflows: WorkflowRecord[] = [];
-
-      for (let i = 0; i < workflowIds.length; i += batchSize) {
-        const batch = workflowIds.slice(i, i + batchSize);
-        const filters = batch.map(id => {
-          const cleanGuid = id.replace(/[{}]/g, '');
-          return `workflowid eq ${cleanGuid}`;
-        }).join(' or ');
-
-        const result = await this.client.query<WorkflowRecord>('workflows', {
-          select: ['workflowid', 'category'],
-          filter: filters,
-        });
-
-        allWorkflows.push(...result.value);
-      }
+      const { results: allWorkflows } = await withAdaptiveBatch<string, WorkflowRecord>(
+        workflowIds,
+        async (batch) => {
+          const filters = batch.map(id => {
+            const cleanGuid = id.replace(/[{}]/g, '');
+            return `workflowid eq ${cleanGuid}`;
+          }).join(' or ');
+          const result = await this.client.query<WorkflowRecord>('workflows', {
+            select: ['workflowid', 'category'],
+            filter: filters,
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Workflow Classification',
+          entitySet: 'workflows',
+          logger: this.logger,
+        }
+      );
 
       // Classify by category
       for (const workflow of allWorkflows) {

@@ -117,7 +117,7 @@ function App() {
   const [selectedScope, setSelectedScope] = useState<ScopeSelection | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const { generate, result, progress, isGenerating, error, cancel, reset, blueprintGenerator } = useBlueprint(
+  const { generate, result, progress, recentFetches, isGenerating, isCancelling, error, cancel, reset, blueprintGenerator } = useBlueprint(
     selectedScope!
   );
 
@@ -204,7 +204,7 @@ function App() {
 
   // Show processing screen
   if (isGenerating && progress) {
-    return <ProcessingScreen progress={progress} onCancel={handleCancel} />;
+    return <ProcessingScreen progress={progress} recentFetches={recentFetches} onCancel={handleCancel} isCancelling={isCancelling} />;
   }
 
   // Show results

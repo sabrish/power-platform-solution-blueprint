@@ -1,14 +1,16 @@
+import { useEffect, useRef } from 'react';
 import {
   Text,
   Title2,
   Button,
   ProgressBar,
   Spinner,
+  Badge,
   makeStyles,
   tokens,
 } from '@fluentui/react-components';
 import { ArrowClockwise24Regular } from '@fluentui/react-icons';
-import type { ProgressInfo } from '../core';
+import type { ProgressInfo, FetchLogEntry } from '../core';
 import { Footer } from './Footer';
 
 const useStyles = makeStyles({
@@ -43,26 +45,20 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground2,
     borderRadius: tokens.borderRadiusMedium,
   },
-  activityLog: {
+  fetchFeed: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalXS,
-    maxHeight: '200px',
+    maxHeight: '180px',
     overflowY: 'auto',
-    padding: tokens.spacingVerticalM,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
     backgroundColor: tokens.colorNeutralBackground1,
     borderRadius: tokens.borderRadiusMedium,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
   },
-  activityItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalS,
+  fetchHint: {
     fontSize: tokens.fontSizeBase200,
-  },
-  completedIcon: {
-    color: tokens.colorPaletteGreenForeground1,
-    flexShrink: 0,
+    color: tokens.colorNeutralForeground3,
+    textAlign: 'center' as const,
   },
   processingIcon: {
     flexShrink: 0,
@@ -80,11 +76,21 @@ const useStyles = makeStyles({
 
 export interface ProcessingScreenProps {
   progress: ProgressInfo;
+  recentFetches?: FetchLogEntry[];
   onCancel: () => void;
+  isCancelling?: boolean;
 }
 
-export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) {
+export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCancelling = false }: ProcessingScreenProps) {
   const styles = useStyles();
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll the fetch feed to the bottom as new entries arrive
+  useEffect(() => {
+    if (feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+    }
+  }, [recentFetches]);
 
   const percentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
 
@@ -106,6 +112,9 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
 
   const componentLabel = getComponentLabel(progress.phase);
 
+  const failedCount = recentFetches.filter(e => e.status === 'failed').length;
+  const retriedCount = recentFetches.filter(e => e.status === 'retried' || e.status === 'batch-reduced').length;
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -119,7 +128,14 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
         </Text>
       </div>
 
-      {progress.phase !== 'discovering' && (
+      {isCancelling && (
+        <div className={styles.currentActivity}>
+          <Spinner size="small" />
+          <Text weight="semibold">Cancelling, please wait...</Text>
+        </div>
+      )}
+
+      {!isCancelling && progress.phase !== 'discovering' && (
         <div className={styles.currentActivity}>
           <ArrowClockwise24Regular className={styles.processingIcon} />
           <Spinner size="tiny" />
@@ -127,15 +143,82 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
         </div>
       )}
 
-      {progress.phase === 'discovering' && (
+      {!isCancelling && progress.phase === 'discovering' && (
         <div className={styles.currentActivity}>
           <Spinner size="small" />
           <Text weight="semibold">{progress.message}</Text>
         </div>
       )}
 
+      {recentFetches.length > 0 && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+              API Calls
+            </Text>
+            {failedCount > 0 && <Badge color="danger" size="small">{failedCount} failed</Badge>}
+            {retriedCount > 0 && failedCount === 0 && <Badge color="warning" size="small">{retriedCount} retried</Badge>}
+          </div>
+          <div className={styles.fetchFeed} ref={feedRef}>
+            {recentFetches.slice(-20).map(entry => {
+              const isError = entry.status === 'failed';
+              const isWarning = entry.status === 'retried' || entry.status === 'batch-reduced';
+              const icon = entry.status === 'success' ? '✓'
+                : entry.status === 'failed' ? '✗'
+                : entry.status === 'retried' ? '↻'
+                : entry.status === 'batch-reduced' ? '⬇'
+                : '·';
+              const batchLabel = entry.batchTotal > 0
+                ? `[${entry.batchIndex + 1}/${entry.batchTotal}]`
+                : `#${entry.batchIndex + 1}`;
+              const suffix = entry.resultCount !== undefined
+                ? ` — ${entry.durationMs}ms, ${entry.resultCount} records`
+                : ` — ${entry.durationMs}ms`;
+
+              return (
+                <div
+                  key={entry.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '14px 130px 1fr auto',
+                    gap: '6px',
+                    alignItems: 'baseline',
+                    padding: '1px 0',
+                    fontFamily: 'var(--fontFamilyMonospace, monospace)',
+                    fontSize: '11px',
+                    lineHeight: '1.5',
+                    color: isError
+                      ? 'var(--colorStatusDangerForeground1)'
+                      : isWarning
+                      ? 'var(--colorStatusWarningForeground1)'
+                      : 'var(--colorNeutralForeground2)',
+                  }}
+                >
+                  <span>{icon}</span>
+                  <span style={{ color: 'var(--colorNeutralForeground3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.step}
+                  </span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.filterSummary && entry.filterSummary !== entry.entitySet
+                      ? entry.filterSummary
+                      : entry.entitySet}
+                    {entry.errorMessage && ` — ${entry.errorMessage}`}
+                  </span>
+                  <span style={{ color: 'var(--colorNeutralForeground3)', whiteSpace: 'nowrap' }}>
+                    {batchLabel}{suffix}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <Text className={styles.fetchHint}>
+            🔬 Full API call log available in the <strong>Fetch Log</strong> tab once generation completes.
+          </Text>
+        </>
+      )}
+
       <div className={styles.buttonContainer}>
-        <Button appearance="secondary" onClick={onCancel}>
+        <Button appearance="secondary" onClick={onCancel} disabled={isCancelling}>
           Cancel
         </Button>
       </div>

@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-07 (session 2)
+**Last updated:** 2026-03-08
 
 ---
 
@@ -140,6 +140,14 @@ Active development. Build passes (`pnpm typecheck && pnpm build` clean). No comm
   - Inline nested child pipeline (max depth 2) with "↩ back to Parent" return marker
   - "Won't fire" collapsible section at bottom per entity
 
+**Additional fixes made in the same session (2026-03-08):**
+- `withAdaptiveBatch` + `FetchLogger` added to 7 remaining discovery classes that were using manual for-loop batching
+- Dynamic imports converted to static imports for 6 discovery classes in `BlueprintGenerator.ts`
+- `CustomAPIsList` and `ConnectionReferencesList` rewritten from DataGrid to card-row pattern
+- Progress reporting fixed for form discovery
+- `SolutionComponentDiscovery` and `CustomAPIDiscovery` now log to fetch log via `FetchLogger`
+- Badge `appearance="tint"` standardised across all component list badges
+
 **Still pending:**
 - Project owner has not yet confirmed the new UI looks correct in the app
 - Debug `console.log` statements in `FlowDefinitionParser.ts` and `CrossEntityAnalyzer.ts` must be removed once detection is confirmed working (see learnings.md [2026-03-07] debug artifacts rule)
@@ -149,6 +157,19 @@ Active development. Build passes (`pnpm typecheck && pnpm build` clean). No comm
 - `src/core/analyzers/CrossEntityAnalyzer.ts`
 - `src/core/generators/BlueprintGenerator.ts`
 - `src/components/CrossEntityAutomationView.tsx`
+- `src/components/ArchitectureView.tsx`
+- `src/components/ResultsDashboard.tsx`
+- `src/core/parsers/FlowDefinitionParser.ts`
+- `src/core/reporters/HtmlReporter.ts`
+- `src/core/reporters/JsonReporter.ts`
+- `src/core/reporters/MarkdownReporter.ts`
+- `src/core/reporters/html/HtmlTemplates.ts`
+- `src/core/types/blueprint.ts`
+- `src/utils/sizeEstimator.ts`
+- `src/components/CrossEntityAutomationView.tsx` (new)
+- `src/core/analyzers/CrossEntityAnalyzer.ts` (new, replaces CrossEntityMapper.ts)
+- `src/core/parsers/ClassicWorkflowXamlParser.ts` (new)
+- `src/core/types/crossEntityTrace.ts` (new)
 
 ### Other Known Limitations
 

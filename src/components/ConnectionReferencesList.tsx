@@ -1,34 +1,80 @@
 import { useState, useMemo } from 'react';
 import {
-  DataGrid,
-  DataGridBody,
-  DataGridRow,
-  DataGridHeader,
-  DataGridHeaderCell,
-  DataGridCell,
-  TableCellLayout,
-  TableColumnDefinition,
-  createTableColumn,
+  Text,
   Badge,
-  tokens,
   makeStyles,
+  tokens,
   ToggleButton,
   Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
-import { PlugConnected20Regular } from '@fluentui/react-icons';
+import { PlugConnected20Regular, PlugDisconnected20Regular } from '@fluentui/react-icons';
 import type { ConnectionReference } from '../core';
-import { TruncatedText } from './TruncatedText';
 
 const CONN_STATUS_VALUES = ['Connected', 'Not Connected'];
 
 const useStyles = makeStyles({
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalS,
+  },
   filterButton: {
     minWidth: 'unset',
     paddingLeft: tokens.spacingHorizontalS,
     paddingRight: tokens.spacingHorizontalS,
     height: '22px',
     fontSize: tokens.fontSizeBase100,
+  },
+  emptyState: {
+    padding: tokens.spacingVerticalXXXL,
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: tokens.spacingVerticalL,
+    color: tokens.colorNeutralForeground3,
+  },
+  refRow: {
+    display: 'grid',
+    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(120px, 1fr) auto',
+    gap: tokens.spacingHorizontalM,
+    alignItems: 'start',
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+      boxShadow: tokens.shadow4,
+    },
+  },
+  refRowSelected: {
+    backgroundColor: tokens.colorBrandBackground2,
+  },
+  icon: {
+    display: 'flex',
+    alignItems: 'center',
+    color: tokens.colorNeutralForeground3,
+    paddingTop: '2px',
+  },
+  nameColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    minWidth: 0,
+    wordBreak: 'break-word',
+  },
+  codeText: {
+    fontFamily: 'Consolas, Monaco, monospace',
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  connectorText: {
+    minWidth: 0,
+    wordBreak: 'break-word',
   },
 });
 
@@ -39,14 +85,17 @@ interface ConnectionReferencesListProps {
 
 export function ConnectionReferencesList({ connectionReferences, onSelectReference }: ConnectionReferencesListProps) {
   const styles = useStyles();
-  const [selectedRef, setSelectedRef] = useState<string | null>(null);
+  const [selectedRefId, setSelectedRefId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(new Set());
 
-  const sorted = useMemo(() => [...connectionReferences].sort((a, b) => a.name.localeCompare(b.name)), [connectionReferences]);
+  const sorted = useMemo(
+    () => [...connectionReferences].sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    [connectionReferences]
+  );
 
   const statusCounts = useMemo(() => {
-    const counts = Object.fromEntries(CONN_STATUS_VALUES.map((s) => [s, 0]));
+    const counts = Object.fromEntries(CONN_STATUS_VALUES.map(s => [s, 0]));
     for (const r of sorted) {
       const key = r.connectionId ? 'Connected' : 'Not Connected';
       counts[key] = (counts[key] ?? 0) + 1;
@@ -55,13 +104,10 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
   }, [sorted]);
 
   const toggleStatusFilter = (status: string) => {
-    setActiveStatusFilters((prev) => {
+    setActiveStatusFilters(prev => {
       const next = new Set(prev);
-      if (next.has(status)) {
-        next.delete(status);
-      } else {
-        next.add(status);
-      }
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
       return next;
     });
   };
@@ -70,63 +116,36 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
     let filtered = sorted;
     const q = searchQuery.toLowerCase().trim();
     if (q) {
-      filtered = filtered.filter((r) =>
+      filtered = filtered.filter(r =>
         r.name.toLowerCase().includes(q) ||
-        (r.displayName && r.displayName.toLowerCase().includes(q)) ||
+        r.displayName.toLowerCase().includes(q) ||
         (r.connectorDisplayName && r.connectorDisplayName.toLowerCase().includes(q))
       );
     }
     if (activeStatusFilters.size > 0) {
-      filtered = filtered.filter((r) =>
+      filtered = filtered.filter(r =>
         activeStatusFilters.has(r.connectionId ? 'Connected' : 'Not Connected')
       );
     }
     return filtered;
   }, [sorted, searchQuery, activeStatusFilters]);
 
-  const columns: TableColumnDefinition<ConnectionReference>[] = [
-    createTableColumn<ConnectionReference>({
-      columnId: 'name',
-      renderHeaderCell: () => 'Name',
-      renderCell: (item) => (
-        <TableCellLayout media={<PlugConnected20Regular />}>
-          <div style={{ fontWeight: 500 }}>
-            <TruncatedText text={item.displayName} />
-          </div>
-          <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3, fontFamily: 'monospace' }}>
-            <TruncatedText text={item.name} />
-          </div>
-        </TableCellLayout>
-      ),
-    }),
-    createTableColumn<ConnectionReference>({
-      columnId: 'connector',
-      renderHeaderCell: () => 'Connector',
-      renderCell: (item) => (
-        <TableCellLayout>
-          <TruncatedText text={item.connectorDisplayName || 'Unknown'} />
-        </TableCellLayout>
-      ),
-    }),
-    createTableColumn<ConnectionReference>({
-      columnId: 'status',
-      renderHeaderCell: () => 'Status',
-      renderCell: (item) => (
-        <TableCellLayout>
-          <Badge appearance="filled" shape="rounded" color={item.connectionId ? 'success' : 'danger'}>
-            {item.connectionId ? 'Connected' : 'Not Connected'}
-          </Badge>
-        </TableCellLayout>
-      ),
-    }),
-  ];
+  const handleRowClick = (ref: ConnectionReference) => {
+    setSelectedRefId(ref.id);
+    onSelectReference(ref);
+  };
 
   if (connectionReferences.length === 0) {
-    return <div style={{ padding: '20px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>No Connection References found.</div>;
+    return (
+      <div className={styles.emptyState}>
+        <Text size={500} weight="semibold">No Connection References Found</Text>
+        <Text>No connection references were found in the selected solution(s).</Text>
+      </div>
+    );
   }
 
   return (
-    <div style={{ marginTop: '16px' }}>
+    <div className={styles.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -134,10 +153,9 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
         filteredCount={filteredRefs.length}
         totalCount={sorted.length}
         itemLabel="references"
-        style={{ marginBottom: '16px' }}
       >
         <FilterGroup label="Status:">
-          {CONN_STATUS_VALUES.map((status) => (
+          {CONN_STATUS_VALUES.map(status => (
             <ToggleButton
               key={status}
               className={styles.filterButton}
@@ -156,19 +174,46 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
           )}
         </FilterGroup>
       </FilterBar>
-      <DataGrid items={filteredRefs} columns={columns} sortable selectionMode="single" selectedItems={selectedRef ? [selectedRef] : []}
-        getRowId={(item) => item.id} focusMode="composite">
-        <DataGridHeader><DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow></DataGridHeader>
-        <DataGridBody<ConnectionReference>>
-          {({ item, rowId }) => (
-            <DataGridRow<ConnectionReference> key={rowId} style={{ cursor: 'pointer',
-              backgroundColor: selectedRef === item.id ? tokens.colorNeutralBackground1Selected : undefined }}
-              onClick={() => { setSelectedRef(item.id); onSelectReference(item); }}>
-              {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
-            </DataGridRow>
-          )}
-        </DataGridBody>
-      </DataGrid>
+
+      {filteredRefs.length === 0 && sorted.length > 0 && (
+        <div className={styles.emptyState}>
+          <Text>No connection references match your search.</Text>
+        </div>
+      )}
+
+      {filteredRefs.map(ref => {
+        const isSelected = selectedRefId === ref.id;
+        const isConnected = Boolean(ref.connectionId);
+
+        return (
+          <div
+            key={ref.id}
+            className={`${styles.refRow} ${isSelected ? styles.refRowSelected : ''}`}
+            onClick={() => handleRowClick(ref)}
+          >
+            <div className={styles.icon}>
+              {isConnected
+                ? <PlugConnected20Regular />
+                : <PlugDisconnected20Regular style={{ color: tokens.colorPaletteRedForeground1 }} />
+              }
+            </div>
+            <div className={styles.nameColumn}>
+              <Text weight="semibold">{ref.displayName}</Text>
+              <Text className={styles.codeText}>{ref.name}</Text>
+            </div>
+            <Text className={styles.connectorText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
+              {ref.connectorDisplayName || '—'}
+            </Text>
+            <Badge
+              appearance="tint"
+              shape="rounded"
+              color={isConnected ? 'success' : 'danger'}
+            >
+              {isConnected ? 'Connected' : 'Not Connected'}
+            </Badge>
+          </div>
+        );
+      })}
     </div>
   );
 }

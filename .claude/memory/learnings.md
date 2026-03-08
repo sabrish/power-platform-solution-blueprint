@@ -377,3 +377,27 @@ var _esc = function(s) {
 - Right: `<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>`
 
 ---
+
+## [2026-03-08] — All discovery classes that batch must use withAdaptiveBatch and FetchLogger
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** Every discovery class that makes batched API calls must: (1) use `withAdaptiveBatch` instead of a manual `for` loop with a hardcoded `batchSize` variable; (2) accept a `FetchLogger` in its constructor and pass it to every `withAdaptiveBatch` call; (3) provide `getBatchLabel` for any second-pass fetch where names/labels are known from a prior pass. `BlueprintGenerator` must pass `this.logger` to every discovery class constructor that accepts one. Classes that make only single non-batched queries (PublisherDiscovery, SolutionDiscovery, EntityDiscovery, SchemaDiscovery) are exempt.
+**Context:** Audit of all 20 discovery classes found 7 still using manual for-loop batching with no FetchLogger. These are invisible in the processing screen and Fetch Diagnostics tab. Several also had N+1 anti-patterns (per-item individual queries inside a loop).
+**Example:**
+- Wrong: `for (let i = 0; i < ids.length; i += batchSize) { const batch = ids.slice(i, i + batchSize); ... }` with no logger
+- Right: `withAdaptiveBatch(ids, async (batch) => { ... }, { step, entitySet, logger, getBatchLabel })`
+
+---
+
+## [2026-03-08] — N+1 query patterns must be replaced with a single batched pass
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** Never call `client.query()` inside a loop per item (N+1 anti-pattern). Always collect all IDs first, then fetch in one batched pass using `withAdaptiveBatch`. Group results into a Map keyed by ID, then look up values when building domain objects.
+**Context:** EnvironmentVariableDiscovery had a `getValuesForDefinition(id)` call per definition inside a loop. GlobalChoiceDiscovery called `queryMetadata()` per choice ID. CustomAPIDiscovery called `getRequestParameters(id)` and `getResponseProperties(id)` per API. All three were fixed by collecting all IDs and fetching in one batched pass.
+**Example:**
+- Wrong: `for (const id of ids) { const value = await client.query('table', { filter: \`id eq ${id}\` }) }`
+- Right: Collect all ids → `withAdaptiveBatch(ids, async (batch) => { const filter = batch.map(id => \`id eq ${id}\`).join(' or '); return client.query(...) })` → group by id in a Map
+
+---

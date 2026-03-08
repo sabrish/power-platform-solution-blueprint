@@ -1,5 +1,7 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { ConnectionReference } from '../types/connectionReference.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 
 interface RawConnectionReference {
   connectionreferenceid: string;
@@ -22,39 +24,46 @@ interface RawConnectionReference {
 export class ConnectionReferenceDiscovery {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger
+  ) {
     this.client = client;
     this.onProgress = onProgress;
+    this.logger = logger;
   }
 
   async getConnectionReferencesByIds(ids: string[]): Promise<ConnectionReference[]> {
     if (ids.length === 0) return [];
 
     try {
-      const batchSize = 20;
-      const allResults: RawConnectionReference[] = [];
-
-      for (let i = 0; i < ids.length; i += batchSize) {
-        const batch = ids.slice(i, i + batchSize);
-        const filterClauses = batch.map(id => `connectionreferenceid eq ${id.replace(/[{}]/g, '')}`);
-        const filter = filterClauses.join(' or ');
-
-        const result = await this.client.query<RawConnectionReference>('connectionreferences', {
-          select: ['connectionreferenceid', 'connectionreferencelogicalname', 'connectionreferencedisplayname',
-            'description', 'connectionid', 'connectorid', 'ismanaged', 'iscustomizable',
-            'statecode', 'statuscode', 'createdon', 'modifiedon', '_ownerid_value'],
-          filter,
-          orderBy: ['connectionreferencelogicalname asc'],
-        });
-
-        allResults.push(...result.value);
-
-        // Report progress after each batch
-        if (this.onProgress) {
-          this.onProgress(allResults.length, ids.length);
+      const { results: allResults } = await withAdaptiveBatch<string, RawConnectionReference>(
+        ids,
+        async (batch) => {
+          const filter = batch
+            .map(id => `connectionreferenceid eq ${id.replace(/[{}]/g, '')}`)
+            .join(' or ');
+          const result = await this.client.query<RawConnectionReference>('connectionreferences', {
+            select: [
+              'connectionreferenceid', 'connectionreferencelogicalname', 'connectionreferencedisplayname',
+              'description', 'connectionid', 'connectorid', 'ismanaged', 'iscustomizable',
+              'statecode', 'statuscode', 'createdon', 'modifiedon', '_ownerid_value',
+            ],
+            filter,
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Connection Reference Discovery',
+          entitySet: 'connectionreferences',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(done, total),
         }
-      }
+      );
 
       return allResults.map(raw => this.mapToConnectionReference(raw));
     } catch (error) {

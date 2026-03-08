@@ -1,5 +1,7 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { CustomConnector } from '../types/customConnector.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 
 interface RawConnector {
   connectorid: string;
@@ -17,10 +19,16 @@ interface RawConnector {
 export class CustomConnectorDiscovery {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger
+  ) {
     this.client = client;
     this.onProgress = onProgress;
+    this.logger = logger;
   }
 
   /**
@@ -32,32 +40,29 @@ export class CustomConnectorDiscovery {
     }
 
     try {
-      const batchSize = 20;
-      const allResults: RawConnector[] = [];
-
-      for (let i = 0; i < connectorIds.length; i += batchSize) {
-        const batch = connectorIds.slice(i, i + batchSize);
-        const filterClauses = batch.map(id => {
-          const cleanGuid = id.replace(/[{}]/g, '');
-          return `connectorid eq ${cleanGuid}`;
-        });
-        const filter = filterClauses.join(' or ');
-
-        const result = await this.client.query<RawConnector>('connectors', {
-          select: ['connectorid', 'name', 'displayname', 'description', 'ismanaged', 'modifiedon', 'createdon'],
-          filter,
-        });
-
-        allResults.push(...result.value);
-
-        // Report progress after each batch
-        if (this.onProgress) {
-          this.onProgress(allResults.length, connectorIds.length);
+      const { results: allResults } = await withAdaptiveBatch<string, RawConnector>(
+        connectorIds,
+        async (batch) => {
+          const filter = batch
+            .map(id => `connectorid eq ${id.replace(/[{}]/g, '')}`)
+            .join(' or ');
+          const result = await this.client.query<RawConnector>('connectors', {
+            select: ['connectorid', 'name', 'displayname', 'description', 'ismanaged', 'modifiedon', 'createdon'],
+            filter,
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Custom Connector Discovery',
+          entitySet: 'connectors',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(done, total),
         }
-      }
+      );
 
       return allResults.map(raw => this.mapToCustomConnector(raw));
-    } catch (error) {
+    } catch {
       return [];
     }
   }
