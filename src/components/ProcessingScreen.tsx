@@ -9,7 +9,14 @@ import {
   makeStyles,
   tokens,
 } from '@fluentui/react-components';
-import { ArrowClockwise24Regular } from '@fluentui/react-icons';
+import {
+  CheckmarkCircle16Regular,
+  ErrorCircle16Regular,
+  ArrowCounterclockwise16Regular,
+  ArrowDown16Regular,
+  Record16Regular,
+  Beaker16Regular,
+} from '@fluentui/react-icons';
 import type { ProgressInfo, FetchLogEntry } from '../core';
 import { Footer } from './Footer';
 
@@ -59,9 +66,6 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground3,
     textAlign: 'center' as const,
-  },
-  processingIcon: {
-    flexShrink: 0,
   },
   progressText: {
     color: tokens.colorNeutralForeground3,
@@ -137,7 +141,6 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
 
       {!isCancelling && progress.phase !== 'discovering' && (
         <div className={styles.currentActivity}>
-          <ArrowClockwise24Regular className={styles.processingIcon} />
           <Spinner size="tiny" />
           <Text weight="semibold">{progress.message}</Text>
         </div>
@@ -163,11 +166,11 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
             {recentFetches.slice(-20).map(entry => {
               const isError = entry.status === 'failed';
               const isWarning = entry.status === 'retried' || entry.status === 'batch-reduced';
-              const icon = entry.status === 'success' ? '✓'
-                : entry.status === 'failed' ? '✗'
-                : entry.status === 'retried' ? '↻'
-                : entry.status === 'batch-reduced' ? '⬇'
-                : '·';
+              const StatusIcon = entry.status === 'success' ? CheckmarkCircle16Regular
+                : entry.status === 'failed' ? ErrorCircle16Regular
+                : entry.status === 'retried' ? ArrowCounterclockwise16Regular
+                : entry.status === 'batch-reduced' ? ArrowDown16Regular
+                : Record16Regular;
               const batchLabel = entry.batchTotal > 0
                 ? `[${entry.batchIndex + 1}/${entry.batchTotal}]`
                 : `#${entry.batchIndex + 1}`;
@@ -185,7 +188,7 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
                     alignItems: 'baseline',
                     padding: '1px 0',
                     fontFamily: 'var(--fontFamilyMonospace, monospace)',
-                    fontSize: '11px',
+                    fontSize: tokens.fontSizeBase200,
                     lineHeight: '1.5',
                     color: isError
                       ? 'var(--colorStatusDangerForeground1)'
@@ -194,7 +197,7 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
                       : 'var(--colorNeutralForeground2)',
                   }}
                 >
-                  <span>{icon}</span>
+                  <StatusIcon style={{ flexShrink: 0, marginTop: '1px' }} />
                   <span style={{ color: 'var(--colorNeutralForeground3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {entry.step}
                   </span>
@@ -212,7 +215,8 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
             })}
           </div>
           <Text className={styles.fetchHint}>
-            🔬 Full API call log available in the <strong>Fetch Log</strong> tab once generation completes.
+            <Beaker16Regular style={{ verticalAlign: 'middle', marginRight: tokens.spacingHorizontalXS }} />
+            Full API call log available in the <strong>Fetch Log</strong> tab once generation completes.
           </Text>
         </>
       )}

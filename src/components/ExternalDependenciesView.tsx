@@ -18,6 +18,7 @@ import {
   ShieldError24Regular,
   ShieldCheckmark24Regular,
   Warning24Regular,
+  LightbulbFilament20Regular,
 } from '@fluentui/react-icons';
 import type { ExternalEndpoint } from '../core';
 
@@ -419,7 +420,8 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                           color: tokens.colorNeutralForeground3,
                         }}
                       >
-                        💡 {factor.recommendation}
+                        <LightbulbFilament20Regular style={{ verticalAlign: 'middle', marginRight: tokens.spacingHorizontalXS, color: tokens.colorStatusWarningForeground1 }} />
+                        {factor.recommendation}
                       </Text>
                     </Card>
                   ))}

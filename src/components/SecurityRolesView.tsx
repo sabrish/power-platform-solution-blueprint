@@ -167,82 +167,92 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
       <div className={styles.legend}>
         <strong>Legend:</strong> None (0) | Basic (1) = User | Local (2) = Business Unit | Deep (4) = Parent+Child BUs | Global (8) = Organization
       </div>
-      <table style={{ width: '100%', marginTop: tokens.spacingVerticalM, borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th
-              style={{
-                padding: tokens.spacingVerticalS,
-                textAlign: 'left',
-                borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-                backgroundColor: tokens.colorNeutralBackground2,
-                color: tokens.colorNeutralForeground1,
-              }}
-            >
-              Entity
-            </th>
-            {privilegeTypes.map((type) => (
+      <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px', marginTop: tokens.spacingVerticalM }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
               <th
-                key={type}
                 style={{
                   padding: tokens.spacingVerticalS,
-                  textAlign: 'center',
+                  textAlign: 'left',
                   borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-                  minWidth: '80px',
                   backgroundColor: tokens.colorNeutralBackground2,
                   color: tokens.colorNeutralForeground1,
+                  position: 'sticky',
+                  top: 0,
+                  left: 0,
+                  zIndex: 3,
+                  minWidth: '200px',
                 }}
               >
-                {type}
+                Entity
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {role.entityPermissions
-            .filter((entityPerm) => entityPerm.privileges.length > 0)
-            .map((entityPerm) => {
-              const privMap = new Map(entityPerm.privileges.map(p => [p.type, p]));
-              return (
-                <tr key={entityPerm.entityLogicalName} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
-                  <td style={{ padding: tokens.spacingVerticalS }}>
-                    <Text weight="semibold">{entityPerm.entityLogicalName}</Text>
-                  </td>
-                  {privilegeTypes.map((type) => {
-                    const priv = privMap.get(type);
-                    if (!priv) {
+              {privilegeTypes.map((type) => (
+                <th
+                  key={type}
+                  style={{
+                    padding: tokens.spacingVerticalS,
+                    textAlign: 'center',
+                    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+                    minWidth: '80px',
+                    backgroundColor: tokens.colorNeutralBackground2,
+                    color: tokens.colorNeutralForeground1,
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1,
+                  }}
+                >
+                  {type}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {role.entityPermissions
+              .filter((entityPerm) => entityPerm.privileges.length > 0)
+              .map((entityPerm) => {
+                const privMap = new Map(entityPerm.privileges.map(p => [p.type, p]));
+                return (
+                  <tr key={entityPerm.entityLogicalName} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
+                    <td style={{ padding: tokens.spacingVerticalS, position: 'sticky', left: 0, zIndex: 1, backgroundColor: tokens.colorNeutralBackground1 }}>
+                      <Text weight="semibold">{entityPerm.entityLogicalName}</Text>
+                    </td>
+                    {privilegeTypes.map((type) => {
+                      const priv = privMap.get(type);
+                      if (!priv) {
+                        return (
+                          <td
+                            key={type}
+                            style={{ padding: tokens.spacingVerticalS, textAlign: 'center', backgroundColor: tokens.colorNeutralBackground1 }}
+                          >
+                            <Text size={200}>—</Text>
+                          </td>
+                        );
+                      }
+                      const depth = priv.depthValue ?? 0;
+                      const label = depthLabelMap[depth] ?? `Unknown (${depth})`;
                       return (
                         <td
                           key={type}
-                          style={{ padding: tokens.spacingVerticalS, textAlign: 'center' }}
+                          style={{ padding: tokens.spacingVerticalS, textAlign: 'center', backgroundColor: tokens.colorNeutralBackground1 }}
                         >
-                          <Text size={200}>—</Text>
+                          <Badge
+                            appearance={getDepthBadgeAppearance(depth)}
+                            color={getDepthBadgeColor(depth)}
+                            shape="rounded"
+                            size="small"
+                          >
+                            {label}
+                          </Badge>
                         </td>
                       );
-                    }
-                    const depth = priv.depthValue ?? 0;
-                    const label = depthLabelMap[depth] ?? `Unknown (${depth})`;
-                    return (
-                      <td
-                        key={type}
-                        style={{ padding: tokens.spacingVerticalS, textAlign: 'center' }}
-                      >
-                        <Badge
-                          appearance={getDepthBadgeAppearance(depth)}
-                          color={getDepthBadgeColor(depth)}
-                          shape="rounded"
-                          size="small"
-                        >
-                          {label}
-                        </Badge>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
+                    })}
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 
@@ -331,7 +341,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
           </Text>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -342,10 +352,11 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
                     minWidth: '200px',
                     position: 'sticky',
+                    top: 0,
                     left: 0,
                     backgroundColor: tokens.colorNeutralBackground2,
                     color: tokens.colorNeutralForeground1,
-                    zIndex: 1,
+                    zIndex: 3,
                   }}
                 >
                   Security Role
@@ -361,6 +372,9 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                       fontSize: tokens.fontSizeBase100,
                       backgroundColor: tokens.colorNeutralBackground2,
                       color: tokens.colorNeutralForeground1,
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 1,
                     }}
                   >
                     {perm.label}
@@ -376,6 +390,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                       padding: tokens.spacingVerticalS,
                       position: 'sticky',
                       left: 0,
+                      zIndex: 1,
                       backgroundColor: tokens.colorNeutralBackground1,
                     }}
                   >
@@ -390,7 +405,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                     return (
                       <td
                         key={perm.key}
-                        style={{ padding: tokens.spacingVerticalS, textAlign: 'center' }}
+                        style={{ padding: tokens.spacingVerticalS, textAlign: 'center', backgroundColor: tokens.colorNeutralBackground1 }}
                       >
                         {granted ? (
                           <Badge appearance="filled" color="success" shape="rounded" size="small">&#10003;</Badge>
