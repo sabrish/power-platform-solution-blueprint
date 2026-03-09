@@ -33,7 +33,7 @@ export class FormDiscovery {
       const N = entityNames.length;
 
       // Pass 1 — fetch form IDs + metadata only (no formxml), in adaptive batches of 20 entity names
-      // Progress: 0..N/2
+      // Pass 1 owns all reported progress (0→N); Pass 2 is silent to avoid >100%.
       const { results: metaForms } = await withAdaptiveBatch<string, RawFormMeta>(
         entityNames,
         async (batch) => {
@@ -50,16 +50,14 @@ export class FormDiscovery {
           entitySet: 'systemforms (metadata)',
           logger: this.logger,
           getBatchLabel: (batch) => batch.join(', '),
-          onProgress: (completed, _total) => {
-            // Scale to first half of progress range
-            this.onProgress?.(Math.round(completed / 2), N);
-          },
+          onProgress: (done) => this.onProgress?.(done, N),
         }
       );
 
       if (metaForms.length === 0) return [];
 
       // Pass 2 — fetch formxml in small adaptive batches (can be 100–500 KB per form)
+      // No onProgress here — Pass 1 already drove progress to N; Pass 2 is silent.
       const formIds = metaForms.map(f => f.formid);
       const formIdToName = new Map(metaForms.map(f => [f.formid.toLowerCase(), `${f.objecttypecode}: ${f.name}`]));
       const xmlMap = new Map<string, string>();
@@ -80,16 +78,14 @@ export class FormDiscovery {
           entitySet: 'systemforms (formxml)',
           logger: this.logger,
           getBatchLabel: (batch) => batch.map(id => formIdToName.get(id.toLowerCase()) ?? id).join(', '),
-          onProgress: (completed, _total) => {
-            // Scale to second half of progress range
-            this.onProgress?.(Math.round(N / 2 + completed / 2), N);
-          },
         }
       );
 
       for (const r of xmlRecords) {
         if (r.formxml) xmlMap.set(r.formid, r.formxml);
       }
+
+      this.onProgress?.(N, N);
 
       return metaForms.map(raw => this.parseForm(raw, xmlMap.get(raw.formid) ?? ''));
 

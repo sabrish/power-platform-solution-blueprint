@@ -168,7 +168,7 @@ export class BlueprintGenerator {
       const classicWorkflowsByEntity = this.groupClassicWorkflowsByEntity(classicWorkflows);
 
       if (workflowInventory.classicWorkflowIds.length > 0) {
-        warnings.push(`⚠️ ${workflowInventory.classicWorkflowIds.length} classic workflow(s) detected - migration to Power Automate recommended`);
+        warnings.push(`${workflowInventory.classicWorkflowIds.length} classic workflow(s) detected - migration to Power Automate recommended`);
       }
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
@@ -263,7 +263,8 @@ export class BlueprintGenerator {
 
       // 10.1: Generate ERD
       const erdGenerator = new ERDGenerator();
-      const erd = erdGenerator.generateMermaidERD(entityBlueprints, this.publishers);
+      const bpfEntityNames = new Set(businessProcessFlows.map(b => b.uniqueName.toLowerCase()));
+      const erd = erdGenerator.generateMermaidERD(entityBlueprints, this.publishers, bpfEntityNames);
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
@@ -961,7 +962,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: workflowIds.length,
-        message: `⚠️ Documenting ${workflowIds.length} classic workflow(s) (migration recommended)...`,
+        message: `Documenting ${workflowIds.length} classic workflow(s) (migration recommended)...`,
       });
 
       const classicWorkflowDiscovery = new ClassicWorkflowDiscovery(this.client, (current, total) => {
@@ -970,7 +971,7 @@ export class BlueprintGenerator {
           entityName: '',
           current,
           total,
-          message: `⚠️ Documenting classic workflows (${current}/${total})...`,
+          message: `Documenting classic workflows (${current}/${total})...`,
         });
       }, this.logger);
       const cwLogWatermark = this.logger.getEntries().length;
@@ -1037,7 +1038,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: workflowIds.length,
-        message: `📊 Documenting ${workflowIds.length} Business Process Flow(s)...`,
+        message: `Documenting ${workflowIds.length} Business Process Flow(s)...`,
       });
 
       const bpfDiscovery = new BusinessProcessFlowDiscovery(this.client, (current, total) => {
@@ -1059,7 +1060,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: workflowIds.length,
         total: workflowIds.length,
-        message: `📊 Documented ${bpfs.length} Business Process Flow(s)`,
+        message: `Documented ${bpfs.length} Business Process Flow(s)`,
       });
 
       return bpfs;
@@ -1108,7 +1109,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: customApiIds.length,
-        message: `🔧 Documenting ${customApiIds.length} Custom API(s)...`,
+        message: `Documenting ${customApiIds.length} Custom API(s)...`,
       });
 
       const customApiDiscovery = new CustomAPIDiscovery(this.client, (current, total) => {
@@ -1117,7 +1118,7 @@ export class BlueprintGenerator {
           entityName: '',
           current,
           total,
-          message: `🔧 Documenting Custom APIs (${current}/${total})...`,
+          message: `Documenting Custom APIs (${current}/${total})...`,
         });
       }, this.logger);
       const customAPIs = await customApiDiscovery.getCustomAPIsByIds(customApiIds);
@@ -1128,7 +1129,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: customApiIds.length,
         total: customApiIds.length,
-        message: `🔧 Documented ${customAPIs.length} Custom API(s)`,
+        message: `Documented ${customAPIs.length} Custom API(s)`,
       });
 
       return customAPIs;
@@ -1154,7 +1155,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: envVarIds.length,
-        message: `🌍 Documenting ${envVarIds.length} Environment Variable(s)...`,
+        message: `Documenting ${envVarIds.length} Environment Variable(s)...`,
       });
 
       const envVarDiscovery = new EnvironmentVariableDiscovery(this.client, (current, total) => {
@@ -1175,7 +1176,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: envVarIds.length,
         total: envVarIds.length,
-        message: `🌍 Documented ${envVars.length} Environment Variable(s)`,
+        message: `Documented ${envVars.length} Environment Variable(s)`,
       });
 
       return envVars;
@@ -1191,7 +1192,7 @@ export class BlueprintGenerator {
     if (connRefIds.length === 0) return [];
     try {
       this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connRefIds.length,
-        message: `🔗 Documenting ${connRefIds.length} Connection Reference(s)...` });
+        message: `Documenting ${connRefIds.length} Connection Reference(s)...` });
       const connRefDiscovery = new ConnectionReferenceDiscovery(this.client, (current, total) => {
         this.reportProgress({
           phase: 'discovering',
@@ -1217,7 +1218,7 @@ export class BlueprintGenerator {
     if (globalChoiceIds.length === 0) return [];
     try {
       this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: globalChoiceIds.length,
-        message: `📋 Documenting ${globalChoiceIds.length} Global Choice(s)...` });
+        message: `Documenting ${globalChoiceIds.length} Global Choice(s)...` });
       const gcDiscovery = new GlobalChoiceDiscovery(
         this.client,
         undefined,
@@ -1239,7 +1240,7 @@ export class BlueprintGenerator {
     if (connectorIds.length === 0) return [];
     try {
       this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connectorIds.length,
-        message: `🔌 Documenting ${connectorIds.length} Custom Connector(s)...` });
+        message: `Documenting ${connectorIds.length} Custom Connector(s)...` });
       const ccDiscovery = new CustomConnectorDiscovery(this.client, (current, total) => {
         this.reportProgress({
           phase: 'discovering',
@@ -1320,7 +1321,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: profileIds.length,
-        message: `🛡️ Documenting ${profileIds.length} field security profile(s)...`,
+        message: `Documenting ${profileIds.length} field security profile(s)...`,
       });
 
       const fieldSecurityDiscovery = new FieldSecurityProfileDiscovery(this.client, this.logger);
@@ -1343,7 +1344,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: profileIds.length,
         total: profileIds.length,
-        message: `🛡️ Documented ${profilesInSolution.length} field security profile(s)`,
+        message: `Documented ${profilesInSolution.length} field security profile(s)`,
       });
 
       return {
@@ -1371,7 +1372,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: 2,
-        message: `🎭 Discovering attribute masking and column security...`,
+        message: `Discovering attribute masking and column security...`,
       });
 
       const columnSecurityDiscovery = new ColumnSecurityDiscovery(this.client);
@@ -1384,7 +1385,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 1,
         total: 2,
-        message: `🎭 Found ${attributeMaskingRules.length} attribute masking rule(s)`,
+        message: `Found ${attributeMaskingRules.length} attribute masking rule(s)`,
       });
 
       // Get column security profiles
@@ -1395,7 +1396,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 2,
         total: 2,
-        message: `🎭 Column security discovery complete`,
+        message: `Column security discovery complete`,
       });
 
       return {
@@ -1403,8 +1404,11 @@ export class BlueprintGenerator {
         columnSecurityProfiles,
       };
     } catch (error) {
-      console.error('Error processing column security:', error instanceof Error ? error.message : 'Unknown error');
-      // Return empty arrays on error instead of failing the entire blueprint
+      this.stepWarnings.push({
+        step: 'Column Security',
+        message: `Column security discovery failed: ${error instanceof Error ? error.message : 'Unknown error'}. Results may be incomplete.`,
+        partial: true,
+      });
       return {
         attributeMaskingRules: [],
         columnSecurityProfiles: [],

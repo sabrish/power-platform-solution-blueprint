@@ -1,7 +1,7 @@
 import type { EntityBlueprint, ERDDefinition, ERDDiagram, PublisherLegend, EntityQuickLink, ERDGraphData, ERDNode, ERDEdge } from '../types/blueprint.js';
 import type { Publisher } from '../types.js';
 import { getPublisherColors } from '../utils/ColorGenerator.js';
-import { isSystemEntity, isSystemRelationship, hasPlatformEntityCustomRelationship } from '../../utils/systemFilters.js';
+import { isSystemEntity, isSystemRelationship, hasPlatformEntityCustomRelationship, isBPFEntity } from '../../utils/systemFilters.js';
 
 /**
  * Generates Entity Relationship Diagrams (ERD) using Mermaid Class Diagram syntax
@@ -14,12 +14,13 @@ export class ERDGenerator {
    * Generate Mermaid Class Diagram ERD with publisher-based color coding
    * Creates a single diagram containing all entities
    */
-  generateMermaidERD(entities: EntityBlueprint[], publishers: Publisher[]): ERDDefinition {
-    // Filter out system entities from diagram generation unless they have a custom relationship
-    const filteredEntities = entities.filter(bp =>
-      !isSystemEntity(bp.entity.LogicalName) ||
-      hasPlatformEntityCustomRelationship(bp.entity.LogicalName, entities)
-    );
+  generateMermaidERD(entities: EntityBlueprint[], publishers: Publisher[], bpfEntityNames: ReadonlySet<string> = new Set()): ERDDefinition {
+    // Filter out system entities (unless they have a custom relationship) and BPF tracking entities (always)
+    const filteredEntities = entities.filter(bp => {
+      if (isBPFEntity(bp.entity.LogicalName, bpfEntityNames)) return false;
+      if (isSystemEntity(bp.entity.LogicalName) && !hasPlatformEntityCustomRelationship(bp.entity.LogicalName, entities)) return false;
+      return true;
+    });
 
     // Build publisher map (entity prefix -> publisher info)
     const publisherMap = this.buildPublisherMap(filteredEntities, publishers);
