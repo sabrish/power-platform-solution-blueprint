@@ -57,11 +57,32 @@ Report: **"Memory loaded: [files read]"**
 - **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient; a passing typecheck does not guarantee the Vite build succeeds
 - **ALWAYS** run the `/pre-commit` skill before any commit touching source, docs, or memory files — it runs reviewer then security-auditor in sequence
 
+## UI Hard Rules (Fluent UI v9 — enforced at every review)
+
+These rules were codified on 2026-03-09. Violations are blockers at review time. Full details in `.claude/memory/patterns-ui.md`.
+
+| Rule | What is forbidden | What to use instead |
+|------|-------------------|---------------------|
+| AUDIT-001 | `colorPalette*Background*` as `backgroundColor` on raw elements with text | `<Badge color="...">` or left-border |
+| AUDIT-002 | `<Badge>` without explicit `shape` prop | `shape="rounded"` (labels) / `shape="circular"` (counts) |
+| AUDIT-003 | Hex colours in makeStyles or inline styles | Semantic `color` prop on Badge; `tokens.*` everywhere else |
+| AUDIT-004 | Raw pixel values (`16px`, `fontWeight: 500`) | `tokens.spacingVertical*`, `tokens.fontWeight*` |
+| AUDIT-005 | `nameColumn` without `minWidth: 0` + `wordBreak: 'break-word'` | Both required always |
+| AUDIT-006 | `detailValue` without overflow protection | `minWidth: 0`, `wordBreak: 'break-word'`, `overflowWrap: 'anywhere'` |
+| AUDIT-007 | `alignItems: 'center'` on card-row grids | `alignItems: 'start'` always |
+| AUDIT-008 | Bare `SearchBox`/`Input`/`Checkbox` outside `FilterBar`/`FilterGroup` | `FilterBar` + `FilterGroup` + `ToggleButton` |
+| AUDIT-009 | Inline emoji or plain `<Text>` for empty states | `<EmptyState type="..." />` |
+| AUDIT-010 | Native `<button>`, `<input>`, `<select>` with CSS resets | Fluent UI `Button`, `Input`, `Dropdown` |
+| AUDIT-011 | Card-row rows without hover transition | `transition: 'all 0.2s ease'` + `:hover` styles |
+| AUDIT-012 | `detailsGrid` not using `minmax(200px, 1fr)` | Always `minmax(200px, 1fr)` |
+| AUDIT-013 | `DataGrid` in any component browser view | Card-row accordion (PATTERN-001) |
+
 ## Key Reference Files
 
 | File | Purpose |
 |------|---------|
 | `COMPONENT_TYPES_REFERENCE.md` | Dataverse component type integer codes — check before any new discovery work |
+| `SUPPORTED_COMPONENTS.md` | User-facing component coverage status — Supported, Partial, and Planned |
 | `DATAVERSE_OPTIMIZATION_GUIDE.md` | Batching patterns, GUID rules, HTTP 414 prevention |
 | `UI_PATTERNS.md` | Fluent UI v9 patterns (card-row lists, tokens, makeStyles) |
 | `NPM_SHRINKWRAP_GENERATION.md` | Shrinkwrap regeneration — must use `npm`, never `pnpm` |

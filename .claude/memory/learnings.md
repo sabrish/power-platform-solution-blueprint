@@ -398,6 +398,134 @@ var _esc = function(s) {
 
 ---
 
+## [2026-03-09] — AUDIT rules are enforced at every commit/push/review — not just full audits
+
+**Affects:** Developer, Reviewer, Orchestrator
+**Severity:** Blocker
+**Rule:** AUDIT-001 through AUDIT-013 must be checked by the developer before declaring implementation done, and by the reviewer on every pre-commit review. Tech debt must be caught at the point of introduction, NOT deferred to a periodic full audit. The reviewer agent's checklist now includes an explicit "Fluent UI v9 Audit Rules" section (AUDIT-001–013) that must be worked through on every review. The developer agent's self-check (step 5b) must confirm all audit rules before signing off.
+**Context:** The project owner explicitly requested: "I want each commit or push or review to validate we are good." The reviewer.md and developer.md agent definitions were updated on 2026-03-09 to embed all 13 audit rules as explicit checklist items. CLAUDE.md was also updated with a "UI Hard Rules" table summarising all 13 rules. These changes mean any new violation will be caught at review time rather than only at a full periodic audit.
+**Example:**
+- Wrong: Developer writes a new component with `<Badge color="success">Label</Badge>` (missing `shape`) and only runs typecheck — the violation slips through
+- Right: Developer self-check (step 5b) catches missing `shape` prop before declaring done; reviewer's AUDIT-002 checklist item catches it as a blocker if not
+
+---
+
+## [2026-03-09] — Sticky table columns: zIndex is required on body cells, not just headers
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** When implementing a sticky-column HTML table, apply `zIndex: 1` to body `<td>` cells in the sticky column in addition to the header `<th>` cells. Without it the browser paints scrolling cells on top of the sticky column background, causing text and badge overlap during horizontal scroll. Use this complete pattern:
+- Header corner `<th>`: `position:sticky`, `top:0`, `left:0`, `zIndex:3`, `backgroundColor`
+- Other header `<th>`: `position:sticky`, `top:0`, `zIndex:1`, `backgroundColor`
+- Body sticky `<td>`: `position:sticky`, `left:0`, `zIndex:1`, `backgroundColor`
+- All body `<td>`: `backgroundColor` (prevents transparency bleed in dark mode)
+- Scroll container: `overflowX:'auto'`, `overflowY:'auto'`, `maxHeight`
+**Context:** Without `zIndex:1` on sticky body cells, scrolling content paints over the sticky column in both light and dark mode. The header-cell zIndex alone is insufficient.
+**Example:**
+- Wrong: Applying `position:sticky, left:0` on `<td>` without `zIndex:1`
+- Right: `style={{ position:'sticky', left:0, zIndex:1, backgroundColor: tokens.colorNeutralBackground1 }}`
+
+---
+
+## [2026-03-09] — ArrowUpRight20Regular for external calls; Globe24Regular only for web resources
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** Use `ArrowUpRight20Regular` for "external API calls" indicators (outbound arrow icon). Use `Globe24Regular` ONLY for the Web Resources component category icon. Never use Globe for external-call indicators.
+**Context:** Both previously used Globe, which was ambiguous. Globe is now reserved exclusively for the Web Resources tab/category. ArrowUpRight conveys the outbound nature of an external call.
+**Example:**
+- Wrong: `<Globe20Regular />` as the icon for an external API call indicator
+- Right: `<ArrowUpRight20Regular />` for external call indicators; `Globe24Regular` from `componentIcons.ts` for web resources only
+
+---
+
+## [2026-03-09] — All component-category icons must live in componentIcons.ts
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** All component-type icons are centralised in `src/components/componentIcons.ts` and exported with descriptive names (`PluginsIcon`, `FlowsIcon`, `WebResourcesIcon`, etc.). Consumer components must always import from `componentIcons.ts` — never directly from `@fluentui/react-icons` for component-category icons. The HTML export (`HtmlTemplates.ts`) has its own `navIcon()` / `alertIcon()` SVG helpers and cannot share React components; that is the only accepted exception.
+**Context:** Direct icon imports scattered across components created inconsistency when icons were changed (e.g. plugin icon migration). Centralising in componentIcons.ts means a single-file change propagates everywhere.
+**Example:**
+- Wrong: `import { BracesVariable24Regular } from '@fluentui/react-icons'` in a component browser view
+- Right: `import { PluginsIcon } from '../componentIcons'`
+
+---
+
+## [2026-03-09] — Plugin icon is BracesVariable24Regular, not Code24Regular
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** Use `BracesVariable24Regular` for the plugins component-category icon. Do not use `Code24Regular` (which shows `</>` HTML-style brackets — misleading for compiled .NET/C# plugins). `BracesVariable24Regular` represents curly-brace code style appropriate for C#.
+**Context:** `Code24Regular` was replaced because its `</>` glyph implies HTML/JSX, not compiled .NET assemblies.
+**Example:**
+- Wrong: `export const PluginsIcon = Code24Regular;` in componentIcons.ts
+- Right: `export const PluginsIcon = BracesVariable24Regular;`
+
+---
+
+## [2026-03-09] — Replace all inline emoji with Fluent UI icon components in the React UI
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** Inline emoji used as visual indicators (⚠️, ℹ️, 💡, 🌐, 🔌, etc.) must be replaced with Fluent UI icon components with semantic token colours. Use:
+- ⚠️ warning → `Warning20Regular` with `color: tokens.colorStatusWarningForeground1`
+- ℹ️ info → `Info16Regular` with `color: tokens.colorBrandForeground1`
+- 💡 tip/recommendation → `LightbulbFilament20Regular` with warning foreground colour
+- 🌐 external calls (outbound) → `ArrowUpRight20Regular`
+- 🌐 web resources category → `Globe24Regular` from componentIcons.ts
+In coverage notice lists, replace emoji bullet icons with the corresponding type icon (CloudFlow, ArrowCircleRight, BracesVariable, Globe) at 14px, and wrap `<Text as="p">` with `display:'flex', alignItems:'center', gap:'6px'`.
+**Context:** Emoji render inconsistently across operating systems and do not adapt to light/dark themes. Fluent UI icons with semantic tokens adapt correctly.
+**Example:**
+- Wrong: `<Text>⚠️ This plugin has no filter</Text>`
+- Right: `<span style={{ display:'flex', alignItems:'center', gap:'6px' }}><Warning20Regular style={{ color: tokens.colorStatusWarningForeground1 }} /><Text>This plugin has no filter</Text></span>`
+
+---
+
+## [2026-03-09] — Footer links use window.open only — no toast, no clipboard copy
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** Footer links must open with `window.open(url, '_blank', 'noopener,noreferrer')` only. Do not show a toast notification and do not call `copyToClipboard`. PPTB Desktop does not route `window.open` to `shell.openExternal` — that is a known platform limitation and is acceptable.
+**Context:** An earlier implementation added a toast and clipboard fallback. The project owner confirmed the simpler `window.open` call is correct and no fallback is needed.
+**Example:**
+- Wrong: `copyToClipboard(url); showToast('Link copied')` as a fallback
+- Right: `window.open(url, '_blank', 'noopener,noreferrer')`
+
+---
+
+## [2026-03-09] — HTML export icons: navIcon/alertIcon helpers; never emoji in exported HTML
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** In the HTML export (`HtmlTemplates.ts`):
+- Navigation sidebar: use `navIcon(key)` helper (returns inline SVG string, `currentColor`). CSS for `.nav-links a` must be `display:flex; align-items:center; gap:8px`.
+- Alert boxes: use `alertIcon('info'|'warning')` helper. CSS for `.alert strong` must be `display:flex; align-items:center; gap:6px`.
+- Section headings with icons: use `style="display:flex;align-items:center;gap:10px;"` on the `<h2>`.
+- Never use emoji in exported HTML.
+Markdown exports (`MarkdownReporter.ts`, `MarkdownFormatter.ts`) MAY keep emoji (⚠️, ✅, ❌, ℹ️) — they are standard in Markdown format.
+**Context:** Emoji in HTML export are platform-dependent and inconsistent. The navIcon/alertIcon SVG helpers ensure consistent rendering and theme-adaptive colour via `currentColor`.
+**Example:**
+- Wrong: `<h2>⚠️ Warnings</h2>` in HtmlTemplates.ts
+- Right: `<h2 style="display:flex;align-items:center;gap:10px;">${alertIcon('warning')} Warnings</h2>`
+
+---
+
+## [2026-03-09] — Two-pass discovery: Pass 2 must be silent; snap to 100% after it completes
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** When a discovery class performs two passes over different-sized item sets (e.g. Pass 1: entity names → metadata, Pass 2: IDs → content/XML), do NOT call `onProgress` during Pass 2 with a denominator from Pass 1. This causes >100% progress when Pass 2 has more items than Pass 1. Use the pattern confirmed in WebResourceDiscovery and FormDiscovery:
+- Pass 1 owns all progress reports: `onProgress: (done) => this.onProgress?.(done, N)`
+- Pass 2 is silent: no `onProgress` calls during its loop
+- After Pass 2 completes: `this.onProgress?.(N, N)` to snap to 100%
+If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the relevant discovery class is using two-pass halving incorrectly.
+**Context:** The bug manifested as "189%" in the progress screen during WebResource and Form discovery. The fix is always: let Pass 1 own all the progress denominator; silence Pass 2; snap to done after.
+**Example:**
+- Wrong: `// Pass 2: onProgress: (done) => this.onProgress?.(done, N)` — double-counts against Pass 1's N
+- Right: Pass 2 has no onProgress; after Pass 2: `this.onProgress?.(N, N)`
+
+---
+
 ## [2026-03-08] — N+1 query patterns must be replaced with a single batched pass
 
 **Affects:** Developer, Reviewer

@@ -348,6 +348,44 @@ const flows   = new FlowDiscovery(this.client, onProgress, this.logger);
 
 ---
 
+## PATTERN-022 — Two-Pass Discovery: Pass 2 Silent, Snap to 100% After Completion
+
+**Source:** learnings.md [2026-03-09]
+**Applies to:** Developer, Reviewer
+**Confirmed in:** WebResourceDiscovery.ts, FormDiscovery.ts
+
+When a discovery class makes two passes over item sets that may differ in size (e.g. Pass 1: entity names → IDs, Pass 2: IDs → content/XML), do NOT report progress from Pass 2 using Pass 1's total as the denominator. This produces "189%" style overflow.
+
+### Required pattern
+
+```typescript
+const N = items.length; // Pass 1 total — owns all progress
+
+// Pass 1: reports progress against N
+await withAdaptiveBatch(items, async (batch) => {
+  // ... fetch metadata ...
+}, {
+  onProgress: (done) => this.onProgress?.(done, N),
+  // ...
+});
+
+// Pass 2: SILENT — no onProgress
+await withAdaptiveBatch(secondPassIds, async (batch) => {
+  // ... fetch content/XML ...
+}, {
+  // NO onProgress here
+  step: '...', entitySet: '...', logger: this.logger,
+});
+
+// Snap to 100% after Pass 2 finishes
+this.onProgress?.(N, N);
+```
+
+### Diagnosis
+If the UI shows ">100%" (e.g. "276 of 146 items processed (189%)"), the relevant discovery class is calling `onProgress` in Pass 2 with a denominator derived from Pass 1's item count.
+
+---
+
 ## PATTERN-016 — Official Documentation Reference URLs
 
 **Source:** CLAUDE.md (pre-refactor)
