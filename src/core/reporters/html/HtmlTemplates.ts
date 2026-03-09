@@ -188,7 +188,14 @@ ${this.embeddedCSS()}
     <button class="btn-sm" onclick="downloadErdPng()">⬇ PNG</button>
     <button class="btn-sm" onclick="downloadErdSvg()">⬇ SVG</button>
   </div>
-  <div id="cy" style="width:100%;height:700px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;position:relative;"></div>
+  <div style="position:relative;">
+    <div id="cy" style="width:100%;height:700px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;"></div>
+    <div style="position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:2px;z-index:5;background:#fff;border:1px solid #ddd;border-radius:6px;padding:2px;box-shadow:0 2px 8px rgba(0,0,0,.12);opacity:0.75;transition:opacity 0.15s ease;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.75'">
+      <button class="btn-sm" onclick="if(_cy){_cy.zoom({level:_cy.zoom()*1.2,renderedPosition:{x:_cy.width()/2,y:_cy.height()/2}});}" title="Zoom in">+</button>
+      <button class="btn-sm" onclick="if(_cy){_cy.zoom({level:_cy.zoom()/1.2,renderedPosition:{x:_cy.width()/2,y:_cy.height()/2}});}" title="Zoom out">−</button>
+      <button class="btn-sm" onclick="erdFit()" title="Fit to screen">⤢</button>
+    </div>
+  </div>
   <p style="font-size:11px;color:#888;margin-top:4px;">Click node to select · Hover edge for details · Scroll to zoom · Drag to pan · Solid = 1:N · Dashed = N:N</p>
   <script type="application/json" id="erd-data">
 ${safeJson}
@@ -2519,6 +2526,33 @@ ${this.embeddedJavaScript()}
           _cy.nodes().removeClass('highlighted faded');
           _cy.edges().removeClass('faded');
         }
+      });
+
+      // ── Node hover — tooltip
+      _cy.on('mouseover', 'node', function(evt) {
+        var n = evt.target;
+        var tip = _getOrCreateTip();
+        var connected = n.neighborhood('node').length;
+        var content = '<strong style="word-break:break-all">' + _esc(n.data('label')) + '</strong>';
+        content += '<br><span style="color:#888;font-size:11px;word-break:break-all">Logical name: ' + _esc(n.data('id')) + '</span>';
+        if (n.data('publisherPrefix')) {
+          content += '<br><span style="color:#888;font-size:11px;">Publisher: ' + _esc(n.data('publisherPrefix')) + '</span>';
+        }
+        content += '<br><span style="color:#888;font-size:11px;">Relationships: ' + connected + '</span>';
+        tip.innerHTML = content;
+        tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
+        tip.style.top = (evt.originalEvent.clientY + 12) + 'px';
+        tip.style.display = 'block';
+      });
+
+      _cy.on('mousemove', 'node', function(evt) {
+        var tip = document.getElementById('erd-tip');
+        if (tip) { tip.style.left = (evt.originalEvent.clientX + 12) + 'px'; tip.style.top = (evt.originalEvent.clientY + 12) + 'px'; }
+      });
+
+      _cy.on('mouseout', 'node', function() {
+        var tip = document.getElementById('erd-tip');
+        if (tip) tip.style.display = 'none';
       });
 
       // ── Edge hover — tooltip

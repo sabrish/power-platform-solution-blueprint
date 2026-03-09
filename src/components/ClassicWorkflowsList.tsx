@@ -23,6 +23,7 @@ import {
 import type { ClassicWorkflow } from '../core';
 import { formatDate } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
 
 const WORKFLOW_MODE_VALUES = ['Background', 'RealTime'];
 const WORKFLOW_STATE_VALUES = ['Active', 'Draft'];
@@ -295,7 +296,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   }
 
   return (
-    <div style={{ marginTop: '16px' }}>
+    <div style={{ marginTop: tokens.spacingVerticalL }}>
       <div className={styles.warning}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
           <Warning20Regular style={{ color: tokens.colorPaletteYellowForeground1 }} />
@@ -360,9 +361,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
 
       <div className={styles.container}>
         {searchedWorkflows.length === 0 && sorted.length > 0 && (
-          <div className={styles.emptyState}>
-            <Text>No workflows match your search.</Text>
-          </div>
+          <EmptyState type="search" />
         )}
         {searchedWorkflows.map((workflow) => {
           const isExpanded = expandedId === workflow.id;

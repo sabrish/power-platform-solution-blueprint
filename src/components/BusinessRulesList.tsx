@@ -14,6 +14,7 @@ import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-ico
 import type { BusinessRule } from '../core';
 import { TruncatedText } from './TruncatedText';
 import { filterDescription } from '../utils/descriptionFilter';
+import { EmptyState } from './EmptyState';
 
 const RULE_STATE_VALUES = ['Active', 'Draft'];
 const RULE_SCOPE_VALUES = ['Entity', 'AllForms'];
@@ -30,15 +31,6 @@ const useStyles = makeStyles({
     paddingRight: tokens.spacingHorizontalS,
     height: '22px',
     fontSize: tokens.fontSizeBase100,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
   },
   ruleRow: {
     display: 'grid',
@@ -97,7 +89,7 @@ const useStyles = makeStyles({
   },
   detailsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: tokens.spacingHorizontalM,
   },
   detailItem: {
@@ -111,13 +103,15 @@ const useStyles = makeStyles({
   },
   detailValue: {
     fontWeight: tokens.fontWeightSemibold,
+    minWidth: 0,
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
   },
   section: {
     marginTop: tokens.spacingVerticalM,
   },
   conditionItem: {
     padding: tokens.spacingVerticalS,
-    backgroundColor: tokens.colorNeutralBackground3,
     borderRadius: tokens.borderRadiusMedium,
     marginBottom: tokens.spacingVerticalXS,
   },
@@ -128,6 +122,7 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalS,
+    borderLeft: '3px solid transparent',
   },
   badges: {
     display: 'flex',
@@ -244,17 +239,17 @@ export function BusinessRulesList({
     return 'informative';
   };
 
-  const getActionColor = (actionType: string): string => {
+  const getActionBorderColor = (actionType: string): string => {
     const colors: Record<string, string> = {
-      'ShowField': tokens.colorPaletteGreenBackground2,
-      'HideField': tokens.colorPaletteRedBackground2,
-      'SetValue': tokens.colorPaletteBlueBorderActive,
-      'SetRequired': tokens.colorPaletteYellowBackground2,
-      'LockField': tokens.colorPaletteDarkOrangeBackground2,
-      'UnlockField': tokens.colorPaletteGreenBackground2,
-      'ShowError': tokens.colorPaletteRedBackground2,
+      'ShowField': tokens.colorPaletteGreenForeground1,
+      'HideField': tokens.colorPaletteRedForeground1,
+      'SetValue': tokens.colorBrandForeground1,
+      'SetRequired': tokens.colorPaletteYellowForeground1,
+      'LockField': tokens.colorPaletteDarkOrangeForeground1,
+      'UnlockField': tokens.colorPaletteGreenForeground1,
+      'ShowError': tokens.colorPaletteRedForeground1,
     };
-    return colors[actionType] || tokens.colorNeutralBackground3;
+    return colors[actionType] ?? tokens.colorNeutralStroke1;
   };
 
   const renderRuleDetails = (rule: BusinessRule) => (
@@ -336,7 +331,7 @@ export function BusinessRulesList({
               <div
                 key={idx}
                 className={styles.actionItem}
-                style={{ backgroundColor: getActionColor(action.type) }}
+                style={{ borderLeftColor: getActionBorderColor(action.type) }}
               >
                 <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
                 <Text>
@@ -364,17 +359,14 @@ export function BusinessRulesList({
   // Empty state
   if (filteredRules.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Text style={{ fontSize: '48px' }}>📋</Text>
-        <Text size={500} weight="semibold">
-          No Business Rules Found
-        </Text>
-        <Text>
-          {entityLogicalName
+      <EmptyState
+        type="businessrules"
+        message={
+          entityLogicalName
             ? `No business rules found for the ${entityLogicalName} entity.`
-            : 'No business rules were found in the selected solution(s).'}
-        </Text>
-      </div>
+            : 'No business rules are included in the selected solution(s).'
+        }
+      />
     );
   }
 
@@ -428,9 +420,7 @@ export function BusinessRulesList({
         </FilterGroup>
       </FilterBar>
       {searchedRules.length === 0 && sortedRules.length > 0 && (
-        <div className={styles.emptyState}>
-          <Text>No business rules match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       )}
       {searchedRules.map((rule) => {
         const isExpanded = expandedRuleId === rule.id;

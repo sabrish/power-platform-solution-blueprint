@@ -15,6 +15,7 @@ import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
 import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
 
 // These must exactly match PluginDiscovery.getStageName() output (no hyphens)
 const STAGE_VALUES = ['PreValidation', 'PreOperation', 'PostOperation', 'Asynchronous'];
@@ -43,15 +44,6 @@ const useStyles = makeStyles({
     paddingRight: tokens.spacingHorizontalS,
     height: '22px',
     fontSize: tokens.fontSizeBase100,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
   },
   pluginRow: {
     display: 'grid',
@@ -114,7 +106,7 @@ const useStyles = makeStyles({
   },
   detailsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: tokens.spacingHorizontalM,
   },
   detailItem: {
@@ -240,14 +232,14 @@ export function PluginsList({
     });
   };
 
-  const getStageBadgeColor = (stage: number): string => {
-    const stageColors: Record<number, string> = {
-      10: '#0078D4', // PreValidation - Blue
-      20: '#2B579A', // PreOperation - Navy
-      40: '#107C10', // PostOperation - Green
-      50: '#5C2D91', // Asynchronous - Purple
-    };
-    return stageColors[stage] || tokens.colorNeutralForeground3;
+  const getStageBadgeColor = (stageName: string): 'brand' | 'informative' | 'success' | 'severe' => {
+    switch (stageName) {
+      case 'PreValidation': return 'brand';
+      case 'PreOperation': return 'informative';
+      case 'PostOperation': return 'success';
+      case 'Asynchronous': return 'severe';
+      default: return 'brand';
+    }
   };
 
   const toggleExpand = (pluginId: string) => {
@@ -308,7 +300,7 @@ export function PluginsList({
             <Title3>Filtering Attributes ({plugin.filteringAttributes.length})</Title3>
             <div className={styles.badgeGroup}>
               {plugin.filteringAttributes.map((attr, idx) => (
-                <Badge key={idx} appearance="tint" color="warning">
+                <Badge key={idx} appearance="tint" shape="rounded" color="warning">
                   {attr}
                 </Badge>
               ))}
@@ -350,17 +342,14 @@ export function PluginsList({
   // Empty state
   if (filteredPlugins.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Text style={{ fontSize: '48px' }}>🔌</Text>
-        <Text size={500} weight="semibold">
-          No Plugins Found
-        </Text>
-        <Text>
-          {entityLogicalName
+      <EmptyState
+        type="plugins"
+        message={
+          entityLogicalName
             ? `No plugins registered for the ${entityLogicalName} entity.`
-            : 'No plugins were found in the selected solution(s).'}
-        </Text>
-      </div>
+            : 'No plugins are registered in the selected solution(s).'
+        }
+      />
     );
   }
 
@@ -428,9 +417,7 @@ export function PluginsList({
         </FilterGroup>
       </FilterBar>
       {searchedPlugins.length === 0 && sortedPlugins.length > 0 ? (
-        <div className={styles.emptyState}>
-          <Text>No plugins match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       ) : null}
       {searchedPlugins.map((plugin) => {
         const isExpanded = expandedPluginId === plugin.id;
@@ -457,22 +444,19 @@ export function PluginsList({
                   <TruncatedText text={plugin.entity} />
                 </Text>
               )}
-              <Badge appearance="outline" shape="rounded" size="medium">{plugin.message}</Badge>
+              <Badge appearance="outline" shape="rounded" size="small">{plugin.message}</Badge>
               <Badge
-                appearance="filled"
-                size="medium"
+                appearance="tint"
+                size="small"
                 shape="rounded"
-                style={{
-                  backgroundColor: getStageBadgeColor(plugin.stage),
-                  color: 'white',
-                }}
+                color={getStageBadgeColor(plugin.stageName)}
               >
                 {plugin.stageName}
               </Badge>
-              <Badge appearance={plugin.mode === 0 ? 'outline' : 'tint'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium" shape="rounded">
+              <Badge appearance={plugin.mode === 0 ? 'outline' : 'tint'} color={plugin.mode === 0 ? 'brand' : 'important'} size="small" shape="rounded">
                 {plugin.modeName}
               </Badge>
-              <Badge appearance="filled" shape="rounded" color={plugin.state === 'Enabled' ? 'success' : 'important'} size="medium">
+              <Badge appearance="filled" shape="rounded" color={plugin.state === 'Enabled' ? 'success' : 'important'} size="small">
                 {plugin.state}
               </Badge>
             </div>

@@ -6,15 +6,16 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
   Checkbox,
-  Dropdown,
-  Option,
+  ToggleButton,
+  Button,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { WebResource } from '../core';
 import { CodeViewer } from './CodeViewer';
 import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
+import { FilterBar, FilterGroup } from './FilterBar';
 
 const useStyles = makeStyles({
   container: {
@@ -22,17 +23,12 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalM,
   },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   listContainer: {
     display: 'flex',
@@ -50,7 +46,7 @@ const useStyles = makeStyles({
   },
   resourceRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
+    gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto auto',
     gap: tokens.spacingHorizontalM,
     alignItems: 'start',
     padding: tokens.spacingVerticalM,
@@ -150,14 +146,21 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
   const styles = useStyles();
   const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('All');
+  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
   const [showExternalOnly, setShowExternalOnly] = useState(false);
   const [showDeprecatedOnly, setShowDeprecatedOnly] = useState(false);
 
-  // Get unique types
+  // Get unique types sorted
   const availableTypes = useMemo(() => {
     const types = new Set(webResources.map((r) => r.typeName));
-    return ['All', ...Array.from(types).sort()];
+    return Array.from(types).sort();
+  }, [webResources]);
+
+  // Count per type (for disabling empty filter buttons)
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of webResources) counts[r.typeName] = (counts[r.typeName] ?? 0) + 1;
+    return counts;
   }, [webResources]);
 
   // Filter and search web resources
@@ -166,9 +169,9 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
 
     let filtered = webResources;
 
-    // Type filter
-    if (typeFilter !== 'All') {
-      filtered = filtered.filter((r) => r.typeName === typeFilter);
+    // Type filter (OR logic)
+    if (activeTypeFilters.size > 0) {
+      filtered = filtered.filter((r) => activeTypeFilters.has(r.typeName));
     }
 
     // External calls filter
@@ -197,7 +200,15 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
       if (a.typeName !== b.typeName) return a.typeName.localeCompare(b.typeName);
       return a.name.localeCompare(b.name);
     });
-  }, [webResources, searchQuery, typeFilter, showExternalOnly, showDeprecatedOnly]);
+  }, [webResources, searchQuery, activeTypeFilters, showExternalOnly, showDeprecatedOnly]);
+
+  const toggleTypeFilter = (type: string) => {
+    setActiveTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type); else next.add(type);
+      return next;
+    });
+  };
 
   const toggleExpand = (resourceId: string) => {
     setExpandedResourceId(expandedResourceId === resourceId ? null : resourceId);
@@ -290,7 +301,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                   <Text className={styles.detailLabel}>Frameworks Used</Text>
                   <div className={styles.badgeGroup} style={{ marginTop: tokens.spacingVerticalXS }}>
                     {resource.analysis.frameworks.map((fw: string, idx: number) => (
-                      <Badge key={idx} appearance="tint" color="brand">
+                      <Badge key={idx} appearance="tint" shape="rounded" color="brand">
                         {fw}
                       </Badge>
                     ))}
@@ -329,6 +340,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                       )}
                       <Badge
                         appearance="tint"
+                        shape="rounded"
                         color={call.confidence === 'High' ? 'success' : call.confidence === 'Medium' ? 'warning' : 'subtle'}
                         size="small"
                       >
@@ -361,52 +373,51 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
 
   // Empty state
   if (webResources.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <Text style={{ fontSize: '48px' }}>📦</Text>
-        <Text size={500} weight="semibold">
-          No Web Resources Found
-        </Text>
-        <Text>No web resources were found in the selected solution(s).</Text>
-      </div>
-    );
+    return <EmptyState type="webresources" />;
   }
 
   return (
     <div className={styles.container}>
-      {/* Filters */}
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search web resources..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Dropdown
-          placeholder="Filter by type"
-          value={typeFilter}
-          onOptionSelect={(_, data) => setTypeFilter(data.optionValue || 'All')}
-        >
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search web resources..."
+        filteredCount={filteredResources.length}
+        totalCount={webResources.length}
+        itemLabel="web resources"
+      >
+        <FilterGroup label="Type:">
           {availableTypes.map((type) => (
-            <Option key={type} value={type}>
+            <ToggleButton
+              key={type}
+              className={styles.filterButton}
+              size="small"
+              checked={activeTypeFilters.has(type)}
+              disabled={typeCounts[type] === 0}
+              onClick={() => toggleTypeFilter(type)}
+            >
               {type}
-            </Option>
+            </ToggleButton>
           ))}
-        </Dropdown>
-        <Checkbox
-          label="External calls only"
-          checked={showExternalOnly}
-          onChange={(_, data) => setShowExternalOnly(data.checked === true)}
-        />
-        <Checkbox
-          label="Deprecated code only"
-          checked={showDeprecatedOnly}
-          onChange={(_, data) => setShowDeprecatedOnly(data.checked === true)}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {filteredResources.length} of {webResources.length} resources
-        </Text>
-      </div>
+          {activeTypeFilters.size > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+              Clear
+            </Button>
+          )}
+        </FilterGroup>
+        <FilterGroup label="Show:">
+          <Checkbox
+            label="External calls only"
+            checked={showExternalOnly}
+            onChange={(_, data) => setShowExternalOnly(data.checked === true)}
+          />
+          <Checkbox
+            label="Deprecated code only"
+            checked={showDeprecatedOnly}
+            onChange={(_, data) => setShowDeprecatedOnly(data.checked === true)}
+          />
+        </FilterGroup>
+      </FilterBar>
 
       {/* Resources List */}
       <div className={styles.listContainer}>

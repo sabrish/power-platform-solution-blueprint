@@ -390,6 +390,14 @@ var _esc = function(s) {
 
 ---
 
+## [2026-03-09] — Full UI/UX audit completed — all findings codified as hard rules
+
+**Affects:** All agents
+**Severity:** High
+**Rule:** A comprehensive UI/UX audit of all 43 components was completed on 2026-03-09. Findings (2 Critical, 11 High, 12 Medium, 6 Low) have been captured as AUDIT-001 through AUDIT-013 in `.claude/memory/patterns-ui.md`. Key additions: palette background tokens forbidden on raw HTML elements, Badge shape always required, hex colors forbidden, FilterBar mandatory everywhere, EmptyState component mandatory, DataGrid forbidden (re-confirmed). All agents must load patterns-ui.md for any UI task.
+
+---
+
 ## [2026-03-08] — N+1 query patterns must be replaced with a single batched pass
 
 **Affects:** Developer, Reviewer

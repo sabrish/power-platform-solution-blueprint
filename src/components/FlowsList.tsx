@@ -14,6 +14,7 @@ import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-ico
 import type { Flow } from '../core';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
 
 const FLOW_TYPE_VALUES = ['Dataverse', 'Scheduled', 'Manual', 'Other'];
 const FLOW_STATE_VALUES = ['Active', 'Draft', 'Suspended'];
@@ -30,15 +31,6 @@ const useStyles = makeStyles({
     paddingRight: tokens.spacingHorizontalS,
     height: '22px',
     fontSize: tokens.fontSizeBase100,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
   },
   flowRow: {
     display: 'grid',
@@ -130,6 +122,9 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     flexWrap: 'wrap',
     marginTop: tokens.spacingVerticalM,
+  },
+  codeBreakAll: {
+    wordBreak: 'break-all',
   },
 });
 
@@ -305,7 +300,7 @@ export function FlowsList({
         {flow.definition.triggerConditions && (
           <div className={styles.detailItem}>
             <Text className={styles.detailLabel}>Trigger Filter</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`} style={{ wordBreak: 'break-all' }}>
+            <Text className={`${styles.detailValue} ${styles.codeText} ${styles.codeBreakAll}`}>
               {flow.definition.triggerConditions}
             </Text>
           </div>
@@ -316,7 +311,7 @@ export function FlowsList({
             <Title3>Connectors ({flow.definition.connectionReferences.length})</Title3>
             <div className={styles.badgeGroup}>
               {flow.definition.connectionReferences.map((ref, idx) => (
-                <Badge key={idx} appearance="tint" size="small">
+                <Badge key={idx} appearance="tint" shape="rounded" size="small">
                   {ref}
                 </Badge>
               ))}
@@ -336,6 +331,7 @@ export function FlowsList({
                   </Badge>
                   <Badge
                     appearance="tint"
+                    shape="rounded"
                     color={call.confidence === 'High' ? 'success' : call.confidence === 'Medium' ? 'warning' : 'subtle'}
                     size="small"
                   >
@@ -377,17 +373,14 @@ export function FlowsList({
   // Empty state
   if (filteredFlows.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Text style={{ fontSize: '48px' }}>🌊</Text>
-        <Text size={500} weight="semibold">
-          No Flows Found
-        </Text>
-        <Text>
-          {entityLogicalName
+      <EmptyState
+        type="flows"
+        message={
+          entityLogicalName
             ? `No flows found for the ${entityLogicalName} entity.`
-            : 'No flows were found in the selected solution(s).'}
-        </Text>
-      </div>
+            : 'No cloud flows are included in the selected solution(s).'
+        }
+      />
     );
   }
 
@@ -441,9 +434,7 @@ export function FlowsList({
         </FilterGroup>
       </FilterBar>
       {searchedFlows.length === 0 && sortedFlows.length > 0 && (
-        <div className={styles.emptyState}>
-          <Text>No flows match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       )}
       {searchedFlows.map((flow) => {
         const isExpanded = expandedFlowId === flow.id;

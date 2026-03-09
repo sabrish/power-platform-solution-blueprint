@@ -311,6 +311,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                   )}
                   <Badge
                     appearance="filled"
+                    shape="rounded"
                     color={
                       item.riskLevel === 'Trusted'
                         ? 'success'
@@ -396,6 +397,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                       <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
                         <Badge
                           appearance="filled"
+                          shape="rounded"
                           color={
                             factor.severity === 'Critical' || factor.severity === 'High'
                               ? 'danger'

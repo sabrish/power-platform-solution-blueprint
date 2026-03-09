@@ -13,6 +13,7 @@ import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular, Settings20Regular } from '@fluentui/react-icons';
 import type { EnvironmentVariable } from '../core';
 import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
 
 const ENV_TYPE_VALUES = ['String', 'Number', 'Boolean', 'JSON', 'DataSource'];
 
@@ -67,6 +68,7 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: '2px',
     minWidth: 0,
+    wordBreak: 'break-word',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -254,7 +256,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
   }
 
   return (
-    <div className={styles.container} style={{ marginTop: '16px' }}>
+    <div className={styles.container} style={{ marginTop: tokens.spacingVerticalL }}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -284,9 +286,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
         </FilterGroup>
       </FilterBar>
       {searchedVars.length === 0 && sorted.length > 0 && (
-        <div className={styles.emptyState}>
-          <Text>No environment variables match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       )}
       {searchedVars.map((envVar) => {
         const isExpanded = expandedId === envVar.id;

@@ -243,7 +243,7 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
           <Text className={styles.detailLabel}>Lookup Targets</Text>
           <div className={styles.badges} style={{ marginTop: tokens.spacingVerticalXS }}>
             {attr.Targets.map((target, idx) => (
-              <Badge key={idx} appearance="tint" color="brand">
+              <Badge key={idx} appearance="tint" shape="rounded" color="brand">
                 {target}
               </Badge>
             ))}

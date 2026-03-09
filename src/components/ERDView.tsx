@@ -148,8 +148,8 @@ const useStyles = makeStyles({
   // Zoom controls overlay on the graph canvas
   zoomOverlay: {
     position: 'absolute',
-    bottom: tokens.spacingVerticalM,
-    left: tokens.spacingHorizontalM,
+    top: tokens.spacingVerticalM,
+    right: tokens.spacingHorizontalM,
     display: 'flex',
     flexDirection: 'column',
     gap: '2px',
@@ -389,6 +389,8 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   const [hiddenPublishers, setHiddenPublishers] = useState<Set<string>>(new Set());
   const [hoveredEdge, setHoveredEdge] = useState<EdgeHoverInfo | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<NodeInfo | null>(null);
+  const [nodeTooltipPos, setNodeTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
   const toasterId = useId('toaster');
   const { dispatchToast } = useToastController(toasterId);
@@ -455,7 +457,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     // Hide edge labels by default
     cy.edges().addClass('label-hidden');
 
-    // Node click — select
+    // Node click — select for isolation
     cy.on('tap', 'node', (evt) => {
       const node = evt.target as NodeSingular;
       const d = node.data();
@@ -466,6 +468,31 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         publisherPrefix: d.publisherPrefix as string,
         connectedCount: connected.length,
       });
+    });
+
+    // Node hover — tooltip
+    cy.on('mouseover', 'node', (evt) => {
+      const node = evt.target as NodeSingular;
+      const d = node.data();
+      const connected = node.neighborhood('node');
+      const me = evt.originalEvent as MouseEvent;
+      setHoveredNode({
+        id: d.id as string,
+        label: d.label as string,
+        publisherPrefix: d.publisherPrefix as string,
+        connectedCount: connected.length,
+      });
+      setNodeTooltipPos({ x: me.clientX + 14, y: me.clientY + 14 });
+    });
+
+    cy.on('mousemove', 'node', (evt) => {
+      const me = evt.originalEvent as MouseEvent;
+      setNodeTooltipPos({ x: me.clientX + 14, y: me.clientY + 14 });
+    });
+
+    cy.on('mouseout', 'node', () => {
+      setHoveredNode(null);
+      setNodeTooltipPos(null);
     });
 
     // Background tap — clear selection
@@ -900,7 +927,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
           <div style={{ position: 'relative' }}>
             <div ref={graphRef} className={styles.graphContainer} />
 
-            {/* Zoom overlay — bottom-left of canvas */}
+            {/* Zoom overlay — top-right of canvas */}
             {!isInitializing && (
               <div className={styles.zoomOverlay}>
                 <Tooltip content="Zoom in" relationship="label">
@@ -921,30 +948,35 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               </div>
             )}
 
-            {/* Node info panel */}
-            {selectedNode && (
-              <div className={styles.infoPanel}>
-                <Button
-                  className={styles.infoPanelClose}
-                  size="small"
-                  appearance="subtle"
-                  icon={<Dismiss24Regular />}
-                  onClick={() => { setSelectedNode(null); if (cyRef.current) clearIsolationOn(cyRef.current); setIsIsolated(false); }}
-                />
-                <Text block className={styles.infoPanelTitle}>{selectedNode.label}</Text>
+            {/* Node hover tooltip */}
+            {hoveredNode && nodeTooltipPos && (
+              <div style={{
+                position: 'fixed',
+                left: nodeTooltipPos.x,
+                top: nodeTooltipPos.y,
+                backgroundColor: tokens.colorNeutralBackground1,
+                border: `1px solid ${tokens.colorNeutralStroke1}`,
+                borderRadius: tokens.borderRadiusMedium,
+                padding: tokens.spacingVerticalS,
+                maxWidth: '240px',
+                zIndex: 9999,
+                boxShadow: tokens.shadow4,
+                pointerEvents: 'none',
+              }}>
+                <Text block style={{ fontWeight: tokens.fontWeightSemibold, wordBreak: 'break-all', marginBottom: tokens.spacingVerticalXS }}>{hoveredNode.label}</Text>
                 <div className={styles.infoPanelRow}>
                   <Text className={styles.infoPanelLabel}>Logical name</Text>
-                  <Text style={{ wordBreak: 'break-all' }}>{selectedNode.id}</Text>
+                  <Text style={{ wordBreak: 'break-all', fontSize: tokens.fontSizeBase200 }}>{hoveredNode.id}</Text>
                 </div>
-                {selectedNode.publisherPrefix && (
+                {hoveredNode.publisherPrefix && (
                   <div className={styles.infoPanelRow}>
                     <Text className={styles.infoPanelLabel}>Publisher</Text>
-                    <Text>{selectedNode.publisherPrefix}</Text>
+                    <Text style={{ fontSize: tokens.fontSizeBase200 }}>{hoveredNode.publisherPrefix}</Text>
                   </div>
                 )}
                 <div className={styles.infoPanelRow}>
                   <Text className={styles.infoPanelLabel}>Relationships</Text>
-                  <Text>{selectedNode.connectedCount}</Text>
+                  <Text style={{ fontSize: tokens.fontSizeBase200 }}>{hoveredNode.connectedCount}</Text>
                 </div>
               </div>
             )}
