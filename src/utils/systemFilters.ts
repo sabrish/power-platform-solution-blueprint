@@ -143,6 +143,25 @@ export function isSystemEntity(entityLogicalName: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// BPF entity predicate
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true when an entity is the auto-generated tracking entity created by
+ * a Business Process Flow. BPF entities are always excluded from the ERD
+ * regardless of whether they appear in the solution.
+ *
+ * @param entityLogicalName  The entity's logical name (case-insensitive).
+ * @param bpfEntityNames     Set of BPF unique names (logical names), lower-cased.
+ */
+export function isBPFEntity(
+  entityLogicalName: string,
+  bpfEntityNames: ReadonlySet<string>
+): boolean {
+  return bpfEntityNames.has(entityLogicalName.toLowerCase());
+}
+
+// ---------------------------------------------------------------------------
 // Custom-relationship guard
 // ---------------------------------------------------------------------------
 

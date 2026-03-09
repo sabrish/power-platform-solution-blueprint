@@ -54,7 +54,7 @@ export class WebResourceDiscovery {
           step: 'Web Resource Discovery',
           entitySet: 'webresourceset (metadata)',
           logger: this.logger,
-          onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
+          onProgress: (done) => this.onProgress?.(done, resourceIds.length),
         }
       );
 
@@ -80,10 +80,6 @@ export class WebResourceDiscovery {
             step: 'Web Resource Discovery',
             entitySet: 'webresourceset (content)',
             logger: this.logger,
-            onProgress: (done, total) => this.onProgress?.(
-              Math.floor(allResults.length / 2) + Math.floor(done / 2),
-              total
-            ),
             getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase()) ?? id).join(', '),
           }
         );
@@ -93,7 +89,7 @@ export class WebResourceDiscovery {
         }
       }
 
-      this.onProgress?.(allResults.length, allResults.length);
+      this.onProgress?.(resourceIds.length, resourceIds.length);
 
       return allResults.map(record =>
         this.mapRecordToWebResource({
