@@ -18,7 +18,7 @@ export {
   ArrowCircleRight24Regular as ClassicWorkflowsIcon,
   Flowchart24Regular as BusinessProcessFlowsIcon,
   ArrowSwap24Regular as CustomAPIsIcon,
-  Settings24Regular as EnvironmentVariablesIcon,
+  TextBulletListSquareSettingsRegular as EnvironmentVariablesIcon,
   Link24Regular as ConnectionReferencesIcon,
   Globe24Regular as WebResourcesIcon,
   MultiselectLtr24Regular as GlobalChoicesIcon,
