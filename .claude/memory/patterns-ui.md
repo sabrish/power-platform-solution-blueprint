@@ -240,3 +240,126 @@ All `detailsGrid` styles must use `minmax(200px, 1fr)`. Not 250px.
 ### AUDIT-013 — DataGrid is forbidden (confirmed again)
 
 `DataGrid` must not be used for any component browser list. Card-row accordion is required. Already in learnings.md [2026-02-22] — confirmed by the 2026-03-09 audit finding HIGH-07 and HIGH-08.
+
+---
+
+## PATTERN-018 — Sticky Table Column zIndex (Header AND Body Cells)
+
+**Source:** learnings.md [2026-03-09]
+**Applies to:** Developer, Reviewer
+
+When implementing a sticky column in a scrollable HTML table, `zIndex` is required on BOTH header and body cells. Missing it from body `<td>` cells causes scrolling content to paint over the sticky column.
+
+### Required zIndex assignment
+
+| Element | CSS properties |
+|---------|---------------|
+| Header corner `<th>` (sticky col + sticky row) | `position:sticky`, `top:0`, `left:0`, `zIndex:3`, `backgroundColor` |
+| Other header `<th>` (sticky row only) | `position:sticky`, `top:0`, `zIndex:1`, `backgroundColor` |
+| Body sticky `<td>` (sticky col) | `position:sticky`, `left:0`, `zIndex:1`, `backgroundColor` |
+| All other body `<td>` | `backgroundColor` (prevents dark-mode transparency bleed) |
+
+### Scroll container requirements
+```typescript
+{ overflowX: 'auto', overflowY: 'auto', maxHeight: '...' }
+```
+
+---
+
+## PATTERN-019 — Component-Category Icons Must Come From componentIcons.ts
+
+**Source:** learnings.md [2026-03-09]
+**Applies to:** Developer, Reviewer
+
+All component-type icons are owned by `src/components/componentIcons.ts`. Consumer components import from there, never directly from `@fluentui/react-icons` for component-category icons.
+
+### Canonical icon map (as of 2026-03-09)
+
+| Category | Export name | Icon |
+|----------|-------------|------|
+| Entities | `EntitiesIcon` | Table |
+| Plugins | `PluginsIcon` | BracesVariable (C# curly-brace style) |
+| Flows | `FlowsIcon` | CloudFlow |
+| Business Rules | `BusinessRulesIcon` | ClipboardTaskListLtr |
+| Classic Workflows | `ClassicWorkflowsIcon` | ArrowCircleRight |
+| BPFs | `BpfsIcon` | Flowchart |
+| Custom APIs | `CustomAPIsIcon` | ArrowSwap |
+| Environment Variables | `EnvVarsIcon` | Settings |
+| Connection References | `ConnectionRefsIcon` | Link |
+| Web Resources | `WebResourcesIcon` | Globe |
+| Global Choices | `GlobalChoicesIcon` | MultiselectLtr |
+| Custom Connectors | `CustomConnectorsIcon` | PlugConnected |
+| Security Roles | `SecurityRolesIcon` | Shield |
+| Field Security Profiles | `FieldSecurityProfilesIcon` | ShieldTask |
+| Custom Pages | `CustomPagesIcon` | Document |
+
+### Tab icons
+Dashboard → Grid, ERD → Organization, External Dependencies → Open, Solution Distribution → DataUsage, Cross-Entity Automation → ArrowBetweenDown, Fetch Log → DocumentBulletList.
+
+### Exception
+`HtmlTemplates.ts` uses its own `navIcon(key)` / `alertIcon()` SVG string helpers — it cannot share React components. That is the only accepted exception.
+
+---
+
+## PATTERN-020 — Emoji Are Forbidden in React UI; Use Fluent UI Icons
+
+**Source:** learnings.md [2026-03-09]
+**Applies to:** Developer, Reviewer
+
+Inline emoji must not be used as visual indicators in any React component. Use Fluent UI icon components with semantic token colours.
+
+### Replacement map
+
+| Emoji | Replacement icon | Colour token |
+|-------|-----------------|-------------|
+| ⚠️ warning | `Warning20Regular` | `tokens.colorStatusWarningForeground1` |
+| ℹ️ info | `Info16Regular` | `tokens.colorBrandForeground1` |
+| 💡 tip | `LightbulbFilament20Regular` | `tokens.colorStatusWarningForeground1` |
+| 🌐 external call (outbound) | `ArrowUpRight20Regular` | inherited |
+| 🌐 web resource category | `Globe24Regular` from componentIcons.ts | inherited |
+
+### Coverage notice list pattern
+Replace emoji bullet with the matching type icon at 14px; wrap the `<Text as="p">` element:
+```tsx
+<Text as="p" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+  <CloudFlowIcon style={{ width: 14, height: 14 }} /> Power Automate flows
+</Text>
+```
+
+### Markdown exception
+Markdown exports (`MarkdownReporter.ts`, `MarkdownFormatter.ts`) MAY retain emoji (⚠️, ✅, ❌, ℹ️). Standard Markdown emoji are expected in that format.
+
+---
+
+## PATTERN-021 — HTML Export Icon Helpers (navIcon / alertIcon)
+
+**Source:** learnings.md [2026-03-09]
+**Applies to:** Developer, Reviewer
+
+HTML exports in `HtmlTemplates.ts` must use the `navIcon(key)` and `alertIcon(type)` SVG string helpers. Emoji are never permitted in exported HTML.
+
+### Required CSS
+
+```css
+/* Navigation sidebar links */
+.nav-links a { display: flex; align-items: center; gap: 8px; }
+
+/* Alert box headings */
+.alert strong { display: flex; align-items: center; gap: 6px; }
+```
+
+### Section headings with icons
+
+```html
+<h2 style="display:flex;align-items:center;gap:10px;">
+  ${navIcon('plugins')} Plugins
+</h2>
+```
+
+### Alert boxes
+
+```html
+${alertIcon('warning')} <strong>No filter defined</strong>
+```
+
+Icons use `currentColor` so they inherit the surrounding text colour and work in both light and dark themes.

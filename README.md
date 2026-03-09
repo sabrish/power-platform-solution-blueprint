@@ -36,6 +36,7 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 - **Connection References**: Premium connector detection for licensing
 - **Global Choices**: Shared option sets with usage tracking
 - **Security**: Roles, field security profiles, attribute masking, column security
+- See [SUPPORTED_COMPONENTS.md](./SUPPORTED_COMPONENTS.md) for the full component status list — Supported, Partial, and Planned.
 
 </details>
 
