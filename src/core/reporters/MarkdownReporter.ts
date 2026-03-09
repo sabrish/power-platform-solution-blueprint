@@ -1151,6 +1151,23 @@ export class MarkdownReporter {
     sections.push(MarkdownFormatter.formatTable(chainHeaders, chainRows));
     sections.push('');
 
+    // Consolidated pipeline traces
+    if (analysis.entityViews.size > 0) {
+      sections.push('## Pipeline Traces');
+      sections.push('');
+      sections.push('Per-entity activation analysis — which automations fire (or don\'t) when an external source writes to the entity.');
+      sections.push('');
+      for (const [, view] of analysis.entityViews) {
+        sections.push(`### ${view.entityDisplayName}`);
+        sections.push('');
+        sections.push(`**Entity:** \`${view.entityLogicalName}\` | **Entry Points:** ${view.traces.length}`);
+        sections.push('');
+        for (const trace of view.traces) {
+          sections.push(this.formatTraceDetails(trace));
+        }
+      }
+    }
+
     return sections.join('\n');
   }
 

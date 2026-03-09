@@ -73,24 +73,24 @@ ${this.embeddedCSS()}
     <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
   </div>
   <ul class="nav-links">
-    <li><a href="#summary">📊 Summary</a></li>
-    <li><a href="#erd">🔗 Entity Relationship Diagram</a></li>
-    <li><a href="#entities">📦 Entities</a></li>
-    <li><a href="#plugins">🔌 Plugins</a></li>
-    <li><a href="#flows">⚡ Flows</a></li>
-    <li><a href="#business-rules">📋 Business Rules</a></li>
-    <li><a href="#classic-workflows">⏱️ Classic Workflows</a></li>
-    <li><a href="#business-process-flows">🔄 Business Process Flows</a></li>
-    <li><a href="#web-resources">🌐 Web Resources</a></li>
-    <li><a href="#custom-apis">🔧 Custom APIs</a></li>
-    <li><a href="#environment-variables">⚙️ Environment Variables</a></li>
-    <li><a href="#connection-references">🔗 Connection References</a></li>
-    <li><a href="#security">🔒 Security</a></li>
-    <li><a href="#external-dependencies">🌍 External Dependencies</a></li>
-    <li><a href="#cross-entity">🔗 Cross-Entity Automation</a></li>
+    <li><a href="#summary">${this.navIcon('summary')} Summary</a></li>
+    <li><a href="#erd">${this.navIcon('erd')} Entity Relationship Diagram</a></li>
+    <li><a href="#entities">${this.navIcon('entities')} Entities</a></li>
+    <li><a href="#plugins">${this.navIcon('plugins')} Plugins</a></li>
+    <li><a href="#flows">${this.navIcon('flows')} Flows</a></li>
+    <li><a href="#business-rules">${this.navIcon('business-rules')} Business Rules</a></li>
+    <li><a href="#classic-workflows">${this.navIcon('classic-workflows')} Classic Workflows</a></li>
+    <li><a href="#business-process-flows">${this.navIcon('business-process-flows')} Business Process Flows</a></li>
+    <li><a href="#web-resources">${this.navIcon('web-resources')} Web Resources</a></li>
+    <li><a href="#custom-apis">${this.navIcon('custom-apis')} Custom APIs</a></li>
+    <li><a href="#environment-variables">${this.navIcon('environment-variables')} Environment Variables</a></li>
+    <li><a href="#connection-references">${this.navIcon('connection-references')} Connection References</a></li>
+    <li><a href="#security">${this.navIcon('security')} Security</a></li>
+    <li><a href="#external-dependencies">${this.navIcon('external-dependencies')} External Dependencies</a></li>
+    <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation</a></li>
   </ul>
   <div class="nav-footer">
-    <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">🖨️ Print</button>
+    <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">${this.navIcon('print')} Print</button>
   </div>
 </nav>`;
   }
@@ -185,8 +185,8 @@ ${this.embeddedCSS()}
     <button class="btn-sm" id="isolateBtn" onclick="erdIsolate()" disabled>Isolate</button>
     <button class="btn-sm" id="clearIsolateBtn" onclick="erdClearIsolate()" style="display:none;">Show all</button>
     <span style="width:1px;height:20px;background:#ddd;margin:0 4px;align-self:center;display:inline-block;"></span>
-    <button class="btn-sm" onclick="downloadErdPng()">⬇ PNG</button>
-    <button class="btn-sm" onclick="downloadErdSvg()">⬇ SVG</button>
+    <button class="btn-sm" onclick="downloadErdPng()">&#8595; PNG</button>
+    <button class="btn-sm" onclick="downloadErdSvg()">&#8595; SVG</button>
   </div>
   <div style="position:relative;">
     <div id="cy" style="width:100%;height:700px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;"></div>
@@ -770,7 +770,7 @@ ${rows}
       const syncPlugins = sortedPlugins.filter(p => p.mode === 0);
       if (syncPlugins.length > 0) {
         content += `<div class="info-box">
-          <strong>ℹ️ Synchronous Plugins</strong>
+          <strong>${this.alertIcon('info')} Synchronous Plugins</strong>
           <p>${syncPlugins.length} synchronous plugin(s) execute in this pipeline. Synchronous plugins block the transaction and should complete quickly.</p>
         </div>`;
       }
@@ -1162,20 +1162,20 @@ ${rows}
     if (asyncWorkflows.length > 0) {
       advisorySection += `
   <div class="alert alert-info">
-    <strong>ℹ️ Async Workflows (${asyncWorkflows.length}):</strong> These async workflows can be migrated to Power Automate cloud flows. Classic workflows are legacy technology. Microsoft recommends migrating to Power Automate for continued support and access to modern features.
+    <strong>${this.alertIcon('info')} Info &mdash; Async Workflows (${asyncWorkflows.length}):</strong> These async workflows can be migrated to Power Automate cloud flows. Classic workflows are legacy technology. Microsoft recommends migrating to Power Automate for continued support and access to modern features.
   </div>`;
     }
     if (realtimeWorkflows.length > 0) {
       advisorySection += `
   <div class="alert alert-warning">
-    <strong>⚠️ Real-time Workflows (${realtimeWorkflows.length}):</strong> Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.
+    <strong>${this.alertIcon('warning')} Warning &mdash; Real-time Workflows (${realtimeWorkflows.length}):</strong> Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.
   </div>`;
     }
 
     return `<section id="classic-workflows" class="content-section">
   <h2>Classic Workflows - Migration Recommended (${workflows.length})</h2>
   <div class="alert alert-warning">
-    <strong>⚠️ Legacy Technology:</strong> Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows. <a href="https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows" target="_blank" rel="noopener noreferrer">Learn more</a>
+    <strong>${this.alertIcon('warning')} Warning &mdash; Legacy Technology:</strong> Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows. <a href="https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows" target="_blank" rel="noopener noreferrer">Learn more</a>
   </div>
   ${advisorySection}
   <div class="table-container">
@@ -1457,7 +1457,7 @@ ${rows}
     return `<section id="external-dependencies" class="content-section">
   <h2>External Dependencies (${endpoints.length})</h2>
   <div class="alert alert-info">
-    <strong>ℹ️ Note:</strong> External API calls can introduce security risks and performance concerns. Review each endpoint carefully.
+    <strong>${this.alertIcon('info')} Note:</strong> External API calls can introduce security risks and performance concerns. Review each endpoint carefully.
   </div>
   <div class="table-container">
     <table class="data-table sortable" id="external-deps-table">
@@ -1482,14 +1482,14 @@ ${rows}
    * Generate cross-entity automation section
    */
   htmlCrossEntitySection(analysis: CrossEntityAnalysisResult | undefined): string {
-    const coverageNotice = `<div style="padding: 12px; background-color: #e8f4fd; border-left: 4px solid #2196f3; border-radius: 4px; margin-bottom: 16px;">
+    const coverageNotice = `<div class="alert alert-info" style="margin-bottom: 16px;">
       <strong>Detection Coverage:</strong> Cross-entity traces are detected from Power Automate flow definitions (JSON) and Classic Workflow XAML.
       Plugin decompilation is not included — plugins are shown with firing-status analysis based on filtering attributes.
     </div>`;
 
     if (!analysis || analysis.totalEntryPoints === 0) {
       return `<section id="cross-entity" class="content-section">
-  <h2>🔗 Cross-Entity Automation</h2>
+  <h2 style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   <p>No cross-entity automation entry points detected in this solution scope.</p>
 </section>`;
@@ -1515,15 +1515,15 @@ ${rows}
     // Chain links table rows
     const chainRows = analysis.chainLinks.map(l => `<tr>
       <td>${this.htmlEscape(l.sourceEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.sourceEntity)}</small></td>
-      <td>${this.htmlEscape(l.automationName)}<br/><span class="badge badge-${l.automationType === 'Flow' ? 'success' : 'warning'}">${l.automationType}</span></td>
+      <td>${this.htmlEscape(l.automationName)}<br/><span class="badge badge-${l.automationType === 'Flow' ? 'success' : 'warning'}">${this.htmlEscape(l.automationType)}</span></td>
       <td>→</td>
       <td>${this.htmlEscape(l.targetEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.targetEntity)}</small></td>
-      <td><span class="badge badge-${l.operation === 'Create' ? 'success' : l.operation === 'Delete' ? 'danger' : 'warning'}">${l.operation}</span></td>
+      <td><span class="badge badge-${l.operation === 'Create' ? 'success' : l.operation === 'Delete' ? 'danger' : 'warning'}">${this.htmlEscape(l.operation)}</span></td>
       <td><span class="badge badge-${l.isAsynchronous ? 'success' : 'warning'}">${l.isAsynchronous ? 'Async' : 'Sync'}</span></td>
     </tr>`).join('');
 
     return `<section id="cross-entity" class="content-section">
-  <h2>🔗 Cross-Entity Automation</h2>
+  <h2 style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   ${statsHtml}
   ${risksHtml}
@@ -1545,8 +1545,88 @@ ${rows}
       </tbody>
     </table>
   </div>
-  <p style="margin-top: 16px; color: #666; font-style: italic;">⚠️ Synchronous cross-entity operations may impact performance</p>
+  <p style="margin-top: 16px; color: #666; font-style: italic;">Note: Synchronous cross-entity operations may impact performance</p>
+
+  <h3>Pipeline Traces</h3>
+  <p style="color:#666;margin-bottom:12px;">Per-entity activation analysis — which automations fire (or don't) when an external source writes to the entity.</p>
+  ${this.htmlPipelineTraces(analysis)}
 </section>`;
+  }
+
+  /**
+   * Render pipeline trace accordions for all entity views
+   */
+  private htmlPipelineTraces(analysis: CrossEntityAnalysisResult): string {
+    if (analysis.entityViews.size === 0) return '<p>No pipeline traces available.</p>';
+
+    const firingBadge = (status: string): string => {
+      if (status === 'WillFire') return '<span class="badge badge-success">Yes</span>';
+      if (status === 'WontFire') return '<span class="badge badge-danger">No (field mismatch)</span>';
+      return '<span class="badge badge-warning">Yes (no filter)</span>';
+    };
+
+    const items: string[] = [];
+    let idx = 0;
+    for (const [, view] of analysis.entityViews) {
+      const id = `cea-entity-${idx++}`;
+      const traceBlocks = view.traces.map((trace, ti) => {
+        const { entryPoint, activations, risks } = trace;
+        const tid = `${id}-trace-${ti}`;
+
+        const actRows = activations.map(act => {
+          const ds = act.downstream
+            ? `→ <strong>${this.htmlEscape(act.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(act.downstream.operation)})`
+            : '';
+          return `<tr>
+            <td>${this.htmlEscape(act.automationName)}</td>
+            <td><span class="badge badge-${act.automationType === 'Plugin' ? 'warning' : 'success'}">${this.htmlEscape(act.automationType)}</span></td>
+            <td>${this.htmlEscape(act.stageName ?? '—')}</td>
+            <td>${this.htmlEscape(act.mode)}</td>
+            <td>${firingBadge(act.firingStatus)}</td>
+            <td style="font-family:monospace;font-size:0.8em">${act.matchedFields.length > 0 ? this.htmlEscape(act.matchedFields.join(', ')) : '—'}</td>
+            <td>${ds}</td>
+          </tr>`;
+        }).join('');
+
+        const riskHtml = risks.length > 0
+          ? risks.map(r => `<div style="padding:6px 10px;border-left:3px solid ${r.severity === 'High' ? '#d32f2f' : '#f57c00'};background:${r.severity === 'High' ? '#ffebee' : '#fff8e1'};border-radius:3px;margin-bottom:6px;font-size:0.85em"><strong>${this.htmlEscape(r.type)}</strong>: ${this.htmlEscape(r.description)}</div>`).join('')
+          : '';
+
+        const modeLabel = entryPoint.isAsynchronous ? 'Async' : 'Sync';
+        const header = `${this.htmlEscape(entryPoint.automationName)} <span style="font-weight:normal;color:#666">(${this.htmlEscape(entryPoint.automationType)} — ${this.htmlEscape(entryPoint.operation)} from ${this.htmlEscape(entryPoint.sourceEntityDisplayName)} — ${modeLabel})</span>`;
+
+        return `<div class="accordion-item" style="margin-bottom:8px;">
+  <div class="accordion-header" onclick="toggleAccordion('${tid}')" style="font-size:0.9em;">
+    <span class="accordion-icon" id="icon-${tid}">+</span>
+    <span>${header}</span>
+    <span class="badge badge-${entryPoint.confidence === 'High' ? 'success' : entryPoint.confidence === 'Medium' ? 'warning' : 'danger'}" style="margin-left:auto">${this.htmlEscape(entryPoint.confidence)} confidence</span>
+  </div>
+  <div class="accordion-content" id="${tid}" style="display:none;padding:12px;">
+    ${riskHtml}
+    <table class="data-table" style="font-size:0.85em;">
+      <thead><tr>
+        <th>Automation</th><th>Type</th><th>Stage</th><th>Mode</th><th>Fires?</th><th>Matched Fields</th><th>Downstream</th>
+      </tr></thead>
+      <tbody>${actRows}</tbody>
+    </table>
+    ${entryPoint.fields.length > 0 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Fields set by source:</strong> <code>${this.htmlEscape(entryPoint.fields.join(', '))}</code></p>` : ''}
+  </div>
+</div>`;
+      }).join('');
+
+      items.push(`<div class="accordion-item">
+  <div class="accordion-header" onclick="toggleAccordion('${id}')">
+    <span class="accordion-icon" id="icon-${id}">+</span>
+    <h4 style="margin:0">${this.htmlEscape(view.entityDisplayName)}</h4>
+    <span style="margin-left:auto;font-size:0.85em;color:#666">${view.traces.length} ${view.traces.length === 1 ? 'entry point' : 'entry points'}</span>
+  </div>
+  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    <div class="accordion">${traceBlocks}</div>
+  </div>
+</div>`);
+    }
+
+    return `<div class="accordion">${items.join('\n')}</div>`;
   }
 
   /**
@@ -1578,6 +1658,45 @@ ${rows}
     return `<script>
 ${this.embeddedJavaScript()}
 </script>`;
+  }
+
+  /**
+   * Returns a small inline SVG icon string for use in navigation and headings.
+   * All icons use currentColor so they inherit the surrounding text colour.
+   */
+  private navIcon(key: string): string {
+    const base = `width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"`;
+    const fill = `width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0"`;
+    const icons: Record<string, string> = {
+      summary:   `<svg ${fill}><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>`,
+      erd:       `<svg ${base}><rect x="5.5" y="1" width="5" height="3.5" rx="0.75" fill="currentColor" stroke="none"/><rect x="1" y="11.5" width="5" height="3.5" rx="0.75" fill="currentColor" stroke="none"/><rect x="10" y="11.5" width="5" height="3.5" rx="0.75" fill="currentColor" stroke="none"/><line x1="8" y1="4.5" x2="8" y2="7.5"/><line x1="8" y1="7.5" x2="3.5" y2="11.5"/><line x1="8" y1="7.5" x2="12.5" y2="11.5"/></svg>`,
+      entities:  `<svg ${base}><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="1" y1="6" x2="15" y2="6"/><line x1="1" y1="10" x2="15" y2="10"/></svg>`,
+      plugins:   `<svg ${base}><path d="M5 2H3a1 1 0 0 0-1 1v4a1.5 1.5 0 0 1 0 2v4a1 1 0 0 0 1 1h2"/><path d="M11 2h2a1 1 0 0 1 1 1v4a1.5 1.5 0 0 0 0 2v4a1 1 0 0 1-1 1h-2"/></svg>`,
+      flows:     `<svg ${fill}><path d="M9.5 1.5L4 9.5h4.5L7 14.5l6-7H8z"/></svg>`,
+      'business-rules': `<svg ${base}><rect x="3" y="2" width="10" height="12.5" rx="1.5"/><line x1="5.5" y1="6" x2="10.5" y2="6"/><line x1="5.5" y1="9" x2="8.5" y2="9"/><line x1="5.5" y1="12" x2="9" y2="12"/></svg>`,
+      'classic-workflows': `<svg ${base}><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.7"/><polyline points="14,1 14,5 10,5"/></svg>`,
+      'business-process-flows': `<svg ${base} stroke-linejoin="round"><polygon points="8,1.5 14.5,8 8,14.5 1.5,8"/></svg>`,
+      'web-resources': `<svg ${base}><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5c-1.8 0-3.5 2.9-3.5 6.5s1.7 6.5 3.5 6.5 3.5-2.9 3.5-6.5-1.7-6.5-3.5-6.5z"/><line x1="1.5" y1="8" x2="14.5" y2="8"/></svg>`,
+      'custom-apis': `<svg ${base}><path d="M3 5.5h10M3 5.5l2.5-2.5M3 5.5l2.5 2.5"/><path d="M13 10.5H3M13 10.5l-2.5-2.5M13 10.5l-2.5 2.5"/></svg>`,
+      'environment-variables': `<svg ${base}><circle cx="8" cy="8" r="2.25"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg>`,
+      'connection-references': `<svg ${base}><path d="M6.5 9.5a3.5 3.5 0 0 0 4.95 0l2-2a3.5 3.5 0 0 0-4.95-4.95L7.6 3.45"/><path d="M9.5 6.5a3.5 3.5 0 0 0-4.95 0l-2 2a3.5 3.5 0 0 0 4.95 4.95l.9-.9"/></svg>`,
+      security:  `<svg ${base}><rect x="2.5" y="7" width="11" height="8" rx="1.5"/><path d="M5 7V5.5a3 3 0 0 1 6 0V7"/></svg>`,
+      'external-dependencies': `<svg ${base}><path d="M6.5 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9.5"/><polyline points="10,1.5 14.5,1.5 14.5,6"/><line x1="7.5" y1="8.5" x2="14.5" y2="1.5"/></svg>`,
+      'cross-entity': `<svg ${base}><rect x="1" y="1" width="6" height="4" rx="1"/><rect x="9" y="11" width="6" height="4" rx="1"/><path d="M4 5v3a3 3 0 0 0 3 3h2"/><polyline points="12,11 12,9 10,9"/></svg>`,
+      print:     `<svg ${base}><path d="M4 6V3h8v3"/><rect x="1" y="6" width="14" height="6" rx="1"/><path d="M4 9v5h8V9"/></svg>`,
+    };
+    return icons[key] ?? '';
+  }
+
+  /**
+   * Returns a small inline SVG icon for alert boxes (info or warning).
+   * Uses explicit colours so it stands out on the light alert background.
+   */
+  private alertIcon(type: 'info' | 'warning'): string {
+    if (type === 'info') {
+      return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><circle cx="8" cy="8" r="7.5" fill="#0078d4"/><rect x="7.1" y="7" width="1.8" height="5.5" rx="0.9" fill="white"/><circle cx="8" cy="4.5" r="1.1" fill="white"/></svg>`;
+    }
+    return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><path d="M8 1.5L1 14.5h14z" fill="#ffb900"/><rect x="7.1" y="7" width="1.8" height="4.5" rx="0.9" fill="white"/><circle cx="8" cy="13" r="0.9" fill="white"/></svg>`;
   }
 
   /**
@@ -1645,7 +1764,9 @@ ${this.embeddedJavaScript()}
     }
 
     .nav-links a {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       padding: 10px 20px;
       color: #e1dfdd;
       text-decoration: none;
@@ -1670,6 +1791,10 @@ ${this.embeddedJavaScript()}
       color: white;
       border: none;
       border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       cursor: pointer;
       font-size: 0.9rem;
     }
@@ -2346,7 +2471,9 @@ ${this.embeddedJavaScript()}
     }
 
     .alert strong {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       margin-bottom: 5px;
     }
 
@@ -2861,7 +2988,7 @@ ${this.embeddedJavaScript()}
 
     let html = `
       <section id="security" class="content-section">
-        <h2 class="section-title">🔒 Security</h2>
+        <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('security')} Security</h2>
         <p class="section-description">Security roles and field security profiles in the selected solution(s).</p>
 
         <div class="tabs-container">
@@ -3202,7 +3329,7 @@ ${this.embeddedJavaScript()}
 
     let html = `
       <div class="entity-subsection">
-        <h4>🛡️ Field Security (${fieldSecurity.securedFields.length} secured field${fieldSecurity.securedFields.length > 1 ? 's' : ''})</h4>
+        <h4>Field Security (${fieldSecurity.securedFields.length} secured field${fieldSecurity.securedFields.length > 1 ? 's' : ''})</h4>
         <p class="subsection-description">The following fields have field-level security permissions:</p>
         <table class="data-table">
           <thead>
