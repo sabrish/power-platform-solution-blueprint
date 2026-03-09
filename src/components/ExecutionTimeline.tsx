@@ -9,6 +9,7 @@ import {
   ArrowRight20Regular,
   CheckmarkCircle20Regular,
   Globe20Regular,
+  Info16Regular,
 } from '@fluentui/react-icons';
 import type { ExecutionPipeline, ExecutionStep } from '../core';
 
@@ -168,7 +169,7 @@ export function ExecutionTimeline({ pipeline }: ExecutionTimelineProps) {
           {step.rank !== undefined && <Text>Rank: {step.rank}</Text>}
           {step.description && (
             <Tooltip content={step.description} relationship="description">
-              <Text>ℹ️</Text>
+              <Info16Regular style={{ color: tokens.colorBrandForeground1 }} />
             </Tooltip>
           )}
         </div>

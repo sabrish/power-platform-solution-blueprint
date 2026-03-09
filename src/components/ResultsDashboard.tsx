@@ -21,6 +21,30 @@ import {
   Warning24Regular,
   ErrorCircle24Regular,
 } from '@fluentui/react-icons';
+import {
+  EntitiesIcon,
+  PluginsIcon,
+  PluginPackagesIcon,
+  FlowsIcon,
+  BusinessRulesIcon,
+  ClassicWorkflowsIcon,
+  BusinessProcessFlowsIcon,
+  CustomAPIsIcon,
+  EnvironmentVariablesIcon,
+  ConnectionReferencesIcon,
+  WebResourcesIcon,
+  GlobalChoicesIcon,
+  CustomConnectorsIcon,
+  SecurityRolesIcon,
+  FieldSecurityProfilesIcon,
+  CustomPagesIcon,
+  DashboardIcon,
+  ErdIcon,
+  ExternalDependenciesIcon,
+  SolutionDistributionIcon,
+  CrossEntityAutomationIcon,
+  FetchLogIcon,
+} from './componentIcons';
 import type { BlueprintResult, CustomAPI, ConnectionReference } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
@@ -324,22 +348,22 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
 
   // Component types for summary cards
   const componentTypes = [
-    { key: 'entities', label: 'Entities' },
-    { key: 'plugins', label: 'Plugins' },
-    { key: 'pluginPackages', label: 'Plugin Packages' },
-    { key: 'flows', label: 'Flows' },
-    { key: 'businessRules', label: 'Business Rules' },
-    { key: 'classicWorkflows', label: 'Classic Workflows' },
-    { key: 'businessProcessFlows', label: 'Business Process Flows' },
-    { key: 'customAPIs', label: 'Custom APIs' },
-    { key: 'environmentVariables', label: 'Environment Variables' },
-    { key: 'connectionReferences', label: 'Connection References' },
-    { key: 'globalChoices', label: 'Global Choices' },
-    { key: 'customConnectors', label: 'Custom Connectors' },
-    { key: 'webResources', label: 'Web Resources' },
-    { key: 'securityRoles', label: 'Security Roles' },
-    { key: 'fieldSecurityProfiles', label: 'Field Security Profiles' },
-    { key: 'customPages', label: 'Custom Pages' },
+    { key: 'entities', label: 'Entities', icon: <EntitiesIcon /> },
+    { key: 'plugins', label: 'Plugins', icon: <PluginsIcon /> },
+    { key: 'pluginPackages', label: 'Plugin Packages', icon: <PluginPackagesIcon /> },
+    { key: 'flows', label: 'Flows', icon: <FlowsIcon /> },
+    { key: 'businessRules', label: 'Business Rules', icon: <BusinessRulesIcon /> },
+    { key: 'classicWorkflows', label: 'Classic Workflows', icon: <ClassicWorkflowsIcon /> },
+    { key: 'businessProcessFlows', label: 'Business Process Flows', icon: <BusinessProcessFlowsIcon /> },
+    { key: 'customAPIs', label: 'Custom APIs', icon: <CustomAPIsIcon /> },
+    { key: 'environmentVariables', label: 'Environment Variables', icon: <EnvironmentVariablesIcon /> },
+    { key: 'connectionReferences', label: 'Connection References', icon: <ConnectionReferencesIcon /> },
+    { key: 'globalChoices', label: 'Global Choices', icon: <GlobalChoicesIcon /> },
+    { key: 'customConnectors', label: 'Custom Connectors', icon: <CustomConnectorsIcon /> },
+    { key: 'webResources', label: 'Web Resources', icon: <WebResourcesIcon /> },
+    { key: 'securityRoles', label: 'Security Roles', icon: <SecurityRolesIcon /> },
+    { key: 'fieldSecurityProfiles', label: 'Field Security Profiles', icon: <FieldSecurityProfilesIcon /> },
+    { key: 'customPages', label: 'Custom Pages', icon: <CustomPagesIcon /> },
   ];
 
 
@@ -422,24 +446,24 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             setMainTab(data.value as string);
           }}
         >
-          <Tab value="dashboard">Dashboard</Tab>
+          <Tab value="dashboard" icon={<DashboardIcon />}>Dashboard</Tab>
 
           {hasERD && (
-            <Tab value="erd">Entity Relationship Diagram</Tab>
+            <Tab value="erd" icon={<ErdIcon />}>Entity Relationship Diagram</Tab>
           )}
 
           {hasExternalDeps && (
-            <Tab value="externalDeps">External Dependencies</Tab>
+            <Tab value="externalDeps" icon={<ExternalDependenciesIcon />}>External Dependencies</Tab>
           )}
 
           {hasSolutionDist && (
-            <Tab value="solutionDist">Solution Distribution</Tab>
+            <Tab value="solutionDist" icon={<SolutionDistributionIcon />}>Solution Distribution</Tab>
           )}
 
-          <Tab value="crossEntity">Cross-Entity Automation</Tab>
+          <Tab value="crossEntity" icon={<CrossEntityAutomationIcon />}>Cross-Entity Automation</Tab>
 
           {(result.fetchLog && result.fetchLog.length > 0) && (
-            <Tab value="fetchLog">
+            <Tab value="fetchLog" icon={<FetchLogIcon />}>
               Fetch Log
               {result.fetchLog.some(e => e.status === 'failed') && (
                 <Badge color="danger" shape="circular" size="small" style={{ marginLeft: tokens.spacingHorizontalXXS }}>
@@ -487,6 +511,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                       style={hasData ? { cursor: 'pointer' } : undefined}
                     >
                       <div className={styles.summaryCardContent}>
+                        <span style={{ color: hasData ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground4, fontSize: '24px', lineHeight: 1 }}>{type.icon}</span>
                         <Text className={styles.summaryCount}>{count}</Text>
                         <Text className={styles.summaryLabel}>{type.label}</Text>
                       </div>
@@ -521,10 +546,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
               const isSelected = selectedTab === type.key;
               return (
                 <Tooltip key={type.key} content={type.label} relationship="label">
-                  <Tab value={type.key}>
-                    {isSelected
-                      ? `${type.label} (${count})`
-                      : `(${count})`}
+                  <Tab value={type.key} icon={type.icon}>
+                    {isSelected ? `${type.label} (${count})` : `${count}`}
                   </Tab>
                 </Tooltip>
               );

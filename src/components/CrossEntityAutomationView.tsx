@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import {
   Text,
   Title3,
@@ -25,6 +25,13 @@ import {
   ErrorCircle16Regular,
   Info16Regular,
 } from '@fluentui/react-icons';
+import {
+  PluginsIcon as BracesVariable24Regular,
+  FlowsIcon as CloudFlow24Regular,
+  BusinessRulesIcon as ClipboardTaskListLtr24Regular,
+  ClassicWorkflowsIcon as ArrowCircleRight24Regular,
+  WebResourcesIcon as Globe24Regular,
+} from './componentIcons';
 import type {
   CrossEntityAnalysisResult,
   CrossEntityTrace,
@@ -54,13 +61,14 @@ function entityColor(index: number) { return ENTITY_COLORS[index % ENTITY_COLORS
 /* ─────────────────────────────────────────────────────────────────────────
    Type helpers
 ───────────────────────────────────────────────────────────────────────── */
-function typeIcon(type: AutomationActivation['automationType'] | PipelineStep['automationType']): string {
+const TYPE_ICON_STYLE = { width: '12px', height: '12px', flexShrink: 0, verticalAlign: 'middle' } as const;
+function typeIcon(type: AutomationActivation['automationType'] | PipelineStep['automationType']): ReactElement {
   switch (type) {
-    case 'Plugin': return '🔌';
-    case 'Flow': return '⚡';
-    case 'BusinessRule': return '📋';
-    case 'ClassicWorkflow': return '🔄';
-    default: return '•';
+    case 'Plugin': return <BracesVariable24Regular style={TYPE_ICON_STYLE} />;
+    case 'Flow': return <CloudFlow24Regular style={TYPE_ICON_STYLE} />;
+    case 'BusinessRule': return <ClipboardTaskListLtr24Regular style={TYPE_ICON_STYLE} />;
+    case 'ClassicWorkflow': return <ArrowCircleRight24Regular style={TYPE_ICON_STYLE} />;
+    default: return <ArrowRight24Regular style={TYPE_ICON_STYLE} />;
   }
 }
 
@@ -442,10 +450,10 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             <Text weight="semibold">Detection Coverage Notice</Text>
             <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
           </div>
-            <Text as="p" style={{ margin: 0 }}>⚡ <strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</Text>
-            <Text as="p" style={{ margin: 0 }}>🔄 <strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</Text>
-            <Text as="p" style={{ margin: 0 }}>🔌 <strong>Plugins</strong> — firing-status shown based on registered filtering attributes; deep cross-entity detection via plugin decompilation is planned for a future release.</Text>
-            <Text as="p" style={{ margin: 0 }}>📜 <strong>JavaScript Web Resources</strong> — cross-entity call detection via JS static analysis is planned for a future release.</Text>
+            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><CloudFlow24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></Text>
+            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ArrowCircleRight24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
+            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><BracesVariable24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Plugins</strong> — firing-status shown based on registered filtering attributes; deep cross-entity detection via plugin decompilation is planned for a future release.</span></Text>
+            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><Globe24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>JavaScript Web Resources</strong> — cross-entity call detection via JS static analysis is planned for a future release.</span></Text>
           </div>
         </div>
         <div className={styles.emptyState}>
@@ -501,10 +509,10 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             <Text weight="semibold">Detection Coverage Notice</Text>
             <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
           </div>
-          <Text as="p" style={{ margin: 0 }}>⚡ <strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</Text>
-          <Text as="p" style={{ margin: 0 }}>🔄 <strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</Text>
-          <Text as="p" style={{ margin: 0 }}>🔌 <strong>Plugins</strong> — firing-status shown based on registered filtering attributes; deep cross-entity detection via plugin decompilation is planned for a future release.</Text>
-          <Text as="p" style={{ margin: 0 }}>📜 <strong>JavaScript Web Resources</strong> — cross-entity call detection via JS static analysis is planned for a future release.</Text>
+          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><CloudFlow24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></Text>
+          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ArrowCircleRight24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
+          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><BracesVariable24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Plugins</strong> — firing-status shown based on registered filtering attributes; deep cross-entity detection via plugin decompilation is planned for a future release.</span></Text>
+          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><Globe24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>JavaScript Web Resources</strong> — cross-entity call detection via JS static analysis is planned for a future release.</span></Text>
         </div>
       </div>
 
