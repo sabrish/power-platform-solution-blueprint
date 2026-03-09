@@ -156,8 +156,8 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
             <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
               API Calls
             </Text>
-            {failedCount > 0 && <Badge color="danger" size="small">{failedCount} failed</Badge>}
-            {retriedCount > 0 && failedCount === 0 && <Badge color="warning" size="small">{retriedCount} retried</Badge>}
+            {failedCount > 0 && <Badge color="danger" shape="rounded" size="small">{failedCount} failed</Badge>}
+            {retriedCount > 0 && failedCount === 0 && <Badge color="warning" shape="rounded" size="small">{retriedCount} retried</Badge>}
           </div>
           <div className={styles.fetchFeed} ref={feedRef}>
             {recentFetches.slice(-20).map(entry => {

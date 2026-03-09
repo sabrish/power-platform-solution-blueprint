@@ -325,7 +325,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
   }
 
   return (
-    <div className={styles.container} style={{ marginTop: '16px' }}>
+    <div className={styles.container} style={{ marginTop: tokens.spacingVerticalL }}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}

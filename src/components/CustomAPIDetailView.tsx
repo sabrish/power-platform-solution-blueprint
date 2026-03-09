@@ -132,6 +132,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
           </Badge>
           <Badge
             appearance="filled"
+            shape="rounded"
             color={api.bindingType === 'Global' ? 'brand' : 'success'}
             size="large"
           >
@@ -205,7 +206,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
           header={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <strong>Request Parameters (Input)</strong>
-              <Badge appearance="tint" shape="rounded" size="small">
+              <Badge appearance="tint" shape="circular" size="small">
                 {api.requestParameters.length}
               </Badge>
             </div>
@@ -226,7 +227,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
           header={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <strong>Response Properties (Output)</strong>
-              <Badge appearance="tint" shape="rounded" size="small" color="success">
+              <Badge appearance="tint" shape="circular" size="small" color="success">
                 {api.responseProperties.length}
               </Badge>
             </div>

@@ -310,7 +310,7 @@ export function FetchDiagnosticsView({ entries }: Props) {
                     {entry.batchTotal ? `${entry.batchIndex + 1}/${entry.batchTotal}` : `${entry.batchIndex + 1}`}
                   </td>
                   <td className={styles.td}>
-                    <Badge color={STATUS_COLORS[entry.status]} size="small">
+                    <Badge color={STATUS_COLORS[entry.status]} shape="rounded" size="small">
                       {STATUS_LABELS[entry.status]}
                     </Badge>
                   </td>

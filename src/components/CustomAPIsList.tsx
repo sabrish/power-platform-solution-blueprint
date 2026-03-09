@@ -413,11 +413,11 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
                 {api.bindingType}
               </Badge>
               <div className={styles.badgeGroup}>
-                <Badge appearance="tint" shape="rounded" size="small">
-                  {api.requestParameters.length} in
+                <Badge appearance="tint" shape="circular" size="small">
+                  {api.requestParameters.length}
                 </Badge>
-                <Badge appearance="tint" shape="rounded" size="small" color="success">
-                  {api.responseProperties.length} out
+                <Badge appearance="tint" shape="circular" size="small" color="success">
+                  {api.responseProperties.length}
                 </Badge>
               </div>
             </div>

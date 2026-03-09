@@ -1,7 +1,7 @@
 import type { EntityBlueprint, ERDDefinition, ERDDiagram, PublisherLegend, EntityQuickLink, ERDGraphData, ERDNode, ERDEdge } from '../types/blueprint.js';
 import type { Publisher } from '../types.js';
 import { getPublisherColors } from '../utils/ColorGenerator.js';
-import { isSystemEntity, isSystemRelationship } from '../../utils/systemFilters.js';
+import { isSystemEntity, isSystemRelationship, hasPlatformEntityCustomRelationship } from '../../utils/systemFilters.js';
 
 /**
  * Generates Entity Relationship Diagrams (ERD) using Mermaid Class Diagram syntax
@@ -15,9 +15,10 @@ export class ERDGenerator {
    * Creates a single diagram containing all entities
    */
   generateMermaidERD(entities: EntityBlueprint[], publishers: Publisher[]): ERDDefinition {
-    // Filter out system entities from diagram generation
+    // Filter out system entities from diagram generation unless they have a custom relationship
     const filteredEntities = entities.filter(bp =>
-      !isSystemEntity(bp.entity.LogicalName)
+      !isSystemEntity(bp.entity.LogicalName) ||
+      hasPlatformEntityCustomRelationship(bp.entity.LogicalName, entities)
     );
 
     // Build publisher map (entity prefix -> publisher info)

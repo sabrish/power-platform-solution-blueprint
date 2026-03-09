@@ -48,6 +48,7 @@ import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
 import { FetchDiagnosticsView } from './FetchDiagnosticsView';
 import { Footer } from './Footer';
+import { EmptyState } from './EmptyState';
 
 const useStyles = makeStyles({
   container: {
@@ -169,15 +170,6 @@ const useStyles = makeStyles({
   },
   browserSection: {
     marginTop: tokens.spacingVerticalXL,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
   },
 });
 
@@ -332,22 +324,22 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
 
   // Component types for summary cards
   const componentTypes = [
-    { key: 'entities', label: 'Entities', icon: '📊' },
-    { key: 'plugins', label: 'Plugins', icon: '🔌' },
-    { key: 'pluginPackages', label: 'Plugin Packages', icon: '📦' },
-    { key: 'flows', label: 'Flows', icon: '🌊' },
-    { key: 'businessRules', label: 'Business Rules', icon: '📋' },
-    { key: 'classicWorkflows', label: 'Classic Workflows', icon: '⚠️' },
-    { key: 'businessProcessFlows', label: 'Business Process Flows', icon: '🔄' },
-    { key: 'customAPIs', label: 'Custom APIs', icon: '🔧' },
-    { key: 'environmentVariables', label: 'Environment Variables', icon: '⚙️' },
-    { key: 'connectionReferences', label: 'Connection References', icon: '🔗' },
-    { key: 'globalChoices', label: 'Global Choices', icon: '🎯' },
-    { key: 'customConnectors', label: 'Custom Connectors', icon: '🔀' },
-    { key: 'webResources', label: 'Web Resources', icon: '🌐' },
-    { key: 'securityRoles', label: 'Security Roles', icon: '🔒' },
-    { key: 'fieldSecurityProfiles', label: 'Field Security Profiles', icon: '🛡️' },
-    { key: 'customPages', label: 'Custom Pages', icon: '📄' },
+    { key: 'entities', label: 'Entities' },
+    { key: 'plugins', label: 'Plugins' },
+    { key: 'pluginPackages', label: 'Plugin Packages' },
+    { key: 'flows', label: 'Flows' },
+    { key: 'businessRules', label: 'Business Rules' },
+    { key: 'classicWorkflows', label: 'Classic Workflows' },
+    { key: 'businessProcessFlows', label: 'Business Process Flows' },
+    { key: 'customAPIs', label: 'Custom APIs' },
+    { key: 'environmentVariables', label: 'Environment Variables' },
+    { key: 'connectionReferences', label: 'Connection References' },
+    { key: 'globalChoices', label: 'Global Choices' },
+    { key: 'customConnectors', label: 'Custom Connectors' },
+    { key: 'webResources', label: 'Web Resources' },
+    { key: 'securityRoles', label: 'Security Roles' },
+    { key: 'fieldSecurityProfiles', label: 'Field Security Profiles' },
+    { key: 'customPages', label: 'Custom Pages' },
   ];
 
 
@@ -401,7 +393,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
               <Text weight="semibold" style={{ color: hasFullFailures ? tokens.colorStatusDangerForeground1 : tokens.colorStatusWarningForeground1 }}>
                 {hasFullFailures ? 'Some components could not be loaded' : 'Some data may be incomplete'}
               </Text>
-              <Badge color="danger" size="small" style={{ marginLeft: 'auto' }}>
+              <Badge color="danger" shape="rounded" size="small" style={{ marginLeft: 'auto' }}>
                 {result.stepWarnings!.length} {result.stepWarnings!.length === 1 ? 'issue' : 'issues'}
               </Badge>
             </div>
@@ -430,27 +422,27 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             setMainTab(data.value as string);
           }}
         >
-          <Tab value="dashboard">📊 Dashboard</Tab>
+          <Tab value="dashboard">Dashboard</Tab>
 
           {hasERD && (
-            <Tab value="erd">📐 Entity Relationship Diagram</Tab>
+            <Tab value="erd">Entity Relationship Diagram</Tab>
           )}
 
           {hasExternalDeps && (
-            <Tab value="externalDeps">🌐 External Dependencies</Tab>
+            <Tab value="externalDeps">External Dependencies</Tab>
           )}
 
           {hasSolutionDist && (
-            <Tab value="solutionDist">📦 Solution Distribution</Tab>
+            <Tab value="solutionDist">Solution Distribution</Tab>
           )}
 
-          <Tab value="crossEntity">🔗 Cross-Entity Automation</Tab>
+          <Tab value="crossEntity">Cross-Entity Automation</Tab>
 
           {(result.fetchLog && result.fetchLog.length > 0) && (
             <Tab value="fetchLog">
-              🔬 Fetch Log
+              Fetch Log
               {result.fetchLog.some(e => e.status === 'failed') && (
-                <Badge color="danger" size="small" style={{ marginLeft: '4px' }}>
+                <Badge color="danger" shape="circular" size="small" style={{ marginLeft: tokens.spacingHorizontalXXS }}>
                   {result.fetchLog.filter(e => e.status === 'failed').length}
                 </Badge>
               )}
@@ -495,7 +487,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                       style={hasData ? { cursor: 'pointer' } : undefined}
                     >
                       <div className={styles.summaryCardContent}>
-                        <Text style={{ fontSize: '18px' }}>{type.icon}</Text>
                         <Text className={styles.summaryCount}>{count}</Text>
                         <Text className={styles.summaryLabel}>{type.label}</Text>
                       </div>
@@ -532,8 +523,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                 <Tooltip key={type.key} content={type.label} relationship="label">
                   <Tab value={type.key}>
                     {isSelected
-                      ? `${type.icon} ${type.label} (${count})`
-                      : `${type.icon} (${count})`}
+                      ? `${type.label} (${count})`
+                      : `(${count})`}
                   </Tab>
                 </Tooltip>
               );
@@ -645,11 +636,11 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'customPages' && hasResults('customPages') && (
-              <div className={styles.emptyState}>
-                <Text style={{ fontSize: '48px' }}>📄</Text>
-                <Title3>Custom Pages</Title3>
-                <Text>Custom pages browser coming soon...</Text>
-              </div>
+              <EmptyState
+                type="generic"
+                title="Custom Pages"
+                message="Custom pages browser coming soon..."
+              />
             )}
           </div>
         </Card>

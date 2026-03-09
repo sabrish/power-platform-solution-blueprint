@@ -12,10 +12,11 @@ import {
   SelectTabData,
   SelectTabEvent,
   Tooltip,
-  Input,
+  Button,
+  ToggleButton,
   Checkbox,
 } from '@fluentui/react-components';
-import type { CheckboxOnChangeData } from '@fluentui/react-components';
+import { FilterBar, FilterGroup } from './FilterBar';
 import {
   ArrowRight24Regular,
   Warning24Regular,
@@ -23,7 +24,6 @@ import {
   CheckmarkCircle16Regular,
   ErrorCircle16Regular,
   Info16Regular,
-  Search20Regular,
 } from '@fluentui/react-icons';
 import type {
   CrossEntityAnalysisResult,
@@ -107,7 +107,7 @@ const useStyles = makeStyles({
 
   entityHeader: {
     display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS,
-    padding: '8px 12px', cursor: 'pointer',
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`, cursor: 'pointer',
     backgroundColor: tokens.colorNeutralBackground2,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     borderRadius: tokens.borderRadiusMedium,
@@ -122,7 +122,7 @@ const useStyles = makeStyles({
   entityNameRow: { display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS, flexWrap: 'wrap' },
 
   entityBody: {
-    padding: '6px 12px 10px 28px',
+    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM} ${tokens.spacingVerticalS} ${tokens.spacingHorizontalL}`,
     backgroundColor: tokens.colorNeutralBackground2,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     borderTop: 'none',
@@ -131,8 +131,8 @@ const useStyles = makeStyles({
 
   /* Trace sub-header (shown when entity has multiple entry points) */
   traceSubHeader: {
-    padding: '4px 0 2px',
-    marginBottom: '4px',
+    padding: `${tokens.spacingVerticalXXS} 0`,
+    marginBottom: tokens.spacingVerticalXXS,
     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground2,
@@ -144,7 +144,7 @@ const useStyles = makeStyles({
     marginBottom: '1px',
   },
   stepMain: {
-    flex: 1, padding: '5px 10px',
+    flex: 1, padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
     display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS,
     backgroundColor: tokens.colorNeutralBackground3,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
@@ -168,7 +168,7 @@ const useStyles = makeStyles({
 
   /* Branch block (right of a step with downstream write) */
   branchBlock: {
-    width: '200px', padding: '5px 10px',
+    width: '200px', padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
     display: 'flex', flexDirection: 'column', justifyContent: 'center',
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     borderLeft: `2px solid ${tokens.colorBrandForeground1}`,
@@ -182,10 +182,10 @@ const useStyles = makeStyles({
     color: tokens.colorBrandForeground1,
     display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS, flexWrap: 'wrap',
   },
-  branchFields: { display: 'flex', gap: '2px', flexWrap: 'wrap', marginTop: '2px' },
+  branchFields: { display: 'flex', gap: tokens.spacingHorizontalXXS, flexWrap: 'wrap', marginTop: tokens.spacingVerticalXXS },
   branchField: {
-    fontFamily: 'monospace', fontSize: '9px', padding: '0 3px',
-    borderRadius: '2px',
+    fontFamily: 'monospace', fontSize: tokens.fontSizeBase100, padding: `0 ${tokens.spacingHorizontalXS}`,
+    borderRadius: tokens.borderRadiusSmall,
     backgroundColor: tokens.colorNeutralBackground2,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     color: tokens.colorNeutralForeground2,
@@ -212,16 +212,16 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorPaletteRedBorderActive}`,
   },
   matchVerdict: { fontWeight: tokens.fontWeightSemibold, marginBottom: '2px' },
-  matchPills: { display: 'flex', gap: '3px', flexWrap: 'wrap', marginTop: '2px' },
+  matchPills: { display: 'flex', gap: tokens.spacingHorizontalXXS, flexWrap: 'wrap', marginTop: tokens.spacingVerticalXXS },
   mpillHit: {
-    fontFamily: 'monospace', fontSize: '9px', padding: '0 4px', borderRadius: '3px',
+    fontFamily: 'monospace', fontSize: tokens.fontSizeBase100, padding: `0 ${tokens.spacingHorizontalXS}`, borderRadius: tokens.borderRadiusSmall,
     backgroundColor: tokens.colorPaletteGreenBackground2,
     color: tokens.colorPaletteGreenForeground1,
     border: `1px solid ${tokens.colorPaletteGreenBorderActive}`,
     fontWeight: tokens.fontWeightSemibold,
   },
   mpillMiss: {
-    fontFamily: 'monospace', fontSize: '9px', padding: '0 4px', borderRadius: '3px',
+    fontFamily: 'monospace', fontSize: tokens.fontSizeBase100, padding: `0 ${tokens.spacingHorizontalXS}`, borderRadius: tokens.borderRadiusSmall,
     backgroundColor: tokens.colorNeutralBackground3,
     color: tokens.colorNeutralForeground3,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
@@ -230,8 +230,8 @@ const useStyles = makeStyles({
   /* Child entity inline section */
   childSection: { marginLeft: '24px', marginTop: '3px', marginBottom: '4px' },
   childHeader: {
-    display: 'flex', alignItems: 'center', gap: '6px',
-    padding: '5px 10px',
+    display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS,
+    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
     borderRadius: `${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium} 0 0`,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     borderBottom: 'none',
@@ -239,27 +239,22 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground3,
   },
   childSteps: {
-    padding: '4px 10px 8px',
+    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalS} ${tokens.spacingVerticalS}`,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     borderTop: 'none',
     borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
     backgroundColor: tokens.colorNeutralBackground3,
   },
   returnMarker: {
-    padding: '2px 12px 2px 18px',
-    fontSize: '10px', color: tokens.colorNeutralForeground3,
-    fontStyle: 'italic', marginBottom: '3px',
+    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalM} ${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalL}`,
+    fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3,
+    fontStyle: 'italic', marginBottom: tokens.spacingVerticalXXS,
   },
 
   /* Won't fire section */
-  wontFireBtn: {
-    width: '100%', padding: '4px 10px', marginTop: '4px',
-    background: 'none', border: `1px solid ${tokens.colorNeutralStroke2}`,
-    borderRadius: tokens.borderRadiusMedium,
-    color: tokens.colorNeutralForeground3, cursor: 'pointer',
-    fontSize: tokens.fontSizeBase100, fontWeight: tokens.fontWeightSemibold,
-    textAlign: 'left',
-    ':hover': { backgroundColor: tokens.colorNeutralBackground3 },
+  wontFireBtnWrapper: {
+    width: '100%', marginTop: tokens.spacingVerticalXXS,
+    display: 'flex',
   },
   wontFireItem: {
     display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS,
@@ -284,18 +279,12 @@ const useStyles = makeStyles({
     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
     marginBottom: tokens.spacingVerticalXS,
   },
-  filterRow: { display: 'flex', gap: tokens.spacingHorizontalM, alignItems: 'center', flexWrap: 'wrap' },
-  filterBar: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginBottom: tokens.spacingVerticalS,
-  },
-  searchInput: {
-    minWidth: '220px',
-    flex: 1,
-    maxWidth: '400px',
+  filterButton: {
+    minWidth: 'unset',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    height: '22px',
+    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXL, textAlign: 'center',
@@ -311,18 +300,12 @@ const useStyles = makeStyles({
   /* ── Global Chain Map sub-view container ── */
   chainMapContainer: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM },
 
-  /* ── Filter badge row wrappers (two identical divs in chain map) ── */
-  filterBadgeRow: { display: 'flex', gap: tokens.spacingHorizontalXS },
-
-  /* ── Clickable badge (cursor override) ── */
-  badgeCursor: { cursor: 'pointer' },
-
   /* ── Chain map automation cell ── */
   chainAutoCell: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXXS },
   chainAutoBadge: { width: 'fit-content' },
 
   /* ── Trace confidence badge (very small) ── */
-  tinyBadge: { fontSize: '9px' },
+  tinyBadge: { fontSize: tokens.fontSizeBase100 },
 
   /* ── Trace divider (dashed horizontal separator between entry points) ── */
   traceDivider: {
@@ -330,11 +313,11 @@ const useStyles = makeStyles({
     margin: `${tokens.spacingVerticalS} 0`,
   },
 
-  /* ── Step mode badge / no-filter badge (9px + flexShrink) ── */
-  stepBadge: { fontSize: '9px', flexShrink: 0 },
+  /* ── Step mode badge / no-filter badge (small + flexShrink) ── */
+  stepBadge: { fontSize: tokens.fontSizeBase100, flexShrink: 0 },
 
   /* ── Filtering attributes text shown inside a step row ── */
-  stepFilterText: { fontSize: '9px', color: tokens.colorNeutralForeground3, flexShrink: 0 },
+  stepFilterText: { fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, flexShrink: 0 },
 
   /* ── Empty pipeline message (no automations) ── */
   emptyPipelineText: {
@@ -352,9 +335,9 @@ const useStyles = makeStyles({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  wontFireItemStage: { fontSize: '9px', color: tokens.colorNeutralForeground3 },
+  wontFireItemStage: { fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 },
   wontFireItemFilter: {
-    fontSize: '9px',
+    fontSize: tokens.fontSizeBase100,
     color: tokens.colorNeutralForeground3,
     minWidth: 0,
     overflow: 'hidden',
@@ -372,28 +355,28 @@ const useStyles = makeStyles({
     fontFamily: 'monospace',
     marginRight: tokens.spacingHorizontalXS,
     backgroundColor: tokens.colorNeutralBackground3,
-    padding: `0 3px`,
+    padding: `0 ${tokens.spacingHorizontalXS}`,
     borderRadius: tokens.borderRadiusSmall,
   },
 
   /* ── ChildEntitySection header text elements ── */
-  childArrow: { fontSize: '10px' },
+  childArrow: { fontSize: tokens.fontSizeBase100 },
   childEntityName: { fontSize: tokens.fontSizeBase300 },
-  childLogicalName: { fontFamily: 'monospace', fontSize: '10px', color: tokens.colorNeutralForeground3 },
-  childStepCount: { fontSize: '9px', color: tokens.colorNeutralForeground3 },
+  childLogicalName: { fontFamily: 'monospace', fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 },
+  childStepCount: { fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 },
 
   /* ── FieldMatchVerdict: "WillFireNoFilter" advisory text ── */
-  noFilterAdvisory: { fontSize: '9px', color: tokens.colorPaletteRedForeground1 },
+  noFilterAdvisory: { fontSize: tokens.fontSizeBase100, color: tokens.colorPaletteRedForeground1 },
 
   /* ── FieldPills row layout ── */
   fieldPillRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '3px',
+    gap: tokens.spacingHorizontalXXS,
     flexWrap: 'wrap',
     marginTop: tokens.spacingVerticalXXS,
   },
-  fieldPillLabel: { fontSize: '9px', color: tokens.colorNeutralForeground3 },
+  fieldPillLabel: { fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 },
 
   /* ── Entity header: logical name mono text ── */
   entityLogicalName: {
@@ -457,7 +440,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
           <div className={styles.bannerContent}>
             <div className={styles.bannerTitleRow}>
             <Text weight="semibold">Detection Coverage Notice</Text>
-            <Badge appearance="filled" color="warning" size="small">Preview</Badge>
+            <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
           </div>
             <Text as="p" style={{ margin: 0 }}>⚡ <strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</Text>
             <Text as="p" style={{ margin: 0 }}>🔄 <strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</Text>
@@ -516,7 +499,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
         <div className={styles.bannerContent}>
           <div className={styles.bannerTitleRow}>
             <Text weight="semibold">Detection Coverage Notice</Text>
-            <Badge appearance="filled" color="warning" size="small">Preview</Badge>
+            <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
           </div>
           <Text as="p" style={{ margin: 0 }}>⚡ <strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</Text>
           <Text as="p" style={{ margin: 0 }}>🔄 <strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</Text>
@@ -574,7 +557,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
               <Card key={i} className={styles.riskCard}>
                 <div className={styles.riskCardHeader}>
                   <Warning24Regular style={{ color: tokens.colorPaletteRedForeground1 }} />
-                  <Badge appearance="filled" color={
+                  <Badge appearance="filled" shape="rounded" color={
                     risk.type === 'ReTrigger' ? 'danger' :
                     risk.type === 'NoFilterAttributes' ? 'danger' :
                     risk.type === 'CircularReference' ? 'danger' :
@@ -588,7 +571,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
               <Card key={i} className={styles.riskCardMedium}>
                 <div className={styles.riskCardHeader}>
                   <Warning24Regular style={{ color: tokens.colorPaletteYellowForeground2 }} />
-                  <Badge appearance="filled" color="warning">{risk.type}</Badge>
+                  <Badge appearance="filled" shape="rounded" color="warning">{risk.type}</Badge>
                 </div>
                 <Text className={styles.riskDescription}>{risk.description}</Text>
               </Card>
@@ -610,21 +593,30 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
       {subView === 'traces' && (
         <div>
           {/* Filter bar */}
-          <div className={styles.filterBar}>
-            <Input
-              className={styles.searchInput}
-              placeholder="Search entities..."
-              value={pipelineSearch}
-              onChange={(_e, data) => setPipelineSearch(data.value)}
-              contentBefore={<Search20Regular />}
-              size="small"
-            />
-            <Checkbox
-              label="Show all entities with automation"
-              checked={showAllEntities}
-              onChange={(_e: React.ChangeEvent<HTMLInputElement>, data: CheckboxOnChangeData) => setShowAllEntities(!!data.checked)}
-            />
-          </div>
+          <FilterBar
+            searchValue={pipelineSearch}
+            onSearchChange={setPipelineSearch}
+            searchPlaceholder="Search entities..."
+            filteredCount={
+              Array.from(analysis.allEntityPipelines.entries()).filter(([logicalName, p]) => {
+                const visible = showAllEntities || p.hasCrossEntityOutput;
+                if (!visible) return false;
+                if (!pipelineSearch.trim()) return true;
+                const q = pipelineSearch.toLowerCase();
+                return p.entityDisplayName.toLowerCase().includes(q) || logicalName.toLowerCase().includes(q);
+              }).length
+            }
+            totalCount={showAllEntities ? analysis.allEntityPipelines.size : analysis.entityViews.size}
+            itemLabel="entities"
+          >
+            <FilterGroup label="Show:">
+              <Checkbox
+                label="Show all entities with automation"
+                checked={showAllEntities}
+                onChange={(_e, data) => setShowAllEntities(!!data.checked)}
+              />
+            </FilterGroup>
+          </FilterBar>
 
           {/* Empty state: no cross-entity links at all and filter is on */}
           {analysis.entityViews.size === 0 && !showAllEntities && (
@@ -709,48 +701,47 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
       {/* ── Sub-view 2: Global Chain Map ── */}
       {subView === 'map' && (
         <div className={styles.chainMapContainer}>
-          {/* Search bar */}
-          <div className={styles.filterBar}>
-            <Input
-              className={styles.searchInput}
-              placeholder="Search source, target, or automation name..."
-              value={chainSearch}
-              onChange={(_e, data) => setChainSearch(data.value)}
-              contentBefore={<Search20Regular />}
-              size="small"
-            />
-          </div>
-
-          {/* Type and operation filter badges */}
-          <div className={styles.filterRow}>
-            <Text weight="semibold">Filter:</Text>
-            <div className={styles.filterBadgeRow}>
-              {['all', 'Flow', 'ClassicWorkflow'].map(t => (
-                <Badge
+          {/* Filter bar with search + type/operation toggles */}
+          <FilterBar
+            searchValue={chainSearch}
+            onSearchChange={setChainSearch}
+            searchPlaceholder="Search source, target, or automation name..."
+            filteredCount={filteredLinks.length}
+            totalCount={analysis.chainLinks.length}
+            itemLabel="links"
+          >
+            <FilterGroup label="Type:">
+              {(['all', 'Flow', 'ClassicWorkflow'] as const).map(t => (
+                <ToggleButton
                   key={t}
-                  appearance={filterType === t ? 'filled' : 'outline'}
-                  color={filterType === t ? 'brand' : 'informative'}
-                  className={styles.badgeCursor}
-                  onClick={() => setFilterType(t)}
+                  className={styles.filterButton}
+                  size="small"
+                  checked={filterType === t}
+                  onClick={() => setFilterType(filterType === t && t !== 'all' ? 'all' : t)}
                 >
                   {t === 'all' ? 'All Types' : t}
-                </Badge>
+                </ToggleButton>
               ))}
-            </div>
-            <div className={styles.filterBadgeRow}>
-              {['all', 'Create', 'Update', 'Delete'].map(op => (
-                <Badge
+            </FilterGroup>
+            <FilterGroup label="Operation:">
+              {(['all', 'Create', 'Update', 'Delete'] as const).map(op => (
+                <ToggleButton
                   key={op}
-                  appearance={filterOperation === op ? 'filled' : 'outline'}
-                  color={filterOperation === op ? 'brand' : op === 'Create' ? 'success' : op === 'Delete' ? 'danger' : 'warning'}
-                  className={styles.badgeCursor}
-                  onClick={() => setFilterOperation(op)}
+                  className={styles.filterButton}
+                  size="small"
+                  checked={filterOperation === op}
+                  onClick={() => setFilterOperation(filterOperation === op && op !== 'all' ? 'all' : op)}
                 >
                   {op === 'all' ? 'All Ops' : op}
-                </Badge>
+                </ToggleButton>
               ))}
-            </div>
-          </div>
+              {(filterType !== 'all' || filterOperation !== 'all') && (
+                <Button appearance="transparent" size="small" onClick={() => { setFilterType('all'); setFilterOperation('all'); }}>
+                  Clear
+                </Button>
+              )}
+            </FilterGroup>
+          </FilterBar>
 
           {filteredLinks.length === 0 ? (
             <div className={styles.emptyState}><Text>No chain links match the current filter.</Text></div>
@@ -778,12 +769,12 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                     </div>
                     <div key={`auto-${i}`} className={styles.chainAutoCell}>
                       <Text style={{ wordBreak: 'break-word' }}>{link.automationName}</Text>
-                      <Badge appearance="outline" color={link.automationType === 'Flow' ? 'success' : 'important'} className={styles.chainAutoBadge}>
+                      <Badge appearance="outline" shape="rounded" color={link.automationType === 'Flow' ? 'success' : 'important'} className={styles.chainAutoBadge}>
                         {link.automationType}
                       </Badge>
                     </div>
                     <OperationBadge key={`op-${i}`} operation={link.operation} />
-                    <Badge key={`mode-${i}`} appearance="tint" color={link.isAsynchronous ? 'success' : 'warning'}>
+                    <Badge key={`mode-${i}`} appearance="tint" shape="rounded" color={link.isAsynchronous ? 'success' : 'warning'}>
                       {link.isAsynchronous ? 'Async' : 'Sync'}
                     </Badge>
                   </>
@@ -832,7 +823,7 @@ function EntityPipelineRow({
             </Text>
             {firstTrace && <OperationBadge operation={firstTrace.entryPoint.operation} />}
             {view.traces.length > 1 && (
-              <Badge appearance="tint" color="informative">{view.traces.length} entry points</Badge>
+              <Badge appearance="tint" shape="rounded" color="informative">{view.traces.length} entry points</Badge>
             )}
           </div>
 
@@ -862,7 +853,7 @@ function EntityPipelineRow({
                   <strong>{trace.entryPoint.automationName}</strong>
                   {' '}— {trace.entryPoint.sourceEntityDisplayName} &rarr; <strong>{trace.entryPoint.operation}</strong>
                   {' '}
-                  <Badge appearance="tint" color="informative" className={styles.tinyBadge}>
+                  <Badge appearance="tint" shape="rounded" color="informative" className={styles.tinyBadge}>
                     {trace.entryPoint.confidence}
                   </Badge>
                   {ti < view.traces.length - 1 && (
@@ -919,7 +910,7 @@ function EntityMessagePipelineRow({
               <OperationBadge key={mp.message} operation={mp.message} />
             ))}
             {pipeline.hasCrossEntityOutput && (
-              <Badge appearance="tint" color="informative">&rarr; cross-entity</Badge>
+              <Badge appearance="tint" shape="rounded" color="informative">&rarr; cross-entity</Badge>
             )}
           </div>
 
@@ -984,12 +975,12 @@ function MessagePipelineSteps({
                 <span className={styles.stepName}>{step.automationName}</span>
                 {step.stageName && <span className={styles.stepStage}>{step.stageName}</span>}
                 {step.rank !== undefined && <span className={styles.stepStage}>#{step.rank}</span>}
-                <Badge appearance="tint" color={step.mode === 'Sync' ? 'warning' : 'success'} className={styles.stepBadge}>
+                <Badge appearance="tint" shape="rounded" color={step.mode === 'Sync' ? 'warning' : 'success'} className={styles.stepBadge}>
                   {step.mode}
                 </Badge>
                 {step.firesForAllUpdates && (
                   <Tooltip content="No filtering attributes — fires on ALL updates" relationship="description">
-                    <Badge appearance="filled" color="danger" className={styles.stepBadge}>&#9888; No filter</Badge>
+                    <Badge appearance="filled" shape="rounded" color="danger" className={styles.stepBadge}>&#9888; No filter</Badge>
                   </Tooltip>
                 )}
                 {step.filteringAttributes.length > 0 && !step.firesForAllUpdates && mp.message === 'Update' && (
@@ -1085,13 +1076,15 @@ function TracePipeline({
       {/* Won't fire — collapsed section */}
       {wontFire.length > 0 && (
         <>
-          <button className={styles.wontFireBtn} onClick={() => setShowWontFire(s => !s)}>
-            {showWontFire ? '▲' : '▼'} {wontFire.length} automation{wontFire.length !== 1 ? 's' : ''} won't fire for this entry point
-          </button>
+          <div className={styles.wontFireBtnWrapper}>
+            <Button appearance="subtle" size="small" onClick={() => setShowWontFire(s => !s)}>
+              {showWontFire ? '▲' : '▼'} {wontFire.length} automation{wontFire.length !== 1 ? 's' : ''} won't fire for this entry point
+            </Button>
+          </div>
           {showWontFire && wontFire.map((act, i) => (
             <div key={i} className={styles.wontFireItem}>
               <span>{typeIcon(act.automationType)}</span>
-              <Badge appearance="outline" color="informative" className={styles.tinyBadge}>{act.automationType}</Badge>
+              <Badge appearance="outline" shape="rounded" color="informative" className={styles.tinyBadge}>{act.automationType}</Badge>
               <Text className={styles.wontFireItemName}>
                 {act.automationName}
               </Text>
@@ -1166,12 +1159,12 @@ function StepBlock({
           {activation.rank !== undefined && (
             <span className={styles.stepStage}>#{activation.rank}</span>
           )}
-          <Badge appearance="tint" color={activation.mode === 'Sync' ? 'warning' : 'success'} className={styles.stepBadge}>
+          <Badge appearance="tint" shape="rounded" color={activation.mode === 'Sync' ? 'warning' : 'success'} className={styles.stepBadge}>
             {activation.mode}
           </Badge>
           {activation.firingStatus === 'WillFireNoFilter' && (
             <Tooltip content="No filtering attributes — fires on ALL updates" relationship="description">
-              <Badge appearance="filled" color="danger" className={styles.stepBadge}>&#9888; No filter</Badge>
+              <Badge appearance="filled" shape="rounded" color="danger" className={styles.stepBadge}>&#9888; No filter</Badge>
             </Tooltip>
           )}
         </div>
@@ -1397,7 +1390,7 @@ function TypeBadge({ type }: { type: AutomationActivation['automationType'] | Pi
     : 'warning';
   const styles = useStyles();
   return (
-    <Badge appearance="outline" color={color} className={styles.stepBadge}>
+    <Badge appearance="outline" shape="rounded" color={color} className={styles.stepBadge}>
       {typeIcon(type)} {type}
     </Badge>
   );
@@ -1408,6 +1401,7 @@ function OperationBadge({ operation }: { operation: string }) {
   return (
     <Badge
       appearance="tint"
+      shape="rounded"
       color={operation === 'Create' ? 'success' : operation === 'Delete' ? 'danger' : 'warning'}
       className={styles.stepBadge}
     >

@@ -6,8 +6,8 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
 } from '@fluentui/react-components';
+import { FilterBar } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular, PlugDisconnected20Regular } from '@fluentui/react-icons';
 import type { CustomConnector } from '../core';
 import { formatDate } from '../utils/dateFormat';
@@ -18,18 +18,6 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
-  },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -69,6 +57,7 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: '2px',
     minWidth: 0,
+    wordBreak: 'break-word',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -201,18 +190,15 @@ export function CustomConnectorsList({ customConnectors }: CustomConnectorsListP
   }
 
   return (
-    <div className={styles.container} style={{ marginTop: '16px' }}>
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search custom connectors..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {searchedConnectors.length} of {sorted.length} connectors
-        </Text>
-      </div>
+    <div className={styles.container} style={{ marginTop: tokens.spacingVerticalL }}>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search custom connectors..."
+        filteredCount={searchedConnectors.length}
+        totalCount={sorted.length}
+        itemLabel="connectors"
+      />
       {searchedConnectors.length === 0 && sorted.length > 0 && (
         <div className={styles.emptyState}>
           <Text>No custom connectors match your search.</Text>

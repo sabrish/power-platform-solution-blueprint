@@ -16,9 +16,10 @@ import {
   TableCellLayout,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import { FilterBar } from './FilterBar';
+import { FilterBar, FilterGroup } from './FilterBar';
 import type { GlobalChoice, GlobalChoiceOption } from '../core';
 import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
 
 const useStyles = makeStyles({
   container: {
@@ -31,20 +32,11 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   choiceRow: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto',
     gap: tokens.spacingHorizontalM,
-    alignItems: 'center',
+    alignItems: 'start',
     padding: tokens.spacingVerticalM,
     backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
@@ -226,7 +218,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                     </TableCell>
                     <TableCell>
                       <TableCellLayout>
-                        <span style={{ fontWeight: 500 }}>{option.label}</span>
+                        <span style={{ fontWeight: tokens.fontWeightSemibold }}>{option.label}</span>
                       </TableCellLayout>
                     </TableCell>
                     <TableCell>
@@ -270,15 +262,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
 
   // Empty state
   if (globalChoices.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <Text style={{ fontSize: '48px' }}>🎯</Text>
-        <Text size={500} weight="semibold">
-          No Global Choices Found
-        </Text>
-        <Text>No global choices were found in the selected solution(s).</Text>
-      </div>
-    );
+    return <EmptyState type="globalchoices" />;
   }
 
   return (
@@ -291,19 +275,19 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
         totalCount={globalChoices.length}
         itemLabel="global choices"
       >
-        <Checkbox
-          label="Show managed only"
-          checked={showManagedOnly}
-          onChange={(_, data) => setShowManagedOnly(data.checked === true)}
-        />
+        <FilterGroup label="Show:">
+          <Checkbox
+            label="Show managed only"
+            checked={showManagedOnly}
+            onChange={(_, data) => setShowManagedOnly(data.checked === true)}
+          />
+        </FilterGroup>
       </FilterBar>
 
       {/* Global Choices List */}
       <div className={styles.listContainer}>
         {filteredChoices.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Text>No global choices match your filters.</Text>
-          </div>
+          <EmptyState type="search" />
         ) : (
           filteredChoices.map((choice) => {
             const isExpanded = expandedChoiceId === choice.id;
