@@ -23,11 +23,12 @@ export const useCardRowStyles = makeStyles({
     gap: tokens.spacingVerticalS,
   },
 
-  /** Small toggle-buttons inside FilterBar */
+  /** Small toggle-buttons inside FilterBar — pill shape */
   filterButton: {
     minWidth: 'unset',
     paddingLeft: tokens.spacingHorizontalS,
     paddingRight: tokens.spacingHorizontalS,
+    borderRadius: tokens.borderRadiusCircular,
   },
 
   /**
