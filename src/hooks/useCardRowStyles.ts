@@ -28,8 +28,6 @@ export const useCardRowStyles = makeStyles({
     minWidth: 'unset',
     paddingLeft: tokens.spacingHorizontalS,
     paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
   },
 
   /**

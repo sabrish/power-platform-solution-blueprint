@@ -8,7 +8,6 @@ import {
   Title3,
   Checkbox,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular, Warning20Regular, Globe20Regular } from '@fluentui/react-icons';
 import type { WebResource, ExternalCall } from '../core';
@@ -296,10 +295,15 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
         totalCount={webResources.length}
         itemLabel="web resources"
       >
-        <FilterGroup label="Type:">
+        <FilterGroup
+          label="Type:"
+          hasActiveFilters={activeTypeFilters.size > 0}
+          onClear={() => setActiveTypeFilters(new Set())}
+        >
           {availableTypes.map((type) => (
             <ToggleButton
               key={type}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeTypeFilters.has(type)}
@@ -309,11 +313,6 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
               {type}
             </ToggleButton>
           ))}
-          {activeTypeFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveTypeFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
         <FilterGroup label="Show:">
           <Checkbox

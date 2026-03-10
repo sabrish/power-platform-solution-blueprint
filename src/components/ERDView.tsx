@@ -6,7 +6,7 @@ import {
   Card,
   Button,
   ToggleButton,
-  Input,
+  SearchBox,
   makeStyles,
   tokens,
   Tooltip,
@@ -22,7 +22,6 @@ import {
   ZoomIn24Regular,
   ZoomOut24Regular,
   ZoomFit24Regular,
-  Search24Regular,
   Dismiss24Regular,
   Checkmark24Regular,
 } from '@fluentui/react-icons';
@@ -785,18 +784,12 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             <div className={styles.divider} />
 
             {/* Search */}
-            <Input
+            <SearchBox
               className={styles.searchBox}
-              size="small"
+              size="medium"
               placeholder="Search entities..."
-              contentBefore={<Search24Regular style={{ fontSize: '14px' }} />}
               value={searchQuery}
               onChange={(_, d) => setSearchQuery(d.value)}
-              contentAfter={
-                searchQuery
-                  ? <Dismiss24Regular style={{ fontSize: '14px', cursor: 'pointer' }} onClick={() => setSearchQuery('')} />
-                  : undefined
-              }
             />
 
             {/* Hops selector + Isolate (next to search) */}
@@ -833,6 +826,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               return (
                 <ToggleButton
                   key={pub.publisherPrefix}
+                  appearance="outline"
                   size="small"
                   checked={!isHidden}
                   style={{
@@ -858,6 +852,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             <div className={styles.divider} />
 
             <ToggleButton
+              appearance="outline"
               size="small"
               checked={showEdgeLabels}
               onClick={() => setShowEdgeLabels((v) => !v)}

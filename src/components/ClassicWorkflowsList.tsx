@@ -10,7 +10,6 @@ import {
   MessageBar,
   MessageBarBody,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import {
@@ -212,10 +211,15 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
         totalCount={sorted.length}
         itemLabel="workflows"
       >
-        <FilterGroup label="Mode:">
+        <FilterGroup
+          label="Mode:"
+          hasActiveFilters={(activeFilters['mode']?.size ?? 0) > 0}
+          onClear={() => clearFilter('mode')}
+        >
           {WORKFLOW_MODE_VALUES.map((mode) => (
             <ToggleButton
               key={mode}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['mode']?.has(mode) ?? false}
@@ -225,16 +229,16 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
               {mode}
             </ToggleButton>
           ))}
-          {(activeFilters['mode']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('mode')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
-        <FilterGroup label="State:">
+        <FilterGroup
+          label="State:"
+          hasActiveFilters={(activeFilters['state']?.size ?? 0) > 0}
+          onClear={() => clearFilter('state')}
+        >
           {WORKFLOW_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['state']?.has(state) ?? false}
@@ -244,11 +248,6 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
               {state}
             </ToggleButton>
           ))}
-          {(activeFilters['state']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('state')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
 
