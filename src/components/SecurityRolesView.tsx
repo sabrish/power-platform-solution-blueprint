@@ -292,7 +292,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
         <AccordionItem value="special-perms">
           <AccordionHeader>
             <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXXS }}>
-              <Text weight="semibold">Special Permissions Matrix</Text>
+              <Text size={500} weight="semibold">Special Permissions Matrix</Text>
               <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                 {rolesWithSpecialPerms.length} {rolesWithSpecialPerms.length === 1 ? 'role has' : 'roles have'} special permissions — click to expand
               </Text>
