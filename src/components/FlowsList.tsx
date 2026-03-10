@@ -348,14 +348,12 @@ export function FlowsList({
                   {flow.name}
                 </Text>
                 {flow.description && (
-                  <Text className={shared.codeText}>
-                    <TruncatedText text={flow.description} />
-                  </Text>
+                  <Text className={shared.codeText}>{flow.description}</Text>
                 )}
               </div>
               {!entityLogicalName && (flow.definition.triggerEntity || flow.entity) && (
                 <Text className={shared.codeText}>
-                  <TruncatedText text={flow.definition.triggerEntity || flow.entity || ''} />
+                  {flow.definition.triggerEntity || flow.entity}
                 </Text>
               )}
               <div className={shared.badgeGroup}>

@@ -12,82 +12,15 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import { FilterBar } from './FilterBar';
+import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import type { SecurityRoleDetail } from '../core';
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalL,
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  description: {
-    color: tokens.colorNeutralForeground3,
-    display: 'block',
-  },
-  // Card-row list (PATTERN-001)
+  // Local-only styles not covered by useCardRowStyles
   roleRow: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  roleRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
   },
   legend: {
     padding: tokens.spacingVerticalS,
@@ -107,6 +40,7 @@ interface SecurityRolesViewProps {
 
 function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null);
 
@@ -262,10 +196,11 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
 
   if (securityRoles.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Text size={500} weight="semibold">No Security Roles Found</Text>
-        <Text>No security roles were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="generic"
+        title="No Security Roles Found"
+        message="No security roles were found in the selected solution(s)."
+      />
     );
   }
 
@@ -277,7 +212,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
   );
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -388,12 +323,10 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
       </Accordion>
 
       {/* Role Details */}
-      <div className={styles.section}>
+      <div className={shared.container}>
         <Title3>Role Details</Title3>
         {filteredRoles.length === 0 && (
-          <div className={styles.emptyState}>
-            <Text>No roles match your search.</Text>
-          </div>
+          <EmptyState type="search" />
         )}
         {filteredRoles.map((role) => {
           const isExpanded = expandedRoleId === role.roleid;
@@ -402,23 +335,23 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
           return (
             <div key={role.roleid}>
               <div
-                className={`${styles.roleRow} ${isExpanded ? styles.roleRowExpanded : ''}`}
+                className={`${shared.cardRow} ${styles.roleRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
                 role="button"
                 tabIndex={0}
                 aria-expanded={isExpanded}
                 onClick={() => toggleExpand(role.roleid)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(role.roleid); } }}
               >
-                <div className={styles.chevron}>
+                <div className={shared.chevron}>
                   {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                 </div>
-                <div className={styles.nameColumn}>
+                <div className={shared.nameColumn}>
                   <Text weight="semibold">{role.name}</Text>
                   {role.businessunitname && (
-                    <Text className={styles.codeText}>{role.businessunitname}</Text>
+                    <Text className={shared.codeText}>{role.businessunitname}</Text>
                   )}
                 </div>
-                <div className={styles.badgeGroup}>
+                <div className={shared.badgeGroup}>
                   {role.hasSystemAdminPrivileges && (
                     <Badge appearance="tint" shape="rounded" color="danger" size="small">
                       System Admin
@@ -439,7 +372,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                 </Badge>
               </div>
               {isExpanded && (
-                <div className={styles.expandedDetails}>
+                <div className={shared.expandedDetails}>
                   {renderEntityPermissionsTable(role)}
                 </div>
               )}

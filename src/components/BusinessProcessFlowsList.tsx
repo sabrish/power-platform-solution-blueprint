@@ -17,7 +17,6 @@ import {
 } from '@fluentui/react-icons';
 import type { BusinessProcessFlow, BPFStage } from '../core';
 import { formatDate } from '../utils/dateFormat';
-import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
@@ -274,12 +273,8 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <div className={shared.nameColumn}>
-                <Text weight="semibold">
-                  <TruncatedText text={bpf.name} />
-                </Text>
-                <Text className={shared.codeText}>
-                  <TruncatedText text={bpf.uniqueName} />
-                </Text>
+                <Text weight="semibold">{bpf.name}</Text>
+                <Text className={shared.codeText}>{bpf.uniqueName}</Text>
               </div>
               <Badge appearance="outline" shape="rounded" size="small">
                 {bpf.primaryEntityDisplayName || bpf.primaryEntity}

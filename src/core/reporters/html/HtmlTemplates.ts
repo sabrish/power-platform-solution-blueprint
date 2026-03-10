@@ -104,23 +104,9 @@ ${this.embeddedCSS()}
     const generatedDate = metadata.generatedAt.toLocaleString();
     return `<header class="report-header" role="banner">
   <h1>Power Platform Solution Blueprint</h1>
-  <div class="metadata-grid">
-    <div class="metadata-item">
-      <span class="metadata-label">Environment:</span>
-      <span class="metadata-value">${this.escapeHtml(metadata.environment)}</span>
-    </div>
-    <div class="metadata-item">
-      <span class="metadata-label">Generated:</span>
-      <span class="metadata-value">${this.escapeHtml(generatedDate)}</span>
-    </div>
-    <div class="metadata-item">
-      <span class="metadata-label">Scope:</span>
-      <span class="metadata-value">${this.escapeHtml(metadata.scope.description)}</span>
-    </div>
-    <div class="metadata-item">
-      <span class="metadata-label">Entities:</span>
-      <span class="metadata-value">${metadata.entityCount}</span>
-    </div>
+  <div class="metadata-item" style="display:flex;flex-direction:column;gap:4px;">
+    <div><span class="metadata-label">Environment:</span> <span class="metadata-value">${this.escapeHtml(metadata.environment)}</span></div>
+    <div><span class="metadata-label">Generated:</span> <span class="metadata-value">${this.escapeHtml(generatedDate)}</span></div>
   </div>
 </header>`;
   }

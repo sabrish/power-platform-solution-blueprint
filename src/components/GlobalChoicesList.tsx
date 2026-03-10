@@ -18,7 +18,6 @@ import {
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import { FilterBar, FilterGroup } from './FilterBar';
 import type { GlobalChoice, GlobalChoiceOption } from '../core';
-import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
@@ -237,12 +236,8 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                   </div>
                   <div className={shared.nameColumn}>
-                    <Text weight="semibold">
-                      <TruncatedText text={choice.displayName} />
-                    </Text>
-                    <Text className={shared.codeText}>
-                      <TruncatedText text={choice.name} />
-                    </Text>
+                    <Text weight="semibold">{choice.displayName}</Text>
+                    <Text className={shared.codeText}>{choice.name}</Text>
                   </div>
                   <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                     {choice.totalOptions} options
