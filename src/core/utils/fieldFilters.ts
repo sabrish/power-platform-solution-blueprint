@@ -74,12 +74,3 @@ export function filterSystemFields(
     return !SYSTEM_FIELDS.has(logicalName);
   });
 }
-
-/**
- * Check if a field is a system field
- * @param logicalName Field logical name
- * @returns True if it's a system field
- */
-export function isSystemField(logicalName: string): boolean {
-  return SYSTEM_FIELDS.has(logicalName.toLowerCase());
-}

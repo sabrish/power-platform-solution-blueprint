@@ -264,15 +264,6 @@ export interface ExternalCall {
 }
 
 /**
- * Flow state color coding
- */
-export const FLOW_STATE_COLORS = {
-  'Active': '#107C10',
-  'Draft': '#FFB900',
-  'Suspended': '#D13438',
-} as const;
-
-/**
  * Business rule information
  */
 export interface BusinessRule {

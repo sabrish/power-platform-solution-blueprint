@@ -167,20 +167,3 @@ export function formatBytes(bytes: number): string {
 
   return `${value.toFixed(decimals)} ${sizes[i]}`;
 }
-
-/**
- * Estimate total ZIP size (with compression)
- * @param markdownSize Markdown size estimate
- * @param jsonSize JSON size estimate
- * @param htmlSize HTML size estimate
- * @returns Estimated ZIP size in bytes (accounting for ~60% compression)
- */
-export function estimateZipSize(
-  markdownSize: number,
-  jsonSize: number,
-  htmlSize: number
-): number {
-  const totalUncompressed = markdownSize + jsonSize + htmlSize;
-  // Assume ~40% compression ratio (text compresses well)
-  return Math.round(totalUncompressed * 0.6);
-}
