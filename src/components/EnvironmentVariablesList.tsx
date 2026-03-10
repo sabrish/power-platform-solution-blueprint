@@ -10,95 +10,18 @@ import {
   Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
-import { ChevronDown20Regular, ChevronRight20Regular, Settings20Regular } from '@fluentui/react-icons';
+import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { EnvironmentVariable } from '../core';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const ENV_TYPE_VALUES = ['String', 'Number', 'Boolean', 'JSON', 'DataSource'];
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   row: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto minmax(100px, 1fr) auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  rowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
   },
   valueBox: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -107,15 +30,6 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground3,
     borderRadius: tokens.borderRadiusSmall,
     wordBreak: 'break-all',
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
   },
 });
 
@@ -136,6 +50,7 @@ const getTypeColor = (type: string): 'brand' | 'success' | 'danger' | 'warning' 
 
 export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVariablesListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
@@ -183,62 +98,62 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
   };
 
   const renderDetail = (envVar: EnvironmentVariable) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>Environment Variable Details</Title3>
 
-        <div className={styles.section}>
-          <Text className={styles.detailLabel}>Current Value</Text>
+        <div className={shared.section}>
+          <Text className={shared.detailLabel}>Current Value</Text>
           <div className={styles.valueBox}>
             {envVar.currentValue ?? <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>}
           </div>
         </div>
 
-        <div className={styles.section}>
-          <Text className={styles.detailLabel}>Default Value</Text>
+        <div className={shared.section}>
+          <Text className={shared.detailLabel}>Default Value</Text>
           <div className={styles.valueBox}>
             {envVar.defaultValue ?? <span style={{ color: tokens.colorNeutralForeground3 }}>None</span>}
           </div>
         </div>
 
         {envVar.hint && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Hint</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Hint</Text>
             <Text>{envVar.hint}</Text>
           </div>
         )}
 
         {envVar.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
             <Text>{envVar.description}</Text>
           </div>
         )}
 
-        <div className={`${styles.detailsGrid} ${styles.section}`}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Type</Text>
-            <Text className={styles.detailValue}>{envVar.typeName}</Text>
+        <div className={`${shared.detailsGrid} ${shared.section}`}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Type</Text>
+            <Text className={shared.detailValue}>{envVar.typeName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Required</Text>
-            <Text className={styles.detailValue}>{envVar.isRequired ? 'Yes' : 'No'}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Required</Text>
+            <Text className={shared.detailValue}>{envVar.isRequired ? 'Yes' : 'No'}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Customizable</Text>
-            <Text className={styles.detailValue}>{envVar.isCustomizable ? 'Yes' : 'No'}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Customizable</Text>
+            <Text className={shared.detailValue}>{envVar.isCustomizable ? 'Yes' : 'No'}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Owner</Text>
-            <Text className={styles.detailValue}>{envVar.owner}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Owner</Text>
+            <Text className={shared.detailValue}>{envVar.owner}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Modified By</Text>
-            <Text className={styles.detailValue}>{envVar.modifiedBy}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Modified By</Text>
+            <Text className={shared.detailValue}>{envVar.modifiedBy}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Schema Name</Text>
-            <Text className={styles.codeText}>{envVar.schemaName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Schema Name</Text>
+            <Text className={shared.codeText}>{envVar.schemaName}</Text>
           </div>
         </div>
       </Card>
@@ -247,16 +162,16 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
 
   if (environmentVariables.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Settings20Regular style={{ fontSize: '48px' }} />
-        <Text size={500} weight="semibold">No Environment Variables Found</Text>
-        <Text>No environment variables were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="generic"
+        title="No Environment Variables Found"
+        message="No environment variables were found in the selected solution(s)."
+      />
     );
   }
 
   return (
-    <div className={styles.container} style={{ marginTop: tokens.spacingVerticalL }}>
+    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -269,7 +184,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
           {ENV_TYPE_VALUES.map((type) => (
             <ToggleButton
               key={type}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeTypeFilters.has(type)}
               disabled={typeCounts[type] === 0}
@@ -293,30 +208,30 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
         return (
           <div key={envVar.id}>
             <div
-              className={`${styles.row} ${isExpanded ? styles.rowExpanded : ''}`}
+              className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
               onClick={() => toggleExpand(envVar.id)}
             >
-              <div className={styles.chevron}>
+              <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
-              <div className={styles.nameColumn}>
+              <div className={shared.nameColumn}>
                 <Text weight="semibold">
                   <TruncatedText text={envVar.displayName} />
                 </Text>
-                <Text className={styles.codeText}>
+                <Text className={shared.codeText}>
                   <TruncatedText text={envVar.schemaName} />
                 </Text>
               </div>
               <Badge appearance="filled" shape="rounded" color={getTypeColor(envVar.typeName)}>
                 {envVar.typeName}
               </Badge>
-              <Text className={styles.codeText}>
+              <Text className={shared.codeText}>
                 {envVar.currentValue
                   ? <TruncatedText text={envVar.currentValue} />
                   : <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>
                 }
               </Text>
-              <div className={styles.badgeGroup}>
+              <div className={shared.badgeGroup}>
                 {envVar.isRequired && (
                   <Badge appearance="filled" shape="rounded" color="important" size="small">Required</Badge>
                 )}

@@ -15,97 +15,15 @@ import type { Flow } from '../core';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const FLOW_TYPE_VALUES = ['Dataverse', 'Scheduled', 'Manual', 'Other'];
 const FLOW_STATE_VALUES = ['Active', 'Draft', 'Suspended'];
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
   flowRow: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  flowRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  wrapText: {
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
   },
   externalCallItem: {
     padding: tokens.spacingVerticalS,
@@ -138,6 +56,7 @@ export function FlowsList({
   entityLogicalName,
 }: FlowsListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedFlowId, setExpandedFlowId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
@@ -241,38 +160,38 @@ export function FlowsList({
   };
 
   const renderFlowDetails = (flow: Flow) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>Flow Details</Title3>
 
-        <div className={styles.detailsGrid}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Entity</Text>
-            <Text className={styles.detailValue}>
+        <div className={shared.detailsGrid}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Entity</Text>
+            <Text className={shared.detailValue}>
               {flow.entityDisplayName || flow.definition.triggerEntity || flow.entity || '—'}
             </Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Owner</Text>
-            <Text className={styles.detailValue}>{flow.owner}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Owner</Text>
+            <Text className={shared.detailValue}>{flow.owner}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Modified By</Text>
-            <Text className={styles.detailValue}>{flow.modifiedBy}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Modified By</Text>
+            <Text className={shared.detailValue}>{flow.modifiedBy}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Modified On</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Modified On</Text>
+            <Text className={shared.detailValue}>
               {formatDateTime(flow.modifiedOn)}
             </Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Actions Count</Text>
-            <Text className={styles.detailValue}>{flow.definition.actionsCount}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Actions Count</Text>
+            <Text className={shared.detailValue}>{flow.definition.actionsCount}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Scope</Text>
-            <Text className={styles.detailValue}>{flow.scopeName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Scope</Text>
+            <Text className={shared.detailValue}>{flow.scopeName}</Text>
           </div>
         </div>
 
@@ -298,18 +217,18 @@ export function FlowsList({
         </div>
 
         {flow.definition.triggerConditions && (
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Trigger Filter</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText} ${styles.codeBreakAll}`}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Trigger Filter</Text>
+            <Text className={`${shared.detailValue} ${shared.codeText} ${styles.codeBreakAll}`}>
               {flow.definition.triggerConditions}
             </Text>
           </div>
         )}
 
         {flow.definition.connectionReferences.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Connectors ({flow.definition.connectionReferences.length})</Title3>
-            <div className={styles.badgeGroup}>
+            <div className={shared.badgeGroup}>
               {flow.definition.connectionReferences.map((ref, idx) => (
                 <Badge key={idx} appearance="tint" shape="rounded" size="small">
                   {ref}
@@ -320,7 +239,7 @@ export function FlowsList({
         )}
 
         {flow.definition.externalCalls.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>External API Calls ({flow.definition.externalCalls.length})</Title3>
             {flow.definition.externalCalls.map((call, idx) => (
               <div key={idx} className={styles.externalCallItem}>
@@ -338,7 +257,7 @@ export function FlowsList({
                     {call.confidence}
                   </Badge>
                 </div>
-                <Text className={styles.codeText}>
+                <Text className={shared.codeText}>
                   <TruncatedText text={call.url} />
                 </Text>
                 <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
@@ -349,20 +268,20 @@ export function FlowsList({
           </div>
         )}
 
-        <div className={styles.section}>
+        <div className={shared.section}>
           <Title3>Technical Details</Title3>
-          <div className={styles.detailsGrid}>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Flow ID</Text>
-              <Text className={styles.codeText}>{flow.id}</Text>
+          <div className={shared.detailsGrid}>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Flow ID</Text>
+              <Text className={shared.codeText}>{flow.id}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>State Code</Text>
-              <Text className={styles.detailValue}>{flow.stateCode}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>State Code</Text>
+              <Text className={shared.detailValue}>{flow.stateCode}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Scope Value</Text>
-              <Text className={styles.detailValue}>{flow.scope}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Scope Value</Text>
+              <Text className={shared.detailValue}>{flow.scope}</Text>
             </div>
           </div>
         </div>
@@ -385,7 +304,7 @@ export function FlowsList({
   }
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -398,7 +317,7 @@ export function FlowsList({
           {FLOW_TYPE_VALUES.map((type) => (
             <ToggleButton
               key={type}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeTypeFilters.has(type)}
               disabled={typeCounts[type] === 0}
@@ -417,7 +336,7 @@ export function FlowsList({
           {FLOW_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeStateFilters.has(state)}
               disabled={stateCounts[state] === 0}
@@ -443,28 +362,28 @@ export function FlowsList({
         return (
           <div key={flow.id}>
             <div
-              className={`${styles.flowRow} ${isExpanded ? styles.flowRowExpanded : ''}`}
+              className={`${shared.cardRow} ${styles.flowRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
               onClick={() => toggleExpand(flow.id)}
             >
-              <div className={styles.chevron}>
+              <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
-              <div className={styles.nameColumn}>
-                <Text weight="semibold" className={styles.wrapText}>
+              <div className={shared.nameColumn}>
+                <Text weight="semibold" className={shared.wrapText}>
                   {flow.name}
                 </Text>
                 {flow.description && (
-                  <Text className={styles.codeText}>
+                  <Text className={shared.codeText}>
                     <TruncatedText text={flow.description} />
                   </Text>
                 )}
               </div>
               {!entityLogicalName && (flow.definition.triggerEntity || flow.entity) && (
-                <Text className={styles.codeText}>
+                <Text className={shared.codeText}>
                   <TruncatedText text={flow.definition.triggerEntity || flow.entity || ''} />
                 </Text>
               )}
-              <div className={styles.badgeGroup}>
+              <div className={shared.badgeGroup}>
                 <Badge appearance="tint" shape="rounded" color="brand" size="small">
                   {flow.definition.triggerType}
                 </Badge>

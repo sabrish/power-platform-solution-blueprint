@@ -15,100 +15,15 @@ import type { BusinessRule } from '../core';
 import { TruncatedText } from './TruncatedText';
 import { filterDescription } from '../utils/descriptionFilter';
 import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const RULE_STATE_VALUES = ['Active', 'Draft'];
 const RULE_SCOPE_VALUES = ['Entity', 'AllForms'];
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
   ruleRow: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  ruleRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  wrapText: {
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-    minWidth: 0,
-    wordBreak: 'break-word',
-    overflowWrap: 'anywhere',
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
   },
   conditionItem: {
     padding: tokens.spacingVerticalS,
@@ -142,6 +57,7 @@ export function BusinessRulesList({
   entityLogicalName,
 }: BusinessRulesListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
@@ -253,42 +169,42 @@ export function BusinessRulesList({
   };
 
   const renderRuleDetails = (rule: BusinessRule) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>{rule.name}</Title3>
 
-        <div className={styles.detailsGrid}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Entity</Text>
-            <Text className={styles.detailValue}>
+        <div className={shared.detailsGrid}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Entity</Text>
+            <Text className={shared.detailValue}>
               {rule.entityDisplayName || rule.entity}
             </Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Scope</Text>
-            <Text className={styles.detailValue}>{rule.scopeName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Scope</Text>
+            <Text className={shared.detailValue}>{rule.scopeName}</Text>
           </div>
           {rule.formName && (
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Form</Text>
-              <Text className={styles.detailValue}>{rule.formName}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Form</Text>
+              <Text className={shared.detailValue}>{rule.formName}</Text>
             </div>
           )}
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Owner</Text>
-            <Text className={styles.detailValue}>{rule.owner}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Owner</Text>
+            <Text className={shared.detailValue}>{rule.owner}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Last Modified</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Last Modified</Text>
+            <Text className={shared.detailValue}>
               {new Date(rule.modifiedOn).toLocaleString()}
             </Text>
           </div>
         </div>
 
         {filterDescription(rule.description ?? undefined) && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
             <Text>{filterDescription(rule.description ?? undefined)}</Text>
           </div>
         )}
@@ -307,7 +223,7 @@ export function BusinessRulesList({
 
         {/* Conditions Section */}
         {rule.definition.conditions.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>IF (Conditions)</Title3>
             <Text weight="semibold" style={{ marginBottom: tokens.spacingVerticalS }}>
               {rule.definition.conditionLogic}
@@ -316,7 +232,7 @@ export function BusinessRulesList({
               <div key={idx} className={styles.conditionItem}>
                 <Text>
                   {idx > 0 && <strong>{condition.logicOperator} </strong>}
-                  <span className={styles.codeText}>{condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
+                  <span className={shared.codeText}>{condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
                 </Text>
               </div>
             ))}
@@ -325,7 +241,7 @@ export function BusinessRulesList({
 
         {/* Actions Section */}
         {rule.definition.actions.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>THEN (Actions)</Title3>
             {rule.definition.actions.map((action, idx) => (
               <div
@@ -335,7 +251,7 @@ export function BusinessRulesList({
               >
                 <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
                 <Text>
-                  <span className={styles.codeText}>{action.field}</span>
+                  <span className={shared.codeText}>{action.field}</span>
                   {action.value && <> = <strong>{action.value}</strong></>}
                   {action.message && <>: <em>{action.message}</em></>}
                 </Text>
@@ -345,7 +261,7 @@ export function BusinessRulesList({
         )}
 
         {rule.definition.parseError && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Badge appearance="filled" shape="rounded" color="important">Parse Error</Badge>
             <Text style={{ color: tokens.colorPaletteRedForeground1, marginTop: tokens.spacingVerticalXS }}>
               {rule.definition.parseError}
@@ -371,7 +287,7 @@ export function BusinessRulesList({
   }
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -384,7 +300,7 @@ export function BusinessRulesList({
           {RULE_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeStateFilters.has(state)}
               disabled={stateCounts[state] === 0}
@@ -403,7 +319,7 @@ export function BusinessRulesList({
           {RULE_SCOPE_VALUES.map((scope) => (
             <ToggleButton
               key={scope}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeScopeFilters.has(scope)}
               disabled={scopeCounts[scope] === 0}
@@ -431,24 +347,24 @@ export function BusinessRulesList({
         return (
           <div key={rule.id}>
             <div
-              className={`${styles.ruleRow} ${isExpanded ? styles.ruleRowExpanded : ''}`}
+              className={`${shared.cardRow} ${styles.ruleRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
               onClick={() => toggleExpand(rule.id)}
             >
-              <div className={styles.chevron}>
+              <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
-              <div className={styles.nameColumn}>
+              <div className={shared.nameColumn}>
                 <Text weight="semibold">
                   <TruncatedText text={rule.name} />
                 </Text>
                 {filterDescription(rule.description ?? undefined) && (
-                  <Text className={styles.codeText}>
+                  <Text className={shared.codeText}>
                     <TruncatedText text={filterDescription(rule.description ?? undefined)!} />
                   </Text>
                 )}
               </div>
               {!entityLogicalName && (
-                <Text className={styles.codeText}>
+                <Text className={shared.codeText}>
                   <TruncatedText text={rule.entity} />
                 </Text>
               )}

@@ -13,110 +13,21 @@ import { FilterBar, FilterGroup } from './FilterBar';
 import {
   ChevronDown20Regular,
   ChevronRight20Regular,
-  Flowchart20Regular,
   Layer20Regular,
   ArrowDown20Regular,
 } from '@fluentui/react-icons';
 import type { BusinessProcessFlow, BPFStage } from '../core';
 import { formatDate } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const BPF_STATE_VALUES = ['Active', 'Inactive'];
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   row: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  rowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-    minWidth: 0,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-    wordBreak: 'break-word',
-    overflowWrap: 'anywhere',
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    flexWrap: 'wrap',
-    marginTop: tokens.spacingVerticalXS,
   },
   stagesList: {
     display: 'flex',
@@ -159,6 +70,7 @@ interface BusinessProcessFlowsListProps {
 
 export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProcessFlowsListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
@@ -204,52 +116,52 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
   const renderDetail = (bpf: BusinessProcessFlow) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>Business Process Flow Details</Title3>
 
-        <div className={`${styles.detailsGrid} ${styles.section}`}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Unique Name</Text>
-            <Text className={styles.codeText} style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{bpf.uniqueName}</Text>
+        <div className={`${shared.detailsGrid} ${shared.section}`}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Unique Name</Text>
+            <Text className={shared.codeText} style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{bpf.uniqueName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Primary Entity</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Primary Entity</Text>
+            <Text className={shared.detailValue}>
               {bpf.primaryEntityDisplayName || bpf.primaryEntity}
             </Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Total Stages</Text>
-            <Text className={styles.detailValue}>{bpf.definition.stages.length}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Total Stages</Text>
+            <Text className={shared.detailValue}>{bpf.definition.stages.length}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Total Steps</Text>
-            <Text className={styles.detailValue}>{bpf.definition.totalSteps}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Total Steps</Text>
+            <Text className={shared.detailValue}>{bpf.definition.totalSteps}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Owner</Text>
-            <Text className={styles.detailValue}>{bpf.owner}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Owner</Text>
+            <Text className={shared.detailValue}>{bpf.owner}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Last Modified</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Last Modified</Text>
+            <Text className={shared.detailValue}>
               {formatDate(bpf.modifiedOn)} by {bpf.modifiedBy}
             </Text>
           </div>
         </div>
 
         {bpf.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
             <Text>{bpf.description}</Text>
           </div>
         )}
 
         {bpf.definition.crossEntityFlow && bpf.definition.entities.length > 0 && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Entities Involved</Text>
-            <div className={styles.badgeGroup}>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Entities Involved</Text>
+            <div className={shared.badgeGroup}>
               {bpf.definition.entities.map((entity) => (
                 <Badge key={entity} appearance="outline" shape="rounded">{entity}</Badge>
               ))}
@@ -268,7 +180,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
         )}
 
         {bpf.definition.stages.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
               <Layer20Regular style={{ color: tokens.colorNeutralForeground3 }} />
               <Text weight="semibold">Process Stages</Text>
@@ -304,7 +216,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
         )}
 
         {bpf.definition.parseError && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Text style={{ color: tokens.colorPaletteRedForeground1, fontSize: tokens.fontSizeBase200 }}>
               Parse warning: {bpf.definition.parseError}
             </Text>
@@ -316,16 +228,15 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
 
   if (businessProcessFlows.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Flowchart20Regular style={{ fontSize: '48px' }} />
-        <Text size={500} weight="semibold">No Business Process Flows Found</Text>
-        <Text>No business process flows were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="workflows"
+        message="No business process flows were found in the selected solution(s)."
+      />
     );
   }
 
   return (
-    <div className={styles.container} style={{ marginTop: tokens.spacingVerticalL }}>
+    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -338,7 +249,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
           {BPF_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeStateFilters.has(state)}
               disabled={stateCounts[state] === 0}
@@ -355,26 +266,24 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
         </FilterGroup>
       </FilterBar>
       {searchedBPFs.length === 0 && sorted.length > 0 && (
-        <div className={styles.emptyState}>
-          <Text>No business process flows match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       )}
       {searchedBPFs.map((bpf) => {
         const isExpanded = expandedId === bpf.id;
         return (
           <div key={bpf.id}>
             <div
-              className={`${styles.row} ${isExpanded ? styles.rowExpanded : ''}`}
+              className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
               onClick={() => toggleExpand(bpf.id)}
             >
-              <div className={styles.chevron}>
+              <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
-              <div className={styles.nameColumn}>
+              <div className={shared.nameColumn}>
                 <Text weight="semibold">
                   <TruncatedText text={bpf.name} />
                 </Text>
-                <Text className={styles.codeText}>
+                <Text className={shared.codeText}>
                   <TruncatedText text={bpf.uniqueName} />
                 </Text>
               </div>

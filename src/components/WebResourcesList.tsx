@@ -11,113 +11,22 @@ import {
   Button,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular, Warning20Regular, Globe20Regular } from '@fluentui/react-icons';
-import type { WebResource } from '../core';
+import type { WebResource, ExternalCall } from '../core';
 import { CodeViewer } from './CodeViewer';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { FilterBar, FilterGroup } from './FilterBar';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
   listContainer: {
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   resourceRow: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  resourceRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  wrapText: {
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
   },
   warningBox: {
     padding: tokens.spacingVerticalM,
@@ -144,6 +53,7 @@ export interface WebResourcesListProps {
 
 export function WebResourcesList({ webResources }: WebResourcesListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
@@ -234,40 +144,40 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
   };
 
   const renderResourceDetails = (resource: WebResource) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>{resource.displayName}</Title3>
 
-        <div className={styles.detailsGrid}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Unique Name</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`}>{resource.name}</Text>
+        <div className={shared.detailsGrid}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Unique Name</Text>
+            <Text className={`${shared.detailValue} ${shared.codeText}`}>{resource.name}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Type</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Type</Text>
             <Badge appearance="tint" shape="rounded" color={getTypeBadgeColor(resource.typeName)}>
               {resource.typeName}
             </Badge>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Size</Text>
-            <Text className={styles.detailValue}>{formatSize(resource.contentSize)}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Size</Text>
+            <Text className={shared.detailValue}>{formatSize(resource.contentSize)}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Last Modified</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Last Modified</Text>
+            <Text className={shared.detailValue}>
               {new Date(resource.modifiedOn).toLocaleString()}
             </Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Modified By</Text>
-            <Text className={styles.detailValue}>{resource.modifiedBy}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Modified By</Text>
+            <Text className={shared.detailValue}>{resource.modifiedBy}</Text>
           </div>
         </div>
 
         {resource.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
             <Text>
               <TruncatedText text={resource.description} />
             </Text>
@@ -277,29 +187,29 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
         {/* JavaScript Analysis */}
         {resource.analysis && (
           <>
-            <div className={styles.section}>
+            <div className={shared.section}>
               <Title3>JavaScript Analysis</Title3>
-              <div className={styles.detailsGrid}>
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Lines of Code</Text>
-                  <Text className={styles.detailValue}>{resource.analysis.linesOfCode}</Text>
+              <div className={shared.detailsGrid}>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Lines of Code</Text>
+                  <Text className={shared.detailValue}>{resource.analysis.linesOfCode}</Text>
                 </div>
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Complexity</Text>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Complexity</Text>
                   <Badge appearance="filled" shape="rounded" color={getComplexityBadgeColor(resource.analysis.complexity)}>
                     {resource.analysis.complexity}
                   </Badge>
                 </div>
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Uses Xrm API</Text>
-                  <Text className={styles.detailValue}>{resource.analysis.usesXrm ? 'Yes' : 'No'}</Text>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Uses Xrm API</Text>
+                  <Text className={shared.detailValue}>{resource.analysis.usesXrm ? 'Yes' : 'No'}</Text>
                 </div>
               </div>
 
               {resource.analysis.frameworks.length > 0 && (
                 <div style={{ marginTop: tokens.spacingVerticalM }}>
-                  <Text className={styles.detailLabel}>Frameworks Used</Text>
-                  <div className={styles.badgeGroup} style={{ marginTop: tokens.spacingVerticalXS }}>
+                  <Text className={shared.detailLabel}>Frameworks Used</Text>
+                  <div className={shared.badgeGroup} style={{ marginTop: tokens.spacingVerticalXS }}>
                     {resource.analysis.frameworks.map((fw: string, idx: number) => (
                       <Badge key={idx} appearance="tint" shape="rounded" color="brand">
                         {fw}
@@ -311,7 +221,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
             </div>
 
             {resource.isDeprecated && (
-              <div className={styles.section}>
+              <div className={shared.section}>
                 <div className={styles.warningBox}>
                   <Warning20Regular style={{ color: tokens.colorStatusWarningForeground1, flexShrink: 0 }} />
                   <div>
@@ -323,13 +233,13 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
             )}
 
             {resource.analysis.externalCalls.length > 0 && (
-              <div className={styles.section}>
+              <div className={shared.section}>
                 <Title3>External API Calls ({resource.analysis.externalCalls.length})</Title3>
                 <div className={styles.warningBox} style={{ marginBottom: tokens.spacingVerticalM }}>
                   <Globe20Regular style={{ color: tokens.colorBrandForeground1, flexShrink: 0 }} />
                   <Text weight="semibold">This script calls external endpoints</Text>
                 </div>
-                {resource.analysis.externalCalls.map((call: any, idx: number) => (
+                {resource.analysis.externalCalls.map((call: ExternalCall, idx: number) => (
                   <div key={idx} className={styles.externalCallItem}>
                     <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center', flexWrap: 'wrap' }}>
                       <Text weight="semibold">{call.actionName}</Text>
@@ -347,7 +257,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                         {call.confidence}
                       </Badge>
                     </div>
-                    <Text className={styles.codeText}>
+                    <Text className={shared.codeText}>
                       <TruncatedText text={call.url} />
                     </Text>
                     <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
@@ -362,7 +272,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
 
         {/* Content Preview */}
         {resource.content && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Content Preview</Title3>
             <CodeViewer content={resource.content} language={resource.typeName.toLowerCase()} />
           </div>
@@ -377,7 +287,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -390,7 +300,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
           {availableTypes.map((type) => (
             <ToggleButton
               key={type}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeTypeFilters.has(type)}
               disabled={typeCounts[type] === 0}
@@ -422,9 +332,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
       {/* Resources List */}
       <div className={styles.listContainer}>
         {filteredResources.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Text>No web resources match your filters.</Text>
-          </div>
+          <EmptyState type="search" />
         ) : (
           filteredResources.map((resource) => {
             const isExpanded = expandedResourceId === resource.id;
@@ -432,17 +340,17 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
             return (
               <div key={resource.id}>
                 <div
-                  className={`${styles.resourceRow} ${isExpanded ? styles.resourceRowExpanded : ''}`}
+                  className={`${shared.cardRow} ${styles.resourceRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
                   onClick={() => toggleExpand(resource.id)}
                 >
-                  <div className={styles.chevron}>
+                  <div className={shared.chevron}>
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                   </div>
-                  <div className={styles.nameColumn}>
+                  <div className={shared.nameColumn}>
                     <Text weight="semibold">
                       <TruncatedText text={resource.displayName} />
                     </Text>
-                    <Text className={styles.codeText}>
+                    <Text className={shared.codeText}>
                       <TruncatedText text={resource.name} />
                     </Text>
                   </div>
