@@ -1,4 +1,5 @@
-import { makeStyles, tokens, SearchBox, Text } from '@fluentui/react-components';
+import { makeStyles, tokens, SearchBox, Text, Button } from '@fluentui/react-components';
+import { DismissCircle16Regular } from '@fluentui/react-icons';
 import type { ReactNode, CSSProperties } from 'react';
 
 const useStyles = makeStyles({
@@ -42,6 +43,18 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     flexShrink: 0,
   },
+  filterGroupLabelActive: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorBrandForeground1,
+    fontWeight: tokens.fontWeightSemibold,
+    flexShrink: 0,
+  },
+  filterGroupLabelContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalXS,
+    flexShrink: 0,
+  },
 });
 
 interface FilterBarProps {
@@ -77,6 +90,7 @@ export function FilterBar({
     <div className={styles.container} style={style}>
       <div className={styles.row1}>
         <SearchBox
+          size="medium"
           className={styles.searchBox}
           placeholder={searchPlaceholder}
           value={searchValue}
@@ -99,17 +113,42 @@ interface FilterGroupProps {
   /** Short label rendered before the filter controls (e.g. "Stage:", "State:"). */
   label: string;
   children: ReactNode;
+  /** Whether this group currently has active filters — highlights the label. */
+  hasActiveFilters?: boolean;
+  /** Callback to clear this group's filters — renders a dismiss icon button next to the label. */
+  onClear?: () => void;
 }
 
 /**
  * A labelled group of filter controls (ToggleButtons, Checkboxes, etc.)
  * rendered inside a FilterBar's second row.
+ *
+ * When `hasActiveFilters` is true and `onClear` is provided, the label renders
+ * in brand colour with semibold weight, and a dismiss icon button appears beside it.
  */
-export function FilterGroup({ label, children }: FilterGroupProps) {
+export function FilterGroup({ label, children, hasActiveFilters, onClear }: FilterGroupProps) {
   const styles = useStyles();
+  const isActive = hasActiveFilters === true && onClear !== undefined;
+
+  // Strip trailing colon from label for the button title
+  const labelText = label.endsWith(':') ? label.slice(0, -1) : label;
+
   return (
     <div className={styles.filterGroup}>
-      <Text className={styles.filterGroupLabel}>{label}</Text>
+      <div className={styles.filterGroupLabelContainer}>
+        <Text className={isActive ? styles.filterGroupLabelActive : styles.filterGroupLabel}>
+          {label}
+        </Text>
+        {isActive && (
+          <Button
+            appearance="subtle"
+            size="small"
+            icon={<DismissCircle16Regular style={{ color: tokens.colorBrandForeground1 }} />}
+            title={`Clear ${labelText} filter`}
+            onClick={onClear}
+          />
+        )}
+      </div>
       {children}
     </div>
   );

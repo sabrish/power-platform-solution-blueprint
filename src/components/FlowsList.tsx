@@ -7,7 +7,6 @@ import {
   Card,
   Title3,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
@@ -285,10 +284,15 @@ export function FlowsList({
         totalCount={sortedFlows.length}
         itemLabel="flows"
       >
-        <FilterGroup label="Type:">
+        <FilterGroup
+          label="Type:"
+          hasActiveFilters={(activeFilters['type']?.size ?? 0) > 0}
+          onClear={() => clearFilter('type')}
+        >
           {FLOW_TYPE_VALUES.map((type) => (
             <ToggleButton
               key={type}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['type']?.has(type) ?? false}
@@ -298,16 +302,16 @@ export function FlowsList({
               {type}
             </ToggleButton>
           ))}
-          {(activeFilters['type']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('type')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
-        <FilterGroup label="State:">
+        <FilterGroup
+          label="State:"
+          hasActiveFilters={(activeFilters['state']?.size ?? 0) > 0}
+          onClear={() => clearFilter('state')}
+        >
           {FLOW_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['state']?.has(state) ?? false}
@@ -317,11 +321,6 @@ export function FlowsList({
               {state}
             </ToggleButton>
           ))}
-          {(activeFilters['state']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('state')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
       {searchedFlows.length === 0 && sortedFlows.length > 0 && (

@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import {
   Text,
   Badge,
-  Button,
   Tooltip,
   ToggleButton,
   makeStyles,
@@ -408,7 +407,11 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
       >
         {availableFlags.length > 0 && (
           <>
-            <FilterGroup label="Match:">
+            <FilterGroup
+              label="Match:"
+              hasActiveFilters={matchMode !== 'all'}
+              onClear={() => setMatchMode('all')}
+            >
               <Tooltip content="Show entities that have ALL selected features" relationship="description">
                 <ToggleButton
                   size="small"
@@ -432,7 +435,11 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                 </ToggleButton>
               </Tooltip>
             </FilterGroup>
-            <FilterGroup label={matchMode === 'all' ? 'Has all of:' : 'Has any of:'}>
+            <FilterGroup
+              label={matchMode === 'all' ? 'Has all of:' : 'Has any of:'}
+              hasActiveFilters={(activeFilters?.size ?? 0) > 0}
+              onClear={() => setActiveFilters(new Set())}
+            >
               {availableFlags.map(flagKey => {
                 const cfg = FLAG_CONFIGS.find(c => c.key === flagKey)!;
                 return (
@@ -448,16 +455,6 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                   </ToggleButton>
                 );
               })}
-              {activeFilters.size > 0 && (
-                <Button
-                  size="small"
-                  className={styles.filterButton}
-                  appearance="transparent"
-                  onClick={() => setActiveFilters(new Set())}
-                >
-                  Clear
-                </Button>
-              )}
             </FilterGroup>
           </>
         )}

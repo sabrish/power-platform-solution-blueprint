@@ -276,6 +276,7 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
     <div className={styles.container}>
       <div className={styles.controls}>
         <SearchBox
+          size="medium"
           className={styles.searchBox}
           placeholder="Search fields..."
           value={searchQuery}

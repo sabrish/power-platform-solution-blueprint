@@ -7,7 +7,6 @@ import {
   Card,
   Title3,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
@@ -268,10 +267,15 @@ export function BusinessRulesList({
         totalCount={sortedRules.length}
         itemLabel="rules"
       >
-        <FilterGroup label="State:">
+        <FilterGroup
+          label="State:"
+          hasActiveFilters={(activeFilters['state']?.size ?? 0) > 0}
+          onClear={() => clearFilter('state')}
+        >
           {RULE_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['state']?.has(state) ?? false}
@@ -281,16 +285,16 @@ export function BusinessRulesList({
               {state}
             </ToggleButton>
           ))}
-          {(activeFilters['state']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('state')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
-        <FilterGroup label="Scope:">
+        <FilterGroup
+          label="Scope:"
+          hasActiveFilters={(activeFilters['scope']?.size ?? 0) > 0}
+          onClear={() => clearFilter('scope')}
+        >
           {RULE_SCOPE_VALUES.map((scope) => (
             <ToggleButton
               key={scope}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['scope']?.has(scope) ?? false}
@@ -300,11 +304,6 @@ export function BusinessRulesList({
               {scope}
             </ToggleButton>
           ))}
-          {(activeFilters['scope']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('scope')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
       {searchedRules.length === 0 && sortedRules.length > 0 && (

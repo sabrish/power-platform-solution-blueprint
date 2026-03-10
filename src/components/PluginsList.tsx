@@ -7,7 +7,6 @@ import {
   Card,
   Title3,
   ToggleButton,
-  Button,
   Dropdown,
   Option,
 } from '@fluentui/react-components';
@@ -279,7 +278,11 @@ export function PluginsList({
         totalCount={sortedPlugins.length}
         itemLabel="plugins"
       >
-        <FilterGroup label="Message:">
+        <FilterGroup
+          label="Message:"
+          hasActiveFilters={selectedMessage !== ''}
+          onClear={() => setSelectedMessage('')}
+        >
           <Dropdown
             size="small"
             style={{ minWidth: '130px' }}
@@ -293,10 +296,15 @@ export function PluginsList({
             ))}
           </Dropdown>
         </FilterGroup>
-        <FilterGroup label="Stage:">
+        <FilterGroup
+          label="Stage:"
+          hasActiveFilters={activeStageFilters.size > 0}
+          onClear={() => setActiveStageFilters(new Set())}
+        >
           {STAGE_VALUES.map((stage) => (
             <ToggleButton
               key={stage}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeStageFilters.has(stage)}
@@ -306,16 +314,16 @@ export function PluginsList({
               {formatStageLabel(stage)}
             </ToggleButton>
           ))}
-          {activeStageFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStageFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
-        <FilterGroup label="State:">
+        <FilterGroup
+          label="State:"
+          hasActiveFilters={activeStateFilters.size > 0}
+          onClear={() => setActiveStateFilters(new Set())}
+        >
           {STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeStateFilters.has(state)}
@@ -325,11 +333,6 @@ export function PluginsList({
               {state}
             </ToggleButton>
           ))}
-          {activeStateFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
       {searchedPlugins.length === 0 && sortedPlugins.length > 0 ? (

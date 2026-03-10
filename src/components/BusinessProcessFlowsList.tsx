@@ -7,7 +7,6 @@ import {
   Card,
   Title3,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import {
@@ -236,10 +235,15 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
         totalCount={sorted.length}
         itemLabel="BPFs"
       >
-        <FilterGroup label="State:">
+        <FilterGroup
+          label="State:"
+          hasActiveFilters={(activeFilters['state']?.size ?? 0) > 0}
+          onClear={() => clearFilter('state')}
+        >
           {BPF_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['state']?.has(state) ?? false}
@@ -249,11 +253,6 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
               {state}
             </ToggleButton>
           ))}
-          {(activeFilters['state']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('state')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
       {searchedBPFs.length === 0 && sorted.length > 0 && (

@@ -291,8 +291,6 @@ const useStyles = makeStyles({
     minWidth: 'unset',
     paddingLeft: tokens.spacingHorizontalS,
     paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXL, textAlign: 'center',
@@ -732,10 +730,15 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             totalCount={analysis.chainLinks.length}
             itemLabel="links"
           >
-            <FilterGroup label="Type:">
+            <FilterGroup
+              label="Type:"
+              hasActiveFilters={filterType !== 'all'}
+              onClear={() => setFilterType('all')}
+            >
               {(['all', 'Flow', 'ClassicWorkflow'] as const).map(t => (
                 <ToggleButton
                   key={t}
+                  appearance="outline"
                   className={styles.filterButton}
                   size="small"
                   checked={filterType === t}
@@ -745,10 +748,15 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                 </ToggleButton>
               ))}
             </FilterGroup>
-            <FilterGroup label="Operation:">
+            <FilterGroup
+              label="Operation:"
+              hasActiveFilters={filterOperation !== 'all'}
+              onClear={() => setFilterOperation('all')}
+            >
               {(['all', 'Create', 'Update', 'Delete'] as const).map(op => (
                 <ToggleButton
                   key={op}
+                  appearance="outline"
                   className={styles.filterButton}
                   size="small"
                   checked={filterOperation === op}
@@ -757,11 +765,6 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                   {op === 'all' ? 'All Ops' : op}
                 </ToggleButton>
               ))}
-              {(filterType !== 'all' || filterOperation !== 'all') && (
-                <Button appearance="transparent" size="small" onClick={() => { setFilterType('all'); setFilterOperation('all'); }}>
-                  Clear
-                </Button>
-              )}
             </FilterGroup>
           </FilterBar>
 

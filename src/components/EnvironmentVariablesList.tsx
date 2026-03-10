@@ -7,7 +7,6 @@ import {
   Card,
   Title3,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
@@ -171,10 +170,15 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
         totalCount={sorted.length}
         itemLabel="variables"
       >
-        <FilterGroup label="Type:">
+        <FilterGroup
+          label="Type:"
+          hasActiveFilters={(activeFilters['type']?.size ?? 0) > 0}
+          onClear={() => clearFilter('type')}
+        >
           {ENV_TYPE_VALUES.map((type) => (
             <ToggleButton
               key={type}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['type']?.has(type) ?? false}
@@ -184,11 +188,6 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
               {type}
             </ToggleButton>
           ))}
-          {(activeFilters['type']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('type')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
       {searchedVars.length === 0 && sorted.length > 0 && (

@@ -5,11 +5,11 @@ import {
   makeStyles,
   tokens,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { PlugConnected20Regular, PlugDisconnected20Regular } from '@fluentui/react-icons';
 import type { ConnectionReference } from '../core';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const CONN_STATUS_VALUES = ['Connected', 'Not Connected'];
 
@@ -18,13 +18,6 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
   },
   emptyState: {
     padding: tokens.spacingVerticalXXXL,
@@ -85,6 +78,7 @@ interface ConnectionReferencesListProps {
 
 export function ConnectionReferencesList({ connectionReferences, onSelectReference }: ConnectionReferencesListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [selectedRefId, setSelectedRefId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(new Set());
@@ -154,11 +148,16 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
         totalCount={sorted.length}
         itemLabel="references"
       >
-        <FilterGroup label="Status:">
+        <FilterGroup
+          label="Status:"
+          hasActiveFilters={activeStatusFilters.size > 0}
+          onClear={() => setActiveStatusFilters(new Set())}
+        >
           {CONN_STATUS_VALUES.map(status => (
             <ToggleButton
               key={status}
-              className={styles.filterButton}
+              appearance="outline"
+              className={shared.filterButton}
               size="small"
               checked={activeStatusFilters.has(status)}
               disabled={statusCounts[status] === 0}
@@ -167,11 +166,6 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
               {status}
             </ToggleButton>
           ))}
-          {activeStatusFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStatusFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
 

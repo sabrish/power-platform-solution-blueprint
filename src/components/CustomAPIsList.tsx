@@ -7,7 +7,6 @@ import {
   Card,
   Title3,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import {
@@ -217,10 +216,15 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
         totalCount={sortedAPIs.length}
         itemLabel="APIs"
       >
-        <FilterGroup label="Type:">
+        <FilterGroup
+          label="Type:"
+          hasActiveFilters={(activeFilters['type']?.size ?? 0) > 0}
+          onClear={() => clearFilter('type')}
+        >
           {API_TYPE_VALUES.map(type => (
             <ToggleButton
               key={type}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['type']?.has(type) ?? false}
@@ -230,16 +234,16 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
               {type}
             </ToggleButton>
           ))}
-          {(activeFilters['type']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('type')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
-        <FilterGroup label="Binding:">
+        <FilterGroup
+          label="Binding:"
+          hasActiveFilters={(activeFilters['binding']?.size ?? 0) > 0}
+          onClear={() => clearFilter('binding')}
+        >
           {API_BINDING_VALUES.map(binding => (
             <ToggleButton
               key={binding}
+              appearance="outline"
               className={shared.filterButton}
               size="small"
               checked={activeFilters['binding']?.has(binding) ?? false}
@@ -249,11 +253,6 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
               {binding}
             </ToggleButton>
           ))}
-          {(activeFilters['binding']?.size ?? 0) > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => clearFilter('binding')}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
 
