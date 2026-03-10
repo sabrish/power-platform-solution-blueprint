@@ -29,8 +29,8 @@ import {
   PluginsIcon as BracesVariable24Regular,
   FlowsIcon as CloudFlow24Regular,
   BusinessRulesIcon as ClipboardTaskListLtr24Regular,
-  ClassicWorkflowsIcon as ArrowCircleRight24Regular,
-  WebResourcesIcon as Globe24Regular,
+  ClassicWorkflowsIcon as ClipboardSettings24Regular,
+  WebResourcesIcon as DocumentGlobe24Regular,
 } from './componentIcons';
 import type {
   CrossEntityAnalysisResult,
@@ -67,7 +67,7 @@ function typeIcon(type: AutomationActivation['automationType'] | PipelineStep['a
     case 'Plugin': return <BracesVariable24Regular style={TYPE_ICON_STYLE} />;
     case 'Flow': return <CloudFlow24Regular style={TYPE_ICON_STYLE} />;
     case 'BusinessRule': return <ClipboardTaskListLtr24Regular style={TYPE_ICON_STYLE} />;
-    case 'ClassicWorkflow': return <ArrowCircleRight24Regular style={TYPE_ICON_STYLE} />;
+    case 'ClassicWorkflow': return <ClipboardSettings24Regular style={TYPE_ICON_STYLE} />;
     default: return <ArrowRight24Regular style={TYPE_ICON_STYLE} />;
   }
 }
@@ -451,9 +451,16 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
           </div>
             <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><CloudFlow24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></Text>
-            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ArrowCircleRight24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
-            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><BracesVariable24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Plugins</strong> — firing-status shown based on registered filtering attributes; deep cross-entity detection via plugin decompilation is planned for a future release.</span></Text>
-            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><Globe24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>JavaScript Web Resources</strong> — cross-entity call detection via JS static analysis is planned for a future release.</span></Text>
+            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ClipboardSettings24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
+            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ClipboardTaskListLtr24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Business Rules (server-scoped)</strong> — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.</span></Text>
+            <div style={{ marginTop: tokens.spacingVerticalS, paddingTop: tokens.spacingVerticalS, borderTop: `1px solid ${tokens.colorNeutralStroke2}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS, marginBottom: tokens.spacingVerticalXXS }}>
+                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Coming soon</Text>
+                <Badge appearance="tint" shape="rounded" color="informative" size="small">Planned</Badge>
+              </div>
+              <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><BracesVariable24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Plugins (deep detection)</strong> — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.</span></Text>
+              <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}><DocumentGlobe24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>JavaScript Web Resources (static analysis)</strong> — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.</span></Text>
+            </div>
           </div>
         </div>
         <div className={styles.emptyState}>
@@ -510,9 +517,16 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
           </div>
           <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><CloudFlow24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></Text>
-          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ArrowCircleRight24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
-          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><BracesVariable24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Plugins</strong> — firing-status shown based on registered filtering attributes; deep cross-entity detection via plugin decompilation is planned for a future release.</span></Text>
-          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><Globe24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>JavaScript Web Resources</strong> — cross-entity call detection via JS static analysis is planned for a future release.</span></Text>
+          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ClipboardSettings24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
+          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ClipboardTaskListLtr24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Business Rules (server-scoped)</strong> — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.</span></Text>
+          <div style={{ marginTop: tokens.spacingVerticalS, paddingTop: tokens.spacingVerticalS, borderTop: `1px solid ${tokens.colorNeutralStroke2}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS, marginBottom: tokens.spacingVerticalXXS }}>
+              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Coming soon</Text>
+              <Badge appearance="tint" shape="rounded" color="informative" size="small">Planned</Badge>
+            </div>
+            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><BracesVariable24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Plugins (deep detection)</strong> — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.</span></Text>
+            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}><DocumentGlobe24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>JavaScript Web Resources (static analysis)</strong> — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.</span></Text>
+          </div>
         </div>
       </div>
 

@@ -179,6 +179,18 @@ function SecurityOverviewComponent({
     }),
   ], []);
 
+  // Map Dataverse privilege depth values to Power Platform UI terminology
+  const depthLabel = (depth: string | undefined): string => {
+    if (!depth) return '';
+    switch (depth) {
+      case 'Basic':  return 'User';
+      case 'Local':  return 'BU';
+      case 'Deep':   return 'P:CBU';
+      case 'Global': return 'Org';
+      default:       return depth;
+    }
+  };
+
   const renderEntityPermissionsTable = (role: SecurityRoleDetail) => {
     if (role.entityPermissions.length === 0) {
       return <Text italic>No entity permissions</Text>;
@@ -195,7 +207,7 @@ function SecurityOverviewComponent({
               <th style={{ padding: '8px', textAlign: 'center' }}>Write</th>
               <th style={{ padding: '8px', textAlign: 'center' }}>Delete</th>
               <th style={{ padding: '8px', textAlign: 'center' }}>Append</th>
-              <th style={{ padding: '8px', textAlign: 'center' }}>AppendTo</th>
+              <th style={{ padding: '8px', textAlign: 'center' }}>Append To</th>
               <th style={{ padding: '8px', textAlign: 'center' }}>Assign</th>
               <th style={{ padding: '8px', textAlign: 'center' }}>Share</th>
             </tr>
@@ -206,21 +218,21 @@ function SecurityOverviewComponent({
               return (
                 <tr key={entityPerm.entityLogicalName} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
                   <td style={{ padding: '8px' }}>{entityPerm.entityLogicalName}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{privMap.get('Create')?.depth || ''}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{privMap.get('Read')?.depth || ''}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{privMap.get('Write')?.depth || ''}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{privMap.get('Delete')?.depth || ''}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{privMap.get('Append')?.depth || ''}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{privMap.get('AppendTo')?.depth || ''}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{privMap.get('Assign')?.depth || ''}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{privMap.get('Share')?.depth || ''}</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>{depthLabel(privMap.get('Create')?.depth)}</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>{depthLabel(privMap.get('Read')?.depth)}</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>{depthLabel(privMap.get('Write')?.depth)}</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>{depthLabel(privMap.get('Delete')?.depth)}</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>{depthLabel(privMap.get('Append')?.depth)}</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>{depthLabel(privMap.get('AppendTo')?.depth)}</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>{depthLabel(privMap.get('Assign')?.depth)}</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>{depthLabel(privMap.get('Share')?.depth)}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
         <div className={styles.legend}>
-          <strong>Privilege Depth:</strong> Basic = User, Local = Business Unit, Deep = Parent+Child BU, Global = Organization
+          <strong>Access levels:</strong> User = own records only · BU = Business Unit · P:CBU = Parent &amp; Child BUs · Org = Organisation-wide
         </div>
       </div>
     );
@@ -257,39 +269,51 @@ function SecurityOverviewComponent({
 
       {selectedTab === 'roles' && securityRoles.length > 0 && (
         <div className={styles.section}>
-          <div>
-            <Title3>Special Permissions Matrix</Title3>
-            <Text className={styles.description}>
-              This table shows which security roles have special/miscellaneous permissions.
-            </Text>
-          </div>
-
-          <div className={styles.permissionsTable}>
-            <DataGrid
-              items={securityRoles}
-              columns={rolesColumns}
-              sortable
-              resizableColumns
-              size="small"
-            >
-              <DataGridHeader>
-                <DataGridRow>
-                  {({ renderHeaderCell }) => (
-                    <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                  )}
-                </DataGridRow>
-              </DataGridHeader>
-              <DataGridBody<SecurityRoleDetail>>
-                {({ item, rowId }) => (
-                  <DataGridRow<SecurityRoleDetail> key={rowId}>
-                    {({ renderCell }) => (
-                      <DataGridCell>{renderCell(item)}</DataGridCell>
+          <Accordion collapsible>
+            <AccordionItem value="special-perms">
+              <AccordionHeader>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXXS }}>
+                  <Text weight="semibold">Special Permissions Matrix</Text>
+                  <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                    Roles with miscellaneous permissions — click to expand
+                  </Text>
+                </div>
+              </AccordionHeader>
+              <AccordionPanel>
+                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3, marginBottom: tokens.spacingVerticalS, display: 'block' }}>
+                  This table shows only security roles that have at least one special/miscellaneous permission.
+                </Text>
+                <div className={styles.permissionsTable}>
+                  <DataGrid
+                    items={securityRoles.filter(role =>
+                      specialPermissions.some(perm => role.specialPermissions[perm.key as keyof typeof role.specialPermissions])
                     )}
-                  </DataGridRow>
-                )}
-              </DataGridBody>
-            </DataGrid>
-          </div>
+                    columns={rolesColumns}
+                    sortable
+                    resizableColumns
+                    size="small"
+                  >
+                    <DataGridHeader>
+                      <DataGridRow>
+                        {({ renderHeaderCell }) => (
+                          <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
+                        )}
+                      </DataGridRow>
+                    </DataGridHeader>
+                    <DataGridBody<SecurityRoleDetail>>
+                      {({ item, rowId }) => (
+                        <DataGridRow<SecurityRoleDetail> key={rowId}>
+                          {({ renderCell }) => (
+                            <DataGridCell>{renderCell(item)}</DataGridCell>
+                          )}
+                        </DataGridRow>
+                      )}
+                    </DataGridBody>
+                  </DataGrid>
+                </div>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
 
           <div style={{ marginTop: tokens.spacingVerticalXL }}>
             <Title3>Role Details</Title3>
