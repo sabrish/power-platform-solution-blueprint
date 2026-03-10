@@ -80,10 +80,14 @@ export class ClassicWorkflowXamlParser {
     }
 
     // Process open+close tag pairs (may have AttributeCollection inside)
+    // Skip self-closing tags — they are already handled by selfClosingPattern above.
+    // A self-closing tag like <mxswa:UpdateEntity ... /> is also matched by [^>]*>
+    // because the pattern sees the trailing '>' in '/>'. Guard: attrs ends with '/'.
     openTagPattern.lastIndex = 0;
     while ((match = openTagPattern.exec(xaml)) !== null) {
       const startIndex = match.index + match[0].length;
       const attrs = match[1];
+      if (attrs.trimEnd().endsWith('/')) continue; // already handled as self-closing
       const entityName = this.extractEntityName(attrs);
       if (!entityName) continue;
 
