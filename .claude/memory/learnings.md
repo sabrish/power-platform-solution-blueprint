@@ -448,6 +448,42 @@ See `COMPONENT_ICONS_REFERENCE.md` for the complete catalogue including future c
 
 ---
 
+## [2026-03-10] — LLM-based dead code detection is unreliable — run knip first
+
+**Affects:** All agents
+**Severity:** High
+**Rule:** When performing a codebase audit, ALWAYS run `pnpm lint:unused` (knip) FIRST before any LLM analysis. Knip performs definitive import-graph tracing and is the authoritative source for unused exports and dead files. LLM audit findings for dead code and unused exports are unreliable without it. The audit report must include knip output as its first section.
+**Context:** During a deep audit this session, the LLM-based Explore agent missed three dead files: `SecurityOverview.tsx` (470 lines), `ErrorState.tsx`, and `LoadingState.tsx`. It claimed "no unreachable code detected". Root cause: LLM sampling cannot exhaustively trace every export against every import in a large codebase. Knip found them immediately.
+**Example:**
+- Wrong: Run LLM code audit → report "no dead code found" → ship
+- Right: Run `pnpm lint:unused` → review knip output first → then use LLM for deeper analysis of findings knip surfaces
+
+---
+
+## [2026-03-10] — Knip warns: Props interfaces and reserved enum members are intentional
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** Props interfaces (e.g. `FlowsListProps`) exported for documentation clarity but never imported externally, and `ComponentType` enum members (`PluginType`, `PluginAssembly`, `SdkMessageProcessingStepImage`) reserved for future Dataverse component detection, are intentionally accepted knip warnings. Configure knip with `types: 'warn'` and `enumMembers: 'warn'` — do NOT suppress these entirely. They must remain visible so any unexpected growth in the count (or a type that could leak sensitive data) is caught.
+**Context:** knip surfaces these as "unused" because they are never imported elsewhere in the codebase. Both categories are intentional: props interfaces exist for documentation; reserved enum members exist to avoid type-code guessing when future discovery work is added. Full suppression would hide genuine regressions.
+**Example:**
+- Wrong: Adding `ignore: ['*Props', 'ComponentType']` to knip config — silences all future leaks
+- Right: `types: 'warn'` and `enumMembers: 'warn'` — they surface in output but do not fail CI; review count if it grows
+
+---
+
+## [2026-03-10] — SecurityRolesView.tsx is the live component; SecurityOverview.tsx was dead and is deleted
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** All security roles UI changes must be made to `SecurityRolesView.tsx`. `SecurityOverview.tsx` was a dead duplicate (470 lines) that was never wired into `ResultsDashboard.tsx` and has been deleted. Do not recreate it.
+**Context:** `SecurityOverview.tsx` was discovered by knip as a dead file during the 2026-03-10 audit. It had never been connected to `ResultsDashboard.tsx` (which imports `SecurityRolesView.tsx`). The file was deleted as part of the dead code cleanup. Any future work on the security roles tab must target `SecurityRolesView.tsx`.
+**Example:**
+- Wrong: Creating or editing a file named `SecurityOverview.tsx` for security roles display
+- Right: Edit `SecurityRolesView.tsx` — it is the component rendered by `ResultsDashboard.tsx`
+
+---
+
 ## [2026-03-10] — ClassicWorkflowXamlParser: self-closing tags matched by both patterns — guard required
 
 **Affects:** Developer
