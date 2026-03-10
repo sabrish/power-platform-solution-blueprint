@@ -26,7 +26,8 @@ interface RawCustomAPI {
 }
 
 /**
- * Raw Custom API parameter data
+ * Raw Custom API parameter data.
+ * Note: `isoptional` only exists on customapirequestparameters, NOT on customapiresponseproperties.
  */
 interface RawCustomAPIParameter {
   customapirequestparameterid?: string;
@@ -36,7 +37,7 @@ interface RawCustomAPIParameter {
   displayname: string | null;
   description: string | null;
   type: number;
-  isoptional: boolean;
+  isoptional?: boolean;
   logicalentityname: string | null;
 }
 
@@ -146,7 +147,6 @@ export class CustomAPIDiscovery {
               'displayname',
               'description',
               'type',
-              'isoptional',
               'logicalentityname',
             ],
             filter,
@@ -236,7 +236,7 @@ export class CustomAPIDiscovery {
       description: raw.description,
       type: this.getParameterType(raw.type),
       typeName: this.getParameterTypeName(raw.type),
-      isOptional: raw.isoptional,
+      isOptional: raw.isoptional ?? false,
       logicalEntityName: raw.logicalentityname,
     };
   }
