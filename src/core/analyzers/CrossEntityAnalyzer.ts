@@ -238,8 +238,11 @@ export class CrossEntityAnalyzer {
           });
         }
 
+        // Deduplicate by automationId — same automation cannot fire twice in one message pipeline
+        const uniqueSteps = Array.from(new Map(steps.map(s => [s.automationId, s])).values());
+
         // Sort: stage ASC → rank ASC → Sync before Async
-        steps.sort((a, b) => {
+        uniqueSteps.sort((a, b) => {
           const sd = (a.stage ?? 999) - (b.stage ?? 999);
           if (sd !== 0) return sd;
           const rd = (a.rank ?? 999) - (b.rank ?? 999);
@@ -247,7 +250,7 @@ export class CrossEntityAnalyzer {
           return a.mode === 'Sync' && b.mode !== 'Sync' ? -1 : 1;
         });
 
-        if (steps.length > 0) messagePipelines.push({ message, steps });
+        if (uniqueSteps.length > 0) messagePipelines.push({ message, steps: uniqueSteps });
       }
 
       if (messagePipelines.length === 0) continue;
