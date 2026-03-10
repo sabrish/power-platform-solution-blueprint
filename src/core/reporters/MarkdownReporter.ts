@@ -1078,19 +1078,7 @@ export class MarkdownReporter {
         for (const stage of bpf.definition.stages) {
           sections.push(MarkdownFormatter.formatHeading(`Stage: ${stage.name}`, 4));
           if (stage.entity) sections.push(`**Entity:** ${stage.entity}`);
-          sections.push('');
-          if (stage.steps && stage.steps.length > 0) {
-            const sHeaders = ['Order', 'Step', 'Field', 'Required'];
-            const sRows = stage.steps.map(s => [
-              s.order.toString(),
-              s.name,
-              s.fieldName,
-              s.required ? 'Yes' : 'No',
-            ]);
-            sections.push(MarkdownFormatter.formatTable(sHeaders, sRows));
-          } else {
-            sections.push('_No steps defined._');
-          }
+          sections.push(`**Steps:** ${stage.steps.length}`);
           sections.push('');
         }
       }
