@@ -741,6 +741,41 @@ export class MarkdownReporter {
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
+
+      // Detail sections per rule
+      for (const rule of rules) {
+        sections.push(MarkdownFormatter.formatHeading(rule.name, 3));
+        if (rule.definition.conditionLogic) {
+          sections.push(`**Condition Logic:** \`${rule.definition.conditionLogic}\``);
+          sections.push('');
+        }
+        if (rule.definition.conditions.length > 0) {
+          sections.push('**Conditions**');
+          sections.push('');
+          const cHeaders = ['#', 'Field', 'Operator', 'Value', 'Logic'];
+          const cRows = rule.definition.conditions.map((c, i) => [
+            (i + 1).toString(),
+            c.field,
+            c.operator,
+            c.value,
+            c.logicOperator,
+          ]);
+          sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
+          sections.push('');
+        }
+        if (rule.definition.actions.length > 0) {
+          sections.push('**Actions**');
+          sections.push('');
+          const aHeaders = ['Type', 'Field', 'Value / Message'];
+          const aRows = rule.definition.actions.map(a => [
+            a.type,
+            a.field,
+            a.value ?? a.message ?? '',
+          ]);
+          sections.push(MarkdownFormatter.formatTable(aHeaders, aRows));
+          sections.push('');
+        }
+      }
     }
 
     return sections.join('\n');
@@ -888,6 +923,38 @@ export class MarkdownReporter {
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
+
+      // Detail section for each API
+      for (const api of apis) {
+        sections.push(MarkdownFormatter.formatHeading(`${api.uniqueName}`, 3));
+        if (api.description) sections.push(`> ${api.description}`);
+        sections.push('');
+        if (api.requestParameters.length > 0) {
+          sections.push('**Request Parameters**');
+          sections.push('');
+          const pHeaders = ['Name', 'Type', 'Required', 'Description'];
+          const pRows = api.requestParameters.map(p => [
+            `\`${p.uniqueName}\``,
+            p.typeName || p.type,
+            p.isOptional ? 'Optional' : 'Required',
+            p.description || '',
+          ]);
+          sections.push(MarkdownFormatter.formatTable(pHeaders, pRows));
+          sections.push('');
+        }
+        if (api.responseProperties.length > 0) {
+          sections.push('**Response Properties**');
+          sections.push('');
+          const rHeaders = ['Name', 'Type', 'Description'];
+          const rRows = api.responseProperties.map(p => [
+            `\`${p.uniqueName}\``,
+            p.typeName || p.type,
+            p.description || '',
+          ]);
+          sections.push(MarkdownFormatter.formatTable(rHeaders, rRows));
+          sections.push('');
+        }
+      }
     }
 
     return sections.join('\n');
@@ -1000,6 +1067,33 @@ export class MarkdownReporter {
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
+
+      // Detail sections per BPF
+      for (const bpf of bpfs) {
+        sections.push(MarkdownFormatter.formatHeading(bpf.name, 3));
+        if (bpf.description) {
+          sections.push(`> ${bpf.description}`);
+          sections.push('');
+        }
+        for (const stage of bpf.definition.stages) {
+          sections.push(MarkdownFormatter.formatHeading(`Stage: ${stage.name}`, 4));
+          if (stage.entity) sections.push(`**Entity:** ${stage.entity}`);
+          sections.push('');
+          if (stage.steps && stage.steps.length > 0) {
+            const sHeaders = ['Order', 'Step', 'Field', 'Required'];
+            const sRows = stage.steps.map(s => [
+              s.order.toString(),
+              s.name,
+              s.fieldName,
+              s.required ? 'Yes' : 'No',
+            ]);
+            sections.push(MarkdownFormatter.formatTable(sHeaders, sRows));
+          } else {
+            sections.push('_No steps defined._');
+          }
+          sections.push('');
+        }
+      }
     }
 
     return sections.join('\n');
@@ -1062,7 +1156,19 @@ export class MarkdownReporter {
     sections.push('');
 
     // Detection coverage notice
-    sections.push('> **Detection Coverage:** Cross-entity traces are detected from Power Automate flow definitions (JSON) and Classic Workflow XAML. Plugin decompilation is not included — plugins are shown with firing-status analysis based on filtering attributes.');
+    sections.push('> **Detection Coverage**');
+    sections.push('> ');
+    sections.push('> ✅ **Power Automate flows** — cross-entity writes detected from flow JSON definitions.');
+    sections.push('> ');
+    sections.push('> ✅ **Classic Workflows** — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).');
+    sections.push('> ');
+    sections.push('> ✅ **Business Rules (server-scoped)** — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.');
+    sections.push('> ');
+    sections.push('> 🔜 **Coming soon — Planned**');
+    sections.push('> ');
+    sections.push('> 🔌 **Plugins (deep detection)** — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.');
+    sections.push('> ');
+    sections.push('> 🌐 **JavaScript Web Resources (static analysis)** — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.');
     sections.push('');
 
     if (!analysis || analysis.totalEntryPoints === 0) {

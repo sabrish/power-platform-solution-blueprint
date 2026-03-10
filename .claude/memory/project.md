@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-08
+**Last updated:** 2026-03-09
 
 ---
 
@@ -119,57 +119,48 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
-### Cross-Entity Automation Trace (branch: `feat/cross-entity-automation`) — UNCOMMITTED
+### Cross-Entity Automation Trace (branch: `feat/cross-entity-automation`) — FUNCTIONALLY COMPLETE
 
-Active development. Build passes (`pnpm typecheck && pnpm build` clean). No commit made yet.
+All cross-entity automation work is committed. Build passes (`pnpm typecheck && pnpm build` clean). Branch is ahead of `main`; PR not yet created.
 
-**What is implemented and working:**
+**What is implemented and committed (6 commits landed 2026-03-09):**
 
-- `CrossEntityAnalyzer.ts` — completely rewritten with source-centric entry-point scan:
-  - `discoverAllEntryPoints()` groups triggers by *target* entity, not by blueprints list — catches flows writing to out-of-scope entities (e.g. `msnfp_awards`, `connections`)
-  - Accepts `allFlows` as a third argument to `analyze()` — unscoped flows (scheduled, manual, no primary entity) are scanned separately
-  - Unscoped flows use synthetic `sourceEntity` labels: `"(scheduled)"` → "Scheduled Flow", `"(manual)"` → "Manual / On-Demand Flow", `"(unscoped)"` → "Solution Flow"
-  - `primaryentity = "none"` (literal string, not null) is now treated the same as null — guards present in both `discoverAllEntryPoints` and `allFlowsById` building
-- `BlueprintGenerator.ts` — passes flat `flows` array as third argument to `CrossEntityAnalyzer.analyze()`
-- `CrossEntityAutomationView.tsx` — completely rewritten to pipeline accordion UI:
-  - Entity accordion rows with 8-color cycling left accent
-  - Collapsed view shows step-type pills (abbreviated activation overview)
-  - Expanded view: numbered steps, TypeBadge, stage, Sync/Async, warning for no filter
-  - Branch block attached right of steps that write to another entity (colored border matching downstream entity accent, target name + operation + field pills)
-  - Field-match verdict below each step (green/dimmed/red with hit/miss field pills)
-  - Inline nested child pipeline (max depth 2) with "↩ back to Parent" return marker
-  - "Won't fire" collapsible section at bottom per entity
+1. `feat(ui): centralise icons, replace emoji with Fluent UI icons`
+   - New `src/components/componentIcons.ts` — single source of truth for all component/tab icons
+   - `ResultsDashboard` imports exclusively from `componentIcons.ts`
+   - `BracesVariable24Regular` for Plugins (replaces `Code24Regular`)
+   - `ArrowUpRight20/24Regular` for external calls (replaces Globe)
+   - All inline emoji replaced with coloured Fluent UI icons across CrossEntityAutomationView, ExecutionTimeline, ExternalDependenciesView, WebResourcesList
+   - Footer: `window.open()` only, no toast
+   - SecurityRolesView: dark mode fix (explicit `backgroundColor` on all body `<td>`), sticky column zIndex corrected (corner = 3, others = 1), scroll wrappers added
+   - ProcessingScreen: removed redundant icon, fix `fontSizeBase200`
 
-**Additional fixes made in the same session (2026-03-08):**
-- `withAdaptiveBatch` + `FetchLogger` added to 7 remaining discovery classes that were using manual for-loop batching
-- Dynamic imports converted to static imports for 6 discovery classes in `BlueprintGenerator.ts`
-- `CustomAPIsList` and `ConnectionReferencesList` rewritten from DataGrid to card-row pattern
-- Progress reporting fixed for form discovery
-- `SolutionComponentDiscovery` and `CustomAPIDiscovery` now log to fetch log via `FetchLogger`
-- Badge `appearance="tint"` standardised across all component list badges
+2. `fix(discovery): remove emoji from progress messages, fix progress overflow`
+   - Emoji removed from column security progress messages
+   - `console.error` replaced with structured `stepWarnings.push()`
+   - FormDiscovery and WebResourceDiscovery two-pass progress overflow fixed
+   - ERDGenerator and systemFilters BPF exclusion fixes
 
-**Still pending:**
-- Project owner has not yet confirmed the new UI looks correct in the app
-- Debug `console.log` statements in `FlowDefinitionParser.ts` and `CrossEntityAnalyzer.ts` must be removed once detection is confirmed working (see learnings.md [2026-03-07] debug artifacts rule)
-- No commit made — awaiting user confirmation of UI
+3. `feat(export): add pipeline traces to HTML and MD cross-entity export`
+   - HTML: Pipeline Traces section added — two-level accordion (entity → trace → activation table)
+   - HTML: all strings through `htmlEscape()` — 6 XSS blockers fixed
+   - HTML: `coverageNotice` uses `alert-info` CSS class (not hardcoded hex)
+   - MD: `## Pipeline Traces` section added to summary, reuses `formatTraceDetails()`
 
-**Modified files (all uncommitted):**
-- `src/core/analyzers/CrossEntityAnalyzer.ts`
-- `src/core/generators/BlueprintGenerator.ts`
-- `src/components/CrossEntityAutomationView.tsx`
-- `src/components/ArchitectureView.tsx`
-- `src/components/ResultsDashboard.tsx`
-- `src/core/parsers/FlowDefinitionParser.ts`
-- `src/core/reporters/HtmlReporter.ts`
-- `src/core/reporters/JsonReporter.ts`
-- `src/core/reporters/MarkdownReporter.ts`
-- `src/core/reporters/html/HtmlTemplates.ts`
-- `src/core/types/blueprint.ts`
-- `src/utils/sizeEstimator.ts`
-- `src/components/CrossEntityAutomationView.tsx` (new)
-- `src/core/analyzers/CrossEntityAnalyzer.ts` (new, replaces CrossEntityMapper.ts)
-- `src/core/parsers/ClassicWorkflowXamlParser.ts` (new)
-- `src/core/types/crossEntityTrace.ts` (new)
+4. `docs: add SUPPORTED_COMPONENTS.md and update references`
+   - New `SUPPORTED_COMPONENTS.md`: 20 Supported, 3 Partial, 13 Planned
+   - README and CLAUDE.md key reference table updated
+
+5. `feat(ui): update Environment Variables and Plugins icons`
+   - Environment Variables: `Settings24Regular` → `TextBulletListSquareSettingsRegular`
+   - Plugins HTML navIcon: redrawn as `{x}` (curly braces + crossing x)
+
+6. Earlier commits (2026-03-08): CrossEntityAnalyzer rewrite, BlueprintGenerator wiring, CrossEntityAutomationView pipeline accordion UI, withAdaptiveBatch + FetchLogger on 7 remaining discovery classes, CustomAPIsList/ConnectionReferencesList to card-row pattern, static import fixes.
+
+**Remaining before merge/release:**
+- Confirm UI looks correct in app (project owner has not tested in PPTB Desktop yet)
+- PR creation and review
+- Debug `console.log` statements in `FlowDefinitionParser.ts` and `CrossEntityAnalyzer.ts` must be removed before release (see learnings.md [2026-03-07] debug artifacts rule)
 
 ### Other Known Limitations
 

@@ -1088,44 +1088,65 @@ ${rows}
   htmlBusinessRulesTable(businessRules: BusinessRule[]): string {
     if (businessRules.length === 0) {
       return `<section id="business-rules" class="content-section">
-  <h2>Business Rules</h2>
+  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-rules')} Business Rules</h2>
   <div class="empty-state">No business rules found</div>
 </section>`;
     }
 
-    const rows = businessRules.map(rule => {
-      const entityDisplay = rule.entityDisplayName || rule.entity;
-      const conditions = rule.definition.conditions?.length || 0;
-      const actions = rule.definition.actions?.length || 0;
-      return `<tr>
-  <td>${this.escapeHtml(rule.name)}</td>
-  <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${rule.state}</span></td>
-  <td>${this.escapeHtml(rule.scope)}</td>
-  <td>${conditions}</td>
-  <td>${actions}</td>
-</tr>`;
+    const items = businessRules.map((rule, i) => {
+      const entityDisplay = this.escapeHtml(rule.entityDisplayName || rule.entity);
+      const conditions = rule.definition.conditions ?? [];
+      const actions = rule.definition.actions ?? [];
+      const id = `br-${i}`;
+
+      const condRows = conditions.map(c => `<tr>
+        <td><code>${this.escapeHtml(c.field)}</code></td>
+        <td>${this.escapeHtml(c.operator)}</td>
+        <td>${c.value ? this.escapeHtml(c.value) : '—'}</td>
+        <td>${this.escapeHtml(c.logicOperator)}</td>
+      </tr>`).join('');
+
+      const actRows = actions.map(a => `<tr>
+        <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.escapeHtml(a.type)}</span></td>
+        <td><code>${this.escapeHtml(a.field)}</code></td>
+        <td>${a.value ? this.escapeHtml(a.value) : a.message ? this.escapeHtml(a.message) : '—'}</td>
+      </tr>`).join('');
+
+      return `<div class="accordion-item">
+  <div class="accordion-header" onclick="toggleAccordion('${id}')">
+    <span class="accordion-icon" id="icon-${id}">+</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <strong>${this.escapeHtml(rule.name)}</strong>
+        <span style="color:#666;font-size:0.9em">${entityDisplay}</span>
+        <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${rule.state}</span>
+        <span class="badge">${this.escapeHtml(rule.scope)}</span>
+        <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.escapeHtml(rule.definition.executionContext)}</span>
+        ${conditions.length > 0 ? `<span class="badge">${conditions.length} condition${conditions.length !== 1 ? 's' : ''}</span>` : ''}
+        ${actions.length > 0 ? `<span class="badge">${actions.length} action${actions.length !== 1 ? 's' : ''}</span>` : ''}
+      </div>
+      ${rule.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(rule.description)}</div>` : ''}
+    </div>
+  </div>
+  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.escapeHtml(rule.definition.parseError)}</div>` : ''}
+    <div style="display:grid;grid-template-columns:minmax(200px,1fr) minmax(200px,1fr);gap:16px;">
+      <div>
+        <h5 style="margin-bottom:6px">Conditions${rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.escapeHtml(rule.definition.conditionLogic)})</span>` : ''}</h5>
+        ${conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th>Field</th><th>Operator</th><th>Value</th><th>Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
+      </div>
+      <div>
+        <h5 style="margin-bottom:6px">Actions</h5>
+        ${actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th>Action</th><th>Field</th><th>Value / Message</th></tr></thead><tbody>${actRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No actions detected.</p>'}
+      </div>
+    </div>
+  </div>
+</div>`;
     }).join('\n');
 
     return `<section id="business-rules" class="content-section">
-  <h2>Business Rules (${businessRules.length})</h2>
-  <div class="table-container">
-    <table class="data-table sortable" id="business-rules-table">
-      <thead>
-        <tr>
-          <th onclick="sortTable('business-rules-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 3)">Scope <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 4)">Conditions <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 5)">Actions <span class="sort-indicator"></span></th>
-        </tr>
-      </thead>
-      <tbody>
-${rows}
-      </tbody>
-    </table>
-  </div>
+  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-rules')} Business Rules (${businessRules.length})</h2>
+  <div class="accordion">${items}</div>
 </section>`;
   }
 
@@ -1203,45 +1224,61 @@ ${rows}
   htmlBusinessProcessFlowsTable(bpfs: BusinessProcessFlow[]): string {
     if (bpfs.length === 0) {
       return `<section id="business-process-flows" class="content-section">
-  <h2>Business Process Flows</h2>
+  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-process-flows')} Business Process Flows</h2>
   <div class="empty-state">No business process flows found</div>
 </section>`;
     }
 
-    const rows = bpfs.map(bpf => {
-      const entityDisplay = bpf.primaryEntityDisplayName || bpf.primaryEntity;
-      const stages = bpf.definition.stages?.length || 0;
-      const crossEntity = bpf.definition.crossEntityFlow;
+    const items = bpfs.map((bpf, i) => {
+      const entityDisplay = this.escapeHtml(bpf.primaryEntityDisplayName || bpf.primaryEntity);
+      const stages = bpf.definition.stages ?? [];
+      const id = `bpf-${i}`;
 
-      return `<tr>
-  <td>${this.escapeHtml(bpf.name)}</td>
-  <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${bpf.state === 'Active' ? 'success' : 'warning'}">${bpf.state}</span></td>
-  <td>${stages}</td>
-  <td>${bpf.definition.totalSteps}</td>
-  <td>${crossEntity ? '<span class="badge badge-info">Yes</span>' : 'No'}</td>
-</tr>`;
+      const stageBlocks = stages.map((stage, si) => {
+        const stepRows = stage.steps.map(step => `<tr>
+          <td>${step.order}</td>
+          <td>${this.escapeHtml(step.name)}</td>
+          <td><code>${this.escapeHtml(step.fieldName)}</code></td>
+          <td>${step.required ? '<span class="badge badge-warning">Required</span>' : 'Optional'}</td>
+        </tr>`).join('');
+
+        return `<div style="margin-bottom:10px;">
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+    <span style="font-weight:600;font-size:0.9em">Stage ${si + 1}: ${this.escapeHtml(stage.name)}</span>
+    <span style="font-size:0.8em;color:#666;font-family:monospace">${this.escapeHtml(stage.entity)}</span>
+    <span class="badge">${stage.steps.length} step${stage.steps.length !== 1 ? 's' : ''}</span>
+  </div>
+  ${stage.steps.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th>#</th><th>Step Name</th><th>Field</th><th>Required</th></tr></thead><tbody>${stepRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em;margin:2px 0">No steps in this stage.</p>'}
+</div>`;
+      }).join('');
+
+      return `<div class="accordion-item">
+  <div class="accordion-header" onclick="toggleAccordion('${id}')">
+    <span class="accordion-icon" id="icon-${id}">+</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <strong>${this.escapeHtml(bpf.name)}</strong>
+        <span style="color:#666;font-size:0.9em">${entityDisplay}</span>
+        <span class="badge badge-${bpf.state === 'Active' ? 'success' : 'warning'}">${bpf.state}</span>
+        <span class="badge">${stages.length} stage${stages.length !== 1 ? 's' : ''}</span>
+        <span class="badge">${bpf.definition.totalSteps} step${bpf.definition.totalSteps !== 1 ? 's' : ''}</span>
+        ${bpf.definition.crossEntityFlow ? '<span class="badge badge-info">Cross-entity</span>' : ''}
+        ${bpf.isManaged ? '<span class="badge badge-info">Managed</span>' : ''}
+      </div>
+      ${bpf.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(bpf.description)}</div>` : ''}
+    </div>
+  </div>
+  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    ${bpf.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.escapeHtml(bpf.definition.parseError)}</div>` : ''}
+    ${stages.length > 0 ? stageBlocks : '<p style="color:#666">No stage details available.</p>'}
+    ${bpf.definition.entities.length > 1 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Entities involved:</strong> ${bpf.definition.entities.map(e => this.escapeHtml(e)).join(', ')}</p>` : ''}
+  </div>
+</div>`;
     }).join('\n');
 
     return `<section id="business-process-flows" class="content-section">
-  <h2>Business Process Flows (${bpfs.length})</h2>
-  <div class="table-container">
-    <table class="data-table sortable" id="bpfs-table">
-      <thead>
-        <tr>
-          <th onclick="sortTable('bpfs-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('bpfs-table', 1)">Primary Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('bpfs-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('bpfs-table', 3)">Stages <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('bpfs-table', 4)">Steps <span class="sort-indicator"></span></th>
-          <th>Cross-Entity</th>
-        </tr>
-      </thead>
-      <tbody>
-${rows}
-      </tbody>
-    </table>
-  </div>
+  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-process-flows')} Business Process Flows (${bpfs.length})</h2>
+  <div class="accordion">${items}</div>
 </section>`;
   }
 
@@ -1299,46 +1336,69 @@ ${rows}
   htmlCustomAPIsTable(customAPIs: CustomAPI[]): string {
     if (customAPIs.length === 0) {
       return `<section id="custom-apis" class="content-section">
-  <h2>Custom APIs</h2>
+  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-apis')} Custom APIs</h2>
   <div class="empty-state">No custom APIs found</div>
 </section>`;
     }
 
-    const rows = customAPIs.map(api => {
-      const type = api.isFunction ? 'Function' : 'Action';
-      const binding = api.bindingType;
-      const params = api.requestParameters?.length || 0;
-      const responses = api.responseProperties?.length || 0;
+    const paramTable = (params: CustomAPI['requestParameters'], label: string) => {
+      if (!params || params.length === 0) return `<p style="margin:4px 0;color:#666;font-size:0.85em">No ${label.toLowerCase()}.</p>`;
+      return `<table class="data-table" style="font-size:0.85em;margin-top:4px;">
+  <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+  <tbody>${params.map(p => `<tr>
+    <td><code>${this.escapeHtml(p.uniqueName)}</code>${p.displayName && p.displayName !== p.uniqueName ? ` <span style="color:#666;font-size:0.9em">${this.escapeHtml(p.displayName)}</span>` : ''}</td>
+    <td><span class="badge badge-info">${this.escapeHtml(p.typeName || p.type)}</span>${p.logicalEntityName ? ` <span style="font-size:0.8em;color:#666">${this.escapeHtml(p.logicalEntityName)}</span>` : ''}</td>
+    <td>${p.isOptional ? 'Optional' : '<span class="badge badge-warning">Required</span>'}</td>
+    <td style="color:#666;font-size:0.9em">${p.description ? this.escapeHtml(p.description) : '—'}</td>
+  </tr>`).join('')}</tbody>
+</table>`;
+    };
 
-      return `<tr>
-  <td>${this.escapeHtml(api.uniqueName)}</td>
-  <td>${this.escapeHtml(api.displayName)}</td>
-  <td><span class="badge badge-${api.isFunction ? 'info' : 'primary'}">${type}</span></td>
-  <td>${this.escapeHtml(binding)}</td>
-  <td>${params}</td>
-  <td>${responses}</td>
-</tr>`;
+    const items = customAPIs.map((api, i) => {
+      const type = api.isFunction ? 'Function' : 'Action';
+      const id = `capi-${i}`;
+      const paramCount = api.requestParameters?.length || 0;
+      const respCount = api.responseProperties?.length || 0;
+      const badges = [
+        `<span class="badge badge-${api.isFunction ? 'info' : 'primary'}">${type}</span>`,
+        `<span class="badge">${this.escapeHtml(api.bindingType)}</span>`,
+        paramCount > 0 ? `<span class="badge badge-success">${paramCount} param${paramCount !== 1 ? 's' : ''}</span>` : '',
+        respCount > 0 ? `<span class="badge badge-success">${respCount} response${respCount !== 1 ? 's' : ''}</span>` : '',
+        api.isPrivate ? `<span class="badge badge-warning">Private</span>` : '',
+        api.isManaged ? `<span class="badge badge-info">Managed</span>` : '',
+      ].filter(Boolean).join(' ');
+
+      return `<div class="accordion-item">
+  <div class="accordion-header" onclick="toggleAccordion('${id}')">
+    <span class="accordion-icon" id="icon-${id}">+</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <strong>${this.escapeHtml(api.displayName || api.uniqueName)}</strong>
+        <code style="font-size:0.8em;color:#666">${this.escapeHtml(api.uniqueName)}</code>
+        ${badges}
+      </div>
+      ${api.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(api.description)}</div>` : ''}
+    </div>
+  </div>
+  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    <div style="display:grid;grid-template-columns:minmax(200px,1fr) minmax(200px,1fr);gap:16px;">
+      <div>
+        <h5 style="margin-bottom:6px">Request Parameters</h5>
+        ${paramTable(api.requestParameters, 'Request parameters')}
+      </div>
+      <div>
+        <h5 style="margin-bottom:6px">Response Properties</h5>
+        ${paramTable(api.responseProperties, 'Response properties')}
+      </div>
+    </div>
+    ${api.allowedCustomProcessingStepType !== 'None' ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Custom processing steps:</strong> ${this.escapeHtml(api.allowedCustomProcessingStepType)}</p>` : ''}
+  </div>
+</div>`;
     }).join('\n');
 
     return `<section id="custom-apis" class="content-section">
-  <h2>Custom APIs (${customAPIs.length})</h2>
-  <div class="table-container">
-    <table class="data-table sortable" id="custom-apis-table">
-      <thead>
-        <tr>
-          <th onclick="sortTable('custom-apis-table', 0)">Unique Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 1)">Display Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 2)">Type <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 3)">Binding <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 4)">Parameters <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 5)">Responses <span class="sort-indicator"></span></th>
-        </tr>
-      </thead>
-      <tbody>
-${rows}
-      </tbody>
-    </table>
-  </div>
+  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-apis')} Custom APIs (${customAPIs.length})</h2>
+  <div class="accordion">${items}</div>
 </section>`;
   }
 
@@ -1483,11 +1543,25 @@ ${rows}
    */
   htmlCrossEntitySection(analysis: CrossEntityAnalysisResult | undefined): string {
     const coverageNotice = `<div class="alert alert-info" style="margin-bottom: 16px;">
-      <strong>Detection Coverage:</strong> Cross-entity traces are detected from Power Automate flow definitions (JSON) and Classic Workflow XAML.
-      Plugin decompilation is not included — plugins are shown with firing-status analysis based on filtering attributes.
+      <strong>Detection Coverage</strong>
+      <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('flows')} <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></div>
+        <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('classic-workflows')} <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></div>
+        <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('business-rules')} <span><strong>Business Rules (server-scoped)</strong> — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.</span></div>
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.1);">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span style="font-size:0.8em;color:#666;">Coming soon</span>
+          <span class="badge badge-info" style="font-size:0.75em;">Planned</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:6px;color:#666;">${this.navIcon('plugins')} <span><strong>Plugins (deep detection)</strong> — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.</span></div>
+          <div style="display:flex;align-items:center;gap:6px;color:#666;">${this.navIcon('web-resources')} <span><strong>JavaScript Web Resources (static analysis)</strong> — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.</span></div>
+        </div>
+      </div>
     </div>`;
 
-    if (!analysis || analysis.totalEntryPoints === 0) {
+    if (!analysis || (analysis.allEntityPipelines.size === 0 && analysis.totalEntryPoints === 0)) {
       return `<section id="cross-entity" class="content-section">
   <h2 style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
@@ -1495,11 +1569,15 @@ ${rows}
 </section>`;
     }
 
-    // Stats
+    // Stats — matches the React UI summary cards
+    const noFilterCard = analysis.noFilterPluginCount > 0
+      ? `<div class="stats-card"><div class="stats-value" style="color:#d32f2f">${analysis.noFilterPluginCount}</div><div class="stats-label">No-Filter Plugins</div></div>`
+      : '';
     const statsHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;">
-      <div class="stats-card"><div class="stats-value">${analysis.totalEntryPoints}</div><div class="stats-label">Entry Points</div></div>
+      <div class="stats-card"><div class="stats-value">${analysis.allEntityPipelines.size}</div><div class="stats-label">Entities w/ Automation</div></div>
       <div class="stats-card"><div class="stats-value">${analysis.entityViews.size}</div><div class="stats-label">Target Entities</div></div>
-      <div class="stats-card"><div class="stats-value">${analysis.totalBranches}</div><div class="stats-label">Downstream Branches</div></div>
+      <div class="stats-card"><div class="stats-value">${analysis.totalBranches}</div><div class="stats-label">Cross-Entity Writes</div></div>
+      ${noFilterCard}
       <div class="stats-card"><div class="stats-value" style="color:#d32f2f">${analysis.risks.filter(r => r.severity === 'High').length}</div><div class="stats-label">High Risks</div></div>
     </div>`;
 
@@ -1512,7 +1590,13 @@ ${rows}
           <span>${this.htmlEscape(r.description)}</span>
         </div>`).join('')}` : '';
 
-    // Chain links table rows
+    // Pipeline Traces — default view matches the React UI "Pipeline Traces" tab
+    const pipelineTracesHtml = `
+      <h3>Pipeline Traces</h3>
+      <p style="color:#666;margin-bottom:12px;">Per-entity activation analysis. By default shows entities with cross-entity outputs. Use the checkbox to reveal all entities with automation.</p>
+      ${this.htmlPipelineTraces(analysis)}`;
+
+    // Global Chain Map — matches the React UI "Global Chain Map" tab
     const chainRows = analysis.chainLinks.map(l => `<tr>
       <td>${this.htmlEscape(l.sourceEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.sourceEntity)}</small></td>
       <td>${this.htmlEscape(l.automationName)}<br/><span class="badge badge-${l.automationType === 'Flow' ? 'success' : 'warning'}">${this.htmlEscape(l.automationType)}</span></td>
@@ -1521,43 +1605,51 @@ ${rows}
       <td><span class="badge badge-${l.operation === 'Create' ? 'success' : l.operation === 'Delete' ? 'danger' : 'warning'}">${this.htmlEscape(l.operation)}</span></td>
       <td><span class="badge badge-${l.isAsynchronous ? 'success' : 'warning'}">${l.isAsynchronous ? 'Async' : 'Sync'}</span></td>
     </tr>`).join('');
+    const globalChainHtml = analysis.chainLinks.length > 0 ? `
+      <h3>Global Chain Map (${analysis.chainLinks.length})</h3>
+      <p style="color:#666;margin-bottom:12px;">All detected cross-entity write operations. Synchronous operations may impact performance.</p>
+      <div class="table-container">
+        <table class="data-table sortable" id="cross-entity-table">
+          <thead>
+            <tr>
+              <th onclick="sortTable('cross-entity-table', 0)">Source Entity <span class="sort-indicator"></span></th>
+              <th onclick="sortTable('cross-entity-table', 1)">Automation <span class="sort-indicator"></span></th>
+              <th></th>
+              <th onclick="sortTable('cross-entity-table', 3)">Target Entity <span class="sort-indicator"></span></th>
+              <th onclick="sortTable('cross-entity-table', 4)">Operation <span class="sort-indicator"></span></th>
+              <th>Mode</th>
+            </tr>
+          </thead>
+          <tbody>${chainRows}</tbody>
+        </table>
+      </div>` : '';
 
     return `<section id="cross-entity" class="content-section">
   <h2 style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   ${statsHtml}
   ${risksHtml}
-  <h3>Chain Links</h3>
-  <div class="table-container">
-    <table class="data-table sortable" id="cross-entity-table">
-      <thead>
-        <tr>
-          <th onclick="sortTable('cross-entity-table', 0)">Source Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 1)">Automation <span class="sort-indicator"></span></th>
-          <th></th>
-          <th onclick="sortTable('cross-entity-table', 3)">Target Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 4)">Operation <span class="sort-indicator"></span></th>
-          <th>Mode</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${chainRows}
-      </tbody>
-    </table>
-  </div>
-  <p style="margin-top: 16px; color: #666; font-style: italic;">Note: Synchronous cross-entity operations may impact performance</p>
-
-  <h3>Pipeline Traces</h3>
-  <p style="color:#666;margin-bottom:12px;">Per-entity activation analysis — which automations fire (or don't) when an external source writes to the entity.</p>
-  ${this.htmlPipelineTraces(analysis)}
+  ${pipelineTracesHtml}
+  ${globalChainHtml}
 </section>`;
   }
 
   /**
-   * Render pipeline trace accordions for all entity views
+   * Render pipeline trace accordions for all entities with automation.
+   * Matches the React UI "Pipeline Traces" tab behaviour:
+   *   - Default: shows only entities with cross-entity output (hasCrossEntityOutput)
+   *   - Checkbox: reveals all entities with any automation
+   *   - Entities with inbound entry points (entityViews) → CEA trace accordion
+   *   - Entities without inbound entry points → message pipeline step table
    */
   private htmlPipelineTraces(analysis: CrossEntityAnalysisResult): string {
-    if (analysis.entityViews.size === 0) return '<p>No pipeline traces available.</p>';
+    const pipelines = Array.from(analysis.allEntityPipelines.entries())
+      .sort(([, a], [, b]) => a.entityDisplayName.localeCompare(b.entityDisplayName));
+    if (pipelines.length === 0) return '<p>No pipeline traces available.</p>';
+
+    const COLORS = ['#0078d4','#107c10','#ca5010','#8764b8','#038387','#c239b3','#e3008c','#004b50'];
+    const colorMap = new Map(pipelines.map(([k], i) => [k, i]));
+    const entityColor = (key: string) => COLORS[(colorMap.get(key) ?? 0) % COLORS.length];
 
     const firingBadge = (status: string): string => {
       if (status === 'WillFire') return '<span class="badge badge-success">Yes</span>';
@@ -1565,37 +1657,63 @@ ${rows}
       return '<span class="badge badge-warning">Yes (no filter)</span>';
     };
 
+    const hasCrossCount = pipelines.filter(([, p]) => p.hasCrossEntityOutput).length;
+    const allCount = pipelines.length;
+    const checkboxHtml = allCount > hasCrossCount ? `<div style="margin-bottom:12px;">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:0.9em;">
+    <input type="checkbox" id="cea-show-all" onchange="toggleCeaAllEntities(this.checked)" style="cursor:pointer">
+    Show all entities with automation (${allCount} total, ${allCount - hasCrossCount} without cross-entity output)
+  </label>
+</div>` : '';
+
     const items: string[] = [];
     let idx = 0;
-    for (const [, view] of analysis.entityViews) {
+    for (const [logicalName, pipeline] of pipelines) {
+      const entityView = analysis.entityViews.get(logicalName);
+      const color = entityColor(logicalName);
       const id = `cea-entity-${idx++}`;
-      const traceBlocks = view.traces.map((trace, ti) => {
-        const { entryPoint, activations, risks } = trace;
-        const tid = `${id}-trace-${ti}`;
+      const hasCrossOutput = pipeline.hasCrossEntityOutput;
+      const wrapClass = hasCrossOutput ? 'cea-entity' : 'cea-entity cea-entity-no-output';
+      const hiddenAttr = hasCrossOutput ? '' : ' style="display:none"';
 
-        const actRows = activations.map(act => {
-          const ds = act.downstream
-            ? `→ <strong>${this.htmlEscape(act.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(act.downstream.operation)})`
+      const opBadges = pipeline.messagePipelines
+        .map(mp => {
+          const c = mp.message === 'Create' ? 'success' : mp.message === 'Delete' ? 'danger' : 'warning';
+          return `<span class="badge badge-${c}">${mp.message}</span>`;
+        }).join(' ');
+      const crossBadge = hasCrossOutput ? `<span class="badge badge-info">→ cross-entity</span>` : '';
+
+      let bodyHtml: string;
+      let entryCountHtml = '';
+
+      if (entityView) {
+        // Entity receives cross-entity writes — show full CEA trace
+        entryCountHtml = entityView.traces.length > 1
+          ? `<span style="font-size:0.85em;color:#666;margin-left:8px">${entityView.traces.length} entry points</span>` : '';
+
+        const traceBlocks = entityView.traces.map((trace, ti) => {
+          const { entryPoint, activations, risks } = trace;
+          const tid = `${id}-trace-${ti}`;
+          const actRows = activations.map(act => {
+            const ds = act.downstream
+              ? `→ <strong>${this.htmlEscape(act.downstream.targetEntityDisplayName)}</strong> (${act.downstream.operation})`
+              : '';
+            return `<tr>
+              <td>${this.htmlEscape(act.automationName)}</td>
+              <td><span class="badge badge-${act.automationType === 'Plugin' ? 'warning' : 'success'}">${act.automationType}</span></td>
+              <td>${this.htmlEscape(act.stageName ?? '—')}</td>
+              <td>${act.mode}</td>
+              <td>${firingBadge(act.firingStatus)}</td>
+              <td style="font-family:monospace;font-size:0.8em">${act.matchedFields.length > 0 ? this.htmlEscape(act.matchedFields.join(', ')) : '—'}</td>
+              <td>${ds}</td>
+            </tr>`;
+          }).join('');
+          const riskHtml = risks.length > 0
+            ? risks.map(r => `<div style="padding:6px 10px;border-left:3px solid ${r.severity === 'High' ? '#d32f2f' : '#f57c00'};background:${r.severity === 'High' ? '#ffebee' : '#fff8e1'};border-radius:3px;margin-bottom:6px;font-size:0.85em"><strong>${this.htmlEscape(r.type)}</strong>: ${this.htmlEscape(r.description)}</div>`).join('')
             : '';
-          return `<tr>
-            <td>${this.htmlEscape(act.automationName)}</td>
-            <td><span class="badge badge-${act.automationType === 'Plugin' ? 'warning' : 'success'}">${this.htmlEscape(act.automationType)}</span></td>
-            <td>${this.htmlEscape(act.stageName ?? '—')}</td>
-            <td>${this.htmlEscape(act.mode)}</td>
-            <td>${firingBadge(act.firingStatus)}</td>
-            <td style="font-family:monospace;font-size:0.8em">${act.matchedFields.length > 0 ? this.htmlEscape(act.matchedFields.join(', ')) : '—'}</td>
-            <td>${ds}</td>
-          </tr>`;
-        }).join('');
-
-        const riskHtml = risks.length > 0
-          ? risks.map(r => `<div style="padding:6px 10px;border-left:3px solid ${r.severity === 'High' ? '#d32f2f' : '#f57c00'};background:${r.severity === 'High' ? '#ffebee' : '#fff8e1'};border-radius:3px;margin-bottom:6px;font-size:0.85em"><strong>${this.htmlEscape(r.type)}</strong>: ${this.htmlEscape(r.description)}</div>`).join('')
-          : '';
-
-        const modeLabel = entryPoint.isAsynchronous ? 'Async' : 'Sync';
-        const header = `${this.htmlEscape(entryPoint.automationName)} <span style="font-weight:normal;color:#666">(${this.htmlEscape(entryPoint.automationType)} — ${this.htmlEscape(entryPoint.operation)} from ${this.htmlEscape(entryPoint.sourceEntityDisplayName)} — ${modeLabel})</span>`;
-
-        return `<div class="accordion-item" style="margin-bottom:8px;">
+          const modeLabel = entryPoint.isAsynchronous ? 'Async' : 'Sync';
+          const header = `${this.htmlEscape(entryPoint.automationName)} <span style="font-weight:normal;color:#666">(${this.htmlEscape(entryPoint.automationType)} — ${this.htmlEscape(entryPoint.operation)} from ${this.htmlEscape(entryPoint.sourceEntityDisplayName)} — ${modeLabel})</span>`;
+          return `<div class="accordion-item" style="margin-bottom:8px;">
   <div class="accordion-header" onclick="toggleAccordion('${tid}')" style="font-size:0.9em;">
     <span class="accordion-icon" id="icon-${tid}">+</span>
     <span>${header}</span>
@@ -1604,29 +1722,67 @@ ${rows}
   <div class="accordion-content" id="${tid}" style="display:none;padding:12px;">
     ${riskHtml}
     <table class="data-table" style="font-size:0.85em;">
-      <thead><tr>
-        <th>Automation</th><th>Type</th><th>Stage</th><th>Mode</th><th>Fires?</th><th>Matched Fields</th><th>Downstream</th>
-      </tr></thead>
+      <thead><tr><th>Automation</th><th>Type</th><th>Stage</th><th>Mode</th><th>Fires?</th><th>Matched Fields</th><th>Downstream</th></tr></thead>
       <tbody>${actRows}</tbody>
     </table>
     ${entryPoint.fields.length > 0 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Fields set by source:</strong> <code>${this.htmlEscape(entryPoint.fields.join(', '))}</code></p>` : ''}
   </div>
 </div>`;
-      }).join('');
+        }).join('');
+        bodyHtml = `<div class="accordion">${traceBlocks}</div>`;
+      } else {
+        // Entity has outgoing automation but no inbound entry points — show message pipelines
+        const msgBlocks = pipeline.messagePipelines.map(mp => {
+          const stepRows = mp.steps.map((step, si) => {
+            const noFilterHtml = step.firesForAllUpdates ? '<span class="badge badge-danger">No filter</span>' : '';
+            const filters = step.filteringAttributes.length > 0 && !step.firesForAllUpdates
+              ? `<span style="font-size:0.8em;color:#666">filters: ${this.htmlEscape(step.filteringAttributes.slice(0, 3).join(', '))}${step.filteringAttributes.length > 3 ? ` +${step.filteringAttributes.length - 3}` : ''}</span>`
+              : '';
+            const ds = step.downstream
+              ? `→ <strong>${this.htmlEscape(step.downstream.targetEntityDisplayName)}</strong> (${step.downstream.operation})`
+              : '';
+            return `<tr>
+              <td>${si + 1}</td>
+              <td>${this.htmlEscape(step.automationName)}</td>
+              <td><span class="badge badge-${step.automationType === 'Plugin' ? 'warning' : 'success'}">${step.automationType}</span></td>
+              <td>${this.htmlEscape(step.stageName ?? '—')}</td>
+              <td><span class="badge badge-${step.mode === 'Sync' ? 'warning' : 'success'}">${step.mode}</span></td>
+              <td>${noFilterHtml}${filters}</td>
+              <td>${ds}</td>
+            </tr>`;
+          }).join('');
+          return `${pipeline.messagePipelines.length > 1 ? `<h5 style="margin:4px 0 6px">${mp.message} Pipeline</h5>` : ''}<table class="data-table" style="font-size:0.85em;">
+  <thead><tr><th>#</th><th>Automation</th><th>Type</th><th>Stage</th><th>Mode</th><th>Filter</th><th>Downstream</th></tr></thead>
+  <tbody>${stepRows}</tbody>
+</table>`;
+        }).join('<hr style="margin:8px 0;border:none;border-top:1px solid #eee">');
+        bodyHtml = msgBlocks;
+      }
 
-      items.push(`<div class="accordion-item">
-  <div class="accordion-header" onclick="toggleAccordion('${id}')">
+      const totalSteps = pipeline.messagePipelines.reduce((sum, mp) => sum + mp.steps.length, 0);
+      const stepCount = entityView
+        ? `${entityView.traces.length} ${entityView.traces.length === 1 ? 'entry point' : 'entry points'}`
+        : `${totalSteps} ${totalSteps === 1 ? 'step' : 'steps'}`;
+
+      items.push(`<div class="${wrapClass}"${hiddenAttr}><div class="accordion-item">
+  <div class="accordion-header" onclick="toggleAccordion('${id}')" style="border-left:4px solid ${color}">
     <span class="accordion-icon" id="icon-${id}">+</span>
-    <h4 style="margin:0">${this.htmlEscape(view.entityDisplayName)}</h4>
-    <span style="margin-left:auto;font-size:0.85em;color:#666">${view.traces.length} ${view.traces.length === 1 ? 'entry point' : 'entry points'}</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <strong>${this.htmlEscape(pipeline.entityDisplayName)}</strong>
+        <small style="color:#666;font-family:monospace">${this.htmlEscape(logicalName)}</small>
+        ${opBadges} ${crossBadge} ${entryCountHtml}
+      </div>
+    </div>
+    <span style="font-size:0.85em;color:#666;flex-shrink:0">${stepCount}</span>
   </div>
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
-    <div class="accordion">${traceBlocks}</div>
+    ${bodyHtml}
   </div>
-</div>`);
+</div></div>`);
     }
 
-    return `<div class="accordion">${items.join('\n')}</div>`;
+    return `${checkboxHtml}<div class="accordion">${items.join('\n')}</div>`;
   }
 
   /**
@@ -1662,28 +1818,45 @@ ${this.embeddedJavaScript()}
 
   /**
    * Returns a small inline SVG icon string for use in navigation and headings.
-   * All icons use currentColor so they inherit the surrounding text colour.
+   * Uses actual Fluent UI icon path data extracted from @fluentui/react-icons.
+   * All icons use fill="currentColor" so they inherit the surrounding text colour.
+   * ViewBox is "0 0 24 24" matching the 24-size Fluent UI Regular icons.
    */
   private navIcon(key: string): string {
-    const base = `width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"`;
-    const fill = `width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0"`;
+    const s = `width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"`;
     const icons: Record<string, string> = {
-      summary:   `<svg ${fill}><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>`,
-      erd:       `<svg ${base}><rect x="5.5" y="1" width="5" height="3.5" rx="0.75" fill="currentColor" stroke="none"/><rect x="1" y="11.5" width="5" height="3.5" rx="0.75" fill="currentColor" stroke="none"/><rect x="10" y="11.5" width="5" height="3.5" rx="0.75" fill="currentColor" stroke="none"/><line x1="8" y1="4.5" x2="8" y2="7.5"/><line x1="8" y1="7.5" x2="3.5" y2="11.5"/><line x1="8" y1="7.5" x2="12.5" y2="11.5"/></svg>`,
-      entities:  `<svg ${base}><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="1" y1="6" x2="15" y2="6"/><line x1="1" y1="10" x2="15" y2="10"/></svg>`,
-      plugins:   `<svg ${base}><path d="M5 1.5C3.5 1.5 3 2.5 3 3.5V7c0 .8-1 1-1.5 1C2 8 3 8.2 3 9v3.5C3 13.5 3.5 14.5 5 14.5"/><path d="M11 1.5C12.5 1.5 13 2.5 13 3.5V7c0 .8 1 1 1.5 1C14 8 13 8.2 13 9v3.5C13 13.5 12.5 14.5 11 14.5"/><line x1="6" y1="6" x2="10" y2="10"/><line x1="10" y1="6" x2="6" y2="10"/></svg>`,
-      flows:     `<svg ${fill}><path d="M9.5 1.5L4 9.5h4.5L7 14.5l6-7H8z"/></svg>`,
-      'business-rules': `<svg ${base}><rect x="3" y="2" width="10" height="12.5" rx="1.5"/><line x1="5.5" y1="6" x2="10.5" y2="6"/><line x1="5.5" y1="9" x2="8.5" y2="9"/><line x1="5.5" y1="12" x2="9" y2="12"/></svg>`,
-      'classic-workflows': `<svg ${base}><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.7"/><polyline points="14,1 14,5 10,5"/></svg>`,
-      'business-process-flows': `<svg ${base} stroke-linejoin="round"><polygon points="8,1.5 14.5,8 8,14.5 1.5,8"/></svg>`,
-      'web-resources': `<svg ${base}><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5c-1.8 0-3.5 2.9-3.5 6.5s1.7 6.5 3.5 6.5 3.5-2.9 3.5-6.5-1.7-6.5-3.5-6.5z"/><line x1="1.5" y1="8" x2="14.5" y2="8"/></svg>`,
-      'custom-apis': `<svg ${base}><path d="M3 5.5h10M3 5.5l2.5-2.5M3 5.5l2.5 2.5"/><path d="M13 10.5H3M13 10.5l-2.5-2.5M13 10.5l-2.5 2.5"/></svg>`,
-      'environment-variables': `<svg ${base}><rect x="1.5" y="1.5" width="13" height="13" rx="1.5"/><line x1="4" y1="5" x2="9" y2="5"/><line x1="4" y1="8" x2="7" y2="8"/><line x1="4" y1="11" x2="8" y2="11"/><circle cx="12" cy="9.5" r="2" fill="currentColor" stroke="none"/><line x1="10.5" y1="9.5" x2="13.5" y2="9.5"/><line x1="12" y1="8" x2="12" y2="11"/></svg>`,
-      'connection-references': `<svg ${base}><path d="M6.5 9.5a3.5 3.5 0 0 0 4.95 0l2-2a3.5 3.5 0 0 0-4.95-4.95L7.6 3.45"/><path d="M9.5 6.5a3.5 3.5 0 0 0-4.95 0l-2 2a3.5 3.5 0 0 0 4.95 4.95l.9-.9"/></svg>`,
-      security:  `<svg ${base}><rect x="2.5" y="7" width="11" height="8" rx="1.5"/><path d="M5 7V5.5a3 3 0 0 1 6 0V7"/></svg>`,
-      'external-dependencies': `<svg ${base}><path d="M6.5 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9.5"/><polyline points="10,1.5 14.5,1.5 14.5,6"/><line x1="7.5" y1="8.5" x2="14.5" y2="1.5"/></svg>`,
-      'cross-entity': `<svg ${base}><rect x="1" y="1" width="6" height="4" rx="1"/><rect x="9" y="11" width="6" height="4" rx="1"/><path d="M4 5v3a3 3 0 0 0 3 3h2"/><polyline points="12,11 12,9 10,9"/></svg>`,
-      print:     `<svg ${base}><path d="M4 6V3h8v3"/><rect x="1" y="6" width="14" height="6" rx="1"/><path d="M4 9v5h8V9"/></svg>`,
+      // Grid24Regular
+      summary:   `<svg ${s}><path d="M6.25 3A3.25 3.25 0 0 0 3 6.25v11.5C3 19.55 4.46 21 6.25 21h11.5c1.8 0 3.25-1.46 3.25-3.25V6.25C21 4.45 19.54 3 17.75 3H6.25ZM4.5 6.25c0-.97.78-1.75 1.75-1.75h5V7h-1.5A2.75 2.75 0 0 0 7 9.75v1.5H4.5v-5Zm2.5 6.5v1.5A2.75 2.75 0 0 0 9.75 17h1.5v2.5h-5c-.97 0-1.75-.78-1.75-1.75v-5H7Zm4.25 2.75h-1.5c-.69 0-1.25-.56-1.25-1.25v-1.5h2.75v2.75Zm1.5 1.5h1.5A2.75 2.75 0 0 0 17 14.25v-1.5h2.5v5c0 .97-.78 1.75-1.75 1.75h-5V17Zm2.75-4.25v1.5c0 .69-.56 1.25-1.25 1.25h-1.5v-2.75h2.75Zm1.5-1.5v-1.5A2.75 2.75 0 0 0 14.25 7h-1.5V4.5h5c.97 0 1.75.78 1.75 1.75v5H17ZM12.75 8.5h1.5c.69 0 1.25.56 1.25 1.25v1.5h-2.75V8.5Zm-1.5 0v2.75H8.5v-1.5c0-.69.56-1.25 1.25-1.25h1.5Z"/></svg>`,
+      // Organization24Regular
+      erd:       `<svg ${s}><path d="M11.75 2A3.75 3.75 0 0 0 11 9.43v2.07H7.75c-1.24 0-2.25 1-2.25 2.25v.83a3.75 3.75 0 1 0 1.5 0v-.83c0-.41.34-.75.75-.75h8c.41 0 .75.34.75.75v.83a3.75 3.75 0 1 0 1.5 0v-.83c0-1.24-1-2.25-2.25-2.25H12.5V9.43A3.75 3.75 0 0 0 11.75 2ZM9.5 5.75a2.25 2.25 0 1 1 4.5 0 2.25 2.25 0 0 1-4.5 0ZM4 18.25a2.25 2.25 0 1 1 4.5 0 2.25 2.25 0 0 1-4.5 0ZM17.25 16a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5Z"/></svg>`,
+      // Table24Regular
+      entities:  `<svg ${s}><path d="M3 6.25C3 4.45 4.46 3 6.25 3h11.5C19.55 3 21 4.46 21 6.25v11.5c0 1.8-1.46 3.25-3.25 3.25H6.25A3.25 3.25 0 0 1 3 17.75V6.25ZM6.25 4.5c-.97 0-1.75.78-1.75 1.75V8.5h4v-4H6.25ZM4.5 10v4h4v-4h-4Zm5.5 0v4h4v-4h-4Zm5.5 0v4h4v-4h-4ZM14 15.5h-4v4h4v-4Zm1.5 4h2.25c.97 0 1.75-.78 1.75-1.75V15.5h-4v4Zm0-11h4V6.25c0-.97-.78-1.75-1.75-1.75H15.5v4Zm-1.5-4h-4v4h4v-4Zm-9.5 11v2.25c0 .97.78 1.75 1.75 1.75H8.5v-4h-4Z"/></svg>`,
+      // PuzzlePiece24Regular — matches Microsoft's "Plug-in assemblies" icon
+      plugins:   `<svg ${s}><path d="M13 2a3 3 0 0 1 3 2.82V5h2.25c.87 0 1.59.63 1.73 1.46l.01.15.01.14v3.75h-2a1.5 1.5 0 0 0-1.48 1.24l-.01.13V12c0 .74.53 1.37 1.23 1.48l.13.02H20v3.75c0 .92-.7 1.67-1.6 1.75H16v.17a3 3 0 0 1-2.64 2.8l-.18.02H13a3 3 0 0 1-3-2.81V19H7.75c-.87 0-1.59-.63-1.73-1.46l-.01-.14-.01-.15V15h-.16a3 3 0 0 1-2.8-2.64l-.02-.18V12a3 3 0 0 1 2.82-3H6V6.75c0-.87.63-1.59 1.46-1.73l.15-.01.14-.01H10v-.17a3 3 0 0 1 2.64-2.8l.18-.02H13Zm0 1.5c-.78 0-1.42.6-1.5 1.36V6.5H7.75a.25.25 0 0 0-.24.2l-.01.05v3.75H6a1.5 1.5 0 0 0-.14 3H7.5v3.75c0 .12.08.22.2.25h3.8V19a1.5 1.5 0 0 0 3 .14V17.5h3.75c.12 0 .22-.08.24-.19l.01-.06V15h-.7a3 3 0 0 1-2.8-2.85v-.35A3 3 0 0 1 17.84 9h.67V6.75c0-.1-.05-.18-.13-.22l-.06-.02-.06-.01H14.5V5c0-.82-.67-1.5-1.5-1.5Z"/></svg>`,
+      // CloudFlow24Regular
+      flows:     `<svg ${s}><path d="M7.5 7.79a4.5 4.5 0 0 1 9 0c.01.4.34.71.74.71h.26a3 3 0 0 1 2.99 2.7c.56.2 1.06.53 1.46.95a4.5 4.5 0 0 0-4.03-5.13 6 6 0 0 0-11.84 0A4.5 4.5 0 0 0 6.5 16h6.68l.13-.5a3 3 0 0 1 .47-1H6.5a3 3 0 1 1 0-6h.26c.4 0 .73-.31.75-.71Zm11.75 5.71a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm-3.03 2.25h.47a2.75 2.75 0 1 0-.14-1.5h-.33a2 2 0 0 0-1.94 1.5l-1.01 3.88a.5.5 0 0 1-.49.37h-.8a2.75 2.75 0 1 0-.28 1.5h1.08a2 2 0 0 0 1.94-1.5l1.01-3.88a.5.5 0 0 1 .49-.37ZM8 20.25a1.25 1.25 0 1 1 2.5 0 1.25 1.25 0 0 1-2.5 0Z"/></svg>`,
+      // ClipboardTaskListLtr24Regular
+      'business-rules': `<svg ${s}><path d="M12.5 10.25c0-.41.34-.75.75-.75h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1-.75-.75Zm.75 4.75a.75.75 0 1 0 0 1.5h3.5a.75.75 0 1 0 0-1.5h-3.5Zm-2.47-5.22a.75.75 0 1 0-1.06-1.06l-1.47 1.47-.47-.47a.75.75 0 0 0-1.06 1.06l1 1c.3.3.77.3 1.06 0l2-2Zm0 4.44c.3.3.3.77 0 1.06l-2 2c-.3.3-.77.3-1.06 0l-1-1a.75.75 0 1 1 1.06-1.06l.47.47 1.47-1.47c.3-.3.77-.3 1.06 0Zm5.21-10.14A2.25 2.25 0 0 0 13.75 2h-3.5c-1.16 0-2.11.87-2.24 2H6.25C5.01 4 4 5 4 6.25v13.5C4 20.99 5 22 6.25 22h11.5c1.24 0 2.25-1 2.25-2.25V6.25C20 5.01 19 4 17.75 4h-1.76v.08Zm0 .02.01.15V4.1Zm-5.74 2.4h3.5c.78 0 1.47-.4 1.87-1h2.13c.41 0 .75.34.75.75v13.5c0 .41-.34.75-.75.75H6.25a.75.75 0 0 1-.75-.75V6.25c0-.41.34-.75.75-.75h2.13c.4.6 1.09 1 1.87 1Zm0-3h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1 0-1.5Z"/></svg>`,
+      // ClipboardSettings24Regular — matches Microsoft's "Processes" icon
+      'classic-workflows': `<svg ${s}><path d="M13.75 2c1.16 0 2.11.87 2.24 2h1.76C18.99 4 20 5 20 6.25v5.25c-.47-.2-.98-.34-1.5-.42V6.25a.75.75 0 0 0-.75-.75h-2.13c-.4.6-1.09 1-1.87 1h-3.5c-.78 0-1.47-.4-1.87-1H6.25a.75.75 0 0 0-.75.75v13.5c0 .41.34.75.75.75h5.48c.29.55.65 1.06 1.08 1.5H6.25C5.01 22 4 21 4 19.75V6.25C4 5.01 5 4 6.25 4h1.76c.13-1.13 1.08-2 2.24-2h3.5Zm2.24 2.03V4v.03Zm0 .07.01.15v-.17.02Zm-2.24-.6h-3.5a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5Zm.53 10.48a2 2 0 0 1-1.44 2.5l-.59.14a5.73 5.73 0 0 0 0 1.8l.55.13a2 2 0 0 1 1.45 2.51l-.19.64c.44.38.94.7 1.49.92l.49-.52a2 2 0 0 1 2.9 0l.5.52a5.28 5.28 0 0 0 1.48-.91l-.2-.69a2 2 0 0 1 1.44-2.5l.59-.14a5.73 5.73 0 0 0 0-1.8l-.55-.13a2 2 0 0 1-1.45-2.51l.19-.63c-.44-.4-.94-.7-1.49-.93l-.49.52a2 2 0 0 1-2.9 0l-.5-.52c-.54.22-1.04.53-1.48.9l.2.7ZM17.5 19c-.8 0-1.45-.67-1.45-1.5S16.7 16 17.5 16c.8 0 1.45.67 1.45 1.5S18.3 19 17.5 19Z"/></svg>`,
+      // Flowchart24Regular
+      'business-process-flows': `<svg ${s}><path d="M5.25 3C4 3 3 4 3 5.25v2.5C3 9 4 10 5.25 10h.5v3.71c-.05.03-.1.07-.13.12l-2.8 2.79a1.25 1.25 0 0 0 0 1.77l2.8 2.79c.48.49 1.28.49 1.76 0l2.8-2.8.11-.13H14v.5C14 20 15.01 21 16.25 21h2.5c1.24 0 2.25-1 2.25-2.25v-2.5c0-1.24-1-2.25-2.25-2.25h-2.5C15.01 14 14 15 14 16.25v.5H10.3c-.03-.05-.07-.09-.12-.13l-2.79-2.8a1.26 1.26 0 0 0-.13-.11v-3.7h.5C9 10 10 9 10 7.74v-2.5C10 4 9 3 7.75 3h-2.5ZM4.5 5.25c0-.42.33-.75.75-.75h2.5c.42 0 .75.33.75.75v2.5c0 .42-.33.75-.75.75h-2.5a.75.75 0 0 1-.75-.75v-2.5ZM4.06 17.5l2.44-2.44 2.44 2.44-2.44 2.44-2.44-2.44Zm12.2-2h2.49c.41 0 .75.34.75.75v2.5c0 .42-.34.75-.75.75h-2.5a.75.75 0 0 1-.75-.75v-2.5c0-.41.34-.75.75-.75Z"/></svg>`,
+      // DocumentGlobe24Regular — matches Microsoft's "Web resources" icon
+      'web-resources': `<svg ${s}><path d="M4 4c0-1.1.9-2 2-2h6.17a2 2 0 0 1 1.42.59L19.4 8.4A2 2 0 0 1 20 9.83V20a2 2 0 0 1-2 2h-6.81c.43-.44.8-.95 1.08-1.5H18a.5.5 0 0 0 .5-.5V10H14a2 2 0 0 1-2-2V3.5H6a.5.5 0 0 0-.5.5v7.08c-.52.08-1.03.22-1.5.42V4Zm10 4.5h3.38L13.5 4.62V8c0 .28.22.5.5.5Zm-8.44 4.92c-.3.91-.51 2.17-.55 3.58h2.98a12.92 12.92 0 0 0-.55-3.58c-.17-.52-.36-.9-.55-1.14-.2-.25-.33-.28-.39-.28s-.2.03-.39.28c-.19.24-.38.62-.55 1.14Zm-.58-1.2c-.14.26-.26.56-.37.88-.34 1.03-.56 2.4-.6 3.9H1.02a5.5 5.5 0 0 1 3.96-4.79Zm3.4.88c-.1-.32-.22-.62-.36-.89A5.5 5.5 0 0 1 11.98 17H8.99c-.04-1.5-.26-2.87-.6-3.9Zm3.6 4.9H8.99c-.04 1.5-.26 2.87-.6 3.9-.1.32-.23.62-.37.89A5.5 5.5 0 0 0 11.98 18Zm-5.1 4.72c-.19.25-.32.28-.38.28s-.2-.03-.39-.28a3.84 3.84 0 0 1-.55-1.14c-.3-.91-.51-2.17-.55-3.58h2.98a12.92 12.92 0 0 1-.55 3.58c-.17.52-.36.9-.55 1.14Zm-1.9.07A5.5 5.5 0 0 1 1.02 18h2.99c.04 1.5.26 2.87.6 3.9.1.32.23.62.37.89Z"/></svg>`,
+      // FlashSettings24Regular — lightning bolt + gear for Custom APIs
+      'custom-apis': `<svg ${s}><path d="M7.42 2.83C7.6 2.33 8.07 2 8.6 2h6.46c.85 0 1.45.84 1.18 1.65L14.8 8h3.96c1.1 0 1.66 1.33.9 2.12l-.96.99a6.53 6.53 0 0 0-2.04-.06l1.5-1.55h-4.4a.75.75 0 0 1-.71-.99L14.7 3.5H8.78l-3.26 9.16c-.06.16.06.33.23.33l2.5.01a.75.75 0 0 1 .73.91L7.51 20.5l3.52-3.63a6.57 6.57 0 0 0 .12 2.03l-2.56 2.65c-1.06 1.08-2.88.1-2.55-1.38l1.27-5.66-1.57-.01c-1.2 0-2.04-1.2-1.64-2.34l3.32-9.32Zm6.86 11.15a2 2 0 0 1-1.44 2.5l-.59.14a5.73 5.73 0 0 0 0 1.8l.55.13a2 2 0 0 1 1.45 2.51l-.19.64c.44.38.94.7 1.49.92l.49-.52a2 2 0 0 1 2.9 0l.5.52a5.28 5.28 0 0 0 1.48-.9l-.2-.7a2 2 0 0 1 1.44-2.5l.59-.14a5.73 5.73 0 0 0-.01-1.8l-.54-.13a2 2 0 0 1-1.45-2.51l.19-.63c-.44-.39-.94-.7-1.49-.93l-.49.52a2 2 0 0 1-2.9 0l-.5-.52c-.54.22-1.04.53-1.48.91l.2.69ZM17.5 19c-.8 0-1.45-.67-1.45-1.5S16.7 16 17.5 16c.8 0 1.45.67 1.45 1.5S18.3 19 17.5 19Z"/></svg>`,
+      // BracesVariable24Regular — {x} variable box matches Microsoft's Environment Variables icon
+      'environment-variables': `<svg ${s}><path d="M3.5 5.75A2.75 2.75 0 0 1 6.25 3a.75.75 0 0 1 0 1.5C5.56 4.5 5 5.06 5 5.75v4.3c0 .75-.3 1.45-.8 1.95.5.5.8 1.2.8 1.94v4.31c0 .69.56 1.25 1.25 1.25a.75.75 0 0 1 0 1.5 2.75 2.75 0 0 1-2.75-2.75v-4.3c0-.55-.34-1.02-.85-1.2l-.14-.04a.75.75 0 0 1 0-1.42l.14-.05c.5-.17.85-.64.85-1.18V5.75Zm17 0A2.75 2.75 0 0 0 17.75 3a.75.75 0 0 0 0 1.5c.69 0 1.25.56 1.25 1.25v4.3c0 .75.3 1.45.8 1.95-.5.5-.8 1.2-.8 1.94v4.31c0 .69-.56 1.25-1.25 1.25a.75.75 0 0 0 0 1.5 2.75 2.75 0 0 0 2.75-2.75v-4.3c0-.55.34-1.02.85-1.2l.14-.04a.75.75 0 0 0 0-1.42l-.14-.05a1.25 1.25 0 0 1-.85-1.18V5.75ZM9.1 7.04a.75.75 0 1 0-1.2.92L11.06 12l-3.14 4.04a.75.75 0 0 0 1.18.92L12 13.22l2.9 3.74a.75.75 0 0 0 1.2-.92L12.94 12l3.14-4.04a.75.75 0 0 0-1.18-.92L12 10.78 9.1 7.04Z"/></svg>`,
+      // UsbPlug24Regular — vertical USB/plug connector matches Microsoft's Connection References icon
+      'connection-references': `<svg ${s}><path d="M11 21.25a.75.75 0 0 1-1.5.1V17h-.75c-1.19 0-2.16-.93-2.24-2.1V9.25c0-.98.63-1.82 1.5-2.13V2.75c0-.38.29-.7.65-.75h6.6c.39 0 .7.28.75.65V7.13c.82.3 1.42 1.05 1.49 1.95v5.67c0 1.2-.92 2.17-2.1 2.24l-.15.01h-.75v4.25a.75.75 0 0 1-1.5.1V17h-2v4.25ZM15.25 8.5h-6.5c-.38 0-.69.28-.74.65v5.6c0 .38.28.7.64.74l.1.01h6.5c.38 0 .7-.28.75-.65v-5.6c0-.38-.28-.7-.64-.74l-.1-.01Zm-.73-5h-5V7h5V3.5Z"/></svg>`,
+      // PeopleLock24Regular — two people + lock badge matches Microsoft's Security Roles icon
+      security:  `<svg ${s}><path d="M8 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM4 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0Zm13-.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM14 8a3 3 0 1 1 4.45 2.63 3.5 3.5 0 0 0-2.44.2A3 3 0 0 1 14 8Zm-.3 6.13A2.25 2.25 0 0 0 11.75 13h-7.5C3.01 13 2 14 2 15.25v.28a2.07 2.07 0 0 0 .01.2c.02.14.04.32.1.53.09.42.29.98.68 1.55C3.61 18.97 5.17 20 8 20c1.8 0 3.1-.42 4-1.02V16.9l-.02.03c-.5.71-1.56 1.56-3.98 1.56s-3.49-.85-3.98-1.56a2.99 2.99 0 0 1-.52-1.43v-.26c0-.41.34-.75.75-.75h7.5c.34 0 .63.23.72.54.3-.42.73-.74 1.23-.91Zm.8.87h.5v-1a2.5 2.5 0 0 1 5 0v1h.5c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5h-6a1.5 1.5 0 0 1-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5Zm2-1v1h2v-1a1 1 0 1 0-2 0Zm2 5a1 1 0 1 0-2 0 1 1 0 0 0 2 0Z"/></svg>`,
+      // Globe24Regular — globe = "the internet / external world" for External Dependencies
+      'external-dependencies': `<svg ${s}><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm2.94 14.5H9.06c.65 2.41 1.79 4 2.94 4s2.29-1.59 2.94-4Zm-7.43 0H4.79a8.53 8.53 0 0 0 4.09 3.41c-.52-.82-.95-1.85-1.27-3.02l-.1-.39Zm11.7 0H16.5c-.32 1.33-.79 2.5-1.37 3.41a8.53 8.53 0 0 0 3.9-3.13l.2-.28ZM7.1 10H3.74v.02a8.52 8.52 0 0 0 .3 4.98h3.18a20.3 20.3 0 0 1-.13-5Zm8.3 0H8.6a18.97 18.97 0 0 0 .14 5h6.52a18.5 18.5 0 0 0 .14-5Zm4.87 0h-3.35a20.85 20.85 0 0 1-.13 5h3.18a8.48 8.48 0 0 0 .3-5ZM8.88 4.09h-.02a8.53 8.53 0 0 0-4.61 4.4l3.05.01c.31-1.75.86-3.28 1.58-4.41Zm3.12-.6-.12.01c-1.26.12-2.48 2.12-3.05 5h6.34c-.56-2.87-1.78-4.87-3.04-5H12Zm3.12.6.1.17A12.64 12.64 0 0 1 16.7 8.5h3.05a8.53 8.53 0 0 0-4.34-4.29l-.29-.12Z"/></svg>`,
+      // ArrowBetweenDown24Regular — downward arrows between bars
+      'cross-entity': `<svg ${s}><path d="M6 1.75a.75.75 0 0 0-1.5 0v.5c0 1.24 1 2.25 2.25 2.25h10c1.24 0 2.25-1 2.25-2.25v-.5a.75.75 0 0 0-1.5 0v.5c0 .41-.34.75-.75.75h-10A.75.75 0 0 1 6 2.25v-.5ZM11.75 6c.41 0 .75.34.75.75v8.69l3.72-3.72a.75.75 0 1 1 1.06 1.06l-5 5c-.3.3-.77.3-1.06 0l-5-5a.75.75 0 1 1 1.06-1.06L11 15.44V6.75c0-.41.34-.75.75-.75ZM4.5 21.75c0-1.24 1-2.25 2.25-2.25h10c1.24 0 2.25 1 2.25 2.25v.5a.75.75 0 0 1-1.5 0v-.5a.75.75 0 0 0-.75-.75h-10a.75.75 0 0 0-.75.75v.5a.75.75 0 0 1-1.5 0v-.5Z"/></svg>`,
+      // Simple printer icon (hand-crafted — no matching Fluent UI component icon needed)
+      print:     `<svg ${s}><path d="M7 3h10a1 1 0 0 1 1 1v4H6V4a1 1 0 0 1 1-1ZM5 8h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2Zm2 9v2h10v-2H7Zm-2-4a1 1 0 1 0 2 0 1 1 0 0 0-2 0Z" fill-rule="evenodd"/></svg>`,
     };
     return icons[key] ?? '';
   }
@@ -2820,6 +2993,13 @@ ${this.embeddedJavaScript()}
     }
     // ── End Cytoscape ERD ──────────────────────────────────────────────────
 
+    // Cross-entity "show all entities with automation" toggle
+    function toggleCeaAllEntities(showAll) {
+      document.querySelectorAll('.cea-entity-no-output').forEach(function(el) {
+        el.style.display = showAll ? '' : 'none';
+      });
+    }
+
     // Accordion toggle
     function toggleAccordion(id) {
       const content = document.getElementById(id);
@@ -3023,9 +3203,19 @@ ${this.embeddedJavaScript()}
             <h3>Security Roles</h3>
 
             <div class="subsection">
-              <h4>Special Permissions Matrix</h4>
-              <p>This table shows which security roles have special/miscellaneous permissions.</p>
-              ${this.generateSpecialPermissionsTable(securityRoles)}
+              <div class="accordion">
+                <div class="accordion-item">
+                  <div class="accordion-header" onclick="toggleAccordion('special-perms-matrix')">
+                    <span class="accordion-icon" id="icon-special-perms-matrix">+</span>
+                    <h4 style="margin:0">Special Permissions Matrix</h4>
+                    <span style="font-size:0.85em;color:#666;margin-left:auto">Roles with miscellaneous permissions — click to expand</span>
+                  </div>
+                  <div class="accordion-content" id="special-perms-matrix" style="display:none;padding:12px 0;">
+                    <p>This table shows which security roles have special/miscellaneous permissions.</p>
+                    ${this.generateSpecialPermissionsTable(securityRoles)}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="subsection">
@@ -3109,7 +3299,16 @@ ${this.embeddedJavaScript()}
         </thead>
         <tbody>`;
 
-    for (const role of securityRoles) {
+    // Only include roles that have at least one special permission set
+    const rolesWithPerms = securityRoles.filter(role =>
+      specialPermissionKeys.some(key => role.specialPermissions[key])
+    );
+
+    if (rolesWithPerms.length === 0) {
+      return '<p style="color:#666">No roles have special/miscellaneous permissions set.</p>';
+    }
+
+    for (const role of rolesWithPerms) {
       html += `
           <tr>
             <td><strong>${this.escapeHtml(role.name)}</strong></td>
@@ -3163,6 +3362,19 @@ ${this.embeddedJavaScript()}
   }
 
   /**
+   * Map Dataverse privilege depth strings to Power Platform UI terminology.
+   */
+  private privDepthLabel(depth: string): string {
+    switch (depth) {
+      case 'Basic':  return 'User';
+      case 'Local':  return 'BU';
+      case 'Deep':   return 'P:CBU';
+      case 'Global': return 'Org';
+      default:       return this.escapeHtml(depth);
+    }
+  }
+
+  /**
    * Generate entity permissions table for a security role
    */
   private generateEntityPermissionsTable(entityPermissions: import('../../discovery/SecurityRoleDiscovery.js').EntityPermission[]): string {
@@ -3201,7 +3413,8 @@ ${this.embeddedJavaScript()}
 
       for (const type of ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share']) {
         const priv = privMap.get(type as any);
-        html += `<td class="center">${priv ? this.escapeHtml(priv.depth) : ''}</td>`;
+        const label = priv ? this.privDepthLabel(priv.depth) : '';
+        html += `<td class="center">${label}</td>`;
       }
 
       html += `</tr>`;
@@ -3210,7 +3423,7 @@ ${this.embeddedJavaScript()}
     html += `
         </tbody>
       </table>
-      <p class="legend"><strong>Privilege Depth:</strong> Basic = User, Local = Business Unit, Deep = Parent+Child BU, Global = Organization</p>`;
+      <p class="legend"><strong>Access levels:</strong> User = own records · BU = Business Unit · P:CBU = Parent &amp; Child BUs · Org = Organisation-wide</p>`;
 
     return html;
   }

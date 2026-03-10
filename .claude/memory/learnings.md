@@ -427,15 +427,86 @@ var _esc = function(s) {
 
 ---
 
-## [2026-03-09] — ArrowUpRight20Regular for external calls; Globe24Regular only for web resources
+## [2026-03-10] — Full icon alignment with Power Apps solution explorer (componentIcons.ts)
 
 **Affects:** Developer, Reviewer
 **Severity:** Medium
-**Rule:** Use `ArrowUpRight20Regular` for "external API calls" indicators (outbound arrow icon). Use `Globe24Regular` ONLY for the Web Resources component category icon. Never use Globe for external-call indicators.
-**Context:** Both previously used Globe, which was ambiguous. Globe is now reserved exclusively for the Web Resources tab/category. ArrowUpRight conveys the outbound nature of an external call.
+**Rule:** Component icons in `componentIcons.ts` are aligned with the Power Apps maker portal solution explorer (observed 2026-03-10). The complete mapping:
+- `PuzzlePiece24Regular` — Plugins (Microsoft: puzzle piece for Plug-in assemblies)
+- `BracesVariable24Regular` — Environment Variables (Microsoft: variable box icon)
+- `PeopleLock24Regular` — Security Roles (Microsoft: two people + lock badge)
+- `UsbPlug24Regular` — Connection References (Microsoft: vertical USB/plug connector)
+- `PlugDisconnected24Regular` — Custom Connectors (Microsoft: angled disconnected plug)
+- `DocumentEdit24Regular` — Custom Pages (Microsoft: document + pencil)
+- `TableLock24Regular` — Field Security Profiles (Microsoft: table/grid + lock badge)
+- `ClipboardSettings24Regular` — Classic Workflows (Microsoft classifies under "Processes" — document + gear badge icon)
+- `FlashSettings24Regular` — Custom APIs (our own: lightning bolt + gear = configurable API trigger; MS uses generic folder)
+- `DocumentGlobe24Regular` — Web Resources (Microsoft: globe + document page). Frees Globe24Regular.
+- `Globe24Regular` — External Dependencies nav tab (globe = "the internet / external world"). Replaced Open24Regular.
+- All other icons (Table, CloudFlow, MultiselectLtr, Archive, etc.) were already correct
+See `COMPONENT_ICONS_REFERENCE.md` for the complete catalogue including future component types.
+
+---
+
+## [2026-03-10] — ClassicWorkflowXamlParser: self-closing tags matched by both patterns — guard required
+
+**Affects:** Developer
+**Severity:** High
+**Rule:** In `ClassicWorkflowXamlParser.extractSteps`, the `openTagPattern` (`<Element\b([^>]*)>`) also matches self-closing tags (`<Element ... />`) because `[^>]*>` matches the `>` in `/>`. Always guard the open-tag loop body with `if (attrs.trimEnd().endsWith('/')) continue;` to skip self-closing tags already handled by `selfClosingPattern`. Without this guard, every self-closing XAML step is parsed twice, producing duplicate Classic Workflow entry points in the pipeline traces.
 **Example:**
-- Wrong: `<Globe20Regular />` as the icon for an external API call indicator
-- Right: `<ArrowUpRight20Regular />` for external call indicators; `Globe24Regular` from `componentIcons.ts` for web resources only
+- Wrong: `openTagPattern` loop with no self-closing guard → duplicate entries for `<mxswa:UpdateEntity ... />`
+- Right: `if (attrs.trimEnd().endsWith('/')) continue;` at the top of the open-tag loop body
+
+---
+
+## [2026-03-10] — Fluent UI icon SVG paths are extractable from @fluentui/react-icons npm package
+
+**Affects:** Developer
+**Severity:** Medium
+**Rule:** Actual Fluent UI icon SVG path data can be extracted directly from `node_modules/@fluentui/react-icons/lib/sizedIcons/chunk-*.js`. Each icon is registered as `createFluentIcon('Name', '24', ['<path-data>'])`. The path array contains a single `d` string. Use `viewBox="0 0 24 24" fill="currentColor"` for 24-size icons. This is the source of truth for `navIcon()` in `HtmlTemplates.ts` — never hand-craft approximations when the real path is available.
+**Example:**
+- Wrong: Hand-crafting a rough stroke-based SVG approximation for navIcon('flows')
+- Right: Extract actual path from chunk-*.js: `grep -A1 "CloudFlow24Regular = " lib/sizedIcons/chunk-*.js`
+
+---
+
+## [2026-03-10] — Security role privilege depths use Power Platform UI terminology
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** Map Dataverse privilege depth values to Power Platform UI terminology everywhere they are displayed: `Basic` → `User`, `Local` → `BU`, `Deep` → `P:CBU`, `Global` → `Org`. Use the legend "User = own records · BU = Business Unit · P:CBU = Parent & Child BUs · Org = Organisation-wide". Apply to both the React UI (`depthLabel` helper in SecurityOverview.tsx) and HTML export (`privDepthLabel` helper in HtmlTemplates.ts).
+
+---
+
+## [2026-03-10] — Special Permissions Matrix must filter out roles with no special permissions
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** The Special Permissions Matrix (both React UI and HTML export) must only show rows for security roles that have at least one special permission set to `true`. Showing all roles produces empty rows for roles with no special permissions. Filter: `securityRoles.filter(role => specialPermissionKeys.some(key => role.specialPermissions[key]))`. If no roles have special permissions, show a "No roles have special permissions" message instead of an empty table.
+
+---
+
+## [2026-03-10] — HTML export sections for Custom APIs, BRs, and BPFs must use accordion with details
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** The HTML export sections for Custom APIs, Business Rules, and Business Process Flows must use collapsible accordion rows (not flat tables) to show full details in the expanded panel:
+- Custom APIs: expanded panel shows request parameters table (uniqueName, type, isOptional, description) and response properties table
+- Business Rules: expanded panel shows conditions table (field, operator, value, logicOperator) and actions table (type, field, value/message)
+- BPFs: expanded panel shows stages with their steps (stepName, fieldName, required)
+Using flat tables with only counts (e.g. "5 conditions") was insufficient — users need to see the actual content without leaving the export.
+
+---
+
+## [2026-03-09] — ArrowUpRight20Regular for external calls; Globe24Regular for External Dependencies tab
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** Use `ArrowUpRight20Regular` for "external API calls" indicators (outbound arrow icon). Never use Globe for inline external-call indicators.
+**Context:** Web Resources moved to `DocumentGlobe24Regular` (MS icon: globe+document). `Globe24Regular` is now used for the External Dependencies navigation tab (globe = "the internet / external world"). `ArrowUpRight` is for inline external-call row indicators only.
+**Example:**
+- Wrong: `<Globe20Regular />` as the icon for an inline external API call indicator
+- Right: `<Globe20Regular />` for inline external-call indicators in Web Resources list; `DocumentGlobe24Regular` for Web Resources tab; `Globe24Regular` for External Dependencies tab
 
 ---
 
@@ -451,15 +522,17 @@ var _esc = function(s) {
 
 ---
 
-## [2026-03-09] — Plugin icon is BracesVariable24Regular, not Code24Regular
+## [2026-03-10] — Plugin icon is PuzzlePiece24Regular; Environment Variables icon is BracesVariable24Regular
 
 **Affects:** Developer, Reviewer
 **Severity:** Medium
-**Rule:** Use `BracesVariable24Regular` for the plugins component-category icon. Do not use `Code24Regular` (which shows `</>` HTML-style brackets — misleading for compiled .NET/C# plugins). `BracesVariable24Regular` represents curly-brace code style appropriate for C#.
-**Context:** `Code24Regular` was replaced because its `</>` glyph implies HTML/JSX, not compiled .NET assemblies.
+**Rule:** Use `PuzzlePiece24Regular` for the plugins component-category icon. Use `BracesVariable24Regular` for Environment Variables. Do NOT use `Code24Regular` for either (its `</>` glyph implies HTML/JSX).
+**Context:** Updated 2026-03-10 after inspecting the Power Apps maker portal solution explorer screenshots. Microsoft uses a jigsaw puzzle piece for "Plug-in assemblies" — the puzzle piece metaphor (something that "plugs into" the system) is more accurate than braces. `BracesVariable24Regular` (`{x}`) is now correctly assigned to Environment Variables because `{x}` IS the Power Platform variable syntax. Before this change, Plugins used BracesVariable and Environment Variables used TextBulletListSquareSettingsRegular (neither matched Microsoft).
 **Example:**
-- Wrong: `export const PluginsIcon = Code24Regular;` in componentIcons.ts
-- Right: `export const PluginsIcon = BracesVariable24Regular;`
+- Wrong: `export const PluginsIcon = Code24Regular;`
+- Wrong: `export const PluginsIcon = BracesVariable24Regular;` (old rule — now superseded)
+- Right: `export const PluginsIcon = PuzzlePiece24Regular;`
+- Right: `export const EnvironmentVariablesIcon = BracesVariable24Regular;`
 
 ---
 
@@ -473,7 +546,7 @@ var _esc = function(s) {
 - 💡 tip/recommendation → `LightbulbFilament20Regular` with warning foreground colour
 - 🌐 external calls (outbound) → `ArrowUpRight20Regular`
 - 🌐 web resources category → `Globe24Regular` from componentIcons.ts
-In coverage notice lists, replace emoji bullet icons with the corresponding type icon (CloudFlow, ArrowCircleRight, BracesVariable, Globe) at 14px, and wrap `<Text as="p">` with `display:'flex', alignItems:'center', gap:'6px'`.
+In coverage notice lists, replace emoji bullet icons with the corresponding type icon (CloudFlow, Settings [ClassicWorkflowsIcon], BracesVariable [PluginsIcon], Globe) at 14px, and wrap `<Text as="p">` with `display:'flex', alignItems:'center', gap:'6px'`.
 **Context:** Emoji render inconsistently across operating systems and do not adapt to light/dark themes. Fluent UI icons with semantic tokens adapt correctly.
 **Example:**
 - Wrong: `<Text>⚠️ This plugin has no filter</Text>`
@@ -523,6 +596,54 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 **Example:**
 - Wrong: `// Pass 2: onProgress: (done) => this.onProgress?.(done, N)` — double-counts against Pass 1's N
 - Right: Pass 2 has no onProgress; after Pass 2: `this.onProgress?.(N, N)`
+
+---
+
+## [2026-03-09] — Fluent UI icon names: verify exact export name, do not assume size suffix
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** Not all Fluent UI icons follow the `Name24Regular` pattern. Before using any icon, verify its exact export name by running `pnpm typecheck` or checking the `@fluentui/react-icons` package source. The size suffix (e.g. `24`) is sometimes omitted entirely. Example: `TextBulletListSquareSettings24Regular` does NOT exist — the correct name is `TextBulletListSquareSettingsRegular` (no size suffix). Never assume the suffix is present.
+**Context:** Importing a non-existent icon name causes a TypeScript error that only surfaces at typecheck time. The safe workflow is: write the import → typecheck → adjust the name if the error points to the specific export.
+**Example:**
+- Wrong: `import { TextBulletListSquareSettings24Regular } from '@fluentui/react-icons'` — does not exist
+- Right: `import { TextBulletListSquareSettingsRegular } from '@fluentui/react-icons'` — correct name
+
+---
+
+## [2026-03-09] — HTML export: ALL data strings must go through htmlEscape() — including enum-like strings
+
+**Affects:** Developer, Reviewer
+**Severity:** Blocker
+**Rule:** Every value sourced from analysis data that is written into an HTML template literal in `HtmlTemplates.ts` or `HtmlReporter.ts` MUST be wrapped in `this.htmlEscape()` (or the equivalent helper). This includes fields that look like enums or constants at the TypeScript type level (e.g. `automationType`, `operation`, `mode`, `confidence`, `entryPoint`) — they are typed as `string` and their actual runtime values are untrusted. No string from analysis data ever bypasses escaping.
+**Context:** Reviewer found 6 XSS vectors in the pipeline traces HTML section where string fields from `CrossEntityTrace` and activation records were written directly into template literals. All six were enum-like in TypeScript but still typed as `string`.
+**Example:**
+- Wrong: `` `<td>${trace.automationType}</td>` `` — raw string, potential XSS
+- Right: `` `<td>${this.htmlEscape(trace.automationType)}</td>` ``
+
+---
+
+## [2026-03-09] — HTML export coverage notices must use CSS class, not inline hex colour
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** Coverage notices and informational call-outs in the HTML export must use existing CSS classes (`alert alert-info`, `alert alert-warning`) rather than inline `style="background-color:#e8f4fd"` or similar hardcoded hex. Inline hex colours break dark-mode rendering and do not adapt to the HTML export's theme toggle.
+**Context:** A `coverageNotice` div was using `style="background:#e8f4fd; border-left:4px solid #0078d4"` instead of the `<div class="alert alert-info">` class already defined in the HTML export stylesheet. Reviewer flagged it as a dark-mode violation.
+**Example:**
+- Wrong: `<div style="background:#e8f4fd; border-left:4px solid #0078d4">Coverage: ...</div>`
+- Right: `<div class="alert alert-info">Coverage: ...</div>`
+
+---
+
+## [2026-03-09] — catch blocks in BlueprintGenerator must push to stepWarnings, not console.error
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** When a non-fatal error occurs during blueprint generation (e.g. a discovery phase partially fails), push a structured entry to `this.stepWarnings` rather than calling `console.error()`. The format is `{ step: string, message: string, partial: true }`. `console.error` produces noise in the PPTB Desktop console and is invisible to the user; stepWarnings surfaces the issue in the UI and is included in the JSON/HTML export report.
+**Context:** Column security discovery catch blocks were calling `console.error()`. Reviewer flagged them as violating the stepWarnings contract established in BlueprintGenerator.
+**Example:**
+- Wrong: `catch (err) { console.error('Column security failed', err); }`
+- Right: `catch (err) { this.stepWarnings.push({ step: 'column-security', message: String(err), partial: true }); }`
 
 ---
 
