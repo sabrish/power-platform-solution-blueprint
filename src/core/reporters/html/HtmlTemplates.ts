@@ -1235,20 +1235,10 @@ ${rows}
       const id = `bpf-${i}`;
 
       const stageBlocks = stages.map((stage, si) => {
-        const stepRows = stage.steps.map(step => `<tr>
-          <td>${step.order}</td>
-          <td>${this.escapeHtml(step.name)}</td>
-          <td><code>${this.escapeHtml(step.fieldName)}</code></td>
-          <td>${step.required ? '<span class="badge badge-warning">Required</span>' : 'Optional'}</td>
-        </tr>`).join('');
-
-        return `<div style="margin-bottom:10px;">
-  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-    <span style="font-weight:600;font-size:0.9em">Stage ${si + 1}: ${this.escapeHtml(stage.name)}</span>
-    <span style="font-size:0.8em;color:#666;font-family:monospace">${this.escapeHtml(stage.entity)}</span>
-    <span class="badge">${stage.steps.length} step${stage.steps.length !== 1 ? 's' : ''}</span>
-  </div>
-  ${stage.steps.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th>#</th><th>Step Name</th><th>Field</th><th>Required</th></tr></thead><tbody>${stepRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em;margin:2px 0">No steps in this stage.</p>'}
+        return `<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+  <span style="font-weight:600;font-size:0.9em">Stage ${si + 1}: ${this.escapeHtml(stage.name)}</span>
+  <span style="font-size:0.8em;color:#666;font-family:monospace">${this.escapeHtml(stage.entity)}</span>
+  <span class="badge">${stage.steps.length} step${stage.steps.length !== 1 ? 's' : ''}</span>
 </div>`;
       }).join('');
 
