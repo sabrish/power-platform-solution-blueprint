@@ -214,7 +214,7 @@ function App() {
         result={result}
         scope={selectedScope}
         onStartOver={handleChangeSelection}
-        blueprintGenerator={blueprintGenerator}
+        blueprintGenerator={blueprintGenerator!}
       />
     );
   }
@@ -244,7 +244,7 @@ function App() {
                 appearance="secondary"
                 size="small"
                 onClick={handleGenerate}
-                style={{ marginTop: '8px' }}
+                style={{ marginTop: tokens.spacingVerticalS }}
               >
                 Retry
               </Button>

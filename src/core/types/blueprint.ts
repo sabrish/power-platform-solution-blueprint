@@ -5,6 +5,9 @@ import type { PluginStep } from '../types.js';
 import type { EntityFieldSecurity } from '../discovery/FieldSecurityProfileDiscovery.js';
 import type { SecurityRoleDetail } from '../discovery/SecurityRoleDiscovery.js';
 import type { FetchLogEntry } from '../utils/FetchLogger.js';
+import type { CanvasApp } from './canvasApp.js';
+import type { CustomPage } from './customPage.js';
+import type { ModelDrivenApp } from './modelDrivenApp.js';
 
 /**
  * Progress phases during blueprint generation
@@ -15,6 +18,7 @@ export type ProgressPhase =
   | 'plugins'
   | 'flows'
   | 'business-rules'
+  | 'apps'
   | 'complete';
 
 /**
@@ -455,6 +459,7 @@ export interface BlueprintSummary {
   totalWebResources: number;
   totalCanvasApps: number;
   totalCustomPages: number;
+  totalModelDrivenApps: number;
 }
 
 /**
@@ -623,6 +628,12 @@ export interface ComponentCounts {
   environmentVariables: number;
   connectionReferences: number;
   globalChoices: number;
+  customConnectors: number;
+  securityRoles: number;
+  fieldSecurityProfiles: number;
+  canvasApps: number;
+  customPages: number;
+  modelDrivenApps: number;
   total: number;
 }
 
@@ -693,6 +704,9 @@ export interface BlueprintResult {
   connectionReferences: import('./connectionReference.js').ConnectionReference[];
   globalChoices: import('./globalChoice.js').GlobalChoice[];
   customConnectors: import('./customConnector.js').CustomConnector[];
+  canvasApps: CanvasApp[];
+  customPages: CustomPage[];
+  modelDrivenApps: ModelDrivenApp[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
   erd?: ERDDefinition;

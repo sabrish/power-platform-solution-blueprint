@@ -14,7 +14,9 @@ export interface ComponentInventory {
   webResourceIds: string[];
   formIds: string[];
   canvasAppIds: string[];
-  customPageIds: string[];
+  /** @deprecated Always empty — Custom Pages share component type 300 with Canvas Apps and are split post-retrieval in AppDiscovery by canvasapptype === 2. Do not read from this field. */
+  readonly customPageIds: string[];
+  appModuleIds: string[];
   connectionReferenceIds: string[];
   customApiIds: string[];
   environmentVariableIds: string[];
@@ -67,17 +69,17 @@ export enum ComponentType {
   SystemForm = 60,  // Forms (Main, Quick Create, Quick View, Card)
   WebResource = 61,
   FieldSecurityProfile = 70,
-  // AppModule = 80,  // Model-Driven Apps (future implementation)
+  AppModule = 80,  // Model-Driven Apps
   PluginType = 90,
   PluginAssembly = 91,
   SdkMessageProcessingStep = 92,  // Plugin steps
   SdkMessageProcessingStepImage = 93,  // Plugin step images
-  CanvasApp = 300,  // Future implementation
+  // Canvas Apps and Custom Pages both use type 300; differentiated by canvasapptype (0 = Standard, 1 = Component Library, 2 = Custom Page)
+  CanvasApp = 300,
   ConnectionReference = 371,
   CustomConnector = 372,
   EnvironmentVariableDefinition = 380,
   CustomAPI = 10076,
-  CustomPage = 10004,
   PluginPackage = 10030,  // Plugin packages
 }
 

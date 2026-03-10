@@ -78,11 +78,17 @@ const enriched = await Promise.all(
 **Severity if violated:** Blocker (silent failures, 0 results returned)
 
 ```typescript
-// Rule 1: OData filters — raw GUID, no quotes, no braces
+// Rule 1: OData filters — raw GUID, no quotes, no braces (for primary key / regular ID fields)
 const cleanGuid = guidValue.replace(/[{}]/g, '');
 const filter = `id eq ${cleanGuid}`;           // correct
 // const filter = `id eq '${guidValue}'`;      // WRONG — quotes
 // const filter = `id eq {${guidValue}}`;      // WRONG — braces
+
+// EXCEPTION: _solutionid_value lookup field on solutioncomponents requires
+// braces AND single quotes. Raw GUID format returns 0 results silently.
+// This is a Dataverse-specific quirk for this particular field.
+const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+const filter = `_solutionid_value eq '${guidWithBraces}'`;   // CORRECT for this field only
 
 // Rule 2: Normalize for comparison — lowercase, no braces
 function normalizeGuid(guid: string): string {
@@ -94,7 +100,7 @@ const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
 inventory.pluginIds.push(objectId);  // normalized on storage
 ```
 
-**Why it matters:** Dataverse returns GUIDs with braces `{guid}`. OData needs them raw. Comparisons need both sides normalized. Missing any step causes silent failures.
+**Why it matters:** Dataverse returns GUIDs with braces `{guid}`. OData needs them raw for primary key fields. Comparisons need both sides normalized. The `_solutionid_value` field on `solutioncomponents` is an exception — it requires braces+quotes; changing it to raw GUID causes silent 0 results. Verified in production 2026-03-10.
 
 ---
 

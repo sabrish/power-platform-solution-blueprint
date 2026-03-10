@@ -18,6 +18,7 @@
 
 ## Current Version
 
+**v1.0.0** (in development — targeting release from `feat/cross-entity-automation` merge)
 **v0.9.0** (released 2026-03-07)
 
 ---

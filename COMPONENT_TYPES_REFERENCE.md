@@ -65,6 +65,7 @@
 | 68 | Custom Control Default Config | |
 | 70 | Field Security Profile | |
 | 71 | Field Permission | |
+| **80** | **App Module** | **Model-driven apps (AppModule)** |
 | **90** | **Plugin Type** | **Individual plugin class** |
 | **91** | **Plugin Assembly** | **DLL containing plugin types** |
 | **92** | **SDK Message Processing Step** | **Plugin step registration (what we use for plugins)** |
@@ -100,6 +101,8 @@
 | 430 | Entity Analytics Configuration | |
 | 431 | Attribute Image Configuration | |
 | 432 | Entity Image Configuration | |
+| **10030** | **Plugin Package** | **NuGet-based plugin packages (introduced 2021+). Verified in production use; not listed in the main SolutionComponent reference table but documented in Power Platform ALM guidance.** |
+| **10076** | **Custom API** | **Custom API definitions. Verified in production use; code above 10000 reflects a later-generation component type registered post-GA.** |
 
 ---
 
@@ -140,7 +143,9 @@ Must query the `workflows` table with category field to classify them.
 | 61 (Web Resource) | `webresources` | `webresourceid` |
 | 92 (SDK Message Processing Step) | `sdkmessageprocessingsteps` | `sdkmessageprocessingstepid` |
 | 93 (SDK Message Processing Step Image) | `sdkmessageprocessingstepimages` | `sdkmessageprocessingstepimageid` |
+| 80 (App Module) | `appmodules` | `appmoduleid` |
 | 300 (Canvas App) | `canvasapps` | `canvasappid` |
+| 300 (Custom Page) | `canvasapps` | `canvasappid` | Same type code as Canvas App — split post-retrieval by `canvasapptype` (0 = Standard, 1 = Component Library, 2 = Custom Page) |
 | 371 (Connector) | `connectors` | `connectorid` |
 | 380 (Environment Variable Definition) | `environmentvariabledefinitions` | `environmentvariabledefinitionid` |
 
@@ -169,15 +174,23 @@ Must query the `workflows` table with category field to classify them.
 export enum ComponentType {
   Entity = 1,
   Attribute = 2,
+  GlobalOptionSet = 9,
+  SecurityRole = 20,
+  Workflow = 29,
+  SystemForm = 60,
+  WebResource = 61,
+  FieldSecurityProfile = 70,
+  AppModule = 80,               // Model-driven apps
   PluginType = 90,
   PluginAssembly = 91,
   SdkMessageProcessingStep = 92,  // Plugin steps
-  SdkMessageProcessingStepImage = 93,  // Plugin images
-  Workflow = 29,
-  WebResource = 61,
-  CanvasApp = 300,
-  CustomPage = 10004,
+  SdkMessageProcessingStepImage = 93,  // Plugin step images
+  CanvasApp = 300,              // Canvas Apps AND Custom Pages (split by canvasapptype)
   ConnectionReference = 371,
+  CustomConnector = 372,
+  EnvironmentVariableDefinition = 380,
+  PluginPackage = 10030,        // NuGet-based plugin packages
+  CustomAPI = 10076,            // Custom API definitions
 }
 ```
 

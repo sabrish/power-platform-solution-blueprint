@@ -7,6 +7,9 @@ export type { EnvironmentVariable, EnvironmentVariableValue, EnvironmentVariable
 export type { ConnectionReference } from './types/connectionReference.js';
 export type { GlobalChoice, GlobalChoiceOption } from './types/globalChoice.js';
 export type { CustomConnector } from './types/customConnector.js';
+export type { CanvasApp } from './types/canvasApp.js';
+export type { CustomPage } from './types/customPage.js';
+export type { ModelDrivenApp } from './types/modelDrivenApp.js';
 export type {
   ProgressPhase,
   ProgressInfo,

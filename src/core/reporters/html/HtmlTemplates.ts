@@ -14,13 +14,23 @@ import type {
   WebResource,
   ExternalEndpoint,
   SolutionDistribution,
+  AttributeMetadata,
+  OneToManyRelationship,
+  ManyToOneRelationship,
+  ManyToManyRelationship,
 } from '../../types/blueprint.js';
+import type { PrivilegeDetail } from '../../discovery/SecurityRoleDiscovery.js';
 import type { CrossEntityAnalysisResult } from '../../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../../types/classicWorkflow.js';
 import type { CustomAPI } from '../../types/customApi.js';
 import type { EnvironmentVariable } from '../../types/environmentVariable.js';
 import type { ConnectionReference } from '../../types/connectionReference.js';
 import type { BusinessProcessFlow } from '../../types/businessProcessFlow.js';
+import type { GlobalChoice } from '../../types/globalChoice.js';
+import type { CustomConnector } from '../../types/customConnector.js';
+import type { CanvasApp } from '../../types/canvasApp.js';
+import type { CustomPage } from '../../types/customPage.js';
+import type { ModelDrivenApp } from '../../types/modelDrivenApp.js';
 
 /**
  * Main HTML Templates class
@@ -87,6 +97,11 @@ ${this.embeddedCSS()}
     <li><a href="#custom-apis">${this.navIcon('custom-apis')} Custom APIs</a></li>
     <li><a href="#environment-variables">${this.navIcon('environment-variables')} Environment Variables</a></li>
     <li><a href="#connection-references">${this.navIcon('connection-references')} Connection References</a></li>
+    <li><a href="#global-choices">${this.navIcon('global-choices')} Global Choices</a></li>
+    <li><a href="#custom-connectors">${this.navIcon('custom-connectors')} Custom Connectors</a></li>
+    <li><a href="#canvas-apps">${this.navIcon('canvas-apps')} Canvas Apps</a></li>
+    <li><a href="#custom-pages">${this.navIcon('custom-pages')} Custom Pages</a></li>
+    <li><a href="#model-driven-apps">${this.navIcon('model-driven-apps')} Model-Driven Apps</a></li>
     <li><a href="#security">${this.navIcon('security')} Security</a></li>
     <li><a href="#external-dependencies">${this.navIcon('external-dependencies')} External Dependencies</a></li>
     <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.7em;vertical-align:middle;">Preview</span></a></li>
@@ -247,6 +262,10 @@ ${items}
       <div class="card-label">Plugins</div>
     </div>
     <div class="summary-card">
+      <div class="card-number">${summary.totalPluginPackages}</div>
+      <div class="card-label">Plugin Packages</div>
+    </div>
+    <div class="summary-card">
       <div class="card-number">${summary.totalFlows}</div>
       <div class="card-label">Flows</div>
     </div>
@@ -254,13 +273,41 @@ ${items}
       <div class="card-number">${summary.totalBusinessRules}</div>
       <div class="card-label">Business Rules</div>
     </div>
+    <div class="summary-card ${summary.totalClassicWorkflows > 0 ? 'card-warning' : ''}">
+      <div class="card-number">${summary.totalClassicWorkflows}</div>
+      <div class="card-label">Classic Workflows</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalBusinessProcessFlows}</div>
+      <div class="card-label">Business Process Flows</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalCustomAPIs}</div>
+      <div class="card-label">Custom APIs</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalEnvironmentVariables}</div>
+      <div class="card-label">Environment Variables</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalConnectionReferences}</div>
+      <div class="card-label">Connection References</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalGlobalChoices}</div>
+      <div class="card-label">Global Choices</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalCustomConnectors}</div>
+      <div class="card-label">Custom Connectors</div>
+    </div>
     <div class="summary-card">
       <div class="card-number">${summary.totalWebResources}</div>
       <div class="card-label">Web Resources</div>
     </div>
     <div class="summary-card">
-      <div class="card-number">${summary.totalCustomAPIs}</div>
-      <div class="card-label">Custom APIs</div>
+      <div class="card-number">${summary.totalCustomPages}</div>
+      <div class="card-label">Custom Pages</div>
     </div>
     <div class="summary-card">
       <div class="card-number">${summary.totalSecurityRoles}</div>
@@ -269,10 +316,6 @@ ${items}
     <div class="summary-card">
       <div class="card-number">${summary.totalFieldSecurityProfiles}</div>
       <div class="card-label">Field Security Profiles</div>
-    </div>
-    <div class="summary-card ${summary.totalClassicWorkflows > 0 ? 'card-warning' : ''}">
-      <div class="card-number">${summary.totalClassicWorkflows}</div>
-      <div class="card-label">Classic Workflows</div>
     </div>
   </div>
 </section>`;
@@ -364,7 +407,7 @@ ${accordionItems}
   /**
    * Generate attributes table for entity detail
    */
-  private generateAttributesTable(attributes: any[]): string {
+  private generateAttributesTable(attributes: AttributeMetadata[]): string {
     if (attributes.length === 0) return '';
 
     const rows = attributes.slice(0, 50).map(attr => {
@@ -929,13 +972,16 @@ ${rows}
   /**
    * Generate relationships section
    */
-  private generateRelationshipsSection(type: string, relationships: any[]): string {
+  private generateRelationshipsSection(type: string, relationships: (OneToManyRelationship | ManyToOneRelationship | ManyToManyRelationship)[]): string {
     if (relationships.length === 0) return '';
 
     const rows = relationships.slice(0, 20).map(rel => {
-      const schemaName = rel.SchemaName || 'N/A';
-      const referencingEntity = rel.ReferencingEntity || rel.ReferencedEntity || 'N/A';
-      const referencedAttribute = rel.ReferencedAttribute || rel.ReferencingAttribute || 'N/A';
+      // Cast to a display-shape covering all three relationship subtypes.
+      // OneToMany/ManyToOne use ReferencingEntity; ManyToMany uses Entity1LogicalName.
+      const r = rel as { SchemaName?: string; ReferencingEntity?: string; ReferencedEntity?: string; ReferencedAttribute?: string; ReferencingAttribute?: string; Entity1LogicalName?: string };
+      const schemaName = r.SchemaName || 'N/A';
+      const referencingEntity = r.ReferencingEntity || r.ReferencedEntity || r.Entity1LogicalName || 'N/A';
+      const referencedAttribute = r.ReferencedAttribute || r.ReferencingAttribute || 'N/A';
 
       return `<tr>
         <td>${this.escapeHtml(schemaName)}</td>
@@ -1470,6 +1516,226 @@ ${rows}
   }
 
   /**
+   * Generate global choices section
+   */
+  htmlGlobalChoicesTable(globalChoices: GlobalChoice[]): string {
+    if (globalChoices.length === 0) {
+      return `<section id="global-choices" class="content-section" aria-labelledby="heading-global-choices">
+  <h2 id="heading-global-choices" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('global-choices')} Global Choices</h2>
+  <div class="empty-state">No global choices found</div>
+</section>`;
+    }
+
+    const items = globalChoices.map(gc => {
+      const managedBadge = gc.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      const optionsHtml = gc.options.slice(0, 5).map(o =>
+        `<span class="badge badge-info">${this.escapeHtml(o.label)} (${String(o.value)})</span>`
+      ).join(' ');
+      const moreCount = gc.options.length > 5 ? ` <span class="badge">+${String(gc.options.length - 5)} more</span>` : '';
+
+      return `<div class="accordion-item">
+  <button class="accordion-header" aria-expanded="false">
+    <span class="accordion-title">${this.escapeHtml(gc.displayName)}</span>
+    <span class="accordion-meta">${managedBadge} <span class="badge">${String(gc.totalOptions)} options</span></span>
+    <span class="accordion-toggle">▼</span>
+  </button>
+  <div class="accordion-content" hidden>
+    <div class="details-grid">
+      <div class="detail-item"><span class="detail-label">Schema Name</span><span class="detail-value">${this.escapeHtml(gc.name)}</span></div>
+      ${gc.description ? `<div class="detail-item"><span class="detail-label">Description</span><span class="detail-value">${this.escapeHtml(gc.description)}</span></div>` : ''}
+      <div class="detail-item"><span class="detail-label">Customizable</span><span class="detail-value">${gc.isCustomizable ? 'Yes' : 'No'}</span></div>
+      <div class="detail-item"><span class="detail-label">Modified</span><span class="detail-value">${this.escapeHtml(new Date(gc.modifiedOn).toLocaleDateString())}</span></div>
+    </div>
+    ${gc.options.length > 0 ? `<div class="detail-item"><span class="detail-label">Options</span><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">${optionsHtml}${moreCount}</div></div>` : ''}
+  </div>
+</div>`;
+    }).join('\n');
+
+    return `<section id="global-choices" class="content-section" aria-labelledby="heading-global-choices">
+  <h2 id="heading-global-choices" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('global-choices')} Global Choices (${globalChoices.length})</h2>
+  <div class="accordion">${items}</div>
+</section>`;
+  }
+
+  /**
+   * Generate custom connectors section
+   */
+  htmlCustomConnectorsTable(connectors: CustomConnector[]): string {
+    if (connectors.length === 0) {
+      return `<section id="custom-connectors" class="content-section" aria-labelledby="heading-custom-connectors">
+  <h2 id="heading-custom-connectors" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-connectors')} Custom Connectors</h2>
+  <div class="empty-state">No custom connectors found</div>
+</section>`;
+    }
+
+    const rows = connectors.map(c => {
+      const managedBadge = c.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.escapeHtml(c.displayName)}</td>
+  <td>${this.escapeHtml(c.name)}</td>
+  ${c.description ? `<td>${this.escapeHtml(c.description)}</td>` : '<td>—</td>'}
+  <td>${managedBadge}</td>
+  <td>${this.escapeHtml(new Date(c.modifiedOn).toLocaleDateString())}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="custom-connectors" class="content-section" aria-labelledby="heading-custom-connectors">
+  <h2 id="heading-custom-connectors" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-connectors')} Custom Connectors (${connectors.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="custom-connectors-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('custom-connectors-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('custom-connectors-table', 1)">Name <span class="sort-indicator"></span></th>
+          <th scope="col">Description</th>
+          <th scope="col" onclick="sortTable('custom-connectors-table', 3)">Managed <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('custom-connectors-table', 4)">Modified <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  /**
+   * Generate canvas apps section
+   */
+  htmlCanvasAppsTable(apps: CanvasApp[]): string {
+    if (apps.length === 0) {
+      return `<section id="canvas-apps" class="content-section" aria-labelledby="heading-canvas-apps">
+  <h2 id="heading-canvas-apps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('canvas-apps')} Canvas Apps</h2>
+  <div class="empty-state">No canvas apps found</div>
+</section>`;
+    }
+
+    const rows = apps.map(a => {
+      const managedBadge = a.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.escapeHtml(a.displayName)}</td>
+  <td>${this.escapeHtml(a.name)}</td>
+  ${a.description ? `<td>${this.escapeHtml(a.description)}</td>` : '<td>—</td>'}
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="canvas-apps" class="content-section" aria-labelledby="heading-canvas-apps">
+  <h2 id="heading-canvas-apps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('canvas-apps')} Canvas Apps (${apps.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="canvas-apps-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('canvas-apps-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('canvas-apps-table', 1)">Name <span class="sort-indicator"></span></th>
+          <th scope="col">Description</th>
+          <th scope="col" onclick="sortTable('canvas-apps-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  /**
+   * Generate custom pages section
+   */
+  htmlCustomPagesTable(pages: CustomPage[]): string {
+    if (pages.length === 0) {
+      return `<section id="custom-pages" class="content-section" aria-labelledby="heading-custom-pages">
+  <h2 id="heading-custom-pages" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-pages')} Custom Pages</h2>
+  <div class="empty-state">No custom pages found</div>
+</section>`;
+    }
+
+    const rows = pages.map(p => {
+      const managedBadge = p.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.escapeHtml(p.displayName)}</td>
+  <td>${this.escapeHtml(p.name)}</td>
+  ${p.description ? `<td>${this.escapeHtml(p.description)}</td>` : '<td>—</td>'}
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="custom-pages" class="content-section" aria-labelledby="heading-custom-pages">
+  <h2 id="heading-custom-pages" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-pages')} Custom Pages (${pages.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="custom-pages-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('custom-pages-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('custom-pages-table', 1)">Name <span class="sort-indicator"></span></th>
+          <th scope="col">Description</th>
+          <th scope="col" onclick="sortTable('custom-pages-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  /**
+   * Generate model-driven apps section
+   */
+  htmlModelDrivenAppsTable(apps: ModelDrivenApp[]): string {
+    if (apps.length === 0) {
+      return `<section id="model-driven-apps" class="content-section" aria-labelledby="heading-model-driven-apps">
+  <h2 id="heading-model-driven-apps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('model-driven-apps')} Model-Driven Apps</h2>
+  <div class="empty-state">No model-driven apps found</div>
+</section>`;
+    }
+
+    const rows = apps.map(a => {
+      const managedBadge = a.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.escapeHtml(a.displayName)}</td>
+  <td>${this.escapeHtml(a.name)}</td>
+  ${a.description ? `<td>${this.escapeHtml(a.description)}</td>` : '<td>—</td>'}
+  <td>${managedBadge}</td>
+  <td>${a.modifiedOn ? this.escapeHtml(new Date(a.modifiedOn).toLocaleDateString()) : '—'}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="model-driven-apps" class="content-section" aria-labelledby="heading-model-driven-apps">
+  <h2 id="heading-model-driven-apps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('model-driven-apps')} Model-Driven Apps (${apps.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="model-driven-apps-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('model-driven-apps-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('model-driven-apps-table', 1)">Unique Name <span class="sort-indicator"></span></th>
+          <th scope="col">Description</th>
+          <th scope="col" onclick="sortTable('model-driven-apps-table', 3)">Managed <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('model-driven-apps-table', 4)">Modified <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  /**
    * Generate external dependencies section
    */
   htmlExternalDependenciesSection(endpoints: ExternalEndpoint[] | undefined): string {
@@ -1542,6 +1808,12 @@ ${rows}
         ['Environment Variables', counts.environmentVariables],
         ['Connection References', counts.connectionReferences],
         ['Global Choices', counts.globalChoices],
+        ['Custom Connectors', counts.customConnectors],
+        ['Security Roles', counts.securityRoles],
+        ['Field Security Profiles', counts.fieldSecurityProfiles],
+        ['Canvas Apps', counts.canvasApps],
+        ['Custom Pages', counts.customPages],
+        ['Model-Driven Apps', counts.modelDrivenApps],
       ].filter(([, n]) => (n as number) > 0);
 
       const countHtml = countRows.map(([label, n]) =>
@@ -1609,21 +1881,21 @@ ${rows}
 
     // Stats — matches the React UI summary cards
     const noFilterCard = analysis.noFilterPluginCount > 0
-      ? `<div class="stats-card"><div class="stats-value" style="color:#d32f2f">${analysis.noFilterPluginCount}</div><div class="stats-label">No-Filter Plugins</div></div>`
+      ? `<div class="stats-card"><div class="stats-value stats-value-danger">${analysis.noFilterPluginCount}</div><div class="stats-label">No-Filter Plugins</div></div>`
       : '';
     const statsHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;">
       <div class="stats-card"><div class="stats-value">${analysis.allEntityPipelines.size}</div><div class="stats-label">Entities w/ Automation</div></div>
       <div class="stats-card"><div class="stats-value">${analysis.entityViews.size}</div><div class="stats-label">Target Entities</div></div>
       <div class="stats-card"><div class="stats-value">${analysis.totalBranches}</div><div class="stats-label">Cross-Entity Writes</div></div>
       ${noFilterCard}
-      <div class="stats-card"><div class="stats-value" style="color:#d32f2f">${analysis.risks.filter(r => r.severity === 'High').length}</div><div class="stats-label">High Risks</div></div>
+      <div class="stats-card"><div class="stats-value stats-value-danger">${analysis.risks.filter(r => r.severity === 'High').length}</div><div class="stats-label">High Risks</div></div>
     </div>`;
 
     // Risks
     const risksHtml = analysis.risks.length > 0 ? `
       <h3>Performance &amp; Risk Warnings</h3>
       ${analysis.risks.map(r => `
-        <div style="padding:10px;border-left:4px solid ${r.severity === 'High' ? '#d32f2f' : '#f57c00'};background:${r.severity === 'High' ? '#ffebee' : '#fff8e1'};border-radius:4px;margin-bottom:8px;">
+        <div class="alert ${r.severity === 'High' ? 'alert-danger' : 'alert-warning'}" style="margin-bottom:8px;">
           <strong>${this.htmlEscape(r.type)}</strong> (${this.htmlEscape(r.severity)}) ${r.automationName ? `— ${this.htmlEscape(r.automationName)}` : ''}<br/>
           <span>${this.htmlEscape(r.description)}</span>
         </div>`).join('')}` : '';
@@ -1887,6 +2159,16 @@ ${this.embeddedJavaScript()}
       'custom-apis': `<svg ${s}><path d="M7.42 2.83C7.6 2.33 8.07 2 8.6 2h6.46c.85 0 1.45.84 1.18 1.65L14.8 8h3.96c1.1 0 1.66 1.33.9 2.12l-.96.99a6.53 6.53 0 0 0-2.04-.06l1.5-1.55h-4.4a.75.75 0 0 1-.71-.99L14.7 3.5H8.78l-3.26 9.16c-.06.16.06.33.23.33l2.5.01a.75.75 0 0 1 .73.91L7.51 20.5l3.52-3.63a6.57 6.57 0 0 0 .12 2.03l-2.56 2.65c-1.06 1.08-2.88.1-2.55-1.38l1.27-5.66-1.57-.01c-1.2 0-2.04-1.2-1.64-2.34l3.32-9.32Zm6.86 11.15a2 2 0 0 1-1.44 2.5l-.59.14a5.73 5.73 0 0 0 0 1.8l.55.13a2 2 0 0 1 1.45 2.51l-.19.64c.44.38.94.7 1.49.92l.49-.52a2 2 0 0 1 2.9 0l.5.52a5.28 5.28 0 0 0 1.48-.9l-.2-.7a2 2 0 0 1 1.44-2.5l.59-.14a5.73 5.73 0 0 0-.01-1.8l-.54-.13a2 2 0 0 1-1.45-2.51l.19-.63c-.44-.39-.94-.7-1.49-.93l-.49.52a2 2 0 0 1-2.9 0l-.5-.52c-.54.22-1.04.53-1.48.91l.2.69ZM17.5 19c-.8 0-1.45-.67-1.45-1.5S16.7 16 17.5 16c.8 0 1.45.67 1.45 1.5S18.3 19 17.5 19Z"/></svg>`,
       // BracesVariable24Regular — {x} variable box matches Microsoft's Environment Variables icon
       'environment-variables': `<svg ${s}><path d="M3.5 5.75A2.75 2.75 0 0 1 6.25 3a.75.75 0 0 1 0 1.5C5.56 4.5 5 5.06 5 5.75v4.3c0 .75-.3 1.45-.8 1.95.5.5.8 1.2.8 1.94v4.31c0 .69.56 1.25 1.25 1.25a.75.75 0 0 1 0 1.5 2.75 2.75 0 0 1-2.75-2.75v-4.3c0-.55-.34-1.02-.85-1.2l-.14-.04a.75.75 0 0 1 0-1.42l.14-.05c.5-.17.85-.64.85-1.18V5.75Zm17 0A2.75 2.75 0 0 0 17.75 3a.75.75 0 0 0 0 1.5c.69 0 1.25.56 1.25 1.25v4.3c0 .75.3 1.45.8 1.95-.5.5-.8 1.2-.8 1.94v4.31c0 .69-.56 1.25-1.25 1.25a.75.75 0 0 0 0 1.5 2.75 2.75 0 0 0 2.75-2.75v-4.3c0-.55.34-1.02.85-1.2l.14-.04a.75.75 0 0 0 0-1.42l-.14-.05a1.25 1.25 0 0 1-.85-1.18V5.75ZM9.1 7.04a.75.75 0 1 0-1.2.92L11.06 12l-3.14 4.04a.75.75 0 0 0 1.18.92L12 13.22l2.9 3.74a.75.75 0 0 0 1.2-.92L12.94 12l3.14-4.04a.75.75 0 0 0-1.18-.92L12 10.78 9.1 7.04Z"/></svg>`,
+      // PlugDisconnected24Regular — angled disconnected plug matches Microsoft's Custom Connectors icon
+      'custom-connectors': `<svg ${s}><path d="M21.78 3.28a.75.75 0 0 0-1.06-1.06l-2.01 2.01a4.25 4.25 0 0 0-5.47.46l-1.06 1.07c-.69.69-.69 1.8 0 2.48l3.58 3.58c.69.69 1.8.69 2.48 0l1.07-1.06a4.25 4.25 0 0 0 .46-5.47l2.01-2.01Zm-3.59 2.48.03.02.02.03a2.75 2.75 0 0 1 0 3.88l-1.06 1.07c-.1.1-.26.1-.36 0l-3.58-3.58a.25.25 0 0 1 0-.36l1.07-1.06a2.75 2.75 0 0 1 3.88 0Zm-7.41 5.52a.75.75 0 1 0-1.06-1.06L8 11.94l-.47-.47a.75.75 0 0 0-1.06 0l-1.78 1.77a4.25 4.25 0 0 0-.46 5.47l-2.01 2.01a.75.75 0 1 0 1.06 1.06l2.01-2.01a4.25 4.25 0 0 0 5.47-.46l1.77-1.78c.3-.3.3-.77 0-1.06l-.47-.47 1.72-1.72a.75.75 0 1 0-1.06-1.06L11 14.94 9.06 13l1.72-1.72Zm-3.31 2.25 3 3 .47.47-1.25 1.24a2.75 2.75 0 0 1-3.88 0l-.05-.05a2.75 2.75 0 0 1 0-3.88L7 13.06l.47.47Z"/></svg>`,
+      // AppsList24Regular — apps list matches Canvas Apps
+      'canvas-apps': `<svg ${s}><path d="M6.25 16C7.2 16 8 16.8 8 17.75v2.5C8 21.22 7.2 22 6.25 22h-2.5C2.78 22 2 21.22 2 20.25v-2.5C2 16.8 2.78 16 3.75 16h2.5Zm0 1.5h-2.5a.25.25 0 0 0-.25.25v2.5c0 .14.11.25.25.25h2.5c.14 0 .25-.11.25-.25v-2.5a.25.25 0 0 0-.25-.25Zm3.5.5h11.5a.75.75 0 0 1 .1 1.5H9.75a.75.75 0 0 1-.1-1.5h11.6-11.5Zm-3.5-9C7.2 9 8 9.78 8 10.75v2.5C8 14.22 7.2 15 6.25 15h-2.5C2.78 15 2 14.22 2 13.25v-2.5C2 9.78 2.78 9 3.75 9h2.5Zm0 1.5h-2.5a.25.25 0 0 0-.25.25v2.5c0 .14.11.25.25.25h2.5c.14 0 .25-.11.25-.25v-2.5a.25.25 0 0 0-.25-.25Zm3.5.5h11.5a.75.75 0 0 1 .1 1.5H9.75a.75.75 0 0 1-.1-1.5h11.6-11.5Zm-3.5-9C7.2 2 8 2.78 8 3.75v2.5C8 7.2 7.2 8 6.25 8h-2.5C2.78 8 2 7.2 2 6.25v-2.5C2 2.78 2.78 2 3.75 2h2.5Zm0 1.5h-2.5a.25.25 0 0 0-.25.25v2.5c0 .14.11.25.25.25h2.5c.14 0 .25-.11.25-.25v-2.5a.25.25 0 0 0-.25-.25Zm3.5.5h11.5a.75.75 0 0 1 .1 1.5H9.75a.75.75 0 0 1-.1-1.5h11.6-11.5Z"/></svg>`,
+      // DocumentEdit24Regular — document + pencil matches Custom Pages
+      'custom-pages': `<svg ${s}><path d="M6.25 3.5a.75.75 0 0 0-.75.75v15.5c0 .41.34.75.75.75h3.78c-.1.55 0 1.07.27 1.5H6.25C5.01 22 4 21 4 19.75V4.25C4 3.01 5 2 6.25 2h6.09c.46 0 .9.18 1.23.51l5.92 5.92c.33.32.51.77.51 1.23V10h-6a2 2 0 0 1-2-2V3.5H6.25Zm7.25 1.06V8c0 .28.22.5.5.5h3.44L13.5 4.56ZM19.71 11a2.28 2.28 0 0 1 1.62 3.9l-5.9 5.9c-.35.35-.78.6-1.25.71l-1.83.46c-.8.2-1.52-.52-1.32-1.32l.46-1.83c.12-.47.36-.9.7-1.25l5.9-5.9a2.28 2.28 0 0 1 1.62-.67Z"/></svg>`,
+      // AppGeneric24Regular — generic app icon for Model-Driven Apps
+      'model-driven-apps': `<svg ${s}><path d="M3 6.25C3 4.45 4.46 3 6.25 3h11.5C19.55 3 21 4.46 21 6.25v11.5c0 1.8-1.46 3.25-3.25 3.25H6.25A3.25 3.25 0 0 1 3 17.75V6.25ZM6.25 4.5c-.97 0-1.75.78-1.75 1.75v.25h15v-.25c0-.97-.78-1.75-1.75-1.75H6.25ZM4.5 17.75c0 .97.78 1.75 1.75 1.75h11.5c.97 0 1.75-.78 1.75-1.75V8h-15v9.75ZM6.85 9.5h3.3c.47 0 .85.38.85.85v6.8c0 .47-.38.85-.85.85h-3.3a.85.85 0 0 1-.85-.85v-6.8c0-.47.38-.85.85-.85Zm.65 7h2V11h-2v5.5Zm4.5-6.25c0-.41.34-.75.75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5Z"/></svg>`,
+      // NumberSymbolSquare24Regular — numbered list in a box matches Microsoft's Option Sets icon
+      'global-choices': `<svg ${s}><path d="M6.25 3A3.25 3.25 0 0 0 3 6.25v11.5C3 19.55 4.46 21 6.25 21h11.5c1.8 0 3.25-1.46 3.25-3.25V6.25C21 4.45 19.54 3 17.75 3H6.25ZM4.5 6.25c0-.97.78-1.75 1.75-1.75h11.5c.97 0 1.75.78 1.75 1.75v11.5c0 .97-.78 1.75-1.75 1.75H6.25A1.75 1.75 0 0 1 4.5 17.75V6.25ZM9 8.75a.75.75 0 0 0-1.5 0v1H7a.75.75 0 0 0 0 1.5h.5v4.75a.75.75 0 0 0 1.5 0v-7Zm5.25.75a.75.75 0 0 1 .75.75v5a.75.75 0 0 1-1.5 0v-3.44l-.22.22a.75.75 0 1 1-1.06-1.06l1.5-1.5c.2-.2.48-.28.75-.22.17.04.32.13.44.25H14Zm-2 5.75a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5h-4Z"/></svg>`,
       // UsbPlug24Regular — vertical USB/plug connector matches Microsoft's Connection References icon
       'connection-references': `<svg ${s}><path d="M11 21.25a.75.75 0 0 1-1.5.1V17h-.75c-1.19 0-2.16-.93-2.24-2.1V9.25c0-.98.63-1.82 1.5-2.13V2.75c0-.38.29-.7.65-.75h6.6c.39 0 .7.28.75.65V7.13c.82.3 1.42 1.05 1.49 1.95v5.67c0 1.2-.92 2.17-2.1 2.24l-.15.01h-.75v4.25a.75.75 0 0 1-1.5.1V17h-2v4.25ZM15.25 8.5h-6.5c-.38 0-.69.28-.74.65v5.6c0 .38.28.7.64.74l.1.01h6.5c.38 0 .7-.28.75-.65v-5.6c0-.38-.28-.7-.64-.74l-.1-.01Zm-.73-5h-5V7h5V3.5Z"/></svg>`,
       // PeopleLock24Regular — two people + lock badge matches Microsoft's Security Roles icon
@@ -2694,6 +2976,16 @@ ${this.embeddedJavaScript()}
       color: #3d2e00;
     }
 
+    .alert-danger {
+      background: #fde7e9;
+      border-left: 4px solid #d13438;
+      color: #6e0811;
+    }
+
+    .stats-value-danger {
+      color: #d13438;
+    }
+
     .alert-info {
       background: #deecf9;
       border-left: 4px solid #0078d4;
@@ -3480,7 +3772,7 @@ ${this.embeddedJavaScript()}
             <td><strong>${this.escapeHtml(entityPerm.entityLogicalName)}</strong></td>`;
 
       for (const type of ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share']) {
-        const priv = privMap.get(type as any);
+        const priv = privMap.get(type as PrivilegeDetail['type']);
         const label = priv ? this.privDepthLabel(priv.depth) : '';
         html += `<td class="center">${label}</td>`;
       }

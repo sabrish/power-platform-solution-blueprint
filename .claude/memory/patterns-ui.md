@@ -273,28 +273,31 @@ When implementing a sticky column in a scrollable HTML table, `zIndex` is requir
 
 All component-type icons are owned by `src/components/componentIcons.ts`. Consumer components import from there, never directly from `@fluentui/react-icons` for component-category icons.
 
-### Canonical icon map (as of 2026-03-09)
+### Canonical icon map (as of 2026-03-10)
 
-| Category | Export name | Icon |
-|----------|-------------|------|
-| Entities | `EntitiesIcon` | Table |
-| Plugins | `PluginsIcon` | BracesVariable (C# curly-brace style) |
-| Flows | `FlowsIcon` | CloudFlow |
-| Business Rules | `BusinessRulesIcon` | ClipboardTaskListLtr |
-| Classic Workflows | `ClassicWorkflowsIcon` | ArrowCircleRight |
-| BPFs | `BpfsIcon` | Flowchart |
-| Custom APIs | `CustomAPIsIcon` | ArrowSwap |
-| Environment Variables | `EnvVarsIcon` | Settings |
-| Connection References | `ConnectionRefsIcon` | Link |
-| Web Resources | `WebResourcesIcon` | Globe |
-| Global Choices | `GlobalChoicesIcon` | MultiselectLtr |
-| Custom Connectors | `CustomConnectorsIcon` | PlugConnected |
-| Security Roles | `SecurityRolesIcon` | Shield |
-| Field Security Profiles | `FieldSecurityProfilesIcon` | ShieldTask |
-| Custom Pages | `CustomPagesIcon` | Document |
+| Category | Export name | Fluent UI icon |
+|----------|-------------|----------------|
+| Entities | `EntitiesIcon` | Table24Regular |
+| Plugins | `PluginsIcon` | PuzzlePiece24Regular (Microsoft: jigsaw piece) |
+| Plugin Packages | `PluginPackagesIcon` | Archive24Regular |
+| Flows | `FlowsIcon` | CloudFlow24Regular |
+| Business Rules | `BusinessRulesIcon` | ClipboardTaskListLtr24Regular |
+| Classic Workflows | `ClassicWorkflowsIcon` | ClipboardSettings24Regular |
+| BPFs | `BusinessProcessFlowsIcon` | Flowchart24Regular |
+| Custom APIs | `CustomAPIsIcon` | FlashSettings24Regular |
+| Environment Variables | `EnvironmentVariablesIcon` | BracesVariable24Regular (Microsoft: {x} variable box) |
+| Connection References | `ConnectionReferencesIcon` | UsbPlug24Regular |
+| Web Resources | `WebResourcesIcon` | DocumentGlobe24Regular |
+| Global Choices | `GlobalChoicesIcon` | MultiselectLtr24Regular |
+| Custom Connectors | `CustomConnectorsIcon` | PlugDisconnected24Regular |
+| Security Roles | `SecurityRolesIcon` | PeopleLock24Regular |
+| Field Security Profiles | `FieldSecurityProfilesIcon` | TableLock24Regular |
+| Custom Pages | `CustomPagesIcon` | DocumentEdit24Regular |
+| Canvas Apps | `CanvasAppsIcon` | AppsListRegular |
+| Model-Driven Apps | `ModelDrivenAppsIcon` | AppGenericRegular |
 
 ### Tab icons
-Dashboard → Grid, ERD → Organization, External Dependencies → Open, Solution Distribution → DataUsage, Cross-Entity Automation → ArrowBetweenDown, Fetch Log → DocumentBulletList.
+Dashboard → `DashboardIcon` (Grid24Regular), ERD → `ErdIcon` (Organization24Regular), External Dependencies → `ExternalDependenciesIcon` (Globe24Regular), Solution Distribution → `SolutionDistributionIcon` (DataUsage24Regular), Cross-Entity Automation → `CrossEntityAutomationIcon` (ArrowBetweenDown24Regular), Fetch Log → `FetchLogIcon` (DocumentBulletList24Regular).
 
 ### Exception
 `HtmlTemplates.ts` uses its own `navIcon(key)` / `alertIcon()` SVG string helpers — it cannot share React components. That is the only accepted exception.

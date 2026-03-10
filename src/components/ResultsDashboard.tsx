@@ -38,6 +38,8 @@ import {
   SecurityRolesIcon,
   FieldSecurityProfilesIcon,
   CustomPagesIcon,
+  CanvasAppsIcon,
+  ModelDrivenAppsIcon,
   DashboardIcon,
   ErdIcon,
   ExternalDependenciesIcon,
@@ -46,6 +48,7 @@ import {
   FetchLogIcon,
 } from './componentIcons';
 import type { BlueprintResult, CustomAPI } from '../core';
+import type { BlueprintGenerator } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -62,6 +65,9 @@ import { EnvironmentVariablesList } from './EnvironmentVariablesList';
 import { ConnectionReferencesList } from './ConnectionReferencesList';
 import { GlobalChoicesList } from './GlobalChoicesList';
 import { CustomConnectorsList } from './CustomConnectorsList';
+import { CanvasAppsList } from './CanvasAppsList';
+import { CustomPagesList } from './CustomPagesList';
+import { ModelDrivenAppsList } from './ModelDrivenAppsList';
 import { ERDView } from './ERDView';
 import { CrossEntityAutomationView } from './CrossEntityAutomationView';
 import { ExternalDependenciesView } from './ExternalDependenciesView';
@@ -71,7 +77,6 @@ import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
 import { FetchDiagnosticsView } from './FetchDiagnosticsView';
 import { Footer } from './Footer';
-import { EmptyState } from './EmptyState';
 
 const useStyles = makeStyles({
   container: {
@@ -191,6 +196,16 @@ const useStyles = makeStyles({
     alignItems: 'flex-start',
     gap: tokens.spacingHorizontalS,
   },
+  warningStep: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+    minWidth: '110px',
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  warningMessage: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+  },
   browserSection: {
     marginTop: tokens.spacingVerticalXL,
   },
@@ -199,7 +214,7 @@ const useStyles = makeStyles({
 export interface ResultsDashboardProps {
   result: BlueprintResult;
   scope: ScopeSelection;
-  blueprintGenerator: any;
+  blueprintGenerator: BlueprintGenerator;
   onStartOver: () => void;
 }
 
@@ -225,6 +240,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
     if ((result.securityRoles?.length ?? 0) > 0) return 'securityRoles';
     if ((result.fieldSecurityProfiles?.length ?? 0) > 0) return 'fieldSecurityProfiles';
     if (s.totalCustomPages > 0) return 'customPages';
+    if (s.totalCanvasApps > 0) return 'canvasApps';
+    if (s.totalModelDrivenApps > 0) return 'modelDrivenApps';
     return 'entities';
   })();
 
@@ -299,6 +316,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         return (result.fieldSecurityProfiles?.length ?? 0) > 0;
       case 'customPages':
         return result.summary.totalCustomPages > 0;
+      case 'canvasApps':
+        return result.summary.totalCanvasApps > 0;
+      case 'modelDrivenApps':
+        return result.summary.totalModelDrivenApps > 0;
       default:
         return false;
     }
@@ -339,6 +360,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         return result.fieldSecurityProfiles?.length ?? 0;
       case 'customPages':
         return result.summary.totalCustomPages;
+      case 'canvasApps':
+        return result.summary.totalCanvasApps;
+      case 'modelDrivenApps':
+        return result.summary.totalModelDrivenApps;
       default:
         return 0;
     }
@@ -362,6 +387,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
     { key: 'securityRoles', label: 'Security Roles', icon: <SecurityRolesIcon /> },
     { key: 'fieldSecurityProfiles', label: 'Field Security Profiles', icon: <FieldSecurityProfilesIcon /> },
     { key: 'customPages', label: 'Custom Pages', icon: <CustomPagesIcon /> },
+    { key: 'canvasApps', label: 'Canvas Apps', icon: <CanvasAppsIcon /> },
+    { key: 'modelDrivenApps', label: 'Model-Driven Apps', icon: <ModelDrivenAppsIcon /> },
   ];
 
 
@@ -421,10 +448,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             </div>
             {result.stepWarnings!.map((w, i) => (
               <div key={i} className={styles.warningRow}>
-                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2, minWidth: '110px', fontWeight: tokens.fontWeightSemibold }}>
+                <Text className={styles.warningStep}>
                   {w.step}
                 </Text>
-                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
+                <Text className={styles.warningMessage}>
                   {w.message}
                 </Text>
               </div>
@@ -512,7 +539,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                       style={hasData ? { cursor: 'pointer' } : undefined}
                     >
                       <div className={styles.summaryCardContent}>
-                        <span style={{ color: hasData ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground4, fontSize: '24px', lineHeight: 1 }}>{type.icon}</span>
+                        <span style={{ color: hasData ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground4, lineHeight: 1 }}>{type.icon}</span>
                         <Text className={styles.summaryCount}>{count}</Text>
                         <Text className={styles.summaryLabel}>{type.label}</Text>
                       </div>
@@ -592,7 +619,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                     <Button
                       appearance="secondary"
                       onClick={() => setSelectedCustomAPI(null)}
-                      style={{ marginBottom: '16px' }}
+                      style={{ marginBottom: tokens.spacingVerticalL }}
                     >
                       ← Back to List
                     </Button>
@@ -644,11 +671,15 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'customPages' && hasResults('customPages') && (
-              <EmptyState
-                type="generic"
-                title="Custom Pages"
-                message="Custom pages browser coming soon..."
-              />
+              <CustomPagesList customPages={result.customPages} />
+            )}
+
+            {selectedTab === 'canvasApps' && hasResults('canvasApps') && (
+              <CanvasAppsList canvasApps={result.canvasApps} />
+            )}
+
+            {selectedTab === 'modelDrivenApps' && hasResults('modelDrivenApps') && (
+              <ModelDrivenAppsList modelDrivenApps={result.modelDrivenApps} />
             )}
           </div>
         </Card>
