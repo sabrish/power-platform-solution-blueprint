@@ -117,6 +117,16 @@ const SPECIAL_PRIVILEGE_NAMES: Record<keyof SpecialPermissions, string> = {
   viewAuditSummary: 'prvReadAuditSummary',
 };
 
+interface RawRole {
+  roleid: string;
+  name: string;
+  businessunitid: { name?: string } | string;
+  description: string | null;
+  iscustomizable: { Value: boolean } | boolean | null;
+  ismanaged: boolean | null;
+  componentstate: number | null;
+}
+
 interface RawRolePrivRow {
   roleid: string;
   privilegeid: string;
@@ -144,11 +154,11 @@ export class SecurityRoleDiscovery {
     if (roleIds.length === 0) return [];
     const cleanIds = roleIds.map(id => id.replace(/[{}]/g, ''));
 
-    const { results } = await withAdaptiveBatch<string, any>(
+    const { results } = await withAdaptiveBatch<string, RawRole>(
       cleanIds,
       async (batch) => {
         const filter = batch.map(id => `roleid eq ${id}`).join(' or ');
-        const result = await this.client.query<any>('roles', {
+        const result = await this.client.query<RawRole>('roles', {
           select: ['roleid', 'name', 'businessunitid', 'description', 'iscustomizable', 'ismanaged', 'componentstate'],
           expand: 'businessunitid($select=name)',
           filter,
@@ -163,17 +173,25 @@ export class SecurityRoleDiscovery {
         onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
       }
     );
-    return results.map((role: any) => this.mapRole(role));
+    return results.map((role: RawRole) => this.mapRole(role));
   }
 
-  private mapRole(role: any): SecurityRole {
+  private mapRole(role: RawRole): SecurityRole {
+    const buId = typeof role.businessunitid === 'object' && role.businessunitid !== null
+      ? (role.businessunitid as { name?: string; businessunitid?: string }).businessunitid ?? ''
+      : String(role.businessunitid ?? '');
+    const buName = typeof role.businessunitid === 'object' && role.businessunitid !== null
+      ? (role.businessunitid as { name?: string }).name ?? 'Unknown'
+      : 'Unknown';
     return {
       roleid: role.roleid,
       name: role.name,
-      businessunitid: role.businessunitid,
-      businessunitname: role.businessunitid?.name || 'Unknown',
+      businessunitid: buId,
+      businessunitname: buName,
       description: role.description,
-      iscustomizable: role.iscustomizable?.Value ?? true,
+      iscustomizable: typeof role.iscustomizable === 'object' && role.iscustomizable !== null
+        ? role.iscustomizable.Value ?? true
+        : role.iscustomizable ?? true,
       ismanaged: role.ismanaged ?? false,
       componentstate: role.componentstate ?? 0,
     };

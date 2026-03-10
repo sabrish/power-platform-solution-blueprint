@@ -338,16 +338,14 @@ function downloadAsSVG(cy: Core): void {
 // ─── N-hop neighborhood ───────────────────────────────────────────────────────
 function getNHopCollection(cy: Core, nodeId: string, hops: IsolateHops) {
   const start = cy.getElementById(nodeId);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let collected: any = start;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let frontier: any = start;
+  let collected: cytoscape.CollectionReturnValue = start;
+  let frontier: cytoscape.CollectionReturnValue = start;
   for (let i = 0; i < hops; i++) {
     const next = frontier.neighborhood();
     collected = collected.union(next);
     frontier = next;
   }
-  return collected as cytoscape.CollectionReturnValue;
+  return collected;
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
