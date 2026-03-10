@@ -10,7 +10,7 @@ import {
   ToggleButton,
   Button,
 } from '@fluentui/react-components';
-import { ChevronDown20Regular, ChevronRight20Regular, Warning20Regular, ArrowUpRight20Regular } from '@fluentui/react-icons';
+import { ChevronDown20Regular, ChevronRight20Regular, Warning20Regular, Globe20Regular } from '@fluentui/react-icons';
 import type { WebResource } from '../core';
 import { CodeViewer } from './CodeViewer';
 import { TruncatedText } from './TruncatedText';
@@ -326,7 +326,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
               <div className={styles.section}>
                 <Title3>External API Calls ({resource.analysis.externalCalls.length})</Title3>
                 <div className={styles.warningBox} style={{ marginBottom: tokens.spacingVerticalM }}>
-                  <ArrowUpRight20Regular style={{ color: tokens.colorBrandForeground1, flexShrink: 0 }} />
+                  <Globe20Regular style={{ color: tokens.colorBrandForeground1, flexShrink: 0 }} />
                   <Text weight="semibold">This script calls external endpoints</Text>
                 </div>
                 {resource.analysis.externalCalls.map((call: any, idx: number) => (
@@ -453,7 +453,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                     {formatSize(resource.contentSize)}
                   </Text>
                   {resource.hasExternalCalls && (
-                    <ArrowUpRight20Regular style={{ color: tokens.colorBrandForeground1 }} title="Has external calls" />
+                    <Globe20Regular style={{ color: tokens.colorBrandForeground1 }} title="Has external calls" />
                   )}
                   {resource.isDeprecated && (
                     <Warning20Regular style={{ color: tokens.colorStatusWarningForeground1 }} title="Uses deprecated Xrm.Page" />
