@@ -216,6 +216,9 @@ export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: Ex
                   <div className={styles.formatDescription}>
                     Self-contained document - open in any browser
                   </div>
+                  <div className={styles.formatDescription} style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+                    ERD diagrams require internet access (loads Mermaid &amp; Cytoscape from cdn.jsdelivr.net). All other sections work offline.
+                  </div>
                   <div className={styles.formatPreview}>
                     ~{formatBytes(estimates.html)}
                   </div>
