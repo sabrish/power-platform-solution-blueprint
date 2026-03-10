@@ -11,7 +11,6 @@ import { FilterBar } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { CustomConnector } from '../core';
 import { formatDate } from '../utils/dateFormat';
-import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
@@ -132,18 +131,18 @@ export function CustomConnectorsList({ customConnectors }: CustomConnectorsListP
           <div key={connector.id}>
             <div
               className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
               onClick={() => toggleExpand(connector.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(connector.id); } }}
             >
               <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <div className={shared.nameColumn}>
-                <Text weight="semibold">
-                  <TruncatedText text={connector.displayName} />
-                </Text>
-                <Text className={shared.codeText}>
-                  <TruncatedText text={connector.name} />
-                </Text>
+                <Text weight="semibold">{connector.displayName}</Text>
+                <Text className={shared.codeText}>{connector.name}</Text>
               </div>
               <Badge appearance="tint" shape="rounded" size="small">{connector.connectorType}</Badge>
               <Badge appearance="filled" shape="rounded" color={connector.isManaged ? 'warning' : 'success'} size="small">
