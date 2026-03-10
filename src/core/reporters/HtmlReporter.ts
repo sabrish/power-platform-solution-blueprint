@@ -65,8 +65,9 @@ export class HtmlReporter {
 <html lang="en">
 ${head}
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   ${nav}
-  <main>
+  <main id="main-content">
     ${header}
     ${summary}
     ${erd}

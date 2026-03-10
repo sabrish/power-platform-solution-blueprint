@@ -96,9 +96,11 @@ export function FilterBar({
           value={searchValue}
           onChange={(_, data) => onSearchChange(data.value || '')}
         />
-        <Text className={styles.count}>
-          {filteredCount} of {totalCount} {itemLabel}
-        </Text>
+        <span aria-live="polite" aria-atomic="true">
+          <Text className={styles.count}>
+            {filteredCount} of {totalCount} {itemLabel}
+          </Text>
+        </span>
       </div>
       {children && (
         <div className={styles.row2}>
@@ -145,6 +147,7 @@ export function FilterGroup({ label, children, hasActiveFilters, onClear }: Filt
             size="small"
             icon={<DismissCircle16Regular style={{ color: tokens.colorBrandForeground1 }} />}
             title={`Clear ${labelText} filter`}
+            aria-label={`Clear ${labelText} filter`}
             onClick={onClear}
           />
         )}

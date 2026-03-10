@@ -218,7 +218,11 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
           <div key={pkg.assemblyName}>
             <div
               className={`${styles.row} ${isExpanded ? styles.rowExpanded : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
               onClick={() => toggleExpand(pkg.assemblyName)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(pkg.assemblyName); } }}
             >
               <div className={styles.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}

@@ -837,7 +837,11 @@ function EntityPipelineRow({
       {/* Header */}
       <div
         className={mergeClasses(styles.entityHeader, expanded && styles.entityHeaderOpen)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
         onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
         style={{ borderLeft: `4px solid ${color}` }}
       >
         <div className={styles.entityInfo}>
@@ -922,7 +926,11 @@ function EntityMessagePipelineRow({
     <div className={styles.entityRow}>
       <div
         className={mergeClasses(styles.entityHeader, expanded && styles.entityHeaderOpen)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
         onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
         style={{ borderLeft: `4px solid ${color}` }}
       >
         <div className={styles.entityInfo}>
@@ -1256,8 +1264,12 @@ function ChildEntitySection({
     <div className={styles.childSection}>
       <div
         className={styles.childHeader}
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
         style={{ borderLeft: `3px solid ${accentColor}`, borderColor: `${accentColor}` }}
         onClick={() => setOpen(o => !o)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }}
       >
         <span className={styles.childArrow} style={{ color: accentColor }}>&#8627;</span>
         <Text weight="semibold" className={styles.childEntityName}>{entityView.entityDisplayName}</Text>

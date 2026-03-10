@@ -403,7 +403,11 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
             <div key={role.roleid}>
               <div
                 className={`${styles.roleRow} ${isExpanded ? styles.roleRowExpanded : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
                 onClick={() => toggleExpand(role.roleid)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(role.roleid); } }}
               >
                 <div className={styles.chevron}>
                   {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
