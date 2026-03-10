@@ -901,7 +901,10 @@ export class BlueprintGenerator {
           entityName: '',
           current,
           total,
-          message: `Analyzing web resources (${current}/${total})...`,
+          // When current === total, Pass 1 is done but Pass 2 (JS content fetch) may still be running
+          message: current < total
+            ? `Analyzing web resources (${current}/${total})...`
+            : 'Fetching JavaScript web resource content...',
         });
       }, this.logger);
       const wrLogWatermark = this.logger.getEntries().length;
@@ -918,9 +921,7 @@ export class BlueprintGenerator {
 
       return webResources;
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing web resources:', msg);
-      this.stepWarnings.push({ step: 'Web Resources', message: msg, partial: false });
+      this.stepWarnings.push({ step: 'Web Resources', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
       return [];
     }
   }
@@ -1118,7 +1119,10 @@ export class BlueprintGenerator {
           entityName: '',
           current,
           total,
-          message: `Documenting Custom APIs (${current}/${total})...`,
+          // When current === total, Pass 1 is done but request param + response property fetches may still be running
+          message: current < total
+            ? `Documenting Custom APIs (${current}/${total})...`
+            : 'Fetching Custom API parameters and response properties...',
         });
       }, this.logger);
       const customAPIs = await customApiDiscovery.getCustomAPIsByIds(customApiIds);
@@ -1134,9 +1138,7 @@ export class BlueprintGenerator {
 
       return customAPIs;
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing Custom APIs:', msg);
-      this.stepWarnings.push({ step: 'Custom APIs', message: msg, partial: false });
+      this.stepWarnings.push({ step: 'Custom APIs', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
       return [];
     }
   }
@@ -1435,7 +1437,10 @@ export class BlueprintGenerator {
           entityName: '',
           current,
           total,
-          message: 'Discovering forms and JavaScript handlers...',
+          // When current === total, Pass 1 is done but form XML content fetch may still be running
+          message: current < total
+            ? `Discovering forms (${current}/${total} entities)...`
+            : 'Fetching form XML definitions...',
         });
       });
       const allForms = await formDiscovery.getFormsForEntities(entityNames);
@@ -1481,8 +1486,7 @@ export class BlueprintGenerator {
 
       return forms;
     } catch (error) {
-      console.error('Error processing forms:', error instanceof Error ? error.message : 'Unknown error');
-      // Don't fail the entire generation if forms fail
+      this.stepWarnings.push({ step: 'Forms', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
       return [];
     }
   }
