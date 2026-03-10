@@ -72,9 +72,6 @@ export {
 
   // ── Contextual / inline indicators ────────────────────────────────────────
 
-  // External API calls (outbound arrow). Not a component category — used inline in lists.
-  ArrowUpRight24Regular as ExternalCallsIcon,
-
   // ── Navigation tabs ────────────────────────────────────────────────────────
 
   Grid24Regular as DashboardIcon,

@@ -122,11 +122,6 @@ const SYSTEM_ENTITY_NAMES: readonly string[] = [
  */
 const SYSTEM_ENTITIES_SET: Set<string> = new Set(SYSTEM_ENTITY_NAMES);
 
-/**
- * Readonly array export for backward compatibility.
- */
-export const SYSTEM_ENTITIES: readonly string[] = SYSTEM_ENTITY_NAMES;
-
 // ---------------------------------------------------------------------------
 // Entity-level predicate
 // ---------------------------------------------------------------------------
