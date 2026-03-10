@@ -157,9 +157,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
     }
   };
 
-  const getDepthBadgeAppearance = (depth: number): 'tint' | 'filled' => {
-    return depth === 8 ? 'filled' : 'tint';
-  };
+  const getDepthBadgeAppearance = (_depth: number): 'tint' => 'tint';
 
   const toggleExpand = (roleId: string): void => {
     setExpandedRoleId(expandedRoleId === roleId ? null : roleId);

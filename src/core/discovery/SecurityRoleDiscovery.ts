@@ -299,7 +299,7 @@ export class SecurityRoleDiscovery {
 
   private buildRoleDetail(role: SecurityRole, privileges: RolePrivilege[]): SecurityRoleDetail {
     const entityPrivilegesMap = new Map<string, PrivilegeDetail[]>();
-    let hasSystemAdminPrivileges = false;
+    const hasSystemAdminPrivileges = privileges.some(p => p.privilegename === 'prvSystemAdmin');
     const specialPermissions = this.parseSpecialPermissions(privileges);
 
     for (const priv of privileges) {
@@ -311,13 +311,6 @@ export class SecurityRoleDiscovery {
       const privilegeType = match[1] as PrivilegeDetail['type'];
       const entityName = match[2].toLowerCase();
       const details = this.parsePrivilegeDetails(priv.accessright, priv.privilegedepthmask, privilegeType);
-
-      for (const detail of details) {
-        if (detail.depth === 'Global' &&
-          (privilegeType === 'Create' || privilegeType === 'Write' || privilegeType === 'Delete')) {
-          hasSystemAdminPrivileges = true;
-        }
-      }
 
       const entityPrivs = entityPrivilegesMap.get(entityName) || [];
       entityPrivs.push(...details);
