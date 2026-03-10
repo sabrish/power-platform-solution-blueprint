@@ -5,6 +5,10 @@ import {
   makeStyles,
   tokens,
   Badge,
+  Accordion,
+  AccordionHeader,
+  AccordionItem,
+  AccordionPanel,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import { FilterBar } from './FilterBar';
@@ -267,6 +271,13 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
     );
   }
 
+  const rolesWithSpecialPerms = useMemo(
+    () => securityRoles.filter(role =>
+      specialPermissions.some(perm => role.specialPermissions?.[perm.key])
+    ),
+    [securityRoles]
+  );
+
   return (
     <div className={styles.container}>
       <FilterBar
@@ -278,8 +289,109 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
         itemLabel="roles"
       />
 
-      {/* Card-row accordion — replaces the old DataGrid + separate Accordion section */}
+      {/* Special Permissions Matrix — collapsed by default, only roles with ≥1 permission */}
+      <Accordion collapsible>
+        <AccordionItem value="special-perms">
+          <AccordionHeader>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXXS }}>
+              <Text weight="semibold">Special Permissions Matrix</Text>
+              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                {rolesWithSpecialPerms.length} {rolesWithSpecialPerms.length === 1 ? 'role has' : 'roles have'} special permissions — click to expand
+              </Text>
+            </div>
+          </AccordionHeader>
+          <AccordionPanel>
+            {rolesWithSpecialPerms.length === 0 ? (
+              <Text style={{ color: tokens.colorNeutralForeground3 }}>
+                No roles have special/miscellaneous permissions set.
+              </Text>
+            ) : (
+              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th
+                        style={{
+                          padding: tokens.spacingVerticalS,
+                          textAlign: 'left',
+                          borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+                          minWidth: '200px',
+                          position: 'sticky',
+                          top: 0,
+                          left: 0,
+                          backgroundColor: tokens.colorNeutralBackground2,
+                          color: tokens.colorNeutralForeground1,
+                          zIndex: 3,
+                        }}
+                      >
+                        Security Role
+                      </th>
+                      {specialPermissions.map((perm) => (
+                        <th
+                          key={perm.key}
+                          style={{
+                            padding: tokens.spacingVerticalS,
+                            textAlign: 'center',
+                            borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+                            minWidth: '120px',
+                            fontSize: tokens.fontSizeBase100,
+                            backgroundColor: tokens.colorNeutralBackground2,
+                            color: tokens.colorNeutralForeground1,
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 1,
+                          }}
+                        >
+                          {perm.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rolesWithSpecialPerms.map((role) => (
+                      <tr key={role.roleid} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
+                        <td
+                          style={{
+                            padding: tokens.spacingVerticalS,
+                            position: 'sticky',
+                            left: 0,
+                            zIndex: 1,
+                            backgroundColor: tokens.colorNeutralBackground1,
+                          }}
+                        >
+                          <div style={{ fontWeight: tokens.fontWeightSemibold }}>{role.name}</div>
+                          <div style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+                            {role.businessunitname}
+                          </div>
+                        </td>
+                        {specialPermissions.map((perm) => {
+                          const granted = role.specialPermissions?.[perm.key] === true;
+                          return (
+                            <td
+                              key={perm.key}
+                              style={{ padding: tokens.spacingVerticalS, textAlign: 'center', backgroundColor: tokens.colorNeutralBackground1 }}
+                            >
+                              {granted ? (
+                                <Badge appearance="filled" color="success" shape="rounded" size="small">&#10003;</Badge>
+                              ) : (
+                                <Text size={300}>—</Text>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
+
+      {/* Role Details */}
       <div className={styles.section}>
+        <Title3>Role Details</Title3>
         {filteredRoles.length === 0 && (
           <div className={styles.emptyState}>
             <Text>No roles match your search.</Text>
@@ -332,96 +444,6 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
             </div>
           );
         })}
-      </div>
-
-      {/* Special Permission Matrix — plain <table>, not DataGrid */}
-      <div className={styles.section} style={{ marginTop: tokens.spacingVerticalXL }}>
-        <div style={{ marginBottom: tokens.spacingVerticalS }}>
-          <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Special Permission Matrix</Title3>
-          <Text className={styles.description}>
-            Matrix showing which roles have which special permissions.
-          </Text>
-        </div>
-
-        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th
-                  style={{
-                    padding: tokens.spacingVerticalS,
-                    textAlign: 'left',
-                    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-                    minWidth: '200px',
-                    position: 'sticky',
-                    top: 0,
-                    left: 0,
-                    backgroundColor: tokens.colorNeutralBackground2,
-                    color: tokens.colorNeutralForeground1,
-                    zIndex: 3,
-                  }}
-                >
-                  Security Role
-                </th>
-                {specialPermissions.map((perm) => (
-                  <th
-                    key={perm.key}
-                    style={{
-                      padding: tokens.spacingVerticalS,
-                      textAlign: 'center',
-                      borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-                      minWidth: '120px',
-                      fontSize: tokens.fontSizeBase100,
-                      backgroundColor: tokens.colorNeutralBackground2,
-                      color: tokens.colorNeutralForeground1,
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: 1,
-                    }}
-                  >
-                    {perm.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRoles.map((role) => (
-                <tr key={role.roleid} style={{ borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
-                  <td
-                    style={{
-                      padding: tokens.spacingVerticalS,
-                      position: 'sticky',
-                      left: 0,
-                      zIndex: 1,
-                      backgroundColor: tokens.colorNeutralBackground1,
-                    }}
-                  >
-                    <div style={{ fontWeight: tokens.fontWeightSemibold }}>{role.name}</div>
-                    <div style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
-                      {role.businessunitname}
-                    </div>
-                  </td>
-                  {specialPermissions.map((perm) => {
-                    const value = role.specialPermissions?.[perm.key];
-                    const granted = value === true;
-                    return (
-                      <td
-                        key={perm.key}
-                        style={{ padding: tokens.spacingVerticalS, textAlign: 'center', backgroundColor: tokens.colorNeutralBackground1 }}
-                      >
-                        {granted ? (
-                          <Badge appearance="filled" color="success" shape="rounded" size="small">&#10003;</Badge>
-                        ) : (
-                          <Text size={300}>—</Text>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );
