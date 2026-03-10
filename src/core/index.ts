@@ -115,6 +115,6 @@ export type {
 export { ExecutionOrderCalculator } from './analyzers/ExecutionOrderCalculator.js';
 export { PerformanceAnalyzer } from './analyzers/PerformanceAnalyzer.js';
 
-// Utils — FetchLogger class + types used by ProcessingScreen via barrel
-export { FetchLogger } from './utils/FetchLogger.js';
+// Utils — FetchLogger types used by ProcessingScreen and useBlueprint via barrel
+// FetchLogger class is imported directly by consumers, not through this barrel
 export type { FetchLogEntry, FetchStatus, FetchSummary } from './utils/FetchLogger.js';
