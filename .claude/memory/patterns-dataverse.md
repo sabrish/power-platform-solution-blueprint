@@ -402,3 +402,42 @@ If the UI shows ">100%" (e.g. "276 of 146 items processed (189%)"), the relevant
 - **Web API Reference:** https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/reference/
 
 **Rule:** Never guess component type codes or API field names. Check these docs first.
+
+---
+
+## PATTERN-023 — Two-Pass Discovery Progress Reporting
+
+**Source:** discovery classes (WebResourceDiscovery, FormDiscovery, and others)
+**Applies to:** Developer, Reviewer
+**See also:** PATTERN-022 for two-pass discovery architecture.
+
+**Context:** Discovery classes that do a first pass (list IDs) and a second pass (fetch details)
+must split progress reporting 50/50 so the progress bar advances smoothly across both passes.
+
+**Rule:**
+- Pass 1 reports progress as `Math.floor(done / 2)` out of `total`
+- Pass 2 reports progress as `Math.floor(total / 2) + Math.floor(done / 2)` out of `total`
+- The `onProgress` callback always receives `(current: number, total: number)` — never a float
+
+```typescript
+// Pass 1: fetch IDs
+for (let i = 0; i < ids.length; i += batchSize) {
+  const batch = ids.slice(i, i + batchSize);
+  // ... fetch ...
+  onProgress?.(Math.floor((i + batch.length) / 2), ids.length);
+}
+
+// Pass 2: fetch details
+for (let i = 0; i < ids.length; i += batchSize) {
+  const batch = ids.slice(i, i + batchSize);
+  // ... fetch ...
+  onProgress?.(Math.floor(ids.length / 2) + Math.floor((i + batch.length) / 2), ids.length);
+}
+```
+
+**Anti-pattern:** Calling `onProgress?.(done, total)` only during one pass — causes the bar
+to appear stuck at 50% or jump from 0% to 100%.
+
+> **Note:** Use PATTERN-022 (Pass 2 silent, snap to 100%) when the two passes iterate over
+> different-sized item sets. Use PATTERN-023 (50/50 split) when both passes iterate the same
+> set and you want the bar to advance continuously across both passes.
