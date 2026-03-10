@@ -3,6 +3,7 @@ import type { BusinessRule } from '../types/blueprint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { BusinessRuleParser } from '../parsers/BusinessRuleParser.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface BusinessRuleRecord {
   workflowid: string;
@@ -51,8 +52,7 @@ export class BusinessRuleDiscovery {
       const { results: allResults } = await withAdaptiveBatch<string, BusinessRuleRecord>(
         brIds,
         async (batch) => {
-          const filterClauses = batch.map(id => `workflowid eq ${id}`);
-          const filter = `(${filterClauses.join(' or ')}) and category eq 2`;
+          const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 2`;
           const response = await this.client.query<BusinessRuleRecord>('workflows', {
             select: [
               'workflowid', 'name', 'description', 'statecode', 'primaryentity',

@@ -10,6 +10,7 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 export interface SecurityRole {
   roleid: string;
@@ -157,7 +158,7 @@ export class SecurityRoleDiscovery {
     const { results } = await withAdaptiveBatch<string, RawRole>(
       cleanIds,
       async (batch) => {
-        const filter = batch.map(id => `roleid eq ${id}`).join(' or ');
+        const filter = buildOrFilter(batch, 'roleid', { guids: true });
         const result = await this.client.query<RawRole>('roles', {
           select: ['roleid', 'name', 'businessunitid', 'description', 'iscustomizable', 'ismanaged', 'componentstate'],
           expand: 'businessunitid($select=name)',
@@ -213,7 +214,7 @@ export class SecurityRoleDiscovery {
     const { results: privRows } = await withAdaptiveBatch<string, RawRolePrivRow>(
       roleIds,
       async (batch) => {
-        const filter = batch.map(id => `roleid eq ${id}`).join(' or ');
+        const filter = buildOrFilter(batch, 'roleid', { guids: true });
         const result = await this.client.query<RawRolePrivRow>(
           `roleprivilegescollection`,
           { select: ['roleid', 'privilegeid', 'privilegedepthmask'], filter }
@@ -248,7 +249,7 @@ export class SecurityRoleDiscovery {
     const { results: privDetails } = await withAdaptiveBatch<string, RawPrivilege>(
       uniquePrivilegeIds,
       async (batch) => {
-        const filter = batch.map(id => `privilegeid eq ${id}`).join(' or ');
+        const filter = buildOrFilter(batch, 'privilegeid', { guids: true });
         const result = await this.client.query<RawPrivilege>('privileges', {
           select: ['privilegeid', 'name', 'accessright'],
           filter,

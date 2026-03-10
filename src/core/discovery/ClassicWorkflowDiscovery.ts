@@ -2,6 +2,7 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { ClassicWorkflow } from '../types/classicWorkflow.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface RawClassicWorkflowMeta {
   workflowid: string;
@@ -54,7 +55,7 @@ export class ClassicWorkflowDiscovery {
       const { results: metaRecords } = await withAdaptiveBatch<string, RawClassicWorkflowMeta>(
         workflowIds,
         async (batch) => {
-          const filter = batch.map(id => `workflowid eq ${id}`).join(' or ');
+          const filter = buildOrFilter(batch, 'workflowid', { guids: true });
           const result = await this.client.query<RawClassicWorkflowMeta>('workflows', {
             select: [
               'workflowid', 'name', 'description', 'type', 'category', 'mode',
@@ -83,7 +84,7 @@ export class ClassicWorkflowDiscovery {
       const { results: xamlRecords } = await withAdaptiveBatch<string, RawWorkflowXaml>(
         fetchedIds,
         async (batch) => {
-          const filter = batch.map(id => `workflowid eq ${id}`).join(' or ');
+          const filter = buildOrFilter(batch, 'workflowid', { guids: true });
           const result = await this.client.query<RawWorkflowXaml>('workflows', {
             select: ['workflowid', 'xaml'],
             filter,

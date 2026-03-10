@@ -2,6 +2,7 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface RawBusinessProcessFlow {
   workflowid: string;
@@ -75,7 +76,7 @@ export class BusinessProcessFlowDiscovery {
       const { results: allResults } = await withAdaptiveBatch<string, RawBusinessProcessFlow>(
         workflowIds,
         async (batch) => {
-          const filter = `(${batch.map(id => `workflowid eq ${id}`).join(' or ')}) and category eq 4`;
+          const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 4`;
           const result = await this.client.query<RawBusinessProcessFlow>('workflows', {
             select: [
               'workflowid', 'name', 'description', 'category', 'uniquename',
@@ -124,10 +125,11 @@ export class BusinessProcessFlowDiscovery {
       const { results: allStages } = await withAdaptiveBatch<string, RawProcessStage>(
         bpfIds,
         async (batch) => {
-          const filterClauses = batch.map(id => {
-            const cleanId = id.toLowerCase().replace(/[{}]/g, '');
-            return `_processid_value eq ${cleanId}`;
-          });
+          const stageFilter = buildOrFilter(
+            batch.map(id => id.toLowerCase().replace(/[{}]/g, '')),
+            '_processid_value',
+            { guids: true }
+          );
           try {
             const result = await this.client.query<RawProcessStage>('processstages', {
               select: [
@@ -135,7 +137,7 @@ export class BusinessProcessFlowDiscovery {
                 'parametername', 'clientdata',
                 '_processid_value', '_parentprocessstageid_value',
               ],
-              filter: filterClauses.join(' or '),
+              filter: stageFilter,
               expand: 'processstage_processstageparameter($select=processstageparameterid,name,value)',
             });
             return result.value;
@@ -147,7 +149,7 @@ export class BusinessProcessFlowDiscovery {
                 'parametername', 'clientdata',
                 '_processid_value', '_parentprocessstageid_value',
               ],
-              filter: filterClauses.join(' or '),
+              filter: stageFilter,
             });
             return result.value;
           }
@@ -193,16 +195,17 @@ export class BusinessProcessFlowDiscovery {
       const { results: allSteps } = await withAdaptiveBatch<string, RawProcessStage>(
         stageIds,
         async (batch) => {
-          const filterClauses = batch.map(id => {
-            const cleanId = id.toLowerCase().replace(/[{}]/g, '');
-            return `_parentprocessstageid_value eq ${cleanId}`;
-          });
+          const stepFilter = buildOrFilter(
+            batch.map(id => id.toLowerCase().replace(/[{}]/g, '')),
+            '_parentprocessstageid_value',
+            { guids: true }
+          );
           const result = await this.client.query<RawProcessStage>('processstages', {
             select: [
               'processstageid', 'stagename', 'parametername', 'parametervalue',
               '_parentprocessstageid_value',
             ],
-            filter: filterClauses.join(' or '),
+            filter: stepFilter,
           });
           return result.value;
         },

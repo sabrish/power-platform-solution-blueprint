@@ -2,6 +2,7 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { FormDefinition, FormEventHandler } from '../types/blueprint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface RawFormMeta {
   formid: string;
@@ -37,7 +38,7 @@ export class FormDiscovery {
       const { results: metaForms } = await withAdaptiveBatch<string, RawFormMeta>(
         entityNames,
         async (batch) => {
-          const filter = `(${batch.map(n => `objecttypecode eq '${n}'`).join(' or ')}) and (type eq 2 or type eq 7 or type eq 8 or type eq 11)`;
+          const filter = `(${buildOrFilter(batch, 'objecttypecode')}) and (type eq 2 or type eq 7 or type eq 8 or type eq 11)`;
           const result = await this.client.query<RawFormMeta>('systemforms', {
             select: ['formid', 'name', 'type', 'objecttypecode'],
             filter,
@@ -65,7 +66,7 @@ export class FormDiscovery {
       const { results: xmlRecords } = await withAdaptiveBatch<string, RawFormXml>(
         formIds,
         async (batch) => {
-          const filter = batch.map(id => `formid eq ${id}`).join(' or ');
+          const filter = buildOrFilter(batch, 'formid', { guids: true });
           const result = await this.client.query<RawFormXml>('systemforms', {
             select: ['formid', 'formxml'],
             filter,
