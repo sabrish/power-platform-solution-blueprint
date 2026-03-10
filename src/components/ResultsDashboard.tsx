@@ -460,7 +460,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             <Tab value="solutionDist" icon={<SolutionDistributionIcon />}>Solution Distribution</Tab>
           )}
 
-          <Tab value="crossEntity" icon={<CrossEntityAutomationIcon />}>Cross-Entity Automation</Tab>
+          <Tab value="crossEntity" icon={<CrossEntityAutomationIcon />}>
+            Cross-Entity Automation
+            <Badge appearance="filled" shape="rounded" color="warning" size="small" style={{ marginLeft: tokens.spacingHorizontalXXS }}>Preview</Badge>
+          </Tab>
 
           {(result.fetchLog && result.fetchLog.length > 0) && (
             <Tab value="fetchLog" icon={<FetchLogIcon />}>

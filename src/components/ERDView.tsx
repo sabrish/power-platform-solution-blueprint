@@ -924,13 +924,13 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             {!isInitializing && (
               <div className={styles.zoomOverlay}>
                 <Tooltip content="Zoom in" relationship="label">
-                  <Button size="small" appearance="subtle" icon={<ZoomIn24Regular />} onClick={handleZoomIn} />
+                  <Button size="small" appearance="subtle" aria-label="Zoom in" icon={<ZoomIn24Regular />} onClick={handleZoomIn} />
                 </Tooltip>
                 <Tooltip content="Zoom out" relationship="label">
-                  <Button size="small" appearance="subtle" icon={<ZoomOut24Regular />} onClick={handleZoomOut} />
+                  <Button size="small" appearance="subtle" aria-label="Zoom out" icon={<ZoomOut24Regular />} onClick={handleZoomOut} />
                 </Tooltip>
                 <Tooltip content="Fit to screen" relationship="label">
-                  <Button size="small" appearance="subtle" icon={<ZoomFit24Regular />} onClick={handleFit} />
+                  <Button size="small" appearance="subtle" aria-label="Fit to screen" icon={<ZoomFit24Regular />} onClick={handleFit} />
                 </Tooltip>
               </div>
             )}

@@ -227,7 +227,11 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
               <div key={choice.id}>
                 <div
                   className={`${shared.cardRow} ${styles.choiceRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
                   onClick={() => toggleExpand(choice.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(choice.id); } }}
                 >
                   <div className={shared.chevron}>
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}

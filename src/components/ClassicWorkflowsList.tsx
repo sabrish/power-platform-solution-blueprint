@@ -262,7 +262,11 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
             <div key={workflow.id}>
               <div
                 className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
                 onClick={() => toggleExpand(workflow.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(workflow.id); } }}
               >
                 <div className={shared.chevron}>
                   {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}

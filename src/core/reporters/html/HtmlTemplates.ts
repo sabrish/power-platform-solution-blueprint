@@ -67,7 +67,7 @@ ${this.embeddedCSS()}
    * Generate sidebar navigation
    */
   htmlNavigation(): string {
-    return `<nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+    return `<nav class="sidebar" id="sidebar" role="navigation" aria-label="Blueprint sections">
   <div class="sidebar-header">
     <h3>Blueprint</h3>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
@@ -136,8 +136,8 @@ ${this.embeddedCSS()}
    */
   htmlErdSection(erd: ERDDefinition | undefined): string {
     if (!erd || erd.diagrams.length === 0) {
-      return `<section id="erd" class="content-section">
-  <h2>Entity Relationship Diagram</h2>
+      return `<section id="erd" class="content-section" aria-labelledby="heading-erd">
+  <h2 id="heading-erd">Entity Relationship Diagram</h2>
   <div class="empty-state">No ERD available</div>
 </section>`;
     }
@@ -166,8 +166,8 @@ ${this.embeddedCSS()}
       const safeJson = JSON.stringify(filteredGraphData)
         .replace(/<\/script/gi, '<\\/script');
 
-      return `<section id="erd" class="content-section">
-  <h2>Entity Relationship Diagram</h2>
+      return `<section id="erd" class="content-section" aria-labelledby="heading-erd">
+  <h2 id="heading-erd">Entity Relationship Diagram</h2>
   <p>${filteredGraphData.nodes.length} entities · ${graphData.edges.length} relationships in scope${isolatedCount > 0 ? ` · ${isolatedCount} entities with no relationships not shown` : ''}</p>
   ${legendHtml}
   <div class="erd-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center;">
@@ -215,8 +215,8 @@ ${diagram.mermaidDiagram}
   <p class="diagram-stats">Entities: ${diagram.entityCount} | Relationships: ${diagram.relationshipCount}</p>
 </div>`;
 
-    return `<section id="erd" class="content-section">
-  <h2>Entity Relationship Diagram</h2>
+    return `<section id="erd" class="content-section" aria-labelledby="heading-erd">
+  <h2 id="heading-erd">Entity Relationship Diagram</h2>
   ${legendHtml}
   ${diagramHtml}
 </section>`;
@@ -247,8 +247,8 @@ ${items}
    * Generate summary section
    */
   htmlSummary(summary: BlueprintSummary): string {
-    return `<section id="summary" class="content-section">
-  <h2>Summary</h2>
+    return `<section id="summary" class="content-section" role="region" aria-label="Blueprint summary" aria-labelledby="heading-summary">
+  <h2 id="heading-summary">Summary</h2>
   <div class="summary-grid">
     <div class="summary-card">
       <div class="card-number">${summary.totalEntities}</div>
@@ -299,8 +299,8 @@ ${items}
    */
   htmlEntitiesAccordion(entities: EntityBlueprint[]): string {
     if (entities.length === 0) {
-      return `<section id="entities" class="content-section">
-  <h2>Entities</h2>
+      return `<section id="entities" class="content-section" aria-labelledby="heading-entities">
+  <h2 id="heading-entities">Entities</h2>
   <div class="empty-state">No entities found</div>
 </section>`;
     }
@@ -318,7 +318,7 @@ ${items}
       const hasExecutionPipeline = this.hasEntityExecutionPipeline(entityBp);
 
       return `<div class="accordion-item">
-  <div class="accordion-header" onclick="toggleAccordion('entity-${index}')">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="entity-${index}" onclick="toggleAccordion('entity-${index}')" onkeydown="accordionKeydown(event,'entity-${index}')">
     <span class="accordion-icon" id="icon-entity-${index}">+</span>
     <h3>${this.escapeHtml(displayName)}</h3>
     <span class="entity-badges">
@@ -369,8 +369,8 @@ ${items}
 </div>`;
     }).join('\n');
 
-    return `<section id="entities" class="content-section">
-  <h2>Entities (${entities.length})</h2>
+    return `<section id="entities" class="content-section" aria-labelledby="heading-entities">
+  <h2 id="heading-entities">Entities (${entities.length})</h2>
   <div class="accordion">
 ${accordionItems}
   </div>
@@ -405,11 +405,11 @@ ${accordionItems}
   <table class="data-table">
     <thead>
       <tr>
-        <th>Logical Name</th>
-        <th>Display Name</th>
-        <th>Type</th>
-        <th>Required</th>
-        <th>Description</th>
+        <th scope="col">Logical Name</th>
+        <th scope="col">Display Name</th>
+        <th scope="col">Type</th>
+        <th scope="col">Required</th>
+        <th scope="col">Description</th>
       </tr>
     </thead>
     <tbody>
@@ -441,11 +441,11 @@ ${rows}
   <table class="data-table">
     <thead>
       <tr>
-        <th>Name</th>
-        <th>Message</th>
-        <th>Stage</th>
-        <th>Mode</th>
-        <th>Description</th>
+        <th scope="col">Name</th>
+        <th scope="col">Message</th>
+        <th scope="col">Stage</th>
+        <th scope="col">Mode</th>
+        <th scope="col">Description</th>
       </tr>
     </thead>
     <tbody>
@@ -475,10 +475,10 @@ ${rows}
   <table class="data-table">
     <thead>
       <tr>
-        <th>Name</th>
-        <th>State</th>
-        <th>Trigger</th>
-        <th>Description</th>
+        <th scope="col">Name</th>
+        <th scope="col">State</th>
+        <th scope="col">Trigger</th>
+        <th scope="col">Description</th>
       </tr>
     </thead>
     <tbody>
@@ -625,10 +625,10 @@ ${rows}
           <table class="data-table" style="font-size: 0.9em;">
             <thead>
               <tr>
-                <th>Event</th>
-                <th>Library</th>
-                <th>Function</th>
-                <th>Status</th>
+                <th scope="col">Event</th>
+                <th scope="col">Library</th>
+                <th scope="col">Function</th>
+                <th scope="col">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -888,12 +888,12 @@ ${rows}
     return `<table class="data-table pipeline-table">
       <thead>
         <tr>
-          <th>Order</th>
-          <th>Type</th>
-          <th>Name</th>
-          <th>Stage/Details</th>
-          <th>Mode</th>
-          <th>Rank</th>
+          <th scope="col">Order</th>
+          <th scope="col">Type</th>
+          <th scope="col">Name</th>
+          <th scope="col">Stage/Details</th>
+          <th scope="col">Mode</th>
+          <th scope="col">Rank</th>
         </tr>
       </thead>
       <tbody>
@@ -927,12 +927,12 @@ ${rows}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Scope</th>
-            <th>Context</th>
-            <th>State</th>
-            <th>Conditions</th>
-            <th>Actions</th>
+            <th scope="col">Name</th>
+            <th scope="col">Scope</th>
+            <th scope="col">Context</th>
+            <th scope="col">State</th>
+            <th scope="col">Conditions</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -967,9 +967,9 @@ ${rows}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Schema Name</th>
-            <th>Related Entity</th>
-            <th>Related Attribute</th>
+            <th scope="col">Schema Name</th>
+            <th scope="col">Related Entity</th>
+            <th scope="col">Related Attribute</th>
           </tr>
         </thead>
         <tbody>
@@ -985,8 +985,8 @@ ${rows}
    */
   htmlPluginsTable(plugins: PluginStep[]): string {
     if (plugins.length === 0) {
-      return `<section id="plugins" class="content-section">
-  <h2>Plugins</h2>
+      return `<section id="plugins" class="content-section" aria-labelledby="heading-plugins">
+  <h2 id="heading-plugins">Plugins</h2>
   <div class="empty-state">No plugins found</div>
 </section>`;
     }
@@ -1009,20 +1009,20 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="plugins" class="content-section">
-  <h2>Plugins (${plugins.length})</h2>
+    return `<section id="plugins" class="content-section" aria-labelledby="heading-plugins">
+  <h2 id="heading-plugins">Plugins (${plugins.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="plugins-table">
       <thead>
         <tr>
-          <th onclick="sortTable('plugins-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 3)">Message <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 4)">Stage <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 5)">Mode <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 6)">Rank <span class="sort-indicator"></span></th>
-          <th>Images</th>
+          <th scope="col" onclick="sortTable('plugins-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 2)">State <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 3)">Message <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 4)">Stage <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 5)">Mode <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 6)">Rank <span class="sort-indicator"></span></th>
+          <th scope="col">Images</th>
         </tr>
       </thead>
       <tbody>
@@ -1038,8 +1038,8 @@ ${rows}
    */
   htmlFlowsTable(flows: Flow[]): string {
     if (flows.length === 0) {
-      return `<section id="flows" class="content-section">
-  <h2>Flows</h2>
+      return `<section id="flows" class="content-section" aria-labelledby="heading-flows">
+  <h2 id="heading-flows">Flows</h2>
   <div class="empty-state">No flows found</div>
 </section>`;
     }
@@ -1059,19 +1059,19 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="flows" class="content-section">
-  <h2>Flows (${flows.length})</h2>
+    return `<section id="flows" class="content-section" aria-labelledby="heading-flows">
+  <h2 id="heading-flows">Flows (${flows.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="flows-table">
       <thead>
         <tr>
-          <th onclick="sortTable('flows-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 3)">Trigger <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 4)">Scope <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 5)">Actions <span class="sort-indicator"></span></th>
-          <th>External Calls</th>
+          <th scope="col" onclick="sortTable('flows-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 2)">State <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 3)">Trigger <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 4)">Scope <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 5)">Actions <span class="sort-indicator"></span></th>
+          <th scope="col">External Calls</th>
         </tr>
       </thead>
       <tbody>
@@ -1087,8 +1087,8 @@ ${rows}
    */
   htmlBusinessRulesTable(businessRules: BusinessRule[]): string {
     if (businessRules.length === 0) {
-      return `<section id="business-rules" class="content-section">
-  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-rules')} Business Rules</h2>
+      return `<section id="business-rules" class="content-section" aria-labelledby="heading-business-rules">
+  <h2 id="heading-business-rules" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-rules')} Business Rules</h2>
   <div class="empty-state">No business rules found</div>
 </section>`;
     }
@@ -1113,7 +1113,7 @@ ${rows}
       </tr>`).join('');
 
       return `<div class="accordion-item">
-  <div class="accordion-header" onclick="toggleAccordion('${id}')">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')">
     <span class="accordion-icon" id="icon-${id}">+</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1133,19 +1133,19 @@ ${rows}
     <div style="display:grid;grid-template-columns:minmax(200px,1fr) minmax(200px,1fr);gap:16px;">
       <div>
         <h5 style="margin-bottom:6px">Conditions${rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.escapeHtml(rule.definition.conditionLogic)})</span>` : ''}</h5>
-        ${conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th>Field</th><th>Operator</th><th>Value</th><th>Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
+        ${conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Field</th><th scope="col">Operator</th><th scope="col">Value</th><th scope="col">Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
       </div>
       <div>
         <h5 style="margin-bottom:6px">Actions</h5>
-        ${actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th>Action</th><th>Field</th><th>Value / Message</th></tr></thead><tbody>${actRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No actions detected.</p>'}
+        ${actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${actRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No actions detected.</p>'}
       </div>
     </div>
   </div>
 </div>`;
     }).join('\n');
 
-    return `<section id="business-rules" class="content-section">
-  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-rules')} Business Rules (${businessRules.length})</h2>
+    return `<section id="business-rules" class="content-section" aria-labelledby="heading-business-rules">
+  <h2 id="heading-business-rules" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-rules')} Business Rules (${businessRules.length})</h2>
   <div class="accordion">${items}</div>
 </section>`;
   }
@@ -1155,8 +1155,8 @@ ${rows}
    */
   htmlClassicWorkflowsTable(workflows: ClassicWorkflow[]): string {
     if (workflows.length === 0) {
-      return `<section id="classic-workflows" class="content-section">
-  <h2>Classic Workflows (Legacy)</h2>
+      return `<section id="classic-workflows" class="content-section" aria-labelledby="heading-classic-workflows">
+  <h2 id="heading-classic-workflows">Classic Workflows (Legacy)</h2>
   <div class="empty-state">No classic workflows found</div>
 </section>`;
     }
@@ -1193,8 +1193,8 @@ ${rows}
   </div>`;
     }
 
-    return `<section id="classic-workflows" class="content-section">
-  <h2>Classic Workflows - Migration Recommended (${workflows.length})</h2>
+    return `<section id="classic-workflows" class="content-section" aria-labelledby="heading-classic-workflows">
+  <h2 id="heading-classic-workflows">Classic Workflows - Migration Recommended (${workflows.length})</h2>
   <div class="alert alert-warning">
     <strong>${this.alertIcon('warning')} Warning &mdash; Legacy Technology:</strong> Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows. <a href="https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows" target="_blank" rel="noopener noreferrer">Learn more</a>
   </div>
@@ -1203,11 +1203,11 @@ ${rows}
     <table class="data-table sortable" id="classic-workflows-table">
       <thead>
         <tr>
-          <th onclick="sortTable('classic-workflows-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 3)">Mode <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 4)">Complexity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 2)">State <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 3)">Mode <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 4)">Complexity <span class="sort-indicator"></span></th>
         </tr>
       </thead>
       <tbody>
@@ -1223,8 +1223,8 @@ ${rows}
    */
   htmlBusinessProcessFlowsTable(bpfs: BusinessProcessFlow[]): string {
     if (bpfs.length === 0) {
-      return `<section id="business-process-flows" class="content-section">
-  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-process-flows')} Business Process Flows</h2>
+      return `<section id="business-process-flows" class="content-section" aria-labelledby="heading-business-process-flows">
+  <h2 id="heading-business-process-flows" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-process-flows')} Business Process Flows</h2>
   <div class="empty-state">No business process flows found</div>
 </section>`;
     }
@@ -1248,7 +1248,7 @@ ${rows}
       }).join('');
 
       return `<div class="accordion-item">
-  <div class="accordion-header" onclick="toggleAccordion('${id}')">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')">
     <span class="accordion-icon" id="icon-${id}">+</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1271,8 +1271,8 @@ ${rows}
 </div>`;
     }).join('\n');
 
-    return `<section id="business-process-flows" class="content-section">
-  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-process-flows')} Business Process Flows (${bpfs.length})</h2>
+    return `<section id="business-process-flows" class="content-section" aria-labelledby="heading-business-process-flows">
+  <h2 id="heading-business-process-flows" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-process-flows')} Business Process Flows (${bpfs.length})</h2>
   <div class="accordion">${items}</div>
 </section>`;
   }
@@ -1282,8 +1282,8 @@ ${rows}
    */
   htmlWebResourcesTable(webResources: WebResource[]): string {
     if (webResources.length === 0) {
-      return `<section id="web-resources" class="content-section">
-  <h2>Web Resources</h2>
+      return `<section id="web-resources" class="content-section" aria-labelledby="heading-web-resources">
+  <h2 id="heading-web-resources">Web Resources</h2>
   <div class="empty-state">No web resources found</div>
 </section>`;
     }
@@ -1303,18 +1303,18 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="web-resources" class="content-section">
-  <h2>Web Resources (${webResources.length})</h2>
+    return `<section id="web-resources" class="content-section" aria-labelledby="heading-web-resources">
+  <h2 id="heading-web-resources">Web Resources (${webResources.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="web-resources-table">
       <thead>
         <tr>
-          <th onclick="sortTable('web-resources-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('web-resources-table', 1)">Display Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('web-resources-table', 2)">Type <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('web-resources-table', 3)">Size <span class="sort-indicator"></span></th>
-          <th>External Calls</th>
-          <th>Deprecated</th>
+          <th scope="col" onclick="sortTable('web-resources-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('web-resources-table', 1)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('web-resources-table', 2)">Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('web-resources-table', 3)">Size <span class="sort-indicator"></span></th>
+          <th scope="col">External Calls</th>
+          <th scope="col">Deprecated</th>
         </tr>
       </thead>
       <tbody>
@@ -1330,8 +1330,8 @@ ${rows}
    */
   htmlCustomAPIsTable(customAPIs: CustomAPI[]): string {
     if (customAPIs.length === 0) {
-      return `<section id="custom-apis" class="content-section">
-  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-apis')} Custom APIs</h2>
+      return `<section id="custom-apis" class="content-section" aria-labelledby="heading-custom-apis">
+  <h2 id="heading-custom-apis" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-apis')} Custom APIs</h2>
   <div class="empty-state">No custom APIs found</div>
 </section>`;
     }
@@ -1339,7 +1339,7 @@ ${rows}
     const paramTable = (params: CustomAPI['requestParameters'], label: string) => {
       if (!params || params.length === 0) return `<p style="margin:4px 0;color:#666;font-size:0.85em">No ${label.toLowerCase()}.</p>`;
       return `<table class="data-table" style="font-size:0.85em;margin-top:4px;">
-  <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+  <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead>
   <tbody>${params.map(p => `<tr>
     <td><code>${this.escapeHtml(p.uniqueName)}</code>${p.displayName && p.displayName !== p.uniqueName ? ` <span style="color:#666;font-size:0.9em">${this.escapeHtml(p.displayName)}</span>` : ''}</td>
     <td><span class="badge badge-info">${this.escapeHtml(p.typeName || p.type)}</span>${p.logicalEntityName ? ` <span style="font-size:0.8em;color:#666">${this.escapeHtml(p.logicalEntityName)}</span>` : ''}</td>
@@ -1364,7 +1364,7 @@ ${rows}
       ].filter(Boolean).join(' ');
 
       return `<div class="accordion-item">
-  <div class="accordion-header" onclick="toggleAccordion('${id}')">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')">
     <span class="accordion-icon" id="icon-${id}">+</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1391,8 +1391,8 @@ ${rows}
 </div>`;
     }).join('\n');
 
-    return `<section id="custom-apis" class="content-section">
-  <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-apis')} Custom APIs (${customAPIs.length})</h2>
+    return `<section id="custom-apis" class="content-section" aria-labelledby="heading-custom-apis">
+  <h2 id="heading-custom-apis" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-apis')} Custom APIs (${customAPIs.length})</h2>
   <div class="accordion">${items}</div>
 </section>`;
   }
@@ -1402,8 +1402,8 @@ ${rows}
    */
   htmlEnvironmentVariablesTable(envVars: EnvironmentVariable[]): string {
     if (envVars.length === 0) {
-      return `<section id="environment-variables" class="content-section">
-  <h2>Environment Variables</h2>
+      return `<section id="environment-variables" class="content-section" aria-labelledby="heading-environment-variables">
+  <h2 id="heading-environment-variables">Environment Variables</h2>
   <div class="empty-state">No environment variables found</div>
 </section>`;
     }
@@ -1421,17 +1421,17 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="environment-variables" class="content-section">
-  <h2>Environment Variables (${envVars.length})</h2>
+    return `<section id="environment-variables" class="content-section" aria-labelledby="heading-environment-variables">
+  <h2 id="heading-environment-variables">Environment Variables (${envVars.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="env-vars-table">
       <thead>
         <tr>
-          <th onclick="sortTable('env-vars-table', 0)">Schema Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('env-vars-table', 1)">Display Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('env-vars-table', 2)">Type <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('env-vars-table', 3)">Required <span class="sort-indicator"></span></th>
-          <th>Value Status</th>
+          <th scope="col" onclick="sortTable('env-vars-table', 0)">Schema Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('env-vars-table', 1)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('env-vars-table', 2)">Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('env-vars-table', 3)">Required <span class="sort-indicator"></span></th>
+          <th scope="col">Value Status</th>
         </tr>
       </thead>
       <tbody>
@@ -1447,8 +1447,8 @@ ${rows}
    */
   htmlConnectionReferencesTable(connRefs: ConnectionReference[]): string {
     if (connRefs.length === 0) {
-      return `<section id="connection-references" class="content-section">
-  <h2>Connection References</h2>
+      return `<section id="connection-references" class="content-section" aria-labelledby="heading-connection-references">
+  <h2 id="heading-connection-references">Connection References</h2>
   <div class="empty-state">No connection references found</div>
 </section>`;
     }
@@ -1465,16 +1465,16 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="connection-references" class="content-section">
-  <h2>Connection References (${connRefs.length})</h2>
+    return `<section id="connection-references" class="content-section" aria-labelledby="heading-connection-references">
+  <h2 id="heading-connection-references">Connection References (${connRefs.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="conn-refs-table">
       <thead>
         <tr>
-          <th onclick="sortTable('conn-refs-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('conn-refs-table', 1)">Display Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('conn-refs-table', 2)">Connector <span class="sort-indicator"></span></th>
-          <th>Status</th>
+          <th scope="col" onclick="sortTable('conn-refs-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('conn-refs-table', 1)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('conn-refs-table', 2)">Connector <span class="sort-indicator"></span></th>
+          <th scope="col">Status</th>
         </tr>
       </thead>
       <tbody>
@@ -1490,8 +1490,8 @@ ${rows}
    */
   htmlExternalDependenciesSection(endpoints: ExternalEndpoint[] | undefined): string {
     if (!endpoints || endpoints.length === 0) {
-      return `<section id="external-dependencies" class="content-section">
-  <h2>External Dependencies</h2>
+      return `<section id="external-dependencies" class="content-section" aria-labelledby="heading-external-dependencies">
+  <h2 id="heading-external-dependencies">External Dependencies</h2>
   <div class="empty-state">No external dependencies detected</div>
 </section>`;
     }
@@ -1509,8 +1509,8 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="external-dependencies" class="content-section">
-  <h2>External Dependencies (${endpoints.length})</h2>
+    return `<section id="external-dependencies" class="content-section" aria-labelledby="heading-external-dependencies">
+  <h2 id="heading-external-dependencies">External Dependencies (${endpoints.length})</h2>
   <div class="alert alert-info">
     <strong>${this.alertIcon('info')} Note:</strong> External API calls can introduce security risks and performance concerns. Review each endpoint carefully.
   </div>
@@ -1518,11 +1518,11 @@ ${rows}
     <table class="data-table sortable" id="external-deps-table">
       <thead>
         <tr>
-          <th onclick="sortTable('external-deps-table', 0)">Domain <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('external-deps-table', 1)">Protocol <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('external-deps-table', 2)">Risk Level <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('external-deps-table', 3)">Calls <span class="sort-indicator"></span></th>
-          <th>Risk Factors</th>
+          <th scope="col" onclick="sortTable('external-deps-table', 0)">Domain <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('external-deps-table', 1)">Protocol <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('external-deps-table', 2)">Risk Level <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('external-deps-table', 3)">Calls <span class="sort-indicator"></span></th>
+          <th scope="col">Risk Factors</th>
         </tr>
       </thead>
       <tbody>
@@ -1557,8 +1557,8 @@ ${rows}
     </div>`;
 
     if (!analysis || (analysis.allEntityPipelines.size === 0 && analysis.totalEntryPoints === 0)) {
-      return `<section id="cross-entity" class="content-section">
-  <h2 style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
+      return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   <p>No cross-entity automation entry points detected in this solution scope.</p>
 </section>`;
@@ -1607,20 +1607,20 @@ ${rows}
         <table class="data-table sortable" id="cross-entity-table">
           <thead>
             <tr>
-              <th onclick="sortTable('cross-entity-table', 0)">Source Entity <span class="sort-indicator"></span></th>
-              <th onclick="sortTable('cross-entity-table', 1)">Automation <span class="sort-indicator"></span></th>
-              <th></th>
-              <th onclick="sortTable('cross-entity-table', 3)">Target Entity <span class="sort-indicator"></span></th>
-              <th onclick="sortTable('cross-entity-table', 4)">Operation <span class="sort-indicator"></span></th>
-              <th>Mode</th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 0)">Source Entity <span class="sort-indicator"></span></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 1)">Automation <span class="sort-indicator"></span></th>
+              <th scope="col"></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 3)">Target Entity <span class="sort-indicator"></span></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 4)">Operation <span class="sort-indicator"></span></th>
+              <th scope="col">Mode</th>
             </tr>
           </thead>
           <tbody>${chainRows}</tbody>
         </table>
       </div>` : '';
 
-    return `<section id="cross-entity" class="content-section">
-  <h2 style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
+    return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   ${statsHtml}
   ${risksHtml}
@@ -1709,7 +1709,7 @@ ${rows}
           const modeLabel = entryPoint.isAsynchronous ? 'Async' : 'Sync';
           const header = `${this.htmlEscape(entryPoint.automationName)} <span style="font-weight:normal;color:#666">(${this.htmlEscape(entryPoint.automationType)} — ${this.htmlEscape(entryPoint.operation)} from ${this.htmlEscape(entryPoint.sourceEntityDisplayName)} — ${modeLabel})</span>`;
           return `<div class="accordion-item" style="margin-bottom:8px;">
-  <div class="accordion-header" onclick="toggleAccordion('${tid}')" style="font-size:0.9em;">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${tid}" onclick="toggleAccordion('${tid}')" onkeydown="accordionKeydown(event,'${tid}')" style="font-size:0.9em;">
     <span class="accordion-icon" id="icon-${tid}">+</span>
     <span>${header}</span>
     <span class="badge badge-${entryPoint.confidence === 'High' ? 'success' : entryPoint.confidence === 'Medium' ? 'warning' : 'danger'}" style="margin-left:auto">${this.htmlEscape(entryPoint.confidence)} confidence</span>
@@ -1717,7 +1717,7 @@ ${rows}
   <div class="accordion-content" id="${tid}" style="display:none;padding:12px;">
     ${riskHtml}
     <table class="data-table" style="font-size:0.85em;">
-      <thead><tr><th>Automation</th><th>Type</th><th>Stage</th><th>Mode</th><th>Fires?</th><th>Matched Fields</th><th>Downstream</th></tr></thead>
+      <thead><tr><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Fires?</th><th scope="col">Matched Fields</th><th scope="col">Downstream</th></tr></thead>
       <tbody>${actRows}</tbody>
     </table>
     ${entryPoint.fields.length > 0 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Fields set by source:</strong> <code>${this.htmlEscape(entryPoint.fields.join(', '))}</code></p>` : ''}
@@ -1747,7 +1747,7 @@ ${rows}
             </tr>`;
           }).join('');
           return `${pipeline.messagePipelines.length > 1 ? `<h5 style="margin:4px 0 6px">${mp.message} Pipeline</h5>` : ''}<table class="data-table" style="font-size:0.85em;">
-  <thead><tr><th>#</th><th>Automation</th><th>Type</th><th>Stage</th><th>Mode</th><th>Filter</th><th>Downstream</th></tr></thead>
+  <thead><tr><th scope="col">#</th><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Filter</th><th scope="col">Downstream</th></tr></thead>
   <tbody>${stepRows}</tbody>
 </table>`;
         }).join('<hr style="margin:8px 0;border:none;border-top:1px solid #eee">');
@@ -1760,7 +1760,7 @@ ${rows}
         : `${totalSteps} ${totalSteps === 1 ? 'step' : 'steps'}`;
 
       items.push(`<div class="${wrapClass}"${hiddenAttr}><div class="accordion-item">
-  <div class="accordion-header" onclick="toggleAccordion('${id}')" style="border-left:4px solid ${color}">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')" style="border-left:4px solid ${color}">
     <span class="accordion-icon" id="icon-${id}">+</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1871,7 +1871,24 @@ ${this.embeddedJavaScript()}
    * Embedded CSS styles
    */
   private embeddedCSS(): string {
-    return `    /* Base styles */
+    return `    /* Skip navigation link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #0078d4;
+      color: #ffffff;
+      padding: 8px 16px;
+      z-index: 1000;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 0 0 4px 0;
+    }
+    .skip-link:focus {
+      top: 0;
+    }
+
+    /* Base styles */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -2999,13 +3016,24 @@ ${this.embeddedJavaScript()}
     function toggleAccordion(id) {
       const content = document.getElementById(id);
       const icon = document.getElementById('icon-' + id);
+      const header = document.querySelector('[aria-controls="' + id + '"]');
 
       if (content.style.display === 'none' || content.style.display === '') {
         content.style.display = 'block';
         icon.textContent = '−';
+        if (header) header.setAttribute('aria-expanded', 'true');
       } else {
         content.style.display = 'none';
         icon.textContent = '+';
+        if (header) header.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    // Accordion keyboard handler
+    function accordionKeydown(event, id) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleAccordion(id);
       }
     }
 
@@ -3162,8 +3190,8 @@ ${this.embeddedJavaScript()}
     }
 
     let html = `
-      <section id="security" class="content-section">
-        <h2 class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('security')} Security</h2>
+      <section id="security" class="content-section" aria-labelledby="heading-security">
+        <h2 id="heading-security" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('security')} Security</h2>
         <p class="section-description">Security roles and field security profiles in the selected solution(s).</p>
 
         <div class="tabs-container">
@@ -3200,7 +3228,7 @@ ${this.embeddedJavaScript()}
             <div class="subsection">
               <div class="accordion">
                 <div class="accordion-item">
-                  <div class="accordion-header" onclick="toggleAccordion('special-perms-matrix')">
+                  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="special-perms-matrix" onclick="toggleAccordion('special-perms-matrix')" onkeydown="accordionKeydown(event,'special-perms-matrix')">
                     <span class="accordion-icon" id="icon-special-perms-matrix">+</span>
                     <h4 style="margin:0">Special Permissions Matrix</h4>
                     <span style="font-size:0.85em;color:#666;margin-left:auto">Roles with miscellaneous permissions — click to expand</span>
@@ -3282,11 +3310,11 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Role Name</th>
-            <th>Business Unit</th>`;
+            <th scope="col">Role Name</th>
+            <th scope="col">Business Unit</th>`;
 
     for (const key of specialPermissionKeys) {
-      html += `<th>${this.formatSpecialPermissionName(key)}</th>`;
+      html += `<th scope="col">${this.formatSpecialPermissionName(key)}</th>`;
     }
 
     html += `
@@ -3333,7 +3361,7 @@ ${this.embeddedJavaScript()}
       const role = securityRoles[i];
       html += `
         <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion('role-${i}')">
+          <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="role-${i}" onclick="toggleAccordion('role-${i}')" onkeydown="accordionKeydown(event,'role-${i}')">
             <span class="accordion-icon" id="icon-role-${i}">+</span>
             <div class="accordion-title">
               <strong>${this.escapeHtml(role.name)}</strong>
@@ -3381,15 +3409,15 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Entity</th>
-            <th>Create</th>
-            <th>Read</th>
-            <th>Write</th>
-            <th>Delete</th>
-            <th>Append</th>
-            <th>AppendTo</th>
-            <th>Assign</th>
-            <th>Share</th>
+            <th scope="col">Entity</th>
+            <th scope="col">Create</th>
+            <th scope="col">Read</th>
+            <th scope="col">Write</th>
+            <th scope="col">Delete</th>
+            <th scope="col">Append</th>
+            <th scope="col">AppendTo</th>
+            <th scope="col">Assign</th>
+            <th scope="col">Share</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3431,8 +3459,8 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Profile Name</th>
-            <th>Description</th>
+            <th scope="col">Profile Name</th>
+            <th scope="col">Description</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3460,10 +3488,10 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Entity</th>
-            <th>Attribute</th>
-            <th>Masking Rule</th>
-            <th>Managed</th>
+            <th scope="col">Entity</th>
+            <th scope="col">Attribute</th>
+            <th scope="col">Masking Rule</th>
+            <th scope="col">Managed</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3493,9 +3521,9 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Profile Name</th>
-            <th>Description</th>
-            <th>Managed</th>
+            <th scope="col">Profile Name</th>
+            <th scope="col">Description</th>
+            <th scope="col">Managed</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3542,8 +3570,8 @@ ${this.embeddedJavaScript()}
         <table class="data-table">
           <thead>
             <tr>
-              <th>Field</th>
-              <th>Profiles with Access</th>
+              <th scope="col">Field</th>
+              <th scope="col">Profiles with Access</th>
             </tr>
           </thead>
           <tbody>`;
