@@ -10,7 +10,7 @@ import {
   AccordionHeader,
   AccordionPanel,
 } from '@fluentui/react-components';
-import type { SolutionDistribution } from '../core';
+import type { SolutionDistribution, ComponentCounts, SolutionDependency, SharedComponent } from '../core';
 
 const useStyles = makeStyles({
   container: {
@@ -93,7 +93,7 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
   };
 
   // Calculate percentages for bar chart
-  const calculatePercentages = (counts: any) => {
+  const calculatePercentages = (counts: ComponentCounts) => {
     const total = counts.total;
     if (total === 0) return {};
 
@@ -250,7 +250,7 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
                     {solution.dependencies.length > 0 && (
                       <div>
                         <Text weight="semibold">Dependencies</Text>
-                        {solution.dependencies.map((dep: any, index: number) => (
+                        {solution.dependencies.map((dep: SolutionDependency, index: number) => (
                           <Card key={index} style={{ marginTop: tokens.spacingVerticalS, padding: tokens.spacingVerticalS }}>
                             <Text weight="semibold">{dep.dependsOnSolution}</Text>
                             <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
@@ -271,7 +271,7 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
                         <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                           Components that appear in multiple solutions
                         </Text>
-                        {solution.sharedComponents.map((shared: any, index: number) => (
+                        {solution.sharedComponents.map((shared: SharedComponent, index: number) => (
                           <Card key={index} style={{ marginTop: tokens.spacingVerticalS, padding: tokens.spacingVerticalS }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
                               <Badge appearance="outline" shape="rounded">{shared.componentType}</Badge>

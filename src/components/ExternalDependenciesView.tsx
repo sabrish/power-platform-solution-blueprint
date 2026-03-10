@@ -20,7 +20,7 @@ import {
   Warning24Regular,
   LightbulbFilament20Regular,
 } from '@fluentui/react-icons';
-import type { ExternalEndpoint } from '../core';
+import type { ExternalEndpoint, RiskFactor, ExternalCallSource } from '../core';
 
 const useStyles = makeStyles({
   container: {
@@ -382,7 +382,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
               {item.riskFactors.length > 0 && (
                 <div className={styles.riskFactorsSection}>
                   <Text weight="semibold">Risk Factors</Text>
-                  {item.riskFactors.map((factor: any, index: number) => (
+                  {item.riskFactors.map((factor: RiskFactor, index: number) => (
                     <Card
                       key={index}
                       className={`${styles.riskFactorCard} ${
@@ -432,7 +432,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
               <div style={{ marginTop: tokens.spacingVerticalL }}>
                 <Text weight="semibold">Called From ({item.detectedIn.length})</Text>
                 <div className={styles.sourcesGrid}>
-                  {item.detectedIn.map((source: any, index: number) => (
+                  {item.detectedIn.map((source: ExternalCallSource, index: number) => (
                     <Card key={index} className={styles.sourceCard}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, marginBottom: tokens.spacingVerticalXXS }}>
                         <Badge appearance="outline" shape="rounded" color="brand">

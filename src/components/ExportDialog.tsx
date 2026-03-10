@@ -16,6 +16,7 @@ import {
 } from '@fluentui/react-components';
 import { Dismiss24Regular } from '@fluentui/react-icons';
 import type { BlueprintResult } from '../core';
+import type { BlueprintGenerator } from '../core';
 import { estimateMarkdownSize, estimateJsonSize, estimateHtmlSize, formatBytes } from '../utils/sizeEstimator';
 import { ExportProgressOverlay } from './ExportProgressOverlay';
 import { useExport } from '../hooks/useExport';
@@ -67,7 +68,7 @@ const useStyles = makeStyles({
 export interface ExportDialogProps {
   isOpen: boolean;
   result: BlueprintResult;
-  blueprintGenerator: any;
+  blueprintGenerator: BlueprintGenerator;
   onClose: () => void;
 }
 

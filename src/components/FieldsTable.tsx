@@ -130,8 +130,8 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
     }
 
     return filtered.sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
+      let aVal: string | undefined;
+      let bVal: string | undefined;
 
       switch (sortColumn) {
         case 'DisplayName':
