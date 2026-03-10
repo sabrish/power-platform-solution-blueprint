@@ -93,25 +93,28 @@ Session logs written during work. Never committed to the public repo. Listed in
 
 ## Skills
 
-Skills live in `.claude/skills/`. These are commit gates, release orchestration, and
-maintenance shortcuts — they eliminate the need to remember the right prompt for
-recurring tasks.
+Skills are split across two directories:
 
-| Skill | Invoked by | When to use |
-|-------|-----------|------------|
-| `/pre-commit [files]` | Orchestrator | Before every commit — runs reviewer then security-auditor; orchestrator invokes this automatically when you say "ready to commit" |
-| `/release v[X.Y.Z]` | Orchestrator | When you say "prepare a release" — runs the full release sequence; orchestrator invokes this automatically |
-| `/maintain-learnings` | You | Every 3-4 sessions — promotes stable learnings to patterns, keeps learnings.md lean |
-| `/maintain-memory` | You | Every 3-4 sessions — trims project.md to under 150 lines |
-| `/maintain-decisions` | You | Every major version — collapses settled decisions to summaries |
-| `/trim-guides` | You | When combined pattern count reaches ~20 entries — removes duplication with root guide files |
+- **`.claude/commands/`** — Claude Code slash commands. Type `/skill-name` directly in the
+  terminal and Claude Code injects the prompt. Also invokable by the orchestrator agent.
+- **`.claude/skills/`** — Internal skills. Not accessible as terminal slash commands; the
+  orchestrator reads and executes these on your behalf when you describe the task.
+
+| Skill | Location | Invoked by | When to use |
+|-------|----------|-----------|------------|
+| `/pre-commit [files]` | `.claude/commands/` | You or Orchestrator | Before every commit — runs reviewer then security-auditor |
+| `/release v[X.Y.Z]` | `.claude/skills/` | Orchestrator | When you say "prepare a release" — runs the full release sequence |
+| `/maintain-learnings` | `.claude/skills/` | You | Every 3-4 sessions — promotes stable learnings to patterns, keeps learnings.md lean |
+| `/maintain-memory` | `.claude/skills/` | You | Every 3-4 sessions — trims project.md to under 150 lines |
+| `/maintain-decisions` | `.claude/skills/` | You | Every major version — collapses settled decisions to summaries |
+| `/trim-guides` | `.claude/skills/` | You | When combined pattern count reaches ~20 entries — removes duplication with root guide files |
 
 **Two kinds of skills:**
-- **Orchestrator-invoked** (`/pre-commit`, `/release`): You don't run these directly.
-  Tell the orchestrator "ready to commit [files]" or "prepare a release for vX.Y.Z"
-  and it invokes the skill. The detail of what each step does lives in the skill file.
-- **You-invoked** (all others): Run these yourself at the intervals shown. They
-  require your approval at each step before anything is written.
+- **Terminal slash commands** (`.claude/commands/`): Type `/pre-commit [files]` directly
+  in the Claude Code terminal. The orchestrator can also invoke these by reading the file.
+- **Internal skills** (`.claude/skills/`): Tell the orchestrator "ready to commit [files]"
+  or "prepare a release for vX.Y.Z" and it invokes the skill. Requires your approval at
+  each step before anything is written.
 
 ---
 
