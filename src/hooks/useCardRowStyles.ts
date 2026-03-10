@@ -23,9 +23,9 @@ export const useCardRowStyles = makeStyles({
     gap: tokens.spacingVerticalS,
   },
 
-  /** Small toggle-buttons inside FilterBar — pill shape */
+  /** Small toggle-buttons inside FilterBar — pill shape, min width ensures oval not circle */
   filterButton: {
-    minWidth: 'unset',
+    minWidth: '56px',
     paddingLeft: tokens.spacingHorizontalS,
     paddingRight: tokens.spacingHorizontalS,
     borderRadius: tokens.borderRadiusCircular,
@@ -71,7 +71,7 @@ export const useCardRowStyles = makeStyles({
   nameColumn: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px',
+    gap: tokens.spacingVerticalXXS,
     minWidth: 0,
     wordBreak: 'break-word',
   },
