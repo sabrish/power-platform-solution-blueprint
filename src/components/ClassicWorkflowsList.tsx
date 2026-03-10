@@ -24,23 +24,12 @@ import type { ClassicWorkflow } from '../core';
 import { formatDate } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const WORKFLOW_MODE_VALUES = ['Background', 'RealTime'];
 const WORKFLOW_STATE_VALUES = ['Active', 'Draft'];
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
   warning: {
     padding: tokens.spacingVerticalM,
     backgroundColor: tokens.colorPaletteYellowBackground1,
@@ -48,78 +37,9 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalM,
     borderRadius: tokens.borderRadiusMedium,
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   row: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  rowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
   },
   featureItem: {
     padding: tokens.spacingVerticalS,
@@ -153,6 +73,7 @@ const complexityColor = (c: string | undefined): 'success' | 'warning' | 'danger
 
 export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeModeFilters, setActiveModeFilters] = useState<Set<string>>(new Set());
@@ -239,42 +160,42 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   const renderDetail = (workflow: ClassicWorkflow) => {
     const rec = workflow.migrationRecommendation;
     return (
-      <div className={styles.expandedDetails}>
+      <div className={shared.expandedDetails}>
         <Card>
           <Title3>Classic Workflow Details</Title3>
 
           {rec?.advisory && (
-            <div className={styles.section}>
+            <div className={shared.section}>
               <MessageBar intent={workflow.mode === 1 ? 'warning' : 'info'}>
                 <MessageBarBody>{rec.advisory}</MessageBarBody>
               </MessageBar>
             </div>
           )}
 
-          <div className={`${styles.detailsGrid} ${styles.section}`}>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Entity</Text>
-              <Text className={styles.detailValue}>{workflow.entityDisplayName || workflow.entity}</Text>
+          <div className={`${shared.detailsGrid} ${shared.section}`}>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Entity</Text>
+              <Text className={shared.detailValue}>{workflow.entityDisplayName || workflow.entity}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Type</Text>
-              <Text className={styles.detailValue}>{workflow.typeName}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Type</Text>
+              <Text className={shared.detailValue}>{workflow.typeName}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Scope</Text>
-              <Text className={styles.detailValue}>{workflow.scopeName}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Scope</Text>
+              <Text className={shared.detailValue}>{workflow.scopeName}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Triggers</Text>
-              <Text className={styles.detailValue}>{getTriggers(workflow)}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Triggers</Text>
+              <Text className={shared.detailValue}>{getTriggers(workflow)}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Owner</Text>
-              <Text className={styles.detailValue}>{workflow.owner}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Owner</Text>
+              <Text className={shared.detailValue}>{workflow.owner}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Last Modified</Text>
-              <Text className={styles.detailValue}>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Last Modified</Text>
+              <Text className={shared.detailValue}>
                 {formatDate(workflow.modifiedOn)} by {workflow.modifiedBy}
               </Text>
             </div>
@@ -287,11 +208,10 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
 
   if (workflows.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Warning20Regular style={{ fontSize: '48px' }} />
-        <Text size={500} weight="semibold">No Classic Workflows Found</Text>
-        <Text>No classic workflows were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="workflows"
+        message="No classic workflows were found in the selected solution(s)."
+      />
     );
   }
 
@@ -323,7 +243,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
           {WORKFLOW_MODE_VALUES.map((mode) => (
             <ToggleButton
               key={mode}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeModeFilters.has(mode)}
               disabled={modeCounts[mode] === 0}
@@ -342,7 +262,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
           {WORKFLOW_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeStateFilters.has(state)}
               disabled={stateCounts[state] === 0}
@@ -359,7 +279,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
         </FilterGroup>
       </FilterBar>
 
-      <div className={styles.container}>
+      <div className={shared.container}>
         {searchedWorkflows.length === 0 && sorted.length > 0 && (
           <EmptyState type="search" />
         )}
@@ -369,23 +289,23 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
           return (
             <div key={workflow.id}>
               <div
-                className={`${styles.row} ${isExpanded ? styles.rowExpanded : ''}`}
+                className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
                 onClick={() => toggleExpand(workflow.id)}
               >
-                <div className={styles.chevron}>
+                <div className={shared.chevron}>
                   {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                 </div>
-                <div className={styles.nameColumn}>
+                <div className={shared.nameColumn}>
                   <Text weight="semibold">
                     <TruncatedText text={workflow.name} />
                   </Text>
                   {workflow.description && (
-                    <Text className={styles.codeText}>
+                    <Text className={shared.codeText}>
                       <TruncatedText text={workflow.description} />
                     </Text>
                   )}
                 </div>
-                <Text className={styles.codeText}>
+                <Text className={shared.codeText}>
                   <TruncatedText text={workflow.entityDisplayName || workflow.entity} />
                 </Text>
                 <Badge appearance="tint" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'} size="small">

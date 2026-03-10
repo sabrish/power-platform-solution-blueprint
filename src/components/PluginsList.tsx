@@ -16,6 +16,7 @@ import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-ico
 import type { PluginStep } from '../core';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 // These must exactly match PluginDiscovery.getStageName() output (no hyphens)
 const STAGE_VALUES = ['PreValidation', 'PreOperation', 'PostOperation', 'Asynchronous'];
@@ -33,99 +34,13 @@ const formatStageLabel = (stageName: string): string => {
 };
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
   pluginRow: {
     display: 'grid',
     gridTemplateColumns: '24px 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  pluginRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
   },
   rank: {
     fontWeight: tokens.fontWeightSemibold,
     textAlign: 'center',
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  wrapText: {
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-    minWidth: 0,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-    wordBreak: 'break-word',
-    overflowWrap: 'anywhere',
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
   },
 });
 
@@ -139,6 +54,7 @@ export function PluginsList({
   entityLogicalName,
 }: PluginsListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedPluginId, setExpandedPluginId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStageFilters, setActiveStageFilters] = useState<Set<string>>(new Set());
@@ -247,48 +163,48 @@ export function PluginsList({
   };
 
   const renderPluginDetails = (plugin: PluginStep) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>Plugin Step Details</Title3>
 
-        <div className={styles.detailsGrid}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Step ID</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`}>{plugin.id}</Text>
+        <div className={shared.detailsGrid}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Step ID</Text>
+            <Text className={`${shared.detailValue} ${shared.codeText}`}>{plugin.id}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Plugin Type</Text>
-            <Text className={styles.detailValue}>{plugin.typeName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Plugin Type</Text>
+            <Text className={shared.detailValue}>{plugin.typeName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Assembly</Text>
-            <Text className={styles.detailValue}>{plugin.assemblyName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Assembly</Text>
+            <Text className={shared.detailValue}>{plugin.assemblyName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Entity</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`}>{plugin.entity}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Entity</Text>
+            <Text className={`${shared.detailValue} ${shared.codeText}`}>{plugin.entity}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Message</Text>
-            <Text className={styles.detailValue}>{plugin.message}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Message</Text>
+            <Text className={shared.detailValue}>{plugin.message}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Execution Stage</Text>
-            <Text className={styles.detailValue}>{plugin.stageName} ({plugin.stage})</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Execution Stage</Text>
+            <Text className={shared.detailValue}>{plugin.stageName} ({plugin.stage})</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Execution Mode</Text>
-            <Text className={styles.detailValue}>{plugin.modeName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Execution Mode</Text>
+            <Text className={shared.detailValue}>{plugin.modeName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Execution Order</Text>
-            <Text className={styles.detailValue}>{plugin.rank}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Execution Order</Text>
+            <Text className={shared.detailValue}>{plugin.rank}</Text>
           </div>
         </div>
 
         {plugin.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
             <Text>
               <TruncatedText text={plugin.description} />
             </Text>
@@ -296,9 +212,9 @@ export function PluginsList({
         )}
 
         {plugin.filteringAttributes.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Filtering Attributes ({plugin.filteringAttributes.length})</Title3>
-            <div className={styles.badgeGroup}>
+            <div className={shared.badgeGroup}>
               {plugin.filteringAttributes.map((attr, idx) => (
                 <Badge key={idx} appearance="tint" shape="rounded" color="warning">
                   {attr}
@@ -309,25 +225,25 @@ export function PluginsList({
         )}
 
         {(plugin.preImage || plugin.postImage) && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Entity Images</Title3>
-            <div className={styles.detailsGrid}>
+            <div className={shared.detailsGrid}>
               {plugin.preImage && (
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Pre-Image</Text>
-                  <Text className={styles.detailValue}>{plugin.preImage.name}</Text>
-                  <Text className={styles.codeText}>Property: {plugin.preImage.messagePropertyName}</Text>
-                  <Text className={styles.codeText}>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Pre-Image</Text>
+                  <Text className={shared.detailValue}>{plugin.preImage.name}</Text>
+                  <Text className={shared.codeText}>Property: {plugin.preImage.messagePropertyName}</Text>
+                  <Text className={shared.codeText}>
                     Attributes: {plugin.preImage.attributes?.join(', ') || 'All'}
                   </Text>
                 </div>
               )}
               {plugin.postImage && (
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Post-Image</Text>
-                  <Text className={styles.detailValue}>{plugin.postImage.name}</Text>
-                  <Text className={styles.codeText}>Property: {plugin.postImage.messagePropertyName}</Text>
-                  <Text className={styles.codeText}>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Post-Image</Text>
+                  <Text className={shared.detailValue}>{plugin.postImage.name}</Text>
+                  <Text className={shared.codeText}>Property: {plugin.postImage.messagePropertyName}</Text>
+                  <Text className={shared.codeText}>
                     Attributes: {plugin.postImage.attributes?.join(', ') || 'All'}
                   </Text>
                 </div>
@@ -354,7 +270,7 @@ export function PluginsList({
   }
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -381,7 +297,7 @@ export function PluginsList({
           {STAGE_VALUES.map((stage) => (
             <ToggleButton
               key={stage}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeStageFilters.has(stage)}
               disabled={stageCounts[stage] === 0}
@@ -400,7 +316,7 @@ export function PluginsList({
           {STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeStateFilters.has(state)}
               disabled={stateCounts[state] === 0}
@@ -424,23 +340,23 @@ export function PluginsList({
         return (
           <div key={plugin.id}>
             <div
-              className={`${styles.pluginRow} ${isExpanded ? styles.pluginRowExpanded : ''}`}
+              className={`${shared.cardRow} ${styles.pluginRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
               onClick={() => toggleExpand(plugin.id)}
             >
-              <div className={styles.chevron}>
+              <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <Text className={styles.rank}>{plugin.rank}</Text>
-              <div className={styles.nameColumn}>
+              <div className={shared.nameColumn}>
                 <Text weight="semibold">
                   <TruncatedText text={plugin.name} />
                 </Text>
-                <Text className={styles.codeText}>
+                <Text className={shared.codeText}>
                   <TruncatedText text={plugin.assemblyName} />
                 </Text>
               </div>
               {!entityLogicalName && (
-                <Text className={styles.codeText}>
+                <Text className={shared.codeText}>
                   <TruncatedText text={plugin.entity} />
                 </Text>
               )}

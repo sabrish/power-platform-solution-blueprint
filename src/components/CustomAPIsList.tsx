@@ -18,104 +18,16 @@ import {
   ArrowRight20Regular,
 } from '@fluentui/react-icons';
 import type { CustomAPI } from '../core';
+import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const API_TYPE_VALUES = ['Action', 'Function'];
 const API_BINDING_VALUES = ['Global', 'Entity', 'EntityCollection'];
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   apiRow: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  apiRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-    minWidth: 0,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-    wordBreak: 'break-word',
-    overflowWrap: 'anywhere',
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
   },
   paramTable: {
     display: 'flex',
@@ -144,6 +56,7 @@ interface CustomAPIsListProps {
  */
 export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedApiId, setExpandedApiId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
@@ -219,46 +132,46 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
   };
 
   const renderApiDetails = (api: CustomAPI) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>Custom API Details</Title3>
 
-        <div className={styles.detailsGrid}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Unique Name</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`}>{api.uniqueName}</Text>
+        <div className={shared.detailsGrid}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Unique Name</Text>
+            <Text className={`${shared.detailValue} ${shared.codeText}`}>{api.uniqueName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Display Name</Text>
-            <Text className={styles.detailValue}>{api.displayName || '—'}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Display Name</Text>
+            <Text className={shared.detailValue}>{api.displayName || '—'}</Text>
           </div>
           {api.boundEntityLogicalName && (
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Bound Entity</Text>
-              <Text className={`${styles.detailValue} ${styles.codeText}`}>{api.boundEntityLogicalName}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Bound Entity</Text>
+              <Text className={`${shared.detailValue} ${shared.codeText}`}>{api.boundEntityLogicalName}</Text>
             </div>
           )}
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Execution Privilege</Text>
-            <Text className={styles.detailValue}>{api.executionPrivilege}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Execution Privilege</Text>
+            <Text className={shared.detailValue}>{api.executionPrivilege}</Text>
           </div>
           {api.allowedCustomProcessingStepType !== undefined && (
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Processing Step Type</Text>
-              <Text className={styles.detailValue}>{api.allowedCustomProcessingStepType}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Processing Step Type</Text>
+              <Text className={shared.detailValue}>{api.allowedCustomProcessingStepType}</Text>
             </div>
           )}
         </div>
 
         {api.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
             <Text>{api.description}</Text>
           </div>
         )}
 
-        <div className={styles.section}>
-          <div className={styles.badgeGroup}>
+        <div className={shared.section}>
+          <div className={shared.badgeGroup}>
             <Badge appearance="tint" shape="rounded" color={api.isFunction ? 'brand' : 'danger'}>
               {api.isFunction ? 'Function' : 'Action'}
             </Badge>
@@ -275,12 +188,12 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
         </div>
 
         {api.requestParameters.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Request Parameters ({api.requestParameters.length})</Title3>
             <div className={styles.paramTable}>
               {api.requestParameters.map((param, idx) => (
                 <div key={idx} className={styles.paramRow}>
-                  <Text className={styles.codeText}>{param.uniqueName}</Text>
+                  <Text className={shared.codeText}>{param.uniqueName}</Text>
                   <Badge appearance="outline" shape="rounded" size="small">{param.type}</Badge>
                   {param.isOptional && (
                     <Badge appearance="tint" shape="rounded" size="small" color="subtle">Optional</Badge>
@@ -292,12 +205,12 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
         )}
 
         {api.responseProperties.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Response Properties ({api.responseProperties.length})</Title3>
             <div className={styles.paramTable}>
               {api.responseProperties.map((prop, idx) => (
                 <div key={idx} className={styles.paramRow}>
-                  <Text className={styles.codeText}>{prop.uniqueName}</Text>
+                  <Text className={shared.codeText}>{prop.uniqueName}</Text>
                   <Badge appearance="tint" shape="rounded" size="small" color="success">{prop.type}</Badge>
                 </div>
               ))}
@@ -309,16 +222,11 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
   );
 
   if (customAPIs.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <Text size={500} weight="semibold">No Custom APIs Found</Text>
-        <Text>No custom APIs were found in the selected solution(s).</Text>
-      </div>
-    );
+    return <EmptyState type="customapis" />;
   }
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -331,7 +239,7 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
           {API_TYPE_VALUES.map(type => (
             <ToggleButton
               key={type}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeTypeFilters.has(type)}
               disabled={typeCounts[type] === 0}
@@ -350,7 +258,7 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
           {API_BINDING_VALUES.map(binding => (
             <ToggleButton
               key={binding}
-              className={styles.filterButton}
+              className={shared.filterButton}
               size="small"
               checked={activeBindingFilters.has(binding)}
               disabled={bindingCounts[binding] === 0}
@@ -368,9 +276,7 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
       </FilterBar>
 
       {filteredAPIs.length === 0 && sortedAPIs.length > 0 && (
-        <div className={styles.emptyState}>
-          <Text>No APIs match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       )}
 
       {filteredAPIs.map(api => {
@@ -380,16 +286,16 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
         return (
           <div key={api.id}>
             <div
-              className={`${styles.apiRow} ${isExpanded ? styles.apiRowExpanded : ''}`}
+              className={`${shared.cardRow} ${styles.apiRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
               onClick={() => toggleExpand(api.id)}
             >
-              <div className={styles.chevron}>
+              <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
-              <div className={styles.nameColumn}>
+              <div className={shared.nameColumn}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
                   <Code20Regular style={{ color: tokens.colorNeutralForeground3, flexShrink: 0 }} />
-                  <Text weight="semibold" className={styles.codeText} style={{ color: tokens.colorNeutralForeground1 }}>
+                  <Text weight="semibold" className={shared.codeText} style={{ color: tokens.colorNeutralForeground1 }}>
                     {api.uniqueName}
                   </Text>
                 </div>
@@ -399,7 +305,7 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
                   </Text>
                 )}
               </div>
-              <div className={styles.badgeGroup}>
+              <div className={shared.badgeGroup}>
                 <Badge
                   appearance="tint"
                   shape="rounded"
@@ -412,7 +318,7 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
               <Badge appearance="tint" shape="rounded" size="small" color={getBindingColor(api.bindingType)}>
                 {api.bindingType}
               </Badge>
-              <div className={styles.badgeGroup}>
+              <div className={shared.badgeGroup}>
                 <Badge appearance="tint" shape="circular" size="small">
                   {api.requestParameters.length}
                 </Badge>
