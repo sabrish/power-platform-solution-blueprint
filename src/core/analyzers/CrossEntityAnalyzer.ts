@@ -630,7 +630,9 @@ export class CrossEntityAnalyzer {
       });
     }
 
-    // --- Business Rules (all scopes) ---
+    // --- Business Rules (server-scoped only) ---
+    // Client-only (form-scoped) BRs are excluded: they run in the browser during form interaction
+    // and never fire for server-side API writes from flows or classic workflows.
     for (const br of targetBp.businessRules) {
       const isServer =
         br.definition.executionContext === 'Server' ||
@@ -639,20 +641,8 @@ export class CrossEntityAnalyzer {
       // Business Rules only fire on Create and Update
       if (ep.operation !== 'Create' && ep.operation !== 'Update') continue;
 
-      if (!isServer) {
-        // Client-only BRs don't fire for server-side API writes (flows/plugins)
-        activations.push({
-          automationType: 'BusinessRule',
-          automationId: br.id,
-          automationName: br.name,
-          stageName: 'Client-Only',
-          mode: 'Sync',
-          firingStatus: 'WontFire',
-          matchedFields: [],
-          filteringAttributes: ['Client-only — will not fire for API writes (flows/plugins)'],
-        });
-        continue;
-      }
+      // Skip client-only (form-scoped) BRs — irrelevant to server-side API writes
+      if (!isServer) continue;
 
       const actionFields = br.definition.actions
         .filter(a => a.field)
