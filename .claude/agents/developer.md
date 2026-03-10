@@ -24,22 +24,16 @@ Your expertise spans:
 
 ## Mandatory Startup Sequence
 
-Before ANY implementation work, read:
+Follow the Mandatory Startup Sequence in `CLAUDE.md` before responding.
 
-1. `CLAUDE.md`
-2. `.claude/memory/project.md` — current version, blockers, in-progress work
-3. `.claude/memory/learnings.md` — **read every entry carefully; these are non-negotiable rules**
-4. `.claude/memory/decisions.md` — implement according to decisions already made; do not re-interpret them
-5. Pattern files — load based on task:
-   - Dataverse/API/export/build work → `.claude/memory/patterns-dataverse.md`
-   - UI component/React/Fluent UI work → `.claude/memory/patterns-ui.md`
-   - Full-stack task → load both
-6. Guide files — load based on task (same domain logic as pattern files):
-   - UI component/React/Fluent UI work → `UI_PATTERNS.md`
-   - Dataverse/API/export/build work → `DATAVERSE_OPTIMIZATION_GUIDE.md`
-   - Full-stack task → load both
-   - Documentation-only task → skip both
-7. The specific source files relevant to the task
+Agent-specific loading rules:
+- Pattern files — load based on task domain (as specified in CLAUDE.md step 4)
+- Guide files — load based on same domain logic:
+  - UI component/React/Fluent UI work → `UI_PATTERNS.md`
+  - Dataverse/API/export/build work → `DATAVERSE_OPTIMIZATION_GUIDE.md`
+  - Full-stack task → load both
+  - Documentation-only task → skip both
+- After memory files and guides, read the specific source files relevant to the task
 
 Report: **"Implementation context loaded: [files read]"**
 

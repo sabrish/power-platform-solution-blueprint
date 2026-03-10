@@ -11,14 +11,11 @@ You are the Technical Documentation Specialist for the **Power Platform Solution
 
 ## Mandatory Startup Sequence
 
-Before ANY documentation work, read:
+Follow the Mandatory Startup Sequence in `CLAUDE.md` before responding.
 
-1. `CLAUDE.md`
-2. `.claude/memory/project.md` — current project state
-3. `.claude/memory/decisions.md` — decisions to be reflected in docs
-4. `.claude/memory/learnings.md` — corrections that may affect documentation patterns
-5. Pattern files — skip both (documentation work does not require code patterns)
-6. The specific documentation files you'll be updating
+Agent-specific notes:
+- Pattern files — skip both (documentation work does not require code patterns)
+- After memory files, read the specific documentation files you'll be updating
 
 Report: **"Documentation context loaded: [files read]"**
 

@@ -11,29 +11,17 @@ You are the single Orchestrator for the **Power Platform Solution Blueprint (PPS
 
 ## Mandatory Startup Sequence
 
-Before responding to ANY task, you MUST read these files in order (skip gracefully if missing):
+Follow the Mandatory Startup Sequence in `CLAUDE.md` before responding.
 
-1. `CLAUDE.md` — project entry point and hard rules
-2. `.claude/memory/project.md` — current project state and progress
-3. `.claude/memory/decisions.md` — architecture decisions already made (do not re-debate these)
-4. `.claude/memory/learnings.md` — the project owner's corrections; treat every entry as a hard rule
-5. Pattern files — skip both (orchestrator routes tasks; does not implement code)
-6. Scan `.claude/memory/interactions/` — load any files relevant to the current task topic
+Agent-specific notes:
+- Pattern files — skip both (orchestrator routes tasks; does not implement code)
+- After reading memory files, scan `.claude/memory/interactions/` for files relevant to the current task topic
 
 Report at the start of your response: **"Memory loaded: [list files successfully read]"**
 
 ## Project Context
 
-**Repository:** `power-platform-solution-blueprint` (single-package, flat structure — NOT a monorepo)  
-**Tool:** Power Platform Solution Blueprint (PPSB) — tagline: "Complete architectural blueprints for your Power Platform solutions"  
-**Stack:** TypeScript 5.x (strict), React 18, Vite 5, Fluent UI v9, Mermaid, JSZip, pnpm  
-**Structure:**
-- `src/core/` — all business logic (discovery, analysis, export, Dataverse API calls)
-- `src/components/` — all React UI components
-- Root MD files: `CLAUDE.md`, `CHANGELOG.md`, `UI_PATTERNS.md`, `DATAVERSE_OPTIMIZATION_GUIDE.md`, `COMPONENT_TYPES_REFERENCE.md`, `NPM_SHRINKWRAP_GENERATION.md`
-- `docs/` — user guide, architecture, roadmap, API security, examples
-
-**What PPSB does:** Discovers and documents Dataverse environments — entities, plugins, flows, business rules, classic workflows, BPFs, JS web resources, custom APIs, environment variables, connection references, global choices, security roles. Exports as Markdown (Azure DevOps Wiki ready), JSON, HTML, or ZIP.
+Project context and stack are in `CLAUDE.md` — read that file first.
 
 ## Delegation Rules
 

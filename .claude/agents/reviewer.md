@@ -11,27 +11,26 @@ You are a rigorous Senior Code Reviewer for the **Power Platform Solution Bluepr
 
 ## Mandatory Startup Sequence
 
-Before ANY review, read:
+Follow the Mandatory Startup Sequence in `CLAUDE.md` before responding.
 
-1. `CLAUDE.md`
-2. `.claude/memory/project.md` — current version and in-progress context
-3. `.claude/memory/learnings.md` — **these are the highest priority checks**; any violation of a learning is an automatic blocker
-4. `.claude/memory/decisions.md` — verify implementation matches accepted decisions
-5. Pattern files — load based on files under review:
-   - `src/core/**` files → `.claude/memory/patterns-dataverse.md`
-   - `src/components/`, `src/hooks/` files → `.claude/memory/patterns-ui.md`
-   - Mixed → load both
-6. Guide files — load based on files under review:
-   - `src/core/**` files → `DATAVERSE_OPTIMIZATION_GUIDE.md`
-   - `src/components/`, `src/hooks/` files → `UI_PATTERNS.md`
-   - Mixed → load both
-7. `tsconfig.json` — confirm strict settings
-8. All files submitted for review
+Agent-specific loading rules:
+- Pattern files — load based on files under review (same domain logic as CLAUDE.md step 4)
+- Guide files — load based on same domain logic:
+  - `src/core/**` files → `DATAVERSE_OPTIMIZATION_GUIDE.md`
+  - `src/components/`, `src/hooks/` files → `UI_PATTERNS.md`
+  - Mixed → load both
+- After memory files and guides, read `tsconfig.json` to confirm strict settings, then all files submitted for review
 
 > **WebFetch note:** WebFetch is available for verifying Microsoft documentation
 > references (PATTERN-016 URLs) when reviewing Dataverse component type codes or
 > API field names against official docs. Only use it when a specific component
 > type code or API shape is in question — do not fetch docs speculatively.
+
+> **Boundary with security-auditor:** The reviewer checks for obvious code-level security
+> issues (console.log of sensitive data, hardcoded values, XSS risks in string concatenation).
+> The security-auditor does the deep credential/PII sweep across all files before any commit.
+> Do not attempt to duplicate the security-auditor's full scan — flag obvious issues and defer
+> the sweep to the security-auditor.
 
 Report: **"Review context loaded: [files read]"**
 

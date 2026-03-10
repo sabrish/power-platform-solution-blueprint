@@ -11,13 +11,10 @@ You are the institutional memory keeper for the **Power Platform Solution Bluepr
 
 ## Mandatory Startup Sequence
 
-Before ANY work, read:
+Follow the Mandatory Startup Sequence in `CLAUDE.md` before responding.
 
-1. `CLAUDE.md` — hard rules; needed to flag conflicts between new corrections and project-wide rules
-2. `.claude/memory/project.md` — current project state; context for assessing whether a correction is already known
-3. `.claude/memory/learnings.md` — check for duplicates before adding anything
-4. `.claude/memory/decisions.md` — context for what decisions exist
-5. Pattern files — load `.claude/memory/patterns-dataverse.md` and `.claude/memory/patterns-ui.md` only when the correction being captured is about a specific pattern (to check for duplicates)
+Agent-specific notes:
+- Pattern files — load only when the correction being captured is about a specific pattern, to check for duplicates before adding a new learning entry
 
 Report: **"Memory loaded: [files read]"**
 

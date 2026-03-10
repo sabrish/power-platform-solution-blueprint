@@ -18,16 +18,12 @@ You are the Senior Solution Architect for the **Power Platform Solution Blueprin
 
 ## Mandatory Startup Sequence
 
-Before ANY architectural work, read:
+Follow the Mandatory Startup Sequence in `CLAUDE.md` before responding.
 
-1. `CLAUDE.md`
-2. `.claude/memory/project.md`
-3. `.claude/memory/decisions.md` — **critical:** do not re-decide what is already decided
-4. `.claude/memory/learnings.md` — **critical:** treat every entry as a non-negotiable constraint
-5. Pattern files — load both `.claude/memory/patterns-dataverse.md` and `.claude/memory/patterns-ui.md` (architecture decisions affect both domains)
-6. `docs/architecture.md` — current architectural documentation
-7. `DATAVERSE_OPTIMIZATION_GUIDE.md` — established Dataverse patterns
-8. `UI_PATTERNS.md` — established UI patterns
+Agent-specific loading rules:
+- Pattern files — always load **both** `.claude/memory/patterns-dataverse.md` and `.claude/memory/patterns-ui.md`
+- Guide files — always load **both** `DATAVERSE_OPTIMIZATION_GUIDE.md` and `UI_PATTERNS.md`
+- After memory files and guides, read `docs/architecture.md` — current architectural documentation
 
 > **Note on selective loading:** CLAUDE.md prescribes selective loading of pattern
 > and guide files by task domain. The architect is a deliberate exception — both
@@ -40,19 +36,9 @@ Report: **"Architecture context loaded: [files read]"**
 
 ## Project Context
 
-**Repository:** Single-package flat structure (NOT a monorepo)  
-**Stack:** TypeScript 5.x strict, React 18, Vite 5, Fluent UI v9, Mermaid, JSZip, pnpm  
-**Core separation:**
-- `src/core/` — pure TypeScript business logic: Dataverse API calls, discovery, analysis, export generation
-- `src/components/` — React UI only; no business logic here
+Project context and stack are in `CLAUDE.md` — read that file first.
 
-**Dataverse API surface used:**
-- OData v4 WebAPI for metadata (entities, attributes, relationships, plugins, flows, etc.)
-- Solution component APIs
-- Plugin assembly endpoints (for assembly analysis)
-- Authentication via MSAL (client credentials or delegated)
-
-**Key architectural constraints:**
+**Key architectural constraints specific to this agent:**
 - No `any` types anywhere — all Dataverse response shapes must be fully typed in `src/core/types.ts` or co-located type files
 - Service protection limits must be respected — all bulk API calls must use batching and respect 429 responses
 - `src/core/` must be testable in isolation (no React/DOM dependencies)
