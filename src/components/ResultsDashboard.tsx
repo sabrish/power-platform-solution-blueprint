@@ -45,7 +45,7 @@ import {
   CrossEntityAutomationIcon,
   FetchLogIcon,
 } from './componentIcons';
-import type { BlueprintResult, CustomAPI, ConnectionReference } from '../core';
+import type { BlueprintResult, CustomAPI } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -60,7 +60,6 @@ import { CustomAPIsList } from './CustomAPIsList';
 import { CustomAPIDetailView } from './CustomAPIDetailView';
 import { EnvironmentVariablesList } from './EnvironmentVariablesList';
 import { ConnectionReferencesList } from './ConnectionReferencesList';
-import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
 import { GlobalChoicesList } from './GlobalChoicesList';
 import { CustomConnectorsList } from './CustomConnectorsList';
 import { ERDView } from './ERDView';
@@ -234,7 +233,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
   const [selectedTab, setSelectedTab] = useState<string>(defaultSelectedKey);
   const [selectedCard, setSelectedCard] = useState<string | null>(defaultSelectedKey);
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
-  const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
   const browserSectionRef = useRef<HTMLDivElement>(null);
 
   // Check what architecture features are available
@@ -614,25 +612,9 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'connectionReferences' && hasResults('connectionReferences') && (
-              <div>
-                {selectedConnRef ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedConnRef(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <ConnectionReferenceDetailView connectionRef={selectedConnRef} />
-                  </div>
-                ) : (
-                  <ConnectionReferencesList
-                    connectionReferences={result.connectionReferences}
-                    onSelectReference={setSelectedConnRef}
-                  />
-                )}
-              </div>
+              <ConnectionReferencesList
+                connectionReferences={result.connectionReferences}
+              />
             )}
 
             {selectedTab === 'globalChoices' && hasResults('globalChoices') && (

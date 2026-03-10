@@ -356,17 +356,11 @@ export function PluginsList({
               </div>
               <Text className={styles.rank}>{plugin.rank}</Text>
               <div className={shared.nameColumn}>
-                <Text weight="semibold">
-                  <TruncatedText text={plugin.name} />
-                </Text>
-                <Text className={shared.codeText}>
-                  <TruncatedText text={plugin.assemblyName} />
-                </Text>
+                <Text weight="semibold">{plugin.name}</Text>
+                <Text className={shared.codeText}>{plugin.assemblyName}</Text>
               </div>
               {!entityLogicalName && (
-                <Text className={shared.codeText}>
-                  <TruncatedText text={plugin.entity} />
-                </Text>
+                <Text className={shared.codeText}>{plugin.entity}</Text>
               )}
               <Badge appearance="outline" shape="rounded" size="small">{plugin.message}</Badge>
               <Badge

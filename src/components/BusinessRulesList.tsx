@@ -11,7 +11,6 @@ import {
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { BusinessRule } from '../core';
-import { TruncatedText } from './TruncatedText';
 import { filterDescription } from '../utils/descriptionFilter';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
@@ -329,19 +328,15 @@ export function BusinessRulesList({
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <div className={shared.nameColumn}>
-                <Text weight="semibold">
-                  <TruncatedText text={rule.name} />
-                </Text>
+                <Text weight="semibold">{rule.name}</Text>
                 {filterDescription(rule.description ?? undefined) && (
                   <Text className={shared.codeText}>
-                    <TruncatedText text={filterDescription(rule.description ?? undefined)!} />
+                    {filterDescription(rule.description ?? undefined)}
                   </Text>
                 )}
               </div>
               {!entityLogicalName && (
-                <Text className={shared.codeText}>
-                  <TruncatedText text={rule.entity} />
-                </Text>
+                <Text className={shared.codeText}>{rule.entity}</Text>
               )}
               <Badge appearance="tint" shape="rounded" color={getScopeBadgeColor(rule.scope)} size="small">
                 {rule.scopeName}

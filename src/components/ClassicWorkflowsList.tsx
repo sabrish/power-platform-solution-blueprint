@@ -21,7 +21,6 @@ import {
 } from '@fluentui/react-icons';
 import type { ClassicWorkflow } from '../core';
 import { formatDate } from '../utils/dateFormat';
-import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
@@ -188,9 +187,9 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   }
 
   return (
-    <div style={{ marginTop: tokens.spacingVerticalL }}>
+    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
       <div className={styles.warning}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, marginBottom: tokens.spacingVerticalXXS }}>
           <Warning20Regular style={{ color: tokens.colorPaletteYellowForeground1 }} />
           <Text weight="semibold">Classic Workflows Detected</Text>
         </div>
@@ -272,17 +271,13 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
                   {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                 </div>
                 <div className={shared.nameColumn}>
-                  <Text weight="semibold">
-                    <TruncatedText text={workflow.name} />
-                  </Text>
+                  <Text weight="semibold">{workflow.name}</Text>
                   {workflow.description && (
-                    <Text className={shared.codeText}>
-                      <TruncatedText text={workflow.description} />
-                    </Text>
+                    <Text className={shared.codeText}>{workflow.description}</Text>
                   )}
                 </div>
                 <Text className={shared.codeText}>
-                  <TruncatedText text={workflow.entityDisplayName || workflow.entity} />
+                  {workflow.entityDisplayName || workflow.entity}
                 </Text>
                 <Badge appearance="tint" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'} size="small">
                   {workflow.mode === 1 ? <><FlashFlow20Regular /> RealTime</> : <><Cloud20Regular /> Background</>}

@@ -11,7 +11,6 @@ import {
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { EnvironmentVariable } from '../core';
-import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
@@ -209,22 +208,23 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <div className={shared.nameColumn}>
-                <Text weight="semibold">
-                  <TruncatedText text={envVar.displayName} />
-                </Text>
-                <Text className={shared.codeText}>
-                  <TruncatedText text={envVar.schemaName} />
-                </Text>
+                <Text weight="semibold">{envVar.displayName}</Text>
+                <Text className={shared.codeText}>{envVar.schemaName}</Text>
               </div>
               <Badge appearance="filled" shape="rounded" color={getTypeColor(envVar.typeName)}>
                 {envVar.typeName}
               </Badge>
-              <Text className={shared.codeText}>
+              <div className={shared.badgeGroup}>
                 {envVar.currentValue
-                  ? <TruncatedText text={envVar.currentValue} />
-                  : <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>
+                  ? <Text className={shared.codeText}>{envVar.currentValue}</Text>
+                  : envVar.defaultValue
+                    ? <>
+                        <Text className={shared.codeText}>{envVar.defaultValue}</Text>
+                        <Badge appearance="outline" shape="rounded" size="small">Default</Badge>
+                      </>
+                    : <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>Not set</Text>
                 }
-              </Text>
+              </div>
               <div className={shared.badgeGroup}>
                 {envVar.isRequired && (
                   <Badge appearance="filled" shape="rounded" color="important" size="small">Required</Badge>

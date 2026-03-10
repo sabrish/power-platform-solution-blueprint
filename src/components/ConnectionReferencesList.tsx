@@ -2,84 +2,32 @@ import { useState, useMemo } from 'react';
 import {
   Text,
   Badge,
-  makeStyles,
-  tokens,
   ToggleButton,
 } from '@fluentui/react-components';
+import { makeStyles, tokens } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
-import { PlugConnected20Regular, PlugDisconnected20Regular } from '@fluentui/react-icons';
+import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { ConnectionReference } from '../core';
+import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const CONN_STATUS_VALUES = ['Connected', 'Not Connected'];
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
-  refRow: {
+  row: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) minmax(120px, 1fr) auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  refRowSelected: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  icon: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-    paddingTop: '2px',
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  connectorText: {
-    minWidth: 0,
-    wordBreak: 'break-word',
   },
 });
 
 interface ConnectionReferencesListProps {
   connectionReferences: ConnectionReference[];
-  onSelectReference: (ref: ConnectionReference) => void;
 }
 
-export function ConnectionReferencesList({ connectionReferences, onSelectReference }: ConnectionReferencesListProps) {
+export function ConnectionReferencesList({ connectionReferences }: ConnectionReferencesListProps) {
   const styles = useStyles();
   const shared = useCardRowStyles();
-  const [selectedRefId, setSelectedRefId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(new Set());
 
@@ -96,15 +44,6 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
     }
     return counts;
   }, [sorted]);
-
-  const toggleStatusFilter = (status: string) => {
-    setActiveStatusFilters(prev => {
-      const next = new Set(prev);
-      if (next.has(status)) next.delete(status);
-      else next.add(status);
-      return next;
-    });
-  };
 
   const filteredRefs = useMemo(() => {
     let filtered = sorted;
@@ -124,22 +63,20 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
     return filtered;
   }, [sorted, searchQuery, activeStatusFilters]);
 
-  const handleRowClick = (ref: ConnectionReference) => {
-    setSelectedRefId(ref.id);
-    onSelectReference(ref);
-  };
+  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
   if (connectionReferences.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Text size={500} weight="semibold">No Connection References Found</Text>
-        <Text>No connection references were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="generic"
+        title="No Connection References Found"
+        message="No connection references were found in the selected solution(s)."
+      />
     );
   }
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -161,7 +98,13 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
               size="small"
               checked={activeStatusFilters.has(status)}
               disabled={statusCounts[status] === 0}
-              onClick={() => toggleStatusFilter(status)}
+              onClick={() => {
+                setActiveStatusFilters(prev => {
+                  const next = new Set(prev);
+                  if (next.has(status)) next.delete(status); else next.add(status);
+                  return next;
+                });
+              }}
             >
               {status}
             </ToggleButton>
@@ -169,42 +112,70 @@ export function ConnectionReferencesList({ connectionReferences, onSelectReferen
         </FilterGroup>
       </FilterBar>
 
-      {filteredRefs.length === 0 && sorted.length > 0 && (
-        <div className={styles.emptyState}>
-          <Text>No connection references match your search.</Text>
-        </div>
-      )}
+      {filteredRefs.length === 0 && sorted.length > 0 && <EmptyState type="search" />}
 
       {filteredRefs.map(ref => {
-        const isSelected = selectedRefId === ref.id;
+        const isExpanded = expandedId === ref.id;
         const isConnected = Boolean(ref.connectionId);
-
         return (
-          <div
-            key={ref.id}
-            className={`${styles.refRow} ${isSelected ? styles.refRowSelected : ''}`}
-            onClick={() => handleRowClick(ref)}
-          >
-            <div className={styles.icon}>
-              {isConnected
-                ? <PlugConnected20Regular />
-                : <PlugDisconnected20Regular style={{ color: tokens.colorPaletteRedForeground1 }} />
-              }
-            </div>
-            <div className={styles.nameColumn}>
-              <Text weight="semibold">{ref.displayName}</Text>
-              <Text className={styles.codeText}>{ref.name}</Text>
-            </div>
-            <Text className={styles.connectorText} style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
-              {ref.connectorDisplayName || '—'}
-            </Text>
-            <Badge
-              appearance="tint"
-              shape="rounded"
-              color={isConnected ? 'success' : 'danger'}
+          <div key={ref.id}>
+            <div
+              className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
+              onClick={() => toggleExpand(ref.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(ref.id); } }}
             >
-              {isConnected ? 'Connected' : 'Not Connected'}
-            </Badge>
+              <div className={shared.chevron}>
+                {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
+              </div>
+              <div className={shared.nameColumn}>
+                <Text weight="semibold">{ref.displayName}</Text>
+                <Text className={shared.codeText}>{ref.name}</Text>
+              </div>
+              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2, minWidth: 0, wordBreak: 'break-word' }}>
+                {ref.connectorDisplayName || '—'}
+              </Text>
+              <div className={shared.badgeGroup}>
+                <Badge appearance="tint" shape="rounded" color={isConnected ? 'success' : 'danger'}>
+                  {isConnected ? 'Connected' : 'Not Connected'}
+                </Badge>
+                {ref.isManaged && (
+                  <Badge appearance="outline" shape="rounded" size="small">Managed</Badge>
+                )}
+              </div>
+            </div>
+            {isExpanded && (
+              <div className={shared.expandedDetails}>
+                <div className={shared.detailsGrid}>
+                  <div className={shared.detailItem}>
+                    <Text className={shared.detailLabel}>Logical Name</Text>
+                    <Text className={shared.codeText}>{ref.name}</Text>
+                  </div>
+                  <div className={shared.detailItem}>
+                    <Text className={shared.detailLabel}>Connector</Text>
+                    <Text className={shared.detailValue}>{ref.connectorDisplayName || '—'}</Text>
+                  </div>
+                  <div className={shared.detailItem}>
+                    <Text className={shared.detailLabel}>Connection ID</Text>
+                    <Text className={shared.codeText}>
+                      {ref.connectionId || <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>}
+                    </Text>
+                  </div>
+                  <div className={shared.detailItem}>
+                    <Text className={shared.detailLabel}>Owner</Text>
+                    <Text className={shared.detailValue}>{ref.owner}</Text>
+                  </div>
+                </div>
+                {ref.description && (
+                  <div className={shared.section}>
+                    <Text className={shared.detailLabel}>Description</Text>
+                    <Text className={shared.wrapText}>{ref.description}</Text>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

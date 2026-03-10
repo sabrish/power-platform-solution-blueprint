@@ -350,12 +350,8 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                   </div>
                   <div className={shared.nameColumn}>
-                    <Text weight="semibold">
-                      <TruncatedText text={resource.displayName} />
-                    </Text>
-                    <Text className={shared.codeText}>
-                      <TruncatedText text={resource.name} />
-                    </Text>
+                    <Text weight="semibold">{resource.displayName}</Text>
+                    <Text className={shared.codeText}>{resource.name}</Text>
                   </div>
                   <Badge appearance="tint" shape="rounded" color={getTypeBadgeColor(resource.typeName)} size="small">
                     {resource.typeName}
