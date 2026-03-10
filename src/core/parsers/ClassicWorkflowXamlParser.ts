@@ -19,6 +19,12 @@ export interface XamlCrossEntityStep {
  * Uses regex-based string parsing (same approach as BusinessRuleParser).
  */
 export class ClassicWorkflowXamlParser {
+  // Static regex patterns used in helper methods — constructed once, not per-call.
+  // These do NOT use the /g flag in loops so lastIndex reset is not needed.
+  private static readonly RE_ENTITY_NAME = /EntityName\s*=\s*"([^"]+)"/i;
+  private static readonly RE_ATTRIBUTE_COLLECTION = /<(?:mxswa:)?AttributeCollection\b[^>]*>([\s\S]*?)<\/(?:mxswa:)?AttributeCollection\s*>/gi;
+  private static readonly RE_KEY_ATTR = /Key\s*=\s*"([^"]+)"/gi;
+  private static readonly RE_SET_STATE = /<(?:mxswa:)?SetState\b([^>]*?)(?:\/>|>)/gi;
   /**
    * Extract all cross-entity steps from workflow XAML.
    * @param xaml Raw XAML string from workflow.xaml field
@@ -112,9 +118,9 @@ export class ClassicWorkflowXamlParser {
     const results: XamlCrossEntityStep[] = [];
 
     // <SetState EntityName="account" ... /> or <mxswa:SetState EntityName="account" ... />
-    const pattern = /<(?:mxswa:)?SetState\b([^>]*?)(?:\/>|>)/gi;
     let match: RegExpExecArray | null;
-    while ((match = pattern.exec(xaml)) !== null) {
+    ClassicWorkflowXamlParser.RE_SET_STATE.lastIndex = 0;
+    while ((match = ClassicWorkflowXamlParser.RE_SET_STATE.exec(xaml)) !== null) {
       const attrs = match[1];
       const entityName = this.extractEntityName(attrs);
       if (entityName) {
@@ -134,7 +140,7 @@ export class ClassicWorkflowXamlParser {
    * Extract EntityName attribute value from an attribute string
    */
   private static extractEntityName(attrs: string): string | null {
-    const match = /EntityName\s*=\s*"([^"]+)"/i.exec(attrs);
+    const match = ClassicWorkflowXamlParser.RE_ENTITY_NAME.exec(attrs);
     return match ? match[1].toLowerCase() : null;
   }
 
@@ -148,14 +154,14 @@ export class ClassicWorkflowXamlParser {
     const keys: string[] = [];
 
     // Find AttributeCollection blocks
-    const collectionPattern = /<(?:mxswa:)?AttributeCollection\b[^>]*>([\s\S]*?)<\/(?:mxswa:)?AttributeCollection\s*>/gi;
     let collMatch: RegExpExecArray | null;
-    while ((collMatch = collectionPattern.exec(innerXml)) !== null) {
+    ClassicWorkflowXamlParser.RE_ATTRIBUTE_COLLECTION.lastIndex = 0;
+    while ((collMatch = ClassicWorkflowXamlParser.RE_ATTRIBUTE_COLLECTION.exec(innerXml)) !== null) {
       const collectionContent = collMatch[1];
       // Extract Key attributes from KeyValuePair elements
-      const keyPattern = /Key\s*=\s*"([^"]+)"/gi;
       let keyMatch: RegExpExecArray | null;
-      while ((keyMatch = keyPattern.exec(collectionContent)) !== null) {
+      ClassicWorkflowXamlParser.RE_KEY_ATTR.lastIndex = 0;
+      while ((keyMatch = ClassicWorkflowXamlParser.RE_KEY_ATTR.exec(collectionContent)) !== null) {
         const key = keyMatch[1].toLowerCase();
         if (!keys.includes(key)) {
           keys.push(key);
