@@ -76,15 +76,22 @@ export class ClassicWorkflowDiscovery {
         }
       );
 
-      // In Dataverse, publishing a Classic Workflow creates two records: type=1 (Definition,
-      // the editable template) and type=2 (Activation, the runtime version that actually fires).
-      // Both appear as solution components so both IDs arrive here. Keep only Activations —
-      // a Definition without an Activation is unpublished and has no runtime behaviour.
-      const activationRecords = metaRecords.filter(r => r.type === 2);
+      // Dataverse stores two records per published Classic Workflow: Definition (type=1) and
+      // Activation (type=2), each with a different workflowid. Both can appear as solution
+      // components, causing duplicates. Deduplicate by primaryentity+name, keeping the
+      // Definition (type=1) as the canonical record since that is what solution components
+      // reference and what carries the editable XAML.
+      const deduped = new Map<string, RawClassicWorkflowMeta>();
+      for (const r of metaRecords) {
+        const key = `${r.primaryentity}|${r.name}`;
+        const existing = deduped.get(key);
+        if (!existing || r.type === 1) deduped.set(key, r);
+      }
+      const uniqueRecords = Array.from(deduped.values());
 
       // Pass 2 — fetch xaml separately in small batches (can be large XML payloads)
-      const fetchedIds = activationRecords.map(r => r.workflowid);
-      const idToName = new Map(activationRecords.map(r => [r.workflowid.toLowerCase(), r.name]));
+      const fetchedIds = uniqueRecords.map(r => r.workflowid);
+      const idToName = new Map(uniqueRecords.map(r => [r.workflowid.toLowerCase(), r.name]));
       const xamlMap = new Map<string, string>();
 
       const { results: xamlRecords } = await withAdaptiveBatch<string, RawWorkflowXaml>(
@@ -103,7 +110,7 @@ export class ClassicWorkflowDiscovery {
           entitySet: 'workflows (xaml)',
           logger: this.logger,
           onProgress: (done, total) => this.onProgress?.(
-            Math.floor(activationRecords.length / 2) + Math.floor(done / 2),
+            Math.floor(uniqueRecords.length / 2) + Math.floor(done / 2),
             total
           ),
           getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase()) ?? id).join(', '),
@@ -114,15 +121,15 @@ export class ClassicWorkflowDiscovery {
         if (r.xaml) xamlMap.set(r.workflowid, r.xaml);
       }
 
-      this.onProgress?.(activationRecords.length, activationRecords.length);
+      this.onProgress?.(uniqueRecords.length, uniqueRecords.length);
 
       // Sort in memory by entity then name
-      activationRecords.sort((a, b) => {
+      uniqueRecords.sort((a, b) => {
         const ec = (a.primaryentity || '').localeCompare(b.primaryentity || '');
         return ec !== 0 ? ec : a.name.localeCompare(b.name);
       });
 
-      return activationRecords.map(raw => this.mapToClassicWorkflow(raw, xamlMap.get(raw.workflowid) ?? ''));
+      return uniqueRecords.map(raw => this.mapToClassicWorkflow(raw, xamlMap.get(raw.workflowid) ?? ''));
 
     } catch (error) {
       throw new Error(
