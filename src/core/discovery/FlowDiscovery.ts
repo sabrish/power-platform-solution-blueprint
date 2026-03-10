@@ -3,6 +3,7 @@ import type { Flow } from '../types/blueprint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { FlowDefinitionParser } from '../parsers/FlowDefinitionParser.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface WorkflowMetaRecord {
   workflowid: string;
@@ -48,7 +49,7 @@ export class FlowDiscovery {
     const { results: metaRecords } = await withAdaptiveBatch<string, WorkflowMetaRecord>(
       workflowIds,
       async (batch) => {
-        const filter = `(${batch.map(id => `workflowid eq ${id}`).join(' or ')}) and category eq 5`;
+        const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 5`;
         const response = await this.client.query<WorkflowMetaRecord>('workflows', {
           select: [
             'workflowid', 'name', 'description', 'statecode', 'statuscode',
@@ -76,7 +77,7 @@ export class FlowDiscovery {
     const { results: cdRecords } = await withAdaptiveBatch<string, WorkflowClientDataRecord>(
       fetchedIds,
       async (batch) => {
-        const filter = `(${batch.map(id => `workflowid eq ${id}`).join(' or ')}) and category eq 5`;
+        const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 5`;
         const response = await this.client.query<WorkflowClientDataRecord>('workflows', {
           select: ['workflowid', 'clientdata'],
           filter,

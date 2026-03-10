@@ -2,6 +2,7 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { PluginStep, ImageDefinition } from '../types.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface RawPluginStep {
   sdkmessageprocessingstepid: string;
@@ -53,9 +54,11 @@ export class PluginDiscovery {
       const { results: allPluginSteps } = await withAdaptiveBatch<string, RawPluginStep>(
         pluginIds,
         async (batch) => {
-          const filter = batch
-            .map(id => `sdkmessageprocessingstepid eq ${id.replace(/[{}]/g, '')}`)
-            .join(' or ');
+          const filter = buildOrFilter(
+            batch.map(id => id.replace(/[{}]/g, '')),
+            'sdkmessageprocessingstepid',
+            { guids: true }
+          );
           const result = await this.client.query<RawPluginStep>('sdkmessageprocessingsteps', {
             select: [
               'sdkmessageprocessingstepid', 'name', 'stage', 'mode', 'rank',

@@ -3,6 +3,7 @@ import type { WebResource } from '../types/blueprint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { JavaScriptParser } from '../parsers/JavaScriptParser.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface WebResourceRecord {
   webresourceid: string;
@@ -39,7 +40,7 @@ export class WebResourceDiscovery {
       const { results: allResults } = await withAdaptiveBatch<string, WebResourceRecord>(
         resourceIds,
         async (batch) => {
-          const filter = batch.map(id => `webresourceid eq ${id}`).join(' or ');
+          const filter = buildOrFilter(batch, 'webresourceid', { guids: true });
           const response = await this.client.query<WebResourceRecord>('webresourceset', {
             select: [
               'webresourceid', 'name', 'displayname', 'webresourcetype',
@@ -68,7 +69,7 @@ export class WebResourceDiscovery {
         const { results: cdRecords } = await withAdaptiveBatch<string, { webresourceid: string; content: string | null }>(
           jsIds,
           async (batch) => {
-            const filter = batch.map(id => `webresourceid eq ${id}`).join(' or ');
+            const filter = buildOrFilter(batch, 'webresourceid', { guids: true });
             const response = await this.client.query<{ webresourceid: string; content: string | null }>(
               'webresourceset',
               { select: ['webresourceid', 'content'], filter }
