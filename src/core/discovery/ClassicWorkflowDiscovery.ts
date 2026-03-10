@@ -76,9 +76,15 @@ export class ClassicWorkflowDiscovery {
         }
       );
 
+      // In Dataverse, publishing a Classic Workflow creates two records: type=1 (Definition,
+      // the editable template) and type=2 (Activation, the runtime version that actually fires).
+      // Both appear as solution components so both IDs arrive here. Keep only Activations —
+      // a Definition without an Activation is unpublished and has no runtime behaviour.
+      const activationRecords = metaRecords.filter(r => r.type === 2);
+
       // Pass 2 — fetch xaml separately in small batches (can be large XML payloads)
-      const fetchedIds = metaRecords.map(r => r.workflowid);
-      const idToName = new Map(metaRecords.map(r => [r.workflowid.toLowerCase(), r.name]));
+      const fetchedIds = activationRecords.map(r => r.workflowid);
+      const idToName = new Map(activationRecords.map(r => [r.workflowid.toLowerCase(), r.name]));
       const xamlMap = new Map<string, string>();
 
       const { results: xamlRecords } = await withAdaptiveBatch<string, RawWorkflowXaml>(
@@ -97,7 +103,7 @@ export class ClassicWorkflowDiscovery {
           entitySet: 'workflows (xaml)',
           logger: this.logger,
           onProgress: (done, total) => this.onProgress?.(
-            Math.floor(metaRecords.length / 2) + Math.floor(done / 2),
+            Math.floor(activationRecords.length / 2) + Math.floor(done / 2),
             total
           ),
           getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase()) ?? id).join(', '),
@@ -108,15 +114,15 @@ export class ClassicWorkflowDiscovery {
         if (r.xaml) xamlMap.set(r.workflowid, r.xaml);
       }
 
-      this.onProgress?.(metaRecords.length, metaRecords.length);
+      this.onProgress?.(activationRecords.length, activationRecords.length);
 
       // Sort in memory by entity then name
-      metaRecords.sort((a, b) => {
+      activationRecords.sort((a, b) => {
         const ec = (a.primaryentity || '').localeCompare(b.primaryentity || '');
         return ec !== 0 ? ec : a.name.localeCompare(b.name);
       });
 
-      return metaRecords.map(raw => this.mapToClassicWorkflow(raw, xamlMap.get(raw.workflowid) ?? ''));
+      return activationRecords.map(raw => this.mapToClassicWorkflow(raw, xamlMap.get(raw.workflowid) ?? ''));
 
     } catch (error) {
       throw new Error(
