@@ -77,12 +77,14 @@ At the end of each session:
 
 ## Commit Gate
 
-Before any commit, invoke the `/pre-commit` skill with the files being committed:
+Before any commit, invoke the `/pre-commit` command with the files being committed:
 ```
 /pre-commit src/path/to/file1.ts src/path/to/file2.tsx
 ```
-The skill runs reviewer then security-auditor in sequence and reports a combined
-verdict. Never run git add or git commit without this gate passing.
+The command (`.claude/commands/pre-commit.md`) runs reviewer then security-auditor
+in sequence and reports a combined verdict. Never run git add or git commit without
+this gate passing. The project owner can also type `/pre-commit` directly in the
+Claude Code terminal.
 
 ## Release Workflow
 
