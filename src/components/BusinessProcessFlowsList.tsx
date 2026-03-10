@@ -21,8 +21,13 @@ import { formatDate } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 const BPF_STATE_VALUES = ['Active', 'Inactive'];
+
+const BPF_FILTER_SPECS: readonly FilterSpec<BusinessProcessFlow>[] = [
+  { name: 'state', getKey: (bpf) => bpf.state },
+];
 
 const useStyles = makeStyles({
   row: {
@@ -72,8 +77,6 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     return [...businessProcessFlows].sort((a, b) => a.name.localeCompare(b.name));
@@ -85,33 +88,21 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
     return counts;
   }, [sorted]);
 
-  // Apply ToggleButton filters
-  const toggleFilteredBPFs = useMemo(() => {
-    if (activeStateFilters.size === 0) return sorted;
-    return sorted.filter((bpf) => activeStateFilters.has(bpf.state));
-  }, [sorted, activeStateFilters]);
-
-  const searchedBPFs = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return toggleFilteredBPFs;
-    return toggleFilteredBPFs.filter((bpf) =>
+  const {
+    filteredItems: searchedBPFs,
+    searchQuery,
+    setSearchQuery,
+    toggleKey,
+    clearFilter,
+    activeFilters,
+  } = useListFilter(
+    sorted,
+    (bpf, q) =>
       bpf.name.toLowerCase().includes(q) ||
       bpf.primaryEntity.toLowerCase().includes(q) ||
-      (bpf.primaryEntityDisplayName && bpf.primaryEntityDisplayName.toLowerCase().includes(q))
-    );
-  }, [toggleFilteredBPFs, searchQuery]);
-
-  const toggleStateFilter = (state: string) => {
-    setActiveStateFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(state)) {
-        next.delete(state);
-      } else {
-        next.add(state);
-      }
-      return next;
-    });
-  };
+      (bpf.primaryEntityDisplayName?.toLowerCase().includes(q) ?? false),
+    BPF_FILTER_SPECS,
+  );
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -251,15 +242,15 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
               key={state}
               className={shared.filterButton}
               size="small"
-              checked={activeStateFilters.has(state)}
+              checked={activeFilters['state']?.has(state) ?? false}
               disabled={stateCounts[state] === 0}
-              onClick={() => toggleStateFilter(state)}
+              onClick={() => toggleKey('state', state)}
             >
               {state}
             </ToggleButton>
           ))}
-          {activeStateFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
+          {(activeFilters['state']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('state')}>
               Clear
             </Button>
           )}

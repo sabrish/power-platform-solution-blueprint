@@ -25,9 +25,15 @@ import { formatDate } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 const WORKFLOW_MODE_VALUES = ['Background', 'RealTime'];
 const WORKFLOW_STATE_VALUES = ['Active', 'Draft'];
+
+const WORKFLOWS_FILTER_SPECS: readonly FilterSpec<ClassicWorkflow>[] = [
+  { name: 'mode',  getKey: (w) => w.modeName },
+  { name: 'state', getKey: (w) => w.state },
+];
 
 const useStyles = makeStyles({
   warning: {
@@ -75,9 +81,6 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeModeFilters, setActiveModeFilters] = useState<Set<string>>(new Set());
-  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     const order: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
@@ -100,51 +103,21 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
     return counts;
   }, [sorted]);
 
-  // Apply ToggleButton filters
-  const toggleFilteredWorkflows = useMemo(() => {
-    let filtered = sorted;
-    if (activeModeFilters.size > 0) {
-      filtered = filtered.filter((w) => activeModeFilters.has(w.modeName));
-    }
-    if (activeStateFilters.size > 0) {
-      filtered = filtered.filter((w) => activeStateFilters.has(w.state));
-    }
-    return filtered;
-  }, [sorted, activeModeFilters, activeStateFilters]);
-
-  const searchedWorkflows = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return toggleFilteredWorkflows;
-    return toggleFilteredWorkflows.filter((w) =>
+  const {
+    filteredItems: searchedWorkflows,
+    searchQuery,
+    setSearchQuery,
+    toggleKey,
+    clearFilter,
+    activeFilters,
+  } = useListFilter(
+    sorted,
+    (w, q) =>
       w.name.toLowerCase().includes(q) ||
-      (w.entity && w.entity.toLowerCase().includes(q)) ||
-      (w.entityDisplayName && w.entityDisplayName.toLowerCase().includes(q))
-    );
-  }, [toggleFilteredWorkflows, searchQuery]);
-
-  const toggleModeFilter = (mode: string) => {
-    setActiveModeFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(mode)) {
-        next.delete(mode);
-      } else {
-        next.add(mode);
-      }
-      return next;
-    });
-  };
-
-  const toggleStateFilter = (state: string) => {
-    setActiveStateFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(state)) {
-        next.delete(state);
-      } else {
-        next.add(state);
-      }
-      return next;
-    });
-  };
+      (w.entity?.toLowerCase().includes(q) ?? false) ||
+      (w.entityDisplayName?.toLowerCase().includes(q) ?? false),
+    WORKFLOWS_FILTER_SPECS,
+  );
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -245,15 +218,15 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
               key={mode}
               className={shared.filterButton}
               size="small"
-              checked={activeModeFilters.has(mode)}
+              checked={activeFilters['mode']?.has(mode) ?? false}
               disabled={modeCounts[mode] === 0}
-              onClick={() => toggleModeFilter(mode)}
+              onClick={() => toggleKey('mode', mode)}
             >
               {mode}
             </ToggleButton>
           ))}
-          {activeModeFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveModeFilters(new Set())}>
+          {(activeFilters['mode']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('mode')}>
               Clear
             </Button>
           )}
@@ -264,15 +237,15 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
               key={state}
               className={shared.filterButton}
               size="small"
-              checked={activeStateFilters.has(state)}
+              checked={activeFilters['state']?.has(state) ?? false}
               disabled={stateCounts[state] === 0}
-              onClick={() => toggleStateFilter(state)}
+              onClick={() => toggleKey('state', state)}
             >
               {state}
             </ToggleButton>
           ))}
-          {activeStateFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
+          {(activeFilters['state']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('state')}>
               Clear
             </Button>
           )}

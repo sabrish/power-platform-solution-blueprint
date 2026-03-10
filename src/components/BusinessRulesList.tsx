@@ -16,9 +16,15 @@ import { TruncatedText } from './TruncatedText';
 import { filterDescription } from '../utils/descriptionFilter';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 const RULE_STATE_VALUES = ['Active', 'Draft'];
 const RULE_SCOPE_VALUES = ['Entity', 'AllForms'];
+
+const RULES_FILTER_SPECS: readonly FilterSpec<BusinessRule>[] = [
+  { name: 'state', getKey: (r) => r.state },
+  { name: 'scope', getKey: (r) => r.scope },
+];
 
 const useStyles = makeStyles({
   ruleRow: {
@@ -59,9 +65,6 @@ export function BusinessRulesList({
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
-  const [activeScopeFilters, setActiveScopeFilters] = useState<Set<string>>(new Set());
 
   // Filter business rules by entity if specified
   const filteredRules = useMemo(() => {
@@ -93,51 +96,20 @@ export function BusinessRulesList({
     return counts;
   }, [sortedRules]);
 
-  // Apply ToggleButton filters
-  const toggleFilteredRules = useMemo(() => {
-    let filtered = sortedRules;
-    if (activeStateFilters.size > 0) {
-      filtered = filtered.filter((r) => activeStateFilters.has(r.state));
-    }
-    if (activeScopeFilters.size > 0) {
-      filtered = filtered.filter((r) => activeScopeFilters.has(r.scope));
-    }
-    return filtered;
-  }, [sortedRules, activeStateFilters, activeScopeFilters]);
-
-  // Apply search filter
-  const searchedRules = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return toggleFilteredRules;
-    return toggleFilteredRules.filter((r) =>
+  const {
+    filteredItems: searchedRules,
+    searchQuery,
+    setSearchQuery,
+    toggleKey,
+    clearFilter,
+    activeFilters,
+  } = useListFilter(
+    sortedRules,
+    (r, q) =>
       r.name.toLowerCase().includes(q) ||
-      r.entity.toLowerCase().includes(q)
-    );
-  }, [toggleFilteredRules, searchQuery]);
-
-  const toggleStateFilter = (state: string) => {
-    setActiveStateFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(state)) {
-        next.delete(state);
-      } else {
-        next.add(state);
-      }
-      return next;
-    });
-  };
-
-  const toggleScopeFilter = (scope: string) => {
-    setActiveScopeFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(scope)) {
-        next.delete(scope);
-      } else {
-        next.add(scope);
-      }
-      return next;
-    });
-  };
+      r.entity.toLowerCase().includes(q),
+    RULES_FILTER_SPECS,
+  );
 
   const toggleExpand = (ruleId: string) => {
     setExpandedRuleId(expandedRuleId === ruleId ? null : ruleId);
@@ -302,15 +274,15 @@ export function BusinessRulesList({
               key={state}
               className={shared.filterButton}
               size="small"
-              checked={activeStateFilters.has(state)}
+              checked={activeFilters['state']?.has(state) ?? false}
               disabled={stateCounts[state] === 0}
-              onClick={() => toggleStateFilter(state)}
+              onClick={() => toggleKey('state', state)}
             >
               {state}
             </ToggleButton>
           ))}
-          {activeStateFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
+          {(activeFilters['state']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('state')}>
               Clear
             </Button>
           )}
@@ -321,15 +293,15 @@ export function BusinessRulesList({
               key={scope}
               className={shared.filterButton}
               size="small"
-              checked={activeScopeFilters.has(scope)}
+              checked={activeFilters['scope']?.has(scope) ?? false}
               disabled={scopeCounts[scope] === 0}
-              onClick={() => toggleScopeFilter(scope)}
+              onClick={() => toggleKey('scope', scope)}
             >
               {scope}
             </ToggleButton>
           ))}
-          {activeScopeFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveScopeFilters(new Set())}>
+          {(activeFilters['scope']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('scope')}>
               Clear
             </Button>
           )}

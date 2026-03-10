@@ -20,9 +20,15 @@ import {
 import type { CustomAPI } from '../core';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 const API_TYPE_VALUES = ['Action', 'Function'];
 const API_BINDING_VALUES = ['Global', 'Entity', 'EntityCollection'];
+
+const API_FILTER_SPECS: readonly FilterSpec<CustomAPI>[] = [
+  { name: 'type',    getKey: (a) => (a.isFunction ? 'Function' : 'Action') },
+  { name: 'binding', getKey: (a) => a.bindingType },
+];
 
 const useStyles = makeStyles({
   apiRow: {
@@ -58,9 +64,6 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedApiId, setExpandedApiId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
-  const [activeBindingFilters, setActiveBindingFilters] = useState<Set<string>>(new Set());
 
   // Sort APIs alphabetically by unique name
   const sortedAPIs = useMemo(() => {
@@ -82,42 +85,21 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
     return counts;
   }, [sortedAPIs]);
 
-  const toggleTypeFilter = (type: string) => {
-    setActiveTypeFilters(prev => {
-      const next = new Set(prev);
-      if (next.has(type)) next.delete(type);
-      else next.add(type);
-      return next;
-    });
-  };
-
-  const toggleBindingFilter = (binding: string) => {
-    setActiveBindingFilters(prev => {
-      const next = new Set(prev);
-      if (next.has(binding)) next.delete(binding);
-      else next.add(binding);
-      return next;
-    });
-  };
-
-  const filteredAPIs = useMemo(() => {
-    let filtered = sortedAPIs;
-    const q = searchQuery.toLowerCase().trim();
-    if (q) {
-      filtered = filtered.filter(a =>
-        a.uniqueName.toLowerCase().includes(q) ||
-        (a.displayName && a.displayName.toLowerCase().includes(q)) ||
-        (a.description && a.description.toLowerCase().includes(q))
-      );
-    }
-    if (activeTypeFilters.size > 0) {
-      filtered = filtered.filter(a => activeTypeFilters.has(a.isFunction ? 'Function' : 'Action'));
-    }
-    if (activeBindingFilters.size > 0) {
-      filtered = filtered.filter(a => activeBindingFilters.has(a.bindingType));
-    }
-    return filtered;
-  }, [sortedAPIs, searchQuery, activeTypeFilters, activeBindingFilters]);
+  const {
+    filteredItems: filteredAPIs,
+    searchQuery,
+    setSearchQuery,
+    toggleKey,
+    clearFilter,
+    activeFilters,
+  } = useListFilter(
+    sortedAPIs,
+    (a, q) =>
+      a.uniqueName.toLowerCase().includes(q) ||
+      (a.displayName?.toLowerCase().includes(q) ?? false) ||
+      (a.description?.toLowerCase().includes(q) ?? false),
+    API_FILTER_SPECS,
+  );
 
   const toggleExpand = (apiId: string) => {
     setExpandedApiId(prev => prev === apiId ? null : apiId);
@@ -241,15 +223,15 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
               key={type}
               className={shared.filterButton}
               size="small"
-              checked={activeTypeFilters.has(type)}
+              checked={activeFilters['type']?.has(type) ?? false}
               disabled={typeCounts[type] === 0}
-              onClick={() => toggleTypeFilter(type)}
+              onClick={() => toggleKey('type', type)}
             >
               {type}
             </ToggleButton>
           ))}
-          {activeTypeFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+          {(activeFilters['type']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('type')}>
               Clear
             </Button>
           )}
@@ -260,15 +242,15 @@ export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
               key={binding}
               className={shared.filterButton}
               size="small"
-              checked={activeBindingFilters.has(binding)}
+              checked={activeFilters['binding']?.has(binding) ?? false}
               disabled={bindingCounts[binding] === 0}
-              onClick={() => toggleBindingFilter(binding)}
+              onClick={() => toggleKey('binding', binding)}
             >
               {binding}
             </ToggleButton>
           ))}
-          {activeBindingFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveBindingFilters(new Set())}>
+          {(activeFilters['binding']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('binding')}>
               Clear
             </Button>
           )}
