@@ -346,7 +346,7 @@ var _esc = function(s) {
 
 **Affects:** Developer, Architect
 **Severity:** High
-**Rule:** When discovering flow entry points for cross-entity automation tracing, always scan flows as the starting point and group by their *target* entity. Do NOT iterate over blueprints as targets and match flows into them — this misses flows that write to entities not in the current blueprint scope (e.g., out-of-scope entities like `msnfp_awards`, `connections`). Additionally, pass the full flat `flows` array separately to handle unscoped flows (scheduled, manual, no primary entity) which never appear on any `EntityBlueprint.flows` list.
+**Rule:** When discovering flow entry points for cross-entity automation tracing, always scan flows as the starting point and group by their *target* entity. Do NOT iterate over blueprints as targets and match flows into them — this misses flows that write to entities not in the current blueprint scope (e.g., out-of-scope entities like `custom_award`, `connections`). Additionally, pass the full flat `flows` array separately to handle unscoped flows (scheduled, manual, no primary entity) which never appear on any `EntityBlueprint.flows` list.
 **Context:** The initial implementation of `discoverEntryPoints` iterated over blueprints as target entities, so flows pointing at out-of-scope targets were silently dropped. The fix (`discoverAllEntryPoints`) groups by target entity derived from flow definitions directly — even entities not in blueprints appear in the chain. A third `allFlows` argument was added to `CrossEntityAnalyzer.analyze()` to cover unscoped flows.
 **Example:**
 - Wrong: `for (const bp of blueprints) { matchFlowsInto(bp) }` — drops out-of-scope targets
@@ -692,5 +692,23 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 **Example:**
 - Wrong: `for (const id of ids) { const value = await client.query('table', { filter: \`id eq ${id}\` }) }`
 - Right: Collect all ids → `withAdaptiveBatch(ids, async (batch) => { const filter = batch.map(id => \`id eq ${id}\`).join(' or '); return client.query(...) })` → group by id in a Map
+
+---
+
+## [2026-03-10] — canvasapps OData field restrictions and Custom Page detection
+
+**Affects:** Developer, Reviewer
+**Severity:** Blocker
+**Rule:** The `canvasapps` Dataverse entity does NOT expose `modifiedon` or `createdon` via OData. Do not include either in `$select` — the query will fail with 0x80060888. Use `canvasapptype` to distinguish subtypes.
+**canvasapptype values:**
+- `0` = Standard canvas app
+- `1` = Component library (skip — not a user-facing app)
+- `2` = Custom page
+**Discovery:** Both Canvas Apps (type 0) and Custom Pages (type 2) use solution component type **300** in `solutioncomponents`. There is NO separate component type code for Custom Pages. Split post-retrieval by `canvasapptype`.
+**OData filter for custom pages:** `GET /canvasapps?$filter=canvasapptype eq 2`
+**Example:**
+- Wrong: `select: ['canvasappid', 'displayname', 'name', 'ismanaged', 'modifiedon']` → OData error
+- Wrong: Expecting custom pages to have componenttype 10004 in solutioncomponents → they use 300
+- Right: `select: ['canvasappid', 'displayname', 'name', 'description', 'ismanaged', 'canvasapptype']`, then split on `canvasapptype === 2`
 
 ---

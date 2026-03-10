@@ -67,6 +67,48 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     textAlign: 'center' as const,
   },
+  fetchHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+  },
+  fetchSectionLabel: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  fetchRow: {
+    display: 'grid',
+    gridTemplateColumns: '14px 130px 1fr auto',
+    gap: tokens.spacingHorizontalXS,
+    alignItems: 'baseline',
+    fontFamily: 'var(--fontFamilyMonospace, monospace)',
+    fontSize: tokens.fontSizeBase200,
+    lineHeight: '1.5',
+  },
+  fetchRowNormal: {
+    color: 'var(--colorNeutralForeground2)',
+  },
+  fetchRowError: {
+    color: 'var(--colorStatusDangerForeground1)',
+  },
+  fetchRowWarning: {
+    color: 'var(--colorStatusWarningForeground1)',
+  },
+  fetchStep: {
+    color: 'var(--colorNeutralForeground3)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  fetchEntity: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  fetchMeta: {
+    color: 'var(--colorNeutralForeground3)',
+    whiteSpace: 'nowrap',
+  },
   progressText: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase300,
@@ -109,6 +151,8 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
         return 'flows';
       case 'business-rules':
         return 'business rules';
+      case 'apps':
+        return 'apps';
       default:
         return 'items';
     }
@@ -155,8 +199,8 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
 
       {recentFetches.length > 0 && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
-            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+          <div className={styles.fetchHeader}>
+            <Text className={styles.fetchSectionLabel}>
               API Calls
             </Text>
             {failedCount > 0 && <Badge color="danger" shape="rounded" size="small">{failedCount} failed</Badge>}
@@ -181,33 +225,19 @@ export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCan
               return (
                 <div
                   key={entry.id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '14px 130px 1fr auto',
-                    gap: '6px',
-                    alignItems: 'baseline',
-                    padding: '1px 0',
-                    fontFamily: 'var(--fontFamilyMonospace, monospace)',
-                    fontSize: tokens.fontSizeBase200,
-                    lineHeight: '1.5',
-                    color: isError
-                      ? 'var(--colorStatusDangerForeground1)'
-                      : isWarning
-                      ? 'var(--colorStatusWarningForeground1)'
-                      : 'var(--colorNeutralForeground2)',
-                  }}
+                  className={`${styles.fetchRow} ${isError ? styles.fetchRowError : isWarning ? styles.fetchRowWarning : styles.fetchRowNormal}`}
                 >
                   <StatusIcon style={{ flexShrink: 0, marginTop: '1px' }} />
-                  <span style={{ color: 'var(--colorNeutralForeground3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className={styles.fetchStep}>
                     {entry.step}
                   </span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className={styles.fetchEntity}>
                     {entry.filterSummary && entry.filterSummary !== entry.entitySet
                       ? entry.filterSummary
                       : entry.entitySet}
                     {entry.errorMessage && ` — ${entry.errorMessage}`}
                   </span>
-                  <span style={{ color: 'var(--colorNeutralForeground3)', whiteSpace: 'nowrap' }}>
+                  <span className={styles.fetchMeta}>
                     {batchLabel}{suffix}
                   </span>
                 </div>

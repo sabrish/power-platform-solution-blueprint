@@ -7,7 +7,7 @@ interface JsonExportWrapper {
   exportVersion: string;
   exportedAt: string;
   toolVersion: string;
-  blueprint: any; // Will be serialized BlueprintResult
+  blueprint: Record<string, unknown>;
 }
 
 /**
@@ -45,7 +45,7 @@ export class JsonReporter {
    * Serialize BlueprintResult to plain object
    * Handles Maps, Dates, and undefined values
    */
-  private serializeResult(result: BlueprintResult): any {
+  private serializeResult(result: BlueprintResult): Record<string, unknown> {
     return {
       metadata: {
         ...result.metadata,
@@ -68,6 +68,9 @@ export class JsonReporter {
       connectionReferences: result.connectionReferences,
       globalChoices: result.globalChoices,
       customConnectors: result.customConnectors,
+      canvasApps: result.canvasApps,
+      customPages: result.customPages,
+      modelDrivenApps: result.modelDrivenApps,
       webResources: result.webResources,
       webResourcesByType: this.mapToObject(result.webResourcesByType),
       erd: result.erd,
@@ -106,7 +109,7 @@ export class JsonReporter {
    * - Handles Date objects
    * - Removes circular references
    */
-  private jsonReplacer(_key: string, value: any): any {
+  private jsonReplacer(_key: string, value: unknown): unknown {
     // Convert undefined to null
     if (value === undefined) {
       return null;
@@ -119,7 +122,7 @@ export class JsonReporter {
 
     // Convert Map to object
     if (value instanceof Map) {
-      const obj: Record<string, any> = {};
+      const obj: Record<string, unknown> = {};
       for (const [k, v] of value.entries()) {
         obj[k] = v;
       }

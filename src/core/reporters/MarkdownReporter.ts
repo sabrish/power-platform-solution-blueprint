@@ -30,6 +30,9 @@ import type {
 import type { ClassicWorkflow } from '../types/classicWorkflow.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
 import type { CustomAPI } from '../types/customApi.js';
+import type { CanvasApp } from '../types/canvasApp.js';
+import type { CustomPage } from '../types/customPage.js';
+import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
 import MarkdownFormatter from './markdown/MarkdownFormatter.js';
 
 export class MarkdownReporter {
@@ -52,7 +55,12 @@ export class MarkdownReporter {
     files.set('summary/all-custom-apis.md', this.generateAllCustomAPIs(result));
     files.set('summary/all-environment-variables.md', this.generateAllEnvironmentVariables(result));
     files.set('summary/all-connection-references.md', this.generateAllConnectionReferences(result));
+    files.set('summary/all-global-choices.md', this.generateAllGlobalChoices(result));
+    files.set('summary/all-custom-connectors.md', this.generateAllCustomConnectors(result));
     files.set('summary/all-business-process-flows.md', this.generateAllBusinessProcessFlows(result));
+    files.set('summary/all-canvas-apps.md', this.generateAllCanvasApps(result));
+    files.set('summary/all-custom-pages.md', this.generateAllCustomPages(result));
+    files.set('summary/all-model-driven-apps.md', this.generateAllModelDrivenApps(result));
 
     if (result.externalEndpoints && result.externalEndpoints.length > 0) {
       files.set('summary/external-integrations.md', this.generateExternalIntegrations(result));
@@ -474,7 +482,12 @@ export class MarkdownReporter {
       MarkdownFormatter.formatLink('All Custom APIs', 'summary/all-custom-apis.md'),
       MarkdownFormatter.formatLink('All Environment Variables', 'summary/all-environment-variables.md'),
       MarkdownFormatter.formatLink('All Connection References', 'summary/all-connection-references.md'),
+      MarkdownFormatter.formatLink('All Global Choices', 'summary/all-global-choices.md'),
+      MarkdownFormatter.formatLink('All Custom Connectors', 'summary/all-custom-connectors.md'),
       MarkdownFormatter.formatLink('All Business Process Flows', 'summary/all-business-process-flows.md'),
+      MarkdownFormatter.formatLink('All Canvas Apps', 'summary/all-canvas-apps.md'),
+      MarkdownFormatter.formatLink('All Custom Pages', 'summary/all-custom-pages.md'),
+      MarkdownFormatter.formatLink('All Model-Driven Apps', 'summary/all-model-driven-apps.md'),
       MarkdownFormatter.formatLink('External Integrations', 'summary/external-integrations.md'),
       MarkdownFormatter.formatLink('Solution Distribution', 'summary/solution-distribution.md'),
       MarkdownFormatter.formatLink('Cross-Entity Automation', 'summary/cross-entity-automation.md'),
@@ -1033,6 +1046,69 @@ export class MarkdownReporter {
   }
 
   /**
+   * Generate summary/all-global-choices.md
+   */
+  private generateAllGlobalChoices(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Global Choices', 1));
+    sections.push('');
+    sections.push(`**Total Global Choices:** ${result.summary.totalGlobalChoices}`);
+    sections.push('');
+
+    if (result.globalChoices.length === 0) {
+      sections.push('No global choices found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Schema Name', 'Options', 'Customizable', 'Managed', 'Modified'];
+    const rows = result.globalChoices.map(gc => [
+      gc.displayName,
+      gc.name,
+      gc.totalOptions.toString(),
+      gc.isCustomizable ? 'Yes' : 'No',
+      gc.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      this.formatDate(gc.modifiedOn),
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-custom-connectors.md
+   */
+  private generateAllCustomConnectors(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Custom Connectors', 1));
+    sections.push('');
+    sections.push(`**Total Custom Connectors:** ${result.summary.totalCustomConnectors}`);
+    sections.push('');
+
+    if (result.customConnectors.length === 0) {
+      sections.push('No custom connectors found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Name', 'Description', 'Managed', 'Modified'];
+    const rows = result.customConnectors.map(c => [
+      c.displayName,
+      c.name,
+      c.description || '—',
+      c.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      this.formatDate(c.modifiedOn),
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
    * Generate summary/all-business-process-flows.md
    */
   private generateAllBusinessProcessFlows(result: BlueprintResult): string {
@@ -1407,6 +1483,12 @@ export class MarkdownReporter {
         ['Environment Variables', solution.componentCounts.environmentVariables.toString()],
         ['Connection References', solution.componentCounts.connectionReferences.toString()],
         ['Global Choices', solution.componentCounts.globalChoices.toString()],
+        ['Custom Connectors', solution.componentCounts.customConnectors.toString()],
+        ['Security Roles', solution.componentCounts.securityRoles.toString()],
+        ['Field Security Profiles', solution.componentCounts.fieldSecurityProfiles.toString()],
+        ['Canvas Apps', solution.componentCounts.canvasApps.toString()],
+        ['Custom Pages', solution.componentCounts.customPages.toString()],
+        ['Model-Driven Apps', solution.componentCounts.modelDrivenApps.toString()],
       ];
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
@@ -2759,7 +2841,7 @@ export class MarkdownReporter {
         const privMap = new Map(entityPerm.privileges.map(p => [p.type, p]));
 
         for (const type of ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share']) {
-          const priv = privMap.get(type as any);
+          const priv = privMap.get(type as import('../discovery/SecurityRoleDiscovery.js').PrivilegeDetail['type']);
           row.push(priv ? priv.depth : '');
         }
 
@@ -2905,5 +2987,96 @@ export class MarkdownReporter {
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase())
       .trim();
+  }
+
+  /**
+   * Generate summary/all-canvas-apps.md
+   */
+  private generateAllCanvasApps(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Canvas Apps', 1));
+    sections.push('');
+    sections.push(`**Total Canvas Apps:** ${result.summary.totalCanvasApps}`);
+    sections.push('');
+
+    if (result.canvasApps.length === 0) {
+      sections.push('No canvas apps found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Name', 'Description', 'Managed'];
+    const rows = result.canvasApps.map((a: CanvasApp) => [
+      a.displayName,
+      a.name,
+      a.description || '—',
+      a.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-custom-pages.md
+   */
+  private generateAllCustomPages(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Custom Pages', 1));
+    sections.push('');
+    sections.push(`**Total Custom Pages:** ${result.summary.totalCustomPages}`);
+    sections.push('');
+
+    if (result.customPages.length === 0) {
+      sections.push('No custom pages found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Name', 'Description', 'Managed'];
+    const rows = result.customPages.map((p: CustomPage) => [
+      p.displayName,
+      p.name,
+      p.description || '—',
+      p.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-model-driven-apps.md
+   */
+  private generateAllModelDrivenApps(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Model-Driven Apps', 1));
+    sections.push('');
+    sections.push(`**Total Model-Driven Apps:** ${result.summary.totalModelDrivenApps}`);
+    sections.push('');
+
+    if (result.modelDrivenApps.length === 0) {
+      sections.push('No model-driven apps found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Unique Name', 'Description', 'Managed', 'Modified'];
+    const rows = result.modelDrivenApps.map((a: ModelDrivenApp) => [
+      a.displayName,
+      a.name,
+      a.description || '—',
+      a.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      a.modifiedOn ? this.formatDate(a.modifiedOn) : '—',
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
   }
 }

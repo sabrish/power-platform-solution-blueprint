@@ -54,6 +54,7 @@ export class SolutionComponentDiscovery {
         formIds: [],
         canvasAppIds: [],
         customPageIds: [],
+        appModuleIds: [],
         connectionReferenceIds: [],
         customApiIds: [],
         environmentVariableIds: [],
@@ -75,7 +76,19 @@ export class SolutionComponentDiscovery {
       const includesDefaultSolution = solutionUniqueNames?.some(name => name.toLowerCase() === 'default');
 
       if (includesDefaultSolution) {
-        return this.discoverAllUnmanagedComponents();
+        const unmanagedResult = await this.discoverAllUnmanagedComponents();
+
+        // If specific solutions were also selected alongside Default, query solutioncomponents
+        // for those solutions so the solution distribution tab has accurate per-solution counts.
+        const specificSolutionIds = solutionIds.filter((_, i) =>
+          solutionUniqueNames?.[i]?.toLowerCase() !== 'default'
+        );
+        if (specificSolutionIds.length > 0) {
+          const mapResult = await this.buildSolutionComponentMap(specificSolutionIds);
+          return { ...unmanagedResult, ...mapResult };
+        }
+
+        return unmanagedResult;
       }
 
       // OPTIMIZED: Query all solution components in a single batch query using OR filters
@@ -130,92 +143,92 @@ export class SolutionComponentDiscovery {
         // Track component type
         componentTypes.set(objectId, componentType);
 
-          switch (component.componenttype) {
-            case ComponentType.Entity:
-              if (!inventory.entityIds.includes(objectId)) {
-                inventory.entityIds.push(objectId);
-              }
-              // Check rootcomponentbehavior: 0 = include all subcomponents (forms, views, etc.)
-              if (component.rootcomponentbehavior === 0) {
-                entitiesWithAllSubcomponents.add(objectId);
-              }
-              break;
-            case ComponentType.Attribute:
-              if (!inventory.attributeIds.includes(objectId)) {
-                inventory.attributeIds.push(objectId);
-              }
-              break;
-            case ComponentType.GlobalOptionSet:
-              if (!inventory.globalChoiceIds.includes(objectId)) {
-                inventory.globalChoiceIds.push(objectId);
-              }
-              break;
-            case ComponentType.SecurityRole:
-              if (!inventory.securityRoleIds.includes(objectId)) {
-                inventory.securityRoleIds.push(objectId);
-              }
-              break;
-            case ComponentType.FieldSecurityProfile:
-              if (!inventory.fieldSecurityProfileIds.includes(objectId)) {
-                inventory.fieldSecurityProfileIds.push(objectId);
-              }
-              break;
-            case ComponentType.SdkMessageProcessingStep:
-              if (!inventory.pluginIds.includes(objectId)) {
-                inventory.pluginIds.push(objectId);
-              }
-              break;
-            case ComponentType.PluginPackage:
-              if (!inventory.pluginPackageIds.includes(objectId)) {
-                inventory.pluginPackageIds.push(objectId);
-              }
-              break;
-            case ComponentType.Workflow:
-              if (!inventory.workflowIds.includes(objectId)) {
-                inventory.workflowIds.push(objectId);
-              }
-              break;
-            case ComponentType.WebResource:
-              if (!inventory.webResourceIds.includes(objectId)) {
-                inventory.webResourceIds.push(objectId);
-              }
-              break;
-            case ComponentType.SystemForm:
-              if (!inventory.formIds.includes(objectId)) {
-                inventory.formIds.push(objectId);
-              }
-              break;
-            case ComponentType.CanvasApp:
-              if (!inventory.canvasAppIds.includes(objectId)) {
-                inventory.canvasAppIds.push(objectId);
-              }
-              break;
-            case ComponentType.CustomPage:
-              if (!inventory.customPageIds.includes(objectId)) {
-                inventory.customPageIds.push(objectId);
-              }
-              break;
-            case ComponentType.ConnectionReference:
-              if (!inventory.connectionReferenceIds.includes(objectId)) {
-                inventory.connectionReferenceIds.push(objectId);
-              }
-              break;
-            case ComponentType.CustomConnector:
-              if (!inventory.customConnectorIds.includes(objectId)) {
-                inventory.customConnectorIds.push(objectId);
-              }
-              break;
-            case ComponentType.CustomAPI:
-              if (!inventory.customApiIds.includes(objectId)) {
-                inventory.customApiIds.push(objectId);
-              }
-              break;
-            case ComponentType.EnvironmentVariableDefinition:
-              if (!inventory.environmentVariableIds.includes(objectId)) {
-                inventory.environmentVariableIds.push(objectId);
-              }
-              break;
-          }
+        switch (component.componenttype) {
+          case ComponentType.Entity:
+            if (!inventory.entityIds.includes(objectId)) {
+              inventory.entityIds.push(objectId);
+            }
+            // Check rootcomponentbehavior: 0 = include all subcomponents (forms, views, etc.)
+            if (component.rootcomponentbehavior === 0) {
+              entitiesWithAllSubcomponents.add(objectId);
+            }
+            break;
+          case ComponentType.Attribute:
+            if (!inventory.attributeIds.includes(objectId)) {
+              inventory.attributeIds.push(objectId);
+            }
+            break;
+          case ComponentType.GlobalOptionSet:
+            if (!inventory.globalChoiceIds.includes(objectId)) {
+              inventory.globalChoiceIds.push(objectId);
+            }
+            break;
+          case ComponentType.SecurityRole:
+            if (!inventory.securityRoleIds.includes(objectId)) {
+              inventory.securityRoleIds.push(objectId);
+            }
+            break;
+          case ComponentType.FieldSecurityProfile:
+            if (!inventory.fieldSecurityProfileIds.includes(objectId)) {
+              inventory.fieldSecurityProfileIds.push(objectId);
+            }
+            break;
+          case ComponentType.SdkMessageProcessingStep:
+            if (!inventory.pluginIds.includes(objectId)) {
+              inventory.pluginIds.push(objectId);
+            }
+            break;
+          case ComponentType.PluginPackage:
+            if (!inventory.pluginPackageIds.includes(objectId)) {
+              inventory.pluginPackageIds.push(objectId);
+            }
+            break;
+          case ComponentType.Workflow:
+            if (!inventory.workflowIds.includes(objectId)) {
+              inventory.workflowIds.push(objectId);
+            }
+            break;
+          case ComponentType.WebResource:
+            if (!inventory.webResourceIds.includes(objectId)) {
+              inventory.webResourceIds.push(objectId);
+            }
+            break;
+          case ComponentType.SystemForm:
+            if (!inventory.formIds.includes(objectId)) {
+              inventory.formIds.push(objectId);
+            }
+            break;
+          case ComponentType.CanvasApp:
+            if (!inventory.canvasAppIds.includes(objectId)) {
+              inventory.canvasAppIds.push(objectId);
+            }
+            break;
+          case ComponentType.AppModule:
+            if (!inventory.appModuleIds.includes(objectId)) {
+              inventory.appModuleIds.push(objectId);
+            }
+            break;
+          case ComponentType.ConnectionReference:
+            if (!inventory.connectionReferenceIds.includes(objectId)) {
+              inventory.connectionReferenceIds.push(objectId);
+            }
+            break;
+          case ComponentType.CustomConnector:
+            if (!inventory.customConnectorIds.includes(objectId)) {
+              inventory.customConnectorIds.push(objectId);
+            }
+            break;
+          case ComponentType.CustomAPI:
+            if (!inventory.customApiIds.includes(objectId)) {
+              inventory.customApiIds.push(objectId);
+            }
+            break;
+          case ComponentType.EnvironmentVariableDefinition:
+            if (!inventory.environmentVariableIds.includes(objectId)) {
+              inventory.environmentVariableIds.push(objectId);
+            }
+            break;
+        }
         }
 
       return {
@@ -233,6 +246,60 @@ export class SolutionComponentDiscovery {
   }
 
   /**
+   * Query solutioncomponents for specific solution IDs and return only the tracking maps.
+   * Used when Default Solution is selected alongside specific solutions, so per-solution
+   * component counts are still accurate for the specific solutions.
+   */
+  private async buildSolutionComponentMap(
+    solutionIds: string[]
+  ): Promise<Pick<ComponentInventoryWithSolutions, 'componentToSolutions' | 'solutionComponentMap' | 'componentTypes'>> {
+    const componentToSolutions = new Map<string, string[]>();
+    const solutionComponentMap = new Map<string, Set<string>>();
+    const componentTypes = new Map<string, number>();
+
+    const solutionFilters = solutionIds.map(id => {
+      const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+      return `_solutionid_value eq '${guidWithBraces}'`;
+    }).join(' or ');
+
+    const queryStart = Date.now();
+    const result = await this.client.query<SolutionComponent>('solutioncomponents', {
+      select: ['objectid', 'componenttype', '_solutionid_value'],
+      filter: solutionFilters,
+    });
+    this.logger?.log({
+      timestamp: new Date(queryStart),
+      step: 'Solution Component Discovery',
+      entitySet: 'solutioncomponents',
+      filterSummary: `${solutionIds.length} specific solution(s) alongside Default`,
+      batchIndex: 1,
+      batchTotal: 1,
+      batchSize: solutionIds.length,
+      status: 'success',
+      attempts: 1,
+      durationMs: Date.now() - queryStart,
+      resultCount: result.value.length,
+    });
+
+    for (const component of result.value) {
+      const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
+      const solutionId = (component._solutionid_value || '').toLowerCase().replace(/[{}]/g, '');
+
+      if (!componentToSolutions.has(objectId)) componentToSolutions.set(objectId, []);
+      if (solutionId && !componentToSolutions.get(objectId)!.includes(solutionId)) {
+        componentToSolutions.get(objectId)!.push(solutionId);
+      }
+      if (solutionId) {
+        if (!solutionComponentMap.has(solutionId)) solutionComponentMap.set(solutionId, new Set());
+        solutionComponentMap.get(solutionId)!.add(objectId);
+      }
+      componentTypes.set(objectId, component.componenttype);
+    }
+
+    return { componentToSolutions, solutionComponentMap, componentTypes };
+  }
+
+  /**
    * Discover ALL components (for Default Solution)
    * Queries each component type directly instead of using solutioncomponents table
    */
@@ -247,6 +314,7 @@ export class SolutionComponentDiscovery {
       formIds: [],
       canvasAppIds: [],
       customPageIds: [],
+      appModuleIds: [],
       connectionReferenceIds: [],
       customApiIds: [],
       environmentVariableIds: [],
@@ -328,10 +396,13 @@ export class SolutionComponentDiscovery {
       );
       inventory.connectionReferenceIds = connRefsResult.value.map(c => c.connectionreferenceid.toLowerCase().replace(/[{}]/g, ''));
 
-      // Query custom connectors - all customizable
+      // Query custom connectors - all connectors in the environment
+      // Note: iscustomizable/Value filter is unreliable (ManagedProperty OData navigation
+      // returns 0 results silently in some environments). Fetch all connectors; the connectors
+      // table only contains connectors registered in this environment, not built-in platform connectors.
       const customConnectorsResult = await logQuery<{ connectorid: string }>(
         'connectors',
-        { select: ['connectorid'], filter: 'iscustomizable/Value eq true' },
+        { select: ['connectorid'] },
         'Solution Component Discovery'
       );
       inventory.customConnectorIds = customConnectorsResult.value.map(c => c.connectorid.toLowerCase().replace(/[{}]/g, ''));
@@ -352,13 +423,43 @@ export class SolutionComponentDiscovery {
       );
       inventory.fieldSecurityProfileIds = fieldSecurityProfilesResult.value.map(f => f.fieldsecurityprofileid.toLowerCase().replace(/[{}]/g, ''));
 
-      // Canvas apps - all
+      // Canvas apps and Custom Pages both use component type 300 in solutioncomponents
+      // and live in the canvasapps entity. Splitting is done post-retrieval by apptype.
       const canvasAppsResult = await logQuery<{ canvasappid: string }>(
         'canvasapps',
         { select: ['canvasappid'] },
         'Solution Component Discovery'
       );
       inventory.canvasAppIds = canvasAppsResult.value.map(c => c.canvasappid.toLowerCase().replace(/[{}]/g, ''));
+
+      // Model-Driven Apps (appmodules) - all
+      const appModulesResult = await logQuery<{ appmoduleid: string }>(
+        'appmodules',
+        { select: ['appmoduleid'] },
+        'Solution Component Discovery'
+      );
+      inventory.appModuleIds = appModulesResult.value.map(a => a.appmoduleid.toLowerCase().replace(/[{}]/g, ''));
+
+      // Global choices (option sets) - query metadata API for all GlobalOptionSetDefinitions
+      const t0GlobalChoices = Date.now();
+      const globalChoicesResult = await this.client.queryMetadata<{ MetadataId: string }>(
+        'GlobalOptionSetDefinitions',
+        { select: ['MetadataId'] }
+      );
+      this.logger?.log({
+        timestamp: new Date(t0GlobalChoices),
+        step: 'Solution Component Discovery',
+        entitySet: 'GlobalOptionSetDefinitions',
+        filterSummary: '',
+        batchIndex: 1,
+        batchTotal: 1,
+        batchSize: 0,
+        status: 'success',
+        attempts: 1,
+        durationMs: Date.now() - t0GlobalChoices,
+        resultCount: globalChoicesResult.value.length,
+      });
+      inventory.globalChoiceIds = globalChoicesResult.value.map(g => g.MetadataId.toLowerCase().replace(/[{}]/g, ''));
 
       // For entities and attributes, we'll use the metadata API via EntityDiscovery
       // These will be handled by the BlueprintGenerator's entity discovery process
@@ -434,7 +535,7 @@ export class SolutionComponentDiscovery {
 
       // Classify by category
       for (const workflow of allWorkflows) {
-        const workflowId = workflow.workflowid.toLowerCase();
+        const workflowId = workflow.workflowid.toLowerCase().replace(/[{}]/g, '');
         const cat = Number(workflow.category); // coerce in case API returns string
 
         switch (cat) {

@@ -50,6 +50,11 @@ export class HtmlReporter {
     const customAPIs = this.templates.htmlCustomAPIsTable(result.customAPIs);
     const environmentVariables = this.templates.htmlEnvironmentVariablesTable(result.environmentVariables);
     const connectionReferences = this.templates.htmlConnectionReferencesTable(result.connectionReferences);
+    const globalChoices = this.templates.htmlGlobalChoicesTable(result.globalChoices);
+    const customConnectors = this.templates.htmlCustomConnectorsTable(result.customConnectors);
+    const canvasApps = this.templates.htmlCanvasAppsTable(result.canvasApps);
+    const customPages = this.templates.htmlCustomPagesTable(result.customPages);
+    const modelDrivenApps = this.templates.htmlModelDrivenAppsTable(result.modelDrivenApps);
     const externalDependencies = this.templates.htmlExternalDependenciesSection(result.externalEndpoints);
     const crossEntity = this.templates.htmlCrossEntitySection(result.crossEntityAnalysis);
     const security = this.templates.htmlSecuritySection(
@@ -83,6 +88,11 @@ ${head}
     ${customAPIs}
     ${environmentVariables}
     ${connectionReferences}
+    ${globalChoices}
+    ${customConnectors}
+    ${canvasApps}
+    ${customPages}
+    ${modelDrivenApps}
     ${security}
     ${externalDependencies}
     ${crossEntity}

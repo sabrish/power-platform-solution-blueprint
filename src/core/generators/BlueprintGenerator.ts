@@ -26,6 +26,7 @@ import { ConnectionReferenceDiscovery } from '../discovery/ConnectionReferenceDi
 import { GlobalChoiceDiscovery } from '../discovery/GlobalChoiceDiscovery.js';
 import { CustomConnectorDiscovery } from '../discovery/CustomConnectorDiscovery.js';
 import { ColumnSecurityDiscovery } from '../discovery/ColumnSecurityDiscovery.js';
+import { AppDiscovery } from '../discovery/AppDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import { JsonReporter } from '../reporters/JsonReporter.js';
 import { MarkdownReporter } from '../reporters/MarkdownReporter.js';
@@ -33,6 +34,9 @@ import { HtmlReporter } from '../reporters/HtmlReporter.js';
 import { ZipPackager } from '../exporters/ZipPackager.js';
 import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
 import type { ComponentInventory, ComponentInventoryWithSolutions, WorkflowInventory } from '../types/components.js';
+import type { CanvasApp } from '../types/canvasApp.js';
+import type { CustomPage } from '../types/customPage.js';
+import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
 import type {
   GeneratorOptions,
   BlueprintResult,
@@ -232,6 +236,46 @@ export class BlueprintGenerator {
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
+      // STEP 6.13: Process Canvas Apps, Custom Pages, and Model-Driven Apps
+      // Canvas Apps and Custom Pages both use component type 300 in solutioncomponents
+      // and are split post-retrieval by canvasapptype (0 = Canvas App, 2 = Custom Page; 1 = Component Library, skipped).
+      this.reportProgress({
+        phase: 'apps',
+        entityName: '',
+        current: 0,
+        total: inventory.canvasAppIds.length + inventory.appModuleIds.length,
+        message: 'Discovering Canvas Apps, Custom Pages, and Model-Driven Apps...',
+      });
+      let canvasApps: CanvasApp[] = [];
+      let customPages: CustomPage[] = [];
+      let modelDrivenApps: ModelDrivenApp[] = [];
+      try {
+        const appDiscovery = new AppDiscovery(
+          this.client,
+          (current, total) => this.reportProgress({ phase: 'apps', entityName: '', current, total, message: 'Fetching app records...' }),
+          this.logger
+        );
+        const [appsResult, mdApps] = await Promise.all([
+          inventory.canvasAppIds.length > 0
+            ? appDiscovery.getAppsAndPagesByIds(inventory.canvasAppIds)
+            : Promise.resolve({ canvasApps: [], customPages: [] }),
+          inventory.appModuleIds.length > 0
+            ? appDiscovery.getModelDrivenAppsByIds(inventory.appModuleIds)
+            : Promise.resolve([]),
+        ]);
+        canvasApps = appsResult.canvasApps;
+        customPages = appsResult.customPages;
+        modelDrivenApps = mdApps;
+      } catch (err) {
+        this.stepWarnings.push({
+          step: 'Apps',
+          message: err instanceof Error ? err.message : 'Unknown error fetching app records',
+          partial: false,
+        });
+      }
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
       // STEP 7: Process Forms and JavaScript Event Handlers
       // Pass entities with rootcomponentbehavior info to determine form inclusion
       const forms = await this.processForms(entities, inventory.formIds, inventory.entitiesWithAllSubcomponents);
@@ -316,6 +360,7 @@ export class BlueprintGenerator {
           totalWebResources: 0,
           totalCanvasApps: 0,
           totalCustomPages: 0,
+          totalModelDrivenApps: 0,
         },
         plugins,
         pluginsByEntity,
@@ -332,6 +377,9 @@ export class BlueprintGenerator {
         connectionReferences,
         globalChoices,
         customConnectors,
+        canvasApps,
+        customPages,
+        modelDrivenApps,
         webResources,
         webResourcesByType,
       };
@@ -382,8 +430,9 @@ export class BlueprintGenerator {
         totalCustomConnectors: inventory.customConnectorIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
-        totalCanvasApps: inventory.canvasAppIds.length,
-        totalCustomPages: inventory.customPageIds.length,
+        totalCanvasApps: canvasApps.length,
+        totalCustomPages: customPages.length,
+        totalModelDrivenApps: modelDrivenApps.length,
       };
 
       // Complete
@@ -424,6 +473,9 @@ export class BlueprintGenerator {
         connectionReferences,
         globalChoices,
         customConnectors,
+        canvasApps,
+        customPages,
+        modelDrivenApps,
         webResources,
         webResourcesByType,
         erd,
@@ -473,7 +525,10 @@ export class BlueprintGenerator {
       const solutionDiscovery = new SolutionDiscovery(this.client);
       const allSolutions = await solutionDiscovery.getSolutions();
       const selectedSolutions = allSolutions.filter(s => this.scope.solutionIds?.includes(s.solutionid));
-      const solutionUniqueNames = selectedSolutions.map(s => s.uniquename);
+      // Build uniqueNames in the SAME ORDER as this.scope.solutionIds (not alphabetical order from allSolutions)
+      // so index-based alignment in discoverComponents remains correct.
+      const solutionIdToUniquename = new Map(allSolutions.map(s => [s.solutionid, s.uniquename]));
+      const solutionUniqueNames = (this.scope.solutionIds ?? []).map(id => solutionIdToUniquename.get(id) ?? '');
 
       // Store solutions for distribution analysis
       this.solutions = selectedSolutions;
@@ -722,7 +777,6 @@ export class BlueprintGenerator {
       return plugins;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing plugins:', msg);
       this.stepWarnings.push({ step: 'Plugins', message: msg, partial: false });
       return [];
     }
@@ -770,7 +824,6 @@ export class BlueprintGenerator {
       return flows;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing flows:', msg);
       this.stepWarnings.push({ step: 'Flows', message: msg, partial: false });
       return [];
     }
@@ -871,7 +924,6 @@ export class BlueprintGenerator {
       return businessRules;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing business rules:', msg);
       this.stepWarnings.push({ step: 'Business Rules', message: msg, partial: false });
       return [];
     }
@@ -996,7 +1048,6 @@ export class BlueprintGenerator {
 
       return workflows;
     } catch (error) {
-      console.error('Error processing classic workflows:', error instanceof Error ? error.message : 'Unknown error');
       // Don't fail the entire generation if classic workflows fail
       return [];
     }
@@ -1067,7 +1118,6 @@ export class BlueprintGenerator {
       return bpfs;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing Business Process Flows:', msg);
       this.stepWarnings.push({ step: 'Business Process Flows', message: msg, partial: false });
       return [];
     }
@@ -1184,7 +1234,6 @@ export class BlueprintGenerator {
       return envVars;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing Environment Variables:', msg);
       this.stepWarnings.push({ step: 'Environment Variables', message: msg, partial: false });
       return [];
     }
@@ -1210,7 +1259,6 @@ export class BlueprintGenerator {
       return refs;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing Connection References:', msg);
       this.stepWarnings.push({ step: 'Connection References', message: msg, partial: false });
       return [];
     }
@@ -1232,7 +1280,6 @@ export class BlueprintGenerator {
       return choices;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing Global Choices:', msg);
       this.stepWarnings.push({ step: 'Global Choices', message: msg, partial: false });
       return [];
     }
@@ -1258,7 +1305,6 @@ export class BlueprintGenerator {
       return connectors;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing Custom Connectors:', msg);
       this.stepWarnings.push({ step: 'Custom Connectors', message: msg, partial: false });
       return [];
     }
@@ -1294,7 +1340,6 @@ export class BlueprintGenerator {
       return roleDetails;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing security roles:', msg);
       this.stepWarnings.push({ step: 'Security Roles', message: msg, partial: false });
       return [];
     }
@@ -1355,7 +1400,6 @@ export class BlueprintGenerator {
       };
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error processing field security profiles:', msg);
       this.stepWarnings.push({ step: 'Field Security Profiles', message: msg, partial: false });
       return { profiles: [], fieldSecurityByEntity: new Map() };
     }

@@ -26,7 +26,7 @@ export class SolutionDistributionAnalyzer {
 
     for (const solution of solutions) {
       // Count components in this solution
-      const componentCounts = solutionComponentMap
+      const componentCounts = solutionComponentMap && solutionComponentMap.size > 0
         ? this.countComponentsInSolutionAccurate(solution, result, solutionComponentMap)
         : this.countComponentsInSolution(solution, result);
 
@@ -55,34 +55,30 @@ export class SolutionDistributionAnalyzer {
   /**
    * Count components in a solution
    */
-  private countComponentsInSolution(_solution: Solution, result: BlueprintResult): ComponentCounts {
-    // Note: This is a simplified version that counts all components in the result
-    // In a real implementation, we would need to track which components belong to which solution
-    // This would require passing solution component metadata from SolutionComponentDiscovery
-
-    // For now, we'll estimate based on the overall counts
-    // TODO: Track solution membership in component discovery phase
-
+  private countComponentsInSolution(_solution: Solution, _result: BlueprintResult): ComponentCounts {
+    // Accurate per-solution counting requires solutionComponentMap, which is always provided
+    // when called from BlueprintGenerator. This fallback returns zeros to avoid showing
+    // misleading totals (e.g. all components from all solutions attributed to one solution).
     const counts: ComponentCounts = {
-      entities: result.entities.length,
-      plugins: result.plugins.length,
-      flows: result.flows.length,
-      businessRules: result.businessRules.length,
-      classicWorkflows: result.classicWorkflows.length,
-      bpfs: result.businessProcessFlows.length,
-      webResources: result.webResources.length,
-      customAPIs: result.customAPIs.length,
-      environmentVariables: result.environmentVariables.length,
-      connectionReferences: result.connectionReferences.length,
-      globalChoices: result.globalChoices.length,
+      entities: 0,
+      plugins: 0,
+      flows: 0,
+      businessRules: 0,
+      classicWorkflows: 0,
+      bpfs: 0,
+      webResources: 0,
+      customAPIs: 0,
+      environmentVariables: 0,
+      connectionReferences: 0,
+      globalChoices: 0,
+      customConnectors: 0,
+      securityRoles: 0,
+      fieldSecurityProfiles: 0,
+      canvasApps: 0,
+      customPages: 0,
+      modelDrivenApps: 0,
       total: 0,
     };
-
-    // Calculate total
-    counts.total = Object.entries(counts)
-      .filter(([key]) => key !== 'total')
-      .reduce((sum, [, value]) => sum + value, 0);
-
     return counts;
   }
 
@@ -142,6 +138,30 @@ export class SolutionDistributionAnalyzer {
         componentIdsInSolution.has(gc.id.toLowerCase().replace(/[{}]/g, ''))
       ).length,
 
+      customConnectors: result.customConnectors.filter(cc =>
+        componentIdsInSolution.has(cc.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      securityRoles: result.securityRoles?.filter(sr =>
+        componentIdsInSolution.has(sr.roleid.toLowerCase().replace(/[{}]/g, ''))
+      ).length ?? 0,
+
+      fieldSecurityProfiles: result.fieldSecurityProfiles?.filter(fp =>
+        componentIdsInSolution.has(fp.fieldsecurityprofileid.toLowerCase().replace(/[{}]/g, ''))
+      ).length ?? 0,
+
+      canvasApps: result.canvasApps.filter(ca =>
+        componentIdsInSolution.has(ca.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      customPages: result.customPages.filter(cp =>
+        componentIdsInSolution.has(cp.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
+      modelDrivenApps: result.modelDrivenApps.filter(mda =>
+        componentIdsInSolution.has(mda.id.toLowerCase().replace(/[{}]/g, ''))
+      ).length,
+
       total: 0,
     };
 
@@ -161,16 +181,11 @@ export class SolutionDistributionAnalyzer {
     _allSolutions: Solution[],
     _result: BlueprintResult
   ): SharedComponent[] {
-    const shared: SharedComponent[] = [];
-
-    // This is a placeholder implementation
-    // In reality, we would need to track which components belong to which solutions
-    // This requires solution component metadata from the discovery phase
-
-    // TODO: Implement by checking component solution membership
-    // For each component, check if it appears in multiple solutions
-
-    return shared;
+    // Deferred to a future release. Implementing this accurately requires a
+    // reverse index (componentId → solutionIds[]) built during discovery.
+    // The solutionComponentMap passed to analyzeSolutionDistribution is keyed
+    // solutionId → componentIds, which is the wrong direction for this query.
+    return [];
   }
 
   /**

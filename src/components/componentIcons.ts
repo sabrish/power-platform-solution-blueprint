@@ -70,6 +70,12 @@ export {
   // Custom Pages (= Pages) — Microsoft: document + pencil icon. UPDATED to match.
   DocumentEdit24Regular as CustomPagesIcon,
 
+  // Canvas Apps — Microsoft: apps list / phone with play. AppsListRegular is a close match.
+  AppsListRegular as CanvasAppsIcon,
+
+  // Model-Driven Apps — Microsoft: app module (grid of tiles). AppGenericRegular is a close match.
+  AppGenericRegular as ModelDrivenAppsIcon,
+
   // ── Contextual / inline indicators ────────────────────────────────────────
 
   // ── Navigation tabs ────────────────────────────────────────────────────────

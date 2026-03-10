@@ -39,32 +39,28 @@ export class CustomConnectorDiscovery {
       return [];
     }
 
-    try {
-      const { results: allResults } = await withAdaptiveBatch<string, RawConnector>(
-        connectorIds,
-        async (batch) => {
-          const filter = batch
-            .map(id => `connectorid eq ${id.replace(/[{}]/g, '')}`)
-            .join(' or ');
-          const result = await this.client.query<RawConnector>('connectors', {
-            select: ['connectorid', 'name', 'displayname', 'description', 'ismanaged', 'modifiedon', 'createdon'],
-            filter,
-          });
-          return result.value;
-        },
-        {
-          initialBatchSize: 20,
-          step: 'Custom Connector Discovery',
-          entitySet: 'connectors',
-          logger: this.logger,
-          onProgress: (done, total) => this.onProgress?.(done, total),
-        }
-      );
+    const { results: allResults } = await withAdaptiveBatch<string, RawConnector>(
+      connectorIds,
+      async (batch) => {
+        const filter = batch
+          .map(id => `connectorid eq ${id.replace(/[{}]/g, '')}`)
+          .join(' or ');
+        const result = await this.client.query<RawConnector>('connectors', {
+          select: ['connectorid', 'name', 'displayname', 'description', 'ismanaged', 'modifiedon', 'createdon'],
+          filter,
+        });
+        return result.value;
+      },
+      {
+        initialBatchSize: 20,
+        step: 'Custom Connector Discovery',
+        entitySet: 'connectors',
+        logger: this.logger,
+        onProgress: (done, total) => this.onProgress?.(done, total),
+      }
+    );
 
-      return allResults.map(raw => this.mapToCustomConnector(raw));
-    } catch {
-      return [];
-    }
+    return allResults.map(raw => this.mapToCustomConnector(raw));
   }
 
   /**
