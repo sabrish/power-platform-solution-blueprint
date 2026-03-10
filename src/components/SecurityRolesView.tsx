@@ -132,12 +132,14 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
 
   const privilegeTypes = ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share'] as const;
 
+  const privilegeTypeLabel = (type: string): string => type === 'AppendTo' ? 'Append To' : type;
+
   const depthLabelMap: Record<number, string> = {
     0: 'None',
-    1: 'Basic',
-    2: 'Local',
-    4: 'Deep',
-    8: 'Global',
+    1: 'User',
+    2: 'BU',
+    4: 'P:CBU',
+    8: 'Org',
   };
 
   const getDepthBadgeColor = (depth: number): 'danger' | 'warning' | 'informative' | 'success' | 'subtle' => {
@@ -165,7 +167,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
         Entity-Level Permissions ({role.entityPermissions.filter(ep => ep.privileges.length > 0).length} entities)
       </Text>
       <div className={styles.legend}>
-        <strong>Legend:</strong> None (0) | Basic (1) = User | Local (2) = Business Unit | Deep (4) = Parent+Child BUs | Global (8) = Organization
+        <strong>Access levels:</strong> None · User = own records only · BU = Business Unit · P:CBU = Parent &amp; Child BUs · Org = Organisation-wide
       </div>
       <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px', marginTop: tokens.spacingVerticalM }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -202,7 +204,7 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
                     zIndex: 1,
                   }}
                 >
-                  {type}
+                  {privilegeTypeLabel(type)}
                 </th>
               ))}
             </tr>
