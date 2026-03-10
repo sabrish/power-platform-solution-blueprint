@@ -22,6 +22,13 @@ import {
 } from '@fluentui/react-icons';
 import type { ExternalEndpoint, RiskFactor, ExternalCallSource } from '../core';
 
+/**
+ * Maximum width for the domain cell in the endpoint table.
+ * This is a display truncation cap (overflow: ellipsis), not a spacing value,
+ * so it cannot be expressed with a Fluent UI spacing token.
+ */
+const MAX_DOMAIN_CELL_WIDTH = '250px';
+
 const useStyles = makeStyles({
   container: {
     display: 'flex',
@@ -92,7 +99,7 @@ const useStyles = makeStyles({
   domainCell: {
     fontFamily: 'Consolas, Monaco, monospace',
     fontSize: tokens.fontSizeBase200,
-    maxWidth: '250px',
+    maxWidth: MAX_DOMAIN_CELL_WIDTH,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
