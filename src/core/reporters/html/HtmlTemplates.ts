@@ -1235,10 +1235,15 @@ ${rows}
       const id = `bpf-${i}`;
 
       const stageBlocks = stages.map((stage, si) => {
-        return `<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-  <span style="font-weight:600;font-size:0.9em">Stage ${si + 1}: ${this.escapeHtml(stage.name)}</span>
-  <span style="font-size:0.8em;color:#666;font-family:monospace">${this.escapeHtml(stage.entity)}</span>
-  <span class="badge">${stage.steps.length} step${stage.steps.length !== 1 ? 's' : ''}</span>
+        const isLast = si === stages.length - 1;
+        return `<div style="display:flex;flex-direction:column;align-items:flex-start;">
+  <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f3f3f3;border-radius:6px;min-width:0;">
+    <div style="min-width:26px;height:26px;border-radius:50%;background:#0078d4;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.8em;flex-shrink:0;">${si + 1}</div>
+    <span style="font-weight:600;font-size:0.9em">${this.escapeHtml(stage.name)}</span>
+    <code style="font-size:0.8em;color:#666;">${this.escapeHtml(stage.entity)}</code>
+    ${stage.steps.length > 0 ? `<span class="badge">${stage.steps.length} step${stage.steps.length !== 1 ? 's' : ''}</span>` : ''}
+  </div>
+  ${!isLast ? '<div style="padding:2px 0 2px 12px;color:#999;font-size:1em;">↓</div>' : ''}
 </div>`;
       }).join('');
 
