@@ -1075,10 +1075,15 @@ export class MarkdownReporter {
           sections.push(`> ${bpf.description}`);
           sections.push('');
         }
-        for (const stage of bpf.definition.stages) {
-          sections.push(MarkdownFormatter.formatHeading(`Stage: ${stage.name}`, 4));
-          if (stage.entity) sections.push(`**Entity:** ${stage.entity}`);
-          sections.push(`**Steps:** ${stage.steps.length}`);
+        if (bpf.definition.stages.length > 0) {
+          const sHeaders = ['#', 'Stage', 'Entity', 'Steps'];
+          const sRows = bpf.definition.stages.map((stage, si) => [
+            (si + 1).toString(),
+            stage.name,
+            stage.entity || '—',
+            stage.steps.length.toString(),
+          ]);
+          sections.push(MarkdownFormatter.formatTable(sHeaders, sRows));
           sections.push('');
         }
       }
