@@ -38,6 +38,7 @@ export class HtmlReporter {
     const nav = this.templates.htmlNavigation();
     const header = this.templates.htmlHeader(result.metadata);
     const summary = this.templates.htmlSummary(result.summary);
+    const solutions = this.templates.htmlSolutionDistribution(result.solutionDistribution);
     const erd = this.templates.htmlErdSection(result.erd);
     const entities = this.templates.htmlEntitiesAccordion(result.entities);
     const plugins = this.templates.htmlPluginsTable(result.plugins);
@@ -70,6 +71,7 @@ ${head}
   <main id="main-content">
     ${header}
     ${summary}
+    ${solutions}
     ${erd}
     ${entities}
     ${plugins}

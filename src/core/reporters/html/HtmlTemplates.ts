@@ -13,6 +13,7 @@ import type {
   BusinessRule,
   WebResource,
   ExternalEndpoint,
+  SolutionDistribution,
 } from '../../types/blueprint.js';
 import type { CrossEntityAnalysisResult } from '../../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../../types/classicWorkflow.js';
@@ -54,7 +55,7 @@ export class HtmlTemplates {
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
   <script>
     if (typeof mermaid !== 'undefined') {
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
     }
   </script>
   <style>
@@ -74,6 +75,7 @@ ${this.embeddedCSS()}
   </div>
   <ul class="nav-links">
     <li><a href="#summary">${this.navIcon('summary')} Summary</a></li>
+    <li><a href="#solutions">${this.navIcon('solutions')} Solutions</a></li>
     <li><a href="#erd">${this.navIcon('erd')} Entity Relationship Diagram</a></li>
     <li><a href="#entities">${this.navIcon('entities')} Entities</a></li>
     <li><a href="#plugins">${this.navIcon('plugins')} Plugins</a></li>
@@ -87,7 +89,7 @@ ${this.embeddedCSS()}
     <li><a href="#connection-references">${this.navIcon('connection-references')} Connection References</a></li>
     <li><a href="#security">${this.navIcon('security')} Security</a></li>
     <li><a href="#external-dependencies">${this.navIcon('external-dependencies')} External Dependencies</a></li>
-    <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation</a></li>
+    <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.7em;vertical-align:middle;">Preview</span></a></li>
   </ul>
   <div class="nav-footer">
     <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">${this.navIcon('print')} Print</button>
@@ -100,12 +102,6 @@ ${this.embeddedCSS()}
    */
   htmlHeader(metadata: BlueprintMetadata): string {
     const generatedDate = metadata.generatedAt.toLocaleString();
-    const solutionsHtml = metadata.solutionNames && metadata.solutionNames.length > 0
-      ? `<div class="metadata-item">
-      <span class="metadata-label">Solutions:</span>
-      <span class="metadata-value">${this.escapeHtml(metadata.solutionNames.join(', '))}</span>
-    </div>`
-      : '';
     return `<header class="report-header" role="banner">
   <h1>Power Platform Solution Blueprint</h1>
   <div class="metadata-grid">
@@ -121,7 +117,6 @@ ${this.embeddedCSS()}
       <span class="metadata-label">Scope:</span>
       <span class="metadata-value">${this.escapeHtml(metadata.scope.description)}</span>
     </div>
-    ${solutionsHtml}
     <div class="metadata-item">
       <span class="metadata-label">Entities:</span>
       <span class="metadata-value">${metadata.entityCount}</span>
@@ -225,12 +220,15 @@ ${diagram.mermaidDiagram}
   /**
    * Generate legend HTML for ERD
    */
-  private generateLegendHtml(legend: any[]): string {
+  private generateLegendHtml(legend: { color: string; publisherName: string; entityCount: number }[]): string {
     if (!legend || legend.length === 0) return '';
+
+    const sanitizeColor = (c: string): string =>
+      /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '#888888';
 
     const items = legend.map(item => {
       return `<div class="legend-item">
-  <span class="legend-color" style="background-color: ${item.color}"></span>
+  <span class="legend-color" style="background-color: ${sanitizeColor(item.color)}"></span>
   <span class="legend-label">${this.escapeHtml(item.publisherName)} (${item.entityCount})</span>
 </div>`;
     }).join('\n');
@@ -464,7 +462,7 @@ ${rows}
     const rows = flows.map(flow => {
       return `<tr>
   <td>${this.escapeHtml(flow.name)}</td>
-  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${flow.state}</span></td>
+  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(flow.state)}</span></td>
   <td>${this.escapeHtml(flow.definition.triggerEvent)}</td>
   <td style="word-break: break-word;">${this.escapeHtml(flow.description || '')}</td>
 </tr>`;
@@ -1000,7 +998,7 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(plugin.name)}</td>
   <td>${this.escapeHtml(plugin.entity || 'N/A')}</td>
-  <td><span class="badge badge-${plugin.state === 'Enabled' ? 'success' : 'error'}">${plugin.state}</span></td>
+  <td><span class="badge badge-${plugin.state === 'Enabled' ? 'success' : 'error'}">${this.escapeHtml(plugin.state)}</span></td>
   <td>${this.escapeHtml(plugin.message || 'N/A')}</td>
   <td>${this.escapeHtml(plugin.stageName || 'N/A')}</td>
   <td>${this.escapeHtml(plugin.modeName || 'N/A')}</td>
@@ -1051,7 +1049,7 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(flow.name)}</td>
   <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${flow.state}</span></td>
+  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(flow.state)}</span></td>
   <td>${this.escapeHtml(flow.definition.triggerEvent)}</td>
   <td>${this.escapeHtml(flow.definition.scopeType)}</td>
   <td>${flow.definition.actionsCount}</td>
@@ -1119,7 +1117,7 @@ ${rows}
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <strong>${this.escapeHtml(rule.name)}</strong>
         <span style="color:#666;font-size:0.9em">${entityDisplay}</span>
-        <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${rule.state}</span>
+        <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${this.escapeHtml(rule.state)}</span>
         <span class="badge">${this.escapeHtml(rule.scope)}</span>
         <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.escapeHtml(rule.definition.executionContext)}</span>
         ${conditions.length > 0 ? `<span class="badge">${conditions.length} condition${conditions.length !== 1 ? 's' : ''}</span>` : ''}
@@ -1172,7 +1170,7 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(workflow.name)}</td>
   <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${workflow.state}</span></td>
+  <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(workflow.state)}</span></td>
   <td>${this.escapeHtml(workflow.modeName)}</td>
   <td><span class="badge badge-${complexity === 'Critical' ? 'error' : complexity === 'High' ? 'warning' : 'info'}">${complexity}</span></td>
 </tr>`;
@@ -1254,7 +1252,7 @@ ${rows}
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <strong>${this.escapeHtml(bpf.name)}</strong>
         <span style="color:#666;font-size:0.9em">${entityDisplay}</span>
-        <span class="badge badge-${bpf.state === 'Active' ? 'success' : 'warning'}">${bpf.state}</span>
+        <span class="badge badge-${bpf.state === 'Active' ? 'success' : 'warning'}">${this.escapeHtml(bpf.state)}</span>
         <span class="badge">${stages.length} stage${stages.length !== 1 ? 's' : ''}</span>
         <span class="badge">${bpf.definition.totalSteps} step${bpf.definition.totalSteps !== 1 ? 's' : ''}</span>
         ${bpf.definition.crossEntityFlow ? '<span class="badge badge-info">Cross-entity</span>' : ''}
@@ -1503,8 +1501,8 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(endpoint.domain)}</td>
   <td>${this.escapeHtml(endpoint.protocol.toUpperCase())}</td>
-  <td><span class="badge badge-${riskColor}">${endpoint.riskLevel}</span></td>
-  <td>${endpoint.callCount}</td>
+  <td><span class="badge badge-${riskColor}">${this.escapeHtml(endpoint.riskLevel)}</span></td>
+  <td>${String(endpoint.callCount)}</td>
   <td>${this.escapeHtml(riskFactorsText)}</td>
 </tr>`;
     }).join('\n');
@@ -1534,11 +1532,70 @@ ${rows}
   }
 
   /**
+   * Generate solution distribution section
+   */
+  htmlSolutionDistribution(distributions: SolutionDistribution[] | undefined): string {
+    if (!distributions || distributions.length === 0) {
+      return `<section id="solutions" class="content-section" aria-labelledby="heading-solutions">
+  <h2 id="heading-solutions" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('solutions')} Solutions</h2>
+  <div class="empty-state">No solution distribution information available.</div>
+</section>`;
+    }
+
+    const rows = distributions.map((sol) => {
+      const counts = sol.componentCounts;
+      const countRows = [
+        ['Entities', counts.entities],
+        ['Plugins', counts.plugins],
+        ['Flows', counts.flows],
+        ['Business Rules', counts.businessRules],
+        ['Classic Workflows', counts.classicWorkflows],
+        ['Business Process Flows', counts.bpfs],
+        ['Web Resources', counts.webResources],
+        ['Custom APIs', counts.customAPIs],
+        ['Environment Variables', counts.environmentVariables],
+        ['Connection References', counts.connectionReferences],
+        ['Global Choices', counts.globalChoices],
+      ].filter(([, n]) => (n as number) > 0);
+
+      const countHtml = countRows.map(([label, n]) =>
+        `<tr><td>${this.htmlEscape(String(label))}</td><td style="text-align:right;font-weight:600;">${n}</td></tr>`
+      ).join('');
+
+      const sharedHtml = sol.sharedComponents.length > 0
+        ? `<details style="margin-top:12px;"><summary style="cursor:pointer;font-weight:600;">Shared Components (${sol.sharedComponents.length})</summary>
+        <table class="data-table" style="margin-top:8px;"><thead><tr><th scope="col">Type</th><th scope="col">Name</th><th scope="col">Also In</th></tr></thead>
+        <tbody>${sol.sharedComponents.map(sc => `<tr><td>${this.htmlEscape(sc.componentType)}</td><td>${this.htmlEscape(sc.componentName)}</td><td>${sc.alsoInSolutions.map(s => this.htmlEscape(s)).join(', ')}</td></tr>`).join('')}</tbody></table>
+        </details>`
+        : '';
+
+      return `<div class="card" style="margin-bottom:16px;padding:16px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <span style="font-size:1.1em;font-weight:700;">${this.htmlEscape(sol.solutionName)}</span>
+    <span class="badge ${sol.isManaged ? 'badge-warning' : 'badge-success'}">${sol.isManaged ? 'Managed' : 'Unmanaged'}</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;">
+    <div><span style="color:#666;font-size:0.85em;">Publisher</span><div style="font-weight:600;">${this.htmlEscape(sol.publisher)}</div></div>
+    <div><span style="color:#666;font-size:0.85em;">Version</span><div style="font-weight:600;">${this.htmlEscape(sol.version)}</div></div>
+    <div><span style="color:#666;font-size:0.85em;">Total Components</span><div style="font-weight:600;">${counts.total}</div></div>
+  </div>
+  ${countRows.length > 0 ? `<table class="data-table" style="max-width:400px;"><thead><tr><th scope="col">Component Type</th><th scope="col" style="text-align:right;">Count</th></tr></thead><tbody>${countHtml}</tbody></table>` : ''}
+  ${sharedHtml}
+</div>`;
+    });
+
+    return `<section id="solutions" class="content-section" aria-labelledby="heading-solutions">
+  <h2 id="heading-solutions" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('solutions')} Solutions (${distributions.length})</h2>
+  ${rows.join('\n  ')}
+</section>`;
+  }
+
+  /**
    * Generate cross-entity automation section
    */
   htmlCrossEntitySection(analysis: CrossEntityAnalysisResult | undefined): string {
     const coverageNotice = `<div class="alert alert-info" style="margin-bottom: 16px;">
-      <strong>Detection Coverage</strong>
+      <strong>Detection Coverage</strong> <span class="badge badge-warning" style="font-size:0.75em;vertical-align:middle;">Preview</span>
       <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
         <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('flows')} <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></div>
         <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('classic-workflows')} <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></div>
@@ -1558,7 +1615,7 @@ ${rows}
 
     if (!analysis || (analysis.allEntityPipelines.size === 0 && analysis.totalEntryPoints === 0)) {
       return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
-  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.75em;">Preview</span></h2>
   ${coverageNotice}
   <p>No cross-entity automation entry points detected in this solution scope.</p>
 </section>`;
@@ -1581,7 +1638,7 @@ ${rows}
       <h3>Performance &amp; Risk Warnings</h3>
       ${analysis.risks.map(r => `
         <div style="padding:10px;border-left:4px solid ${r.severity === 'High' ? '#d32f2f' : '#f57c00'};background:${r.severity === 'High' ? '#ffebee' : '#fff8e1'};border-radius:4px;margin-bottom:8px;">
-          <strong>${this.htmlEscape(r.type)}</strong> (${r.severity}) ${r.automationName ? `— ${this.htmlEscape(r.automationName)}` : ''}<br/>
+          <strong>${this.htmlEscape(r.type)}</strong> (${this.htmlEscape(r.severity)}) ${r.automationName ? `— ${this.htmlEscape(r.automationName)}` : ''}<br/>
           <span>${this.htmlEscape(r.description)}</span>
         </div>`).join('')}` : '';
 
@@ -1620,7 +1677,7 @@ ${rows}
       </div>` : '';
 
     return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
-  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.75em;">Preview</span></h2>
   ${coverageNotice}
   ${statsHtml}
   ${risksHtml}
@@ -1691,7 +1748,7 @@ ${rows}
           const tid = `${id}-trace-${ti}`;
           const actRows = activations.map(act => {
             const ds = act.downstream
-              ? `→ <strong>${this.htmlEscape(act.downstream.targetEntityDisplayName)}</strong> (${act.downstream.operation})`
+              ? `→ <strong>${this.htmlEscape(act.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(act.downstream.operation)})`
               : '';
             return `<tr>
               <td>${this.htmlEscape(act.automationName)}</td>
@@ -1734,7 +1791,7 @@ ${rows}
               ? `<span style="font-size:0.8em;color:#666">filters: ${this.htmlEscape(step.filteringAttributes.slice(0, 3).join(', '))}${step.filteringAttributes.length > 3 ? ` +${step.filteringAttributes.length - 3}` : ''}</span>`
               : '';
             const ds = step.downstream
-              ? `→ <strong>${this.htmlEscape(step.downstream.targetEntityDisplayName)}</strong> (${step.downstream.operation})`
+              ? `→ <strong>${this.htmlEscape(step.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(step.downstream.operation)})`
               : '';
             return `<tr>
               <td>${si + 1}</td>
@@ -1822,6 +1879,8 @@ ${this.embeddedJavaScript()}
     const icons: Record<string, string> = {
       // Grid24Regular
       summary:   `<svg ${s}><path d="M6.25 3A3.25 3.25 0 0 0 3 6.25v11.5C3 19.55 4.46 21 6.25 21h11.5c1.8 0 3.25-1.46 3.25-3.25V6.25C21 4.45 19.54 3 17.75 3H6.25ZM4.5 6.25c0-.97.78-1.75 1.75-1.75h5V7h-1.5A2.75 2.75 0 0 0 7 9.75v1.5H4.5v-5Zm2.5 6.5v1.5A2.75 2.75 0 0 0 9.75 17h1.5v2.5h-5c-.97 0-1.75-.78-1.75-1.75v-5H7Zm4.25 2.75h-1.5c-.69 0-1.25-.56-1.25-1.25v-1.5h2.75v2.75Zm1.5 1.5h1.5A2.75 2.75 0 0 0 17 14.25v-1.5h2.5v5c0 .97-.78 1.75-1.75 1.75h-5V17Zm2.75-4.25v1.5c0 .69-.56 1.25-1.25 1.25h-1.5v-2.75h2.75Zm1.5-1.5v-1.5A2.75 2.75 0 0 0 14.25 7h-1.5V4.5h5c.97 0 1.75.78 1.75 1.75v5H17ZM12.75 8.5h1.5c.69 0 1.25.56 1.25 1.25v1.5h-2.75V8.5Zm-1.5 0v2.75H8.5v-1.5c0-.69.56-1.25 1.25-1.25h1.5Z"/></svg>`,
+      // LayerDiagonal24Regular — stacked layers = solutions/packages
+      solutions: `<svg ${s}><path d="M13.13 2.12a3.25 3.25 0 0 0-2.26 0L3.65 4.8A1.75 1.75 0 0 0 3.65 8l7.22 2.68c.73.27 1.53.27 2.26 0L20.35 8a1.75 1.75 0 0 0 0-3.2l-7.22-2.68Zm-1.75 1.41c.4-.14.84-.14 1.24 0l7.04 2.6-7.04 2.6a1.75 1.75 0 0 1-1.24 0L4.34 6.13l7.04-2.6ZM3.2 11.1l7.66 2.84c.73.27 1.53.27 2.27 0l7.66-2.84a.75.75 0 1 1 .52 1.41l-7.66 2.84a3.25 3.25 0 0 1-2.3 0L3.69 12.5a.75.75 0 1 1 .52-1.41Zm0 4.5 7.66 2.83c.73.27 1.53.27 2.27 0l7.66-2.83a.75.75 0 1 1 .52 1.4l-7.66 2.84a3.25 3.25 0 0 1-2.3 0L3.69 17a.75.75 0 1 1 .52-1.4Z"/></svg>`,
       // Organization24Regular
       erd:       `<svg ${s}><path d="M11.75 2A3.75 3.75 0 0 0 11 9.43v2.07H7.75c-1.24 0-2.25 1-2.25 2.25v.83a3.75 3.75 0 1 0 1.5 0v-.83c0-.41.34-.75.75-.75h8c.41 0 .75.34.75.75v.83a3.75 3.75 0 1 0 1.5 0v-.83c0-1.24-1-2.25-2.25-2.25H12.5V9.43A3.75 3.75 0 0 0 11.75 2ZM9.5 5.75a2.25 2.25 0 1 1 4.5 0 2.25 2.25 0 0 1-4.5 0ZM4 18.25a2.25 2.25 0 1 1 4.5 0 2.25 2.25 0 0 1-4.5 0ZM17.25 16a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5Z"/></svg>`,
       // Table24Regular
