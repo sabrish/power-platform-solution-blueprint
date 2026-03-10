@@ -15,8 +15,13 @@ import type { EnvironmentVariable } from '../core';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 const ENV_TYPE_VALUES = ['String', 'Number', 'Boolean', 'JSON', 'DataSource'];
+
+const ENV_FILTER_SPECS: readonly FilterSpec<EnvironmentVariable>[] = [
+  { name: 'type', getKey: (v) => v.typeName },
+];
 
 const useStyles = makeStyles({
   row: {
@@ -52,8 +57,6 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     return [...environmentVariables].sort((a, b) => a.schemaName.localeCompare(b.schemaName));
@@ -65,33 +68,21 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     return counts;
   }, [sorted]);
 
-  // Apply ToggleButton filters
-  const toggleFilteredVars = useMemo(() => {
-    if (activeTypeFilters.size === 0) return sorted;
-    return sorted.filter((v) => activeTypeFilters.has(v.typeName));
-  }, [sorted, activeTypeFilters]);
-
-  const searchedVars = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return toggleFilteredVars;
-    return toggleFilteredVars.filter((v) =>
+  const {
+    filteredItems: searchedVars,
+    searchQuery,
+    setSearchQuery,
+    toggleKey,
+    clearFilter,
+    activeFilters,
+  } = useListFilter(
+    sorted,
+    (v, q) =>
       v.displayName.toLowerCase().includes(q) ||
       v.schemaName.toLowerCase().includes(q) ||
-      v.typeName.toLowerCase().includes(q)
-    );
-  }, [toggleFilteredVars, searchQuery]);
-
-  const toggleTypeFilter = (type: string) => {
-    setActiveTypeFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) {
-        next.delete(type);
-      } else {
-        next.add(type);
-      }
-      return next;
-    });
-  };
+      v.typeName.toLowerCase().includes(q),
+    ENV_FILTER_SPECS,
+  );
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -186,15 +177,15 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
               key={type}
               className={shared.filterButton}
               size="small"
-              checked={activeTypeFilters.has(type)}
+              checked={activeFilters['type']?.has(type) ?? false}
               disabled={typeCounts[type] === 0}
-              onClick={() => toggleTypeFilter(type)}
+              onClick={() => toggleKey('type', type)}
             >
               {type}
             </ToggleButton>
           ))}
-          {activeTypeFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+          {(activeFilters['type']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('type')}>
               Clear
             </Button>
           )}

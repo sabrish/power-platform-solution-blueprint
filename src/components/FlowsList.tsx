@@ -16,9 +16,15 @@ import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 const FLOW_TYPE_VALUES = ['Dataverse', 'Scheduled', 'Manual', 'Other'];
 const FLOW_STATE_VALUES = ['Active', 'Draft', 'Suspended'];
+
+const FLOWS_FILTER_SPECS: readonly FilterSpec<Flow>[] = [
+  { name: 'type',  getKey: (f) => f.definition.triggerType },
+  { name: 'state', getKey: (f) => f.state },
+];
 
 const useStyles = makeStyles({
   flowRow: {
@@ -58,9 +64,6 @@ export function FlowsList({
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedFlowId, setExpandedFlowId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
-  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   // Filter flows by entity if specified
   const filteredFlows = useMemo(() => {
@@ -94,53 +97,22 @@ export function FlowsList({
     return counts;
   }, [sortedFlows]);
 
-  // Apply ToggleButton filters
-  const toggleFilteredFlows = useMemo(() => {
-    let filtered = sortedFlows;
-    if (activeTypeFilters.size > 0) {
-      filtered = filtered.filter((f) => activeTypeFilters.has(f.definition.triggerType));
-    }
-    if (activeStateFilters.size > 0) {
-      filtered = filtered.filter((f) => activeStateFilters.has(f.state));
-    }
-    return filtered;
-  }, [sortedFlows, activeTypeFilters, activeStateFilters]);
-
-  // Apply search filter
-  const searchedFlows = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return toggleFilteredFlows;
-    return toggleFilteredFlows.filter((f) =>
+  const {
+    filteredItems: searchedFlows,
+    searchQuery,
+    setSearchQuery,
+    toggleKey,
+    clearFilter,
+    activeFilters,
+  } = useListFilter(
+    sortedFlows,
+    (f, q) =>
       f.name.toLowerCase().includes(q) ||
-      (f.entity && f.entity.toLowerCase().includes(q)) ||
-      (f.description && f.description.toLowerCase().includes(q)) ||
-      (f.definition.triggerType && f.definition.triggerType.toLowerCase().includes(q))
-    );
-  }, [toggleFilteredFlows, searchQuery]);
-
-  const toggleTypeFilter = (type: string) => {
-    setActiveTypeFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) {
-        next.delete(type);
-      } else {
-        next.add(type);
-      }
-      return next;
-    });
-  };
-
-  const toggleStateFilter = (state: string) => {
-    setActiveStateFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(state)) {
-        next.delete(state);
-      } else {
-        next.add(state);
-      }
-      return next;
-    });
-  };
+      (f.entity?.toLowerCase().includes(q) ?? false) ||
+      (f.description?.toLowerCase().includes(q) ?? false) ||
+      f.definition.triggerType.toLowerCase().includes(q),
+    FLOWS_FILTER_SPECS,
+  );
 
   const toggleExpand = (flowId: string) => {
     setExpandedFlowId(expandedFlowId === flowId ? null : flowId);
@@ -319,15 +291,15 @@ export function FlowsList({
               key={type}
               className={shared.filterButton}
               size="small"
-              checked={activeTypeFilters.has(type)}
+              checked={activeFilters['type']?.has(type) ?? false}
               disabled={typeCounts[type] === 0}
-              onClick={() => toggleTypeFilter(type)}
+              onClick={() => toggleKey('type', type)}
             >
               {type}
             </ToggleButton>
           ))}
-          {activeTypeFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveTypeFilters(new Set())}>
+          {(activeFilters['type']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('type')}>
               Clear
             </Button>
           )}
@@ -338,15 +310,15 @@ export function FlowsList({
               key={state}
               className={shared.filterButton}
               size="small"
-              checked={activeStateFilters.has(state)}
+              checked={activeFilters['state']?.has(state) ?? false}
               disabled={stateCounts[state] === 0}
-              onClick={() => toggleStateFilter(state)}
+              onClick={() => toggleKey('state', state)}
             >
               {state}
             </ToggleButton>
           ))}
-          {activeStateFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
+          {(activeFilters['state']?.size ?? 0) > 0 && (
+            <Button appearance="transparent" size="small" onClick={() => clearFilter('state')}>
               Clear
             </Button>
           )}
