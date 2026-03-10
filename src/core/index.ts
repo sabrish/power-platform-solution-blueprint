@@ -66,24 +66,10 @@ export type {
 export type { IDataverseClient, QueryOptions, QueryResult } from './dataverse/IDataverseClient.js';
 export { PptbDataverseClient } from './dataverse/PptbDataverseClient.js';
 
-// Discovery Services
+// Discovery Services — only the two used directly by UI (ScopeSelector)
 export { PublisherDiscovery } from './discovery/PublisherDiscovery.js';
 export { SolutionDiscovery } from './discovery/SolutionDiscovery.js';
-export { EntityDiscovery } from './discovery/EntityDiscovery.js';
-export { SolutionComponentDiscovery } from './discovery/SolutionComponentDiscovery.js';
-export { SchemaDiscovery } from './discovery/SchemaDiscovery.js';
-export { PluginDiscovery } from './discovery/PluginDiscovery.js';
-export { FlowDiscovery } from './discovery/FlowDiscovery.js';
-export { BusinessRuleDiscovery } from './discovery/BusinessRuleDiscovery.js';
-export { FormDiscovery } from './discovery/FormDiscovery.js';
-export { ClassicWorkflowDiscovery } from './discovery/ClassicWorkflowDiscovery.js';
-export { BusinessProcessFlowDiscovery } from './discovery/BusinessProcessFlowDiscovery.js';
-export { CustomAPIDiscovery } from './discovery/CustomAPIDiscovery.js';
-export { EnvironmentVariableDiscovery } from './discovery/EnvironmentVariableDiscovery.js';
-export { ConnectionReferenceDiscovery } from './discovery/ConnectionReferenceDiscovery.js';
-export { GlobalChoiceDiscovery } from './discovery/GlobalChoiceDiscovery.js';
-export { CustomConnectorDiscovery } from './discovery/CustomConnectorDiscovery.js';
-export { FieldSecurityProfileDiscovery } from './discovery/FieldSecurityProfileDiscovery.js';
+// Type-only exports for discovery modules consumed by UI components
 export type {
   FieldSecurityProfile,
   FieldPermission,
@@ -91,7 +77,6 @@ export type {
   SecuredField,
   FieldSecurityProfilePermission,
 } from './discovery/FieldSecurityProfileDiscovery.js';
-export { SecurityRoleDiscovery } from './discovery/SecurityRoleDiscovery.js';
 export type {
   SecurityRole,
   RolePrivilege,
@@ -101,7 +86,6 @@ export type {
   SpecialPermissions,
   EntitySecurityAccess,
 } from './discovery/SecurityRoleDiscovery.js';
-export { ColumnSecurityDiscovery } from './discovery/ColumnSecurityDiscovery.js';
 export type {
   AttributeMaskingRule,
   ColumnSecurityProfile,
@@ -127,27 +111,10 @@ export type {
   PipelineStep,
 } from './types/crossEntityTrace.js';
 
-// Analyzers
+// Analyzers — only those consumed by UI components via barrel
 export { ExecutionOrderCalculator } from './analyzers/ExecutionOrderCalculator.js';
 export { PerformanceAnalyzer } from './analyzers/PerformanceAnalyzer.js';
-export { WorkflowMigrationAnalyzer } from './analyzers/WorkflowMigrationAnalyzer.js';
-export { CrossEntityAnalyzer } from './analyzers/CrossEntityAnalyzer.js';
 
-// Reporters
-export { HtmlReporter } from './reporters/HtmlReporter.js';
-export { JsonReporter } from './reporters/JsonReporter.js';
-export { MarkdownReporter } from './reporters/MarkdownReporter.js';
-
-// Exporters
-export { ZipPackager } from './exporters/ZipPackager.js';
-
-// Utils
-export { filterSystemFields, isSystemField } from './utils/fieldFilters.js';
-export { generatePublisherColor, getPublisherColors } from './utils/ColorGenerator.js';
-export type { PublisherColors } from './utils/ColorGenerator.js';
+// Utils — FetchLogger class + types used by ProcessingScreen via barrel
 export { FetchLogger } from './utils/FetchLogger.js';
 export type { FetchLogEntry, FetchStatus, FetchSummary } from './utils/FetchLogger.js';
-export { withAdaptiveBatch } from './utils/withAdaptiveBatch.js';
-export type { AdaptiveBatchOptions, AdaptiveBatchResult } from './utils/withAdaptiveBatch.js';
-export { withConcurrencyLimit } from './utils/withConcurrencyLimit.js';
-export type { StepWarning } from './types/blueprint.js';
