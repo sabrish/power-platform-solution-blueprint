@@ -363,29 +363,3 @@ ${alertIcon('warning')} <strong>No filter defined</strong>
 ```
 
 Icons use `currentColor` so they inherit the surrounding text colour and work in both light and dark themes.
-
----
-
-## PATTERN-024 — ErrorState Component
-
-**Source:** src/components/ErrorState.tsx
-**Applies to:** Developer, Reviewer
-
-**Rule:** Use `<ErrorState>` (from `src/components/ErrorState.tsx`) for all caught errors in
-component render paths. Never render raw error messages directly.
-
-```tsx
-import { ErrorState } from './ErrorState';
-
-// In render:
-if (error) return <ErrorState message={error.message} />;
-```
-
-**Do NOT use:**
-- Inline `<Text style={{ color: 'red' }}>Error: {message}</Text>`
-- Alert dialogs for render-path errors
-- Empty renders (`return null`) when an error should be surfaced to the user
-
-**When to use ErrorState vs EmptyState:**
-- `ErrorState` — something failed (API error, parse error, unexpected state)
-- `EmptyState` — no data, no results (not an error — expected possible outcome)
