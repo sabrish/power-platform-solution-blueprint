@@ -256,6 +256,52 @@ for (const entity of entities) {
 
 ---
 
+## PATTERN-024 — Solution-Scoped Discovery: solutioncomponents vs Objectid Intersection
+
+**Source:** SolutionComponentDiscovery.ts, COMPONENT_TYPES_REFERENCE.md
+**Applies to:** Developer, Reviewer
+**Confirmed in production:** 2026-03-11
+
+### Two strategies exist — use the right one per component type
+
+**Strategy A — solutioncomponents filter (preferred)**
+Most component types appear in the `solutioncomponents` table under their documented type code.
+In solution-scoped mode, query `solutioncomponents` filtered by `_solutionid_value`, then route each `objectid` to the correct inventory list via the component type. **No separate entity query is needed for these types.**
+
+Types using Strategy A: Entity(1), Attribute(2), GlobalOptionSet(9), SecurityRole(20), Workflow(29), SystemForm(60), WebResource(61), FieldSecurityProfile(70), AppModule(80), SdkMessageProcessingStep(92), CanvasApp(300), EnvironmentVariableDefinition(380), PluginPackage(10030).
+
+**Strategy B — objectid intersection (required for broken type codes)**
+Custom APIs (10076), Connection References (371), and Custom Connectors (372) store `solutionid = Default Solution` on every record regardless of which named solution they actually belong to. They also do NOT appear in `solutioncomponents` under their expected type codes (confirmed from live data — types 371 and 10076 are absent from the solutioncomponents result set).
+
+Pattern: query ALL records for the type (`$top=5000`), then keep only those whose primary key appears in the `solutioncomponents` objectid set for the selected solutions.
+
+```typescript
+// CORRECT — objectid intersection for broken types
+// Use queryAll() which paginates automatically (no manual top/skip needed)
+const scObjectIds = new Set(solutionComponentsResult.value.map(c =>
+  c.objectid.toLowerCase().replace(/[{}]/g, '')
+));
+
+const allCustomApis = await client.queryAll<{ customapiid: string }>(
+  'customapis', { select: ['customapiid'] }
+);
+for (const api of allCustomApis.value) {
+  const id = api.customapiid.toLowerCase().replace(/[{}]/g, '');
+  if (scObjectIds.has(id)) inventory.customApiIds.push(id);
+}
+
+// WRONG — solutionid filter returns 0 results for these types
+await client.query('customapis', { filter: `solutionid eq ${solutionGuid}` });
+```
+
+**Rule:** NEVER add `$filter=solutionid eq <guid>` to customapis, connectionreferences, or connectors queries in solution-scoped mode. It returns 0 results.
+
+**Rule:** Always use `queryAll()` (not `query()`) for unbounded fetches. `queryAll()` follows `@odata.nextLink` cursor pagination internally — `$skip` is NOT used because Dataverse does not support it on all entity types (e.g. `customapis` returns `0x80060888: Skip Clause is not supported in CRM`). Never add manual `top` guards to `queryAll` calls.
+
+**Default Solution path:** Also uses `queryAll()` via the `logQuery` helper — all records returned regardless of count.
+
+---
+
 ## PATTERN-014 — COMPONENT_TYPES_REFERENCE.md Must Be Checked First
 
 **Source:** CLAUDE.md
