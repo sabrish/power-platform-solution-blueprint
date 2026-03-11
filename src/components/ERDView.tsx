@@ -27,6 +27,16 @@ import {
 } from '@fluentui/react-icons';
 import type { ERDDefinition, BlueprintResult } from '../core';
 import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
+import { EmptyState } from './EmptyState';
+
+// ─── Tooltip sizing constants ─────────────────────────────────────────────────
+// Named constants used in makeStyles — raw pixels are required for these
+// layout-constraint values since no equivalent spacing tokens exist.
+const EDGE_TOOLTIP_MAX_WIDTH = '300px';   // edge hover: wider to show full attribute path
+const NODE_TOOLTIP_MAX_WIDTH = '240px';   // node hover: narrower; content is shorter
+// Fluent UI v9 does not expose zIndex tokens. 1000 is below browser popups (1100+)
+// but above the Cytoscape canvas (z-index ~auto) and the graph overlays (z-index 5–10).
+const TOOLTIP_Z_INDEX = 1000;
 
 // ─── Layout names ────────────────────────────────────────────────────────────
 type LayoutName = 'cose' | 'breadthfirst';
@@ -56,15 +66,15 @@ const useStyles = makeStyles({
     flexShrink: 0,
   },
   divider: {
-    width: '1px',
-    height: '24px',
+    width: '1px', // hairline divider — no token
+    height: '24px', // icon-row height — no token
     backgroundColor: tokens.colorNeutralStroke1,
     margin: `0 ${tokens.spacingHorizontalXS}`,
     alignSelf: 'center',
     flexShrink: 0,
   },
   searchBox: {
-    width: '180px',
+    width: '180px', // fixed search width — no token equivalent
   },
   graphCard: {
     padding: 0,
@@ -73,7 +83,7 @@ const useStyles = makeStyles({
   },
   graphContainer: {
     width: '100%',
-    height: '720px',
+    height: '720px', // fixed canvas height — no token
     backgroundColor: tokens.colorNeutralBackground2,
   },
   loadingOverlay: {
@@ -93,27 +103,27 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: tokens.borderRadiusMedium,
     padding: tokens.spacingVerticalS,
-    maxWidth: '220px',
+    maxWidth: '220px', // fixed panel width — no token
     zIndex: 5,
     boxShadow: tokens.shadow4,
   },
   infoPanelClose: {
     position: 'absolute',
-    top: '4px',
-    right: '4px',
+    top: tokens.spacingVerticalXS,
+    right: tokens.spacingHorizontalXS,
   },
   infoPanelTitle: {
     fontWeight: tokens.fontWeightSemibold,
     wordBreak: 'break-all',
     marginBottom: tokens.spacingVerticalXS,
-    paddingRight: '24px',
+    paddingRight: '24px', // 24px padding for close-button clearance — no exact token
   },
   infoPanelRow: {
     display: 'flex',
     justifyContent: 'space-between',
     gap: tokens.spacingHorizontalS,
     fontSize: tokens.fontSizeBase200,
-    marginBottom: '2px',
+    marginBottom: '2px', // micro-spacing between info rows — no token equivalent
   },
   infoPanelLabel: {
     color: tokens.colorNeutralForeground3,
@@ -136,13 +146,36 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
-    minHeight: '40px',
+    minHeight: '40px', // minimum row height — no token
   },
   hintActions: {
     display: 'flex',
     alignItems: 'center',
     gap: '2px',
     flexShrink: 0,
+  },
+  // Fixed-position hover tooltips rendered over the Cytoscape canvas
+  edgeTooltip: {
+    position: 'fixed',
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+    boxShadow: tokens.shadow8,
+    zIndex: TOOLTIP_Z_INDEX,
+    maxWidth: EDGE_TOOLTIP_MAX_WIDTH,
+    pointerEvents: 'none',
+  },
+  nodeTooltip: {
+    position: 'fixed',
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: tokens.spacingVerticalS,
+    boxShadow: tokens.shadow4,
+    zIndex: TOOLTIP_Z_INDEX,
+    maxWidth: NODE_TOOLTIP_MAX_WIDTH,
+    pointerEvents: 'none',
   },
   // Zoom controls overlay on the graph canvas
   zoomOverlay: {
@@ -721,19 +754,10 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
       {/* ── Edge hover tooltip (fixed, portal-like) ── */}
       {hoveredEdge && tooltipPos && (
-        <div style={{
-          position: 'fixed',
-          left: tooltipPos.x,
-          top: tooltipPos.y,
-          backgroundColor: tokens.colorNeutralBackground1,
-          border: `1px solid ${tokens.colorNeutralStroke1}`,
-          borderRadius: tokens.borderRadiusMedium,
-          padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
-          boxShadow: tokens.shadow8,
-          zIndex: 9999,
-          maxWidth: '300px',
-          pointerEvents: 'none',
-        }}>
+        <div
+          className={styles.edgeTooltip}
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
           <Text weight="semibold" block style={{ marginBottom: '2px', wordBreak: 'break-all' }}>
             {hoveredEdge.id}
           </Text>
@@ -759,7 +783,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         <Text size={500} weight="semibold" block>Entity Relationship Diagram</Text>
         <Text style={{ color: tokens.colorNeutralForeground3 }}>
           {filteredNodes.length} entities · {graphData?.edges.length ?? 0} relationships in scope
-          {isolatedEntityCount > 0 && ` · ${isolatedEntityCount} entity${isolatedEntityCount > 1 ? 'ies' : ''} with no relationships hidden`}
+          {isolatedEntityCount > 0 && ` · ${isolatedEntityCount} entit${isolatedEntityCount > 1 ? 'ies' : 'y'} with no relationships hidden`}
         </Text>
       </div>
 
@@ -833,6 +857,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
                     minWidth: 'unset',
                     paddingLeft: tokens.spacingHorizontalS,
                     paddingRight: tokens.spacingHorizontalS,
+                    // dynamic publisher colour from ERD generator palette — cannot use static token
                     borderLeft: `3px solid ${pub.color}`,
                   }}
                   onClick={() =>
@@ -943,19 +968,10 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
             {/* Node hover tooltip */}
             {hoveredNode && nodeTooltipPos && (
-              <div style={{
-                position: 'fixed',
-                left: nodeTooltipPos.x,
-                top: nodeTooltipPos.y,
-                backgroundColor: tokens.colorNeutralBackground1,
-                border: `1px solid ${tokens.colorNeutralStroke1}`,
-                borderRadius: tokens.borderRadiusMedium,
-                padding: tokens.spacingVerticalS,
-                maxWidth: '240px',
-                zIndex: 9999,
-                boxShadow: tokens.shadow4,
-                pointerEvents: 'none',
-              }}>
+              <div
+                className={styles.nodeTooltip}
+                style={{ left: nodeTooltipPos.x, top: nodeTooltipPos.y }}
+              >
                 <Text block style={{ fontWeight: tokens.fontWeightSemibold, wordBreak: 'break-all', marginBottom: tokens.spacingVerticalXS }}>{hoveredNode.label}</Text>
                 <div className={styles.infoPanelRow}>
                   <Text className={styles.infoPanelLabel}>Logical name</Text>
@@ -978,9 +994,11 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         </Card>
       ) : (
         <Card>
-          <div style={{ padding: tokens.spacingVerticalXL, textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-            <Text>No relationship data available.</Text>
-          </div>
+          <EmptyState
+            type="generic"
+            title="No relationship data"
+            message="No entity relationships were found in the selected solution scope."
+          />
         </Card>
       )}
 

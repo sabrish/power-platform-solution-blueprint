@@ -65,9 +65,10 @@ interface RawFieldPermission {
   canread: number;
   cancreate: number;
   canupdate: number;
-  fieldsecurityprofileid: string;
-  // Expanded navigation property
-  fieldsecurityprofileid_nav?: { name?: string };
+  // OData lookup ID field (prefixed with _ and suffixed with _value)
+  _fieldsecurityprofileid_value: string;
+  // Expanded navigation property — returned under the same key used in $expand
+  fieldsecurityprofileid?: { name?: string };
 }
 
 export class FieldSecurityProfileDiscovery {
@@ -100,7 +101,7 @@ export class FieldSecurityProfileDiscovery {
       entityLogicalNames,
       async (batch) => {
         const entityFilters = batch.map(name => `entityname eq '${name}'`).join(' or ');
-        const query = `fieldpermissions?$select=fieldpermissionid,entityname,attributelogicalname,canread,cancreate,canupdate,fieldsecurityprofileid&$expand=fieldsecurityprofileid($select=name)&$filter=${entityFilters}`;
+        const query = `fieldpermissions?$select=fieldpermissionid,entityname,attributelogicalname,canread,cancreate,canupdate,_fieldsecurityprofileid_value&$expand=fieldsecurityprofileid($select=name)&$filter=${entityFilters}`;
         const result = await this.client.query<RawFieldPermission>(query);
         return result.value;
       },
@@ -112,7 +113,7 @@ export class FieldSecurityProfileDiscovery {
       }
     );
 
-    // Flatten the expanded profile name
+    // Flatten the expanded profile name from the $expand navigation property
     return allPermissions.map((fp) => ({
       fieldpermissionid: fp.fieldpermissionid,
       entityname: fp.entityname,
@@ -120,8 +121,8 @@ export class FieldSecurityProfileDiscovery {
       canread: fp.canread,
       cancreate: fp.cancreate,
       canupdate: fp.canupdate,
-      fieldsecurityprofileid: fp.fieldsecurityprofileid,
-      fieldsecurityprofilename: fp.fieldsecurityprofileid_nav?.name || 'Unknown Profile',
+      fieldsecurityprofileid: fp._fieldsecurityprofileid_value,
+      fieldsecurityprofilename: fp.fieldsecurityprofileid?.name ?? 'Unknown Profile',
     }));
   }
 
@@ -138,7 +139,7 @@ export class FieldSecurityProfileDiscovery {
       const profiles = fieldMap.get(permission.attributelogicalname) || [];
       profiles.push({
         profileId: permission.fieldsecurityprofileid,
-        profileName: permission.fieldsecurityprofilename || 'Unknown Profile',
+        profileName: permission.fieldsecurityprofilename ?? 'Unknown Profile',
         canRead: permission.canread === 1,
         canCreate: permission.cancreate === 1,
         canUpdate: permission.canupdate === 1,
@@ -188,7 +189,7 @@ export class FieldSecurityProfileDiscovery {
         const profiles = fieldMap.get(permission.attributelogicalname) || [];
         profiles.push({
           profileId: permission.fieldsecurityprofileid,
-          profileName: permission.fieldsecurityprofilename || 'Unknown Profile',
+          profileName: permission.fieldsecurityprofilename ?? 'Unknown Profile',
           canRead: permission.canread === 1,
           canCreate: permission.cancreate === 1,
           canUpdate: permission.canupdate === 1,

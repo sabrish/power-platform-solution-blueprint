@@ -65,7 +65,8 @@ export class FlowDiscovery {
         step: 'Flow Discovery',
         entitySet: 'workflows (metadata)',
         logger: this.logger,
-        onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
+        // Use workflowIds.length as the stable total for both passes
+        onProgress: (done) => this.onProgress?.(Math.floor(done / 2), workflowIds.length),
       }
     );
 
@@ -89,20 +90,24 @@ export class FlowDiscovery {
         step: 'Flow Discovery',
         entitySet: 'workflows (clientdata)',
         logger: this.logger,
-        onProgress: (done, total) => this.onProgress?.(
-          Math.floor(metaRecords.length / 2) + Math.floor(done / 2),
-          total
+        // Use workflowIds.length as the stable total; offset by half of Pass 1
+        onProgress: (done) => this.onProgress?.(
+          Math.floor(workflowIds.length / 2) + Math.floor(done / 2),
+          workflowIds.length
         ),
-        getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase()) ?? id).join(', '),
+        getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
       }
     );
 
+    // Normalise workflowid (lowercase, no braces) for consistent map keys
     for (const r of cdRecords) {
-      clientDataMap.set(r.workflowid, r.clientdata ?? null);
+      clientDataMap.set(r.workflowid.toLowerCase().replace(/[{}]/g, ''), r.clientdata ?? null);
     }
 
-    this.onProgress?.(metaRecords.length, metaRecords.length);
-    return metaRecords.map(r => this.mapToFlow(r, clientDataMap.get(r.workflowid) ?? null));
+    this.onProgress?.(workflowIds.length, workflowIds.length);
+    return metaRecords.map(r =>
+      this.mapToFlow(r, clientDataMap.get(r.workflowid.toLowerCase().replace(/[{}]/g, '')) ?? null)
+    );
   }
 
   async getFlowsForEntity(logicalName: string): Promise<Flow[]> {
