@@ -3,7 +3,7 @@
 > Complete architectural blueprints for your Power Platform solutions.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Status](https://img.shields.io/badge/status-active%20development-green)
+![Status](https://img.shields.io/badge/status-stable-green)
 
 Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.
 
@@ -45,7 +45,7 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 
 - **Entity Relationship Diagram (ERD)**: Interactive Cytoscape.js force-directed graph with pan, zoom, node isolation, publisher filter, and PNG/SVG export
 - **Execution Pipeline**: Visual representation of client → sync → async automation flow per entity
-- **Cross-Entity Automation** *(Coming Soon)*: Advanced analysis mapping automation across entity boundaries with plugin decompilation and workflow parsing
+- **Cross-Entity Automation**: Maps automation chains across entity boundaries — traces how plugins, flows, and classic workflows on one entity trigger automation on related entities, with risk detection and field-match analysis
 - **External Dependencies**: Detect and risk-assess all external API calls (flows, plugins, web resources)
 - **Solution Distribution**: Component breakdown across solutions with dependency mapping
 - **Entity Complexity**: Scoring based on field count, automation density, and relationship complexity
@@ -134,6 +134,26 @@ Self-contained, interactive HTML documentation ready to share with stakeholders.
 ![HTML Export Example 1](docs/screenshots/PPSB-7-Export%20html.png)
 
 ![HTML Export Example 2](docs/screenshots/PPSB-8-Export%20html.png)
+
+### Entity Relationship Diagram
+Interactive force-directed ERD with pan, zoom, node isolation, publisher filter, and PNG/SVG export.
+
+![ERD](docs/screenshots/PPSB-9-ERD.png)
+
+### Cross-Entity Automation
+Trace automation chains that cross entity boundaries — how plugins and flows on one entity trigger automation on related entities.
+
+![Cross-Entity Automation](docs/screenshots/PPSB-10-Cross-Entity-Automation.png)
+
+### Global Automation Chain Map
+Full cross-entity automation chain map showing all entity pipelines and their inter-entity connections.
+
+![Global Chain Map](docs/screenshots/PPSB-11-Cross-Entity-Automation-Global-Chain-Map.png)
+
+### Fetch Diagnostics Log
+Real-time fetch diagnostics showing every Dataverse API call with timing, batch sizes, and retry information.
+
+![Fetch Log](docs/screenshots/PPSB-12-Fetch-Log.png)
 
 ---
 
@@ -270,7 +290,6 @@ The combination of AI tools accelerated development while maintaining high code 
 ### Open Source Libraries
 
 - JSZip (ZIP file generation)
-- React Router (navigation)
 - Various TypeScript utilities and type definitions
 
 ### Community
@@ -296,7 +315,7 @@ PPSB is under active development with exciting features planned:
 - Custom analysis rules
 
 **Extended Platform Support**
-- Canvas Apps (enhanced with screen analysis)
+- Canvas Apps (basic metadata discovery now supported; enhanced screen analysis planned)
 - Power Pages (forms, lists, Liquid templates)
 - Customer Insights & Marketing (journeys, segments, email templates)
 - Additional component types (30+ new types)

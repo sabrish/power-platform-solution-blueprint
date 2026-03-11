@@ -5,7 +5,7 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-03-10
+## [1.0.0] - 2026-03-11
 
 ### Added
 - **`withAdaptiveBatch` + `FetchLogger` wired to all remaining discovery classes** — BusinessRuleDiscovery,
@@ -22,6 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - "Won't fire" collapsible section per entity
 - **`ClassicWorkflowXamlParser`** — new parser for classic workflow XAML definitions
 - **`crossEntityTrace.ts`** — new type definitions for the cross-entity automation trace pipeline
+- **Canvas Apps, Custom Pages, and Model-Driven Apps discovery** — new tabs in the Component Browser
+  with metadata discovery for all three; card-row pattern with preview badges
+- **Full accessibility pass** — WCAG 2.1 compliance; keyboard navigation (`role="button"`, `tabIndex`,
+  `onKeyDown`) on all interactive card-row elements; ARIA labels and landmark roles; accessible HTML
+  export markup
+- **Solutions section in HTML export** — Solutions section added to HTML export; Preview badges on
+  Canvas Apps, Custom Pages, and Model-Driven Apps in HTML; additional XSS fixes via `htmlEscape()`
+- **`componentIcons.ts`** — new single source of truth for all component/tab icons; inline emoji
+  replaced with coloured Fluent UI icons across all views; `BracesVariable24Regular` for Plugins;
+  `ArrowUpRight20/24Regular` for external calls; SecurityRolesView dark mode and sticky column fixes;
+  ProcessingScreen cleanup
+- **Environment Variables and Plugins icon updates** — Environment Variables icon changed to
+  `TextBulletListSquareSettingsRegular`; Plugins HTML nav icon redrawn as `{x}` pattern
 
 ### Changed
 - **N+1 query patterns eliminated** — EnvironmentVariableDiscovery (values per definition) and
@@ -44,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lighter, theme-aware rendering
 - **Cross-Entity Automation view — collapsed entity rows** no longer show step-type pills; simplified
   header reduces visual noise
+- **`useListFilter` hook extracted** — shared filter/search logic extracted into a reusable hook;
+  all component lists use the hook consistently
+- **Filter `ToggleButton` pill shape** — all filter toggle buttons now use `borderRadiusCircular`
+  for consistent pill shape
 
 ### Fixed
 - **Processing screen feed** — detail column now shows entity, form, and plugin names instead of
@@ -53,6 +70,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cancel button feedback** — immediately shows "Cancelling, please wait…" on click rather than
   waiting for the current operation to finish
 - **Fetch Diagnostics table** — hover state no longer shows a white background in dark mode
+- **Text overflow violations** — AUDIT-005/006 overflow rules enforced on all card-row components;
+  `TruncatedText` removed from detail cells (wrapping replaces truncation); `warningBox` AUDIT-001
+  fix in WebResourcesList; FilterGroup active state wired in WebResourcesList; React Fragment keys
+  fixed in FieldsTable; `TruncatedText` component deleted (now unused)
+- **Card-row pattern compliance audit** — all remaining DataGrid usages removed; all AUDIT rules
+  enforced across all component browser lists
+- **EntityList and CustomConnectors filter buttons** — filter buttons standardised; card-row
+  violations fixed
+- **BPF stages in HTML export** — now rendered as accordion matching the UI; compact table format
+  in Markdown export
+- **BPF stages scope** — stages excluded from JSON/ZIP exports to avoid bloat; included only in
+  HTML and Markdown
+- **Cross-entity pipeline deduplication** — duplicate steps in cross-entity pipeline eliminated
+  by deduplicating on `automationId`
+- **Discovery progress messages** — emoji stripped from all progress messages; two-pass progress
+  overflow fixed in FormDiscovery and WebResourceDiscovery
+- **Classic Workflow deduplication** — Classic Workflows now deduplicated by entity+name instead
+  of by type, eliminating duplicate rows
+- **Classic Workflow query scope** — query now filters to activation records only, preventing
+  duplicates from child records
+- **System Admin role detection** — detection logic corrected; badge appearance standardised
+- **HTML export CDN note** — tooltip/note added to ExportDialog clarifying CDN dependency in HTML
+  export
 
 ## [0.9.0] - 2026-03-07
 
@@ -321,7 +361,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Future releases will use OIDC authentication automatically
 - No functional changes to the tool itself
 
-[0.5.2]: https://github.com/sabrish/power-platform-solution-blueprint/releases/tag/v0.5.2
 
 ## [0.5.1] - 2026-02-10
 
@@ -382,7 +421,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `@pptb/types@^1.0.19` as devDependency (official PPTB Desktop type definitions)
 - Maintained all existing runtime dependencies (React, Fluent UI, Mermaid, JSZip)
 
-[0.5.1]: https://github.com/sabrish/power-platform-solution-blueprint/releases/tag/v0.5.1
 ## [0.5.0] - 2026-02-08
 
 ### Added
@@ -481,4 +519,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Connection Security**: Uses PPTB Desktop's existing authenticated connection
 - **No Telemetry**: No usage data collected or transmitted
 
+
+[1.0.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.9.0...v1.0.0
+[0.9.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.7.2...v0.8.0
+[0.7.2]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.7.1...v0.7.2
+[0.7.1]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.6.2...v0.7.0
+[0.6.2]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.5.4...v0.6.0
+[0.5.4]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.5.3...v0.5.4
+[0.5.3]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/sabrish/power-platform-solution-blueprint/releases/tag/v0.5.0

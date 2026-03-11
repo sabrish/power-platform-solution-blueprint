@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-09
+**Last updated:** 2026-03-11
 
 ---
 
@@ -18,12 +18,12 @@
 
 ## Current Version
 
-**v1.0.0** (in development — targeting release from `feat/cross-entity-automation` merge)
+**v1.0.0** (released 2026-03-11)
 **v0.9.0** (released 2026-03-07)
 
 ---
 
-## What is Working (as of v0.9.0)
+## What is Working (as of v1.0.0)
 
 ### Core Discovery
 - Entity schema discovery (fields, relationships, keys, alternate keys)
@@ -55,6 +55,12 @@
 - Interactive ERD: Cytoscape.js force-directed graph with pan/zoom, node isolation, publisher filter, edge hover (relationship name + attribute), PNG/SVG export
 - Export: JSON, Markdown, HTML, ZIP (all static imports — dynamic imports broken under pptb-webview://)
 - Real-time progress reporting with phase-specific labels
+- Canvas Apps, Custom Pages, and Model-Driven Apps tabs in the Component Browser (metadata discovery)
+- Cross-Entity Automation Trace tab with pipeline accordion, branch blocks, field-match analysis
+- Full WCAG 2.1 accessibility pass on all interactive card-row elements
+- Centralised `componentIcons.ts` — single source of truth for all component/tab icons
+- `useListFilter` hook — shared filter/search logic across all component lists
+- `useCardRowStyles` hook — shared card-row styles ensuring AUDIT-005/006 compliance
 
 ### Key fixes since v0.7.2
 - Business rule parser completely rewritten — covers all condition/action patterns including `controls.forEach` delegate, double-wrapped parens, date-derived variables
@@ -120,52 +126,25 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
-### Cross-Entity Automation Trace (branch: `feat/cross-entity-automation`) — FUNCTIONALLY COMPLETE
+### Released in v1.0.0 (2026-03-11)
 
-All cross-entity automation work is committed. Build passes (`pnpm typecheck && pnpm build` clean). Branch is ahead of `main`; PR not yet created.
+All work from the `feat/cross-entity-automation` branch has been released. The branch was merged to `main` as part of the v1.0.0 release.
 
-**What is implemented and committed (6 commits landed 2026-03-09):**
+**Key features shipped in v1.0.0:**
+- Cross-Entity Automation Trace — full pipeline accordion UI with field-match analysis and risk detection
+- Canvas Apps, Custom Pages, and Model-Driven Apps discovery tabs
+- Full WCAG 2.1 accessibility pass
+- `componentIcons.ts` single source of truth for all icons
+- `useListFilter` hook for shared filter/search logic
+- Solutions section in HTML export; additional XSS fixes
+- Complete card-row pattern compliance across all component lists (`TruncatedText` deleted)
+- BPF stages rendered as accordion in HTML export; excluded from JSON/ZIP
+- Classic Workflow deduplication and activation-record-only filtering
+- System Admin role detection fix
 
-1. `feat(ui): centralise icons, replace emoji with Fluent UI icons`
-   - New `src/components/componentIcons.ts` — single source of truth for all component/tab icons
-   - `ResultsDashboard` imports exclusively from `componentIcons.ts`
-   - `BracesVariable24Regular` for Plugins (replaces `Code24Regular`)
-   - `ArrowUpRight20/24Regular` for external calls (replaces Globe)
-   - All inline emoji replaced with coloured Fluent UI icons across CrossEntityAutomationView, ExecutionTimeline, ExternalDependenciesView, WebResourcesList
-   - Footer: `window.open()` only, no toast
-   - SecurityRolesView: dark mode fix (explicit `backgroundColor` on all body `<td>`), sticky column zIndex corrected (corner = 3, others = 1), scroll wrappers added
-   - ProcessingScreen: removed redundant icon, fix `fontSizeBase200`
+### Known Limitations
 
-2. `fix(discovery): remove emoji from progress messages, fix progress overflow`
-   - Emoji removed from column security progress messages
-   - `console.error` replaced with structured `stepWarnings.push()`
-   - FormDiscovery and WebResourceDiscovery two-pass progress overflow fixed
-   - ERDGenerator and systemFilters BPF exclusion fixes
-
-3. `feat(export): add pipeline traces to HTML and MD cross-entity export`
-   - HTML: Pipeline Traces section added — two-level accordion (entity → trace → activation table)
-   - HTML: all strings through `htmlEscape()` — 6 XSS blockers fixed
-   - HTML: `coverageNotice` uses `alert-info` CSS class (not hardcoded hex)
-   - MD: `## Pipeline Traces` section added to summary, reuses `formatTraceDetails()`
-
-4. `docs: add SUPPORTED_COMPONENTS.md and update references`
-   - New `SUPPORTED_COMPONENTS.md`: 20 Supported, 3 Partial, 13 Planned
-   - README and CLAUDE.md key reference table updated
-
-5. `feat(ui): update Environment Variables and Plugins icons`
-   - Environment Variables: `Settings24Regular` → `TextBulletListSquareSettingsRegular`
-   - Plugins HTML navIcon: redrawn as `{x}` (curly braces + crossing x)
-
-6. Earlier commits (2026-03-08): CrossEntityAnalyzer rewrite, BlueprintGenerator wiring, CrossEntityAutomationView pipeline accordion UI, withAdaptiveBatch + FetchLogger on 7 remaining discovery classes, CustomAPIsList/ConnectionReferencesList to card-row pattern, static import fixes.
-
-**Remaining before merge/release:**
-- Confirm UI looks correct in app (project owner has not tested in PPTB Desktop yet)
-- PR creation and review
-- Debug `console.log` statements in `FlowDefinitionParser.ts` and `CrossEntityAnalyzer.ts` must be removed before release (see learnings.md [2026-03-07] debug artifacts rule)
-
-### Other Known Limitations
-
-- **Canvas Apps:** Metadata only (no component-level analysis available from API)
+- **Canvas Apps:** Basic metadata discovery supported; component-level screen analysis not available from API
 - **Custom Pages:** Metadata only
 - **Power Pages:** Only if deployed to Dataverse
 - **Customer Insights - Journeys:** Not included
@@ -174,7 +153,7 @@ All cross-entity automation work is committed. Build passes (`pnpm typecheck && 
 
 ## Next Steps (from roadmap.md)
 
-### Near-term (v0.8+)
+### Near-term
 - Baseline Comparison: Load previous blueprint JSON, detect added/removed/modified components
 - CLI tool: `ppsb generate [options]` with service principal auth
 - CI/CD integration: GitHub Actions and Azure DevOps tasks
@@ -186,11 +165,11 @@ All cross-entity automation work is committed. Build passes (`pnpm typecheck && 
 - Custom analysis rules (compliance/quality, JSON/YAML config)
 
 ### Extended Platform Support
-- Canvas Apps (requires .msapp extraction)
-- Power Pages (full portal component analysis)
+- Canvas Apps enhanced analysis (component-level screen analysis; requires .msapp extraction)
+- Power Pages full portal component analysis (forms, lists, Liquid templates)
 - Customer Insights and Marketing journeys
 - Additional Dataverse component types (virtual/elastic tables, AI models, PCF controls)
-- Model-driven app documentation (modules, forms, views, dashboards)
+- Model-driven app enhanced documentation (deep module, form, view, and dashboard analysis beyond metadata)
 
 ---
 
