@@ -74,11 +74,12 @@ Promoted → PATTERN-006 in patterns-dataverse.md ([2026-02-11])
 
 **Affects:** Developer (UI)
 **Severity:** Medium
-**Rule:** All boolean checkboxes in the scope selector and elsewhere must use "Include [thing]" phrasing. Never "Exclude [thing]". Invert the value internally if needed.
+**Rule:** All boolean checkboxes must use "Include [thing]" phrasing. Never "Exclude [thing]". Invert the value internally if needed. Exception: when the project owner explicitly specifies a descriptive "Show only…" label, that phrasing is also acceptable (e.g. "Show only variables using Default values" in EnvironmentVariablesList).
 **Context:** "Exclude system fields" was confusing users. Changed to "Include system fields" in v0.5.3.
 **Example:**
 - Wrong: Checkbox label "Exclude system fields"
 - Right: Checkbox label "Include system fields" (with `excludeSystemFields: !includeSystemFields` internally)
+- Acceptable alternative (project owner directed): "Show only variables using Default values"
 
 ---
 

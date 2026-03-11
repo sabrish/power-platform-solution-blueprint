@@ -63,7 +63,7 @@ const getTypeColor = (type: string): 'brand' | 'success' | 'danger' | 'warning' 
   }
 };
 
-export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVariablesListProps) {
+export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVariablesListProps): JSX.Element {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -98,7 +98,9 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
   const [showHasDefaultOnly, setShowHasDefaultOnly] = useState(false);
 
   const displayedVars = useMemo(
-    () => (showHasDefaultOnly ? baseFiltered.filter((v) => !!v.defaultValue) : baseFiltered),
+    // "using default" = has a defaultValue defined AND no currentValue override
+    // Intentionally matches the "Default" badge condition in the card row
+    () => (showHasDefaultOnly ? baseFiltered.filter((v) => !!v.defaultValue && !v.currentValue) : baseFiltered),
     [baseFiltered, showHasDefaultOnly],
   );
 
@@ -106,7 +108,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     setExpandedId(prev => prev === id ? null : id);
   }, []);
 
-  const renderDetail = (envVar: EnvironmentVariable) => (
+  const renderDetail = (envVar: EnvironmentVariable): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>Environment Variable Details</Title3>
@@ -214,7 +216,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
           onClear={() => setShowHasDefaultOnly(false)}
         >
           <Checkbox
-            label="Include: Has Default"
+            label="Show only variables using Default values"
             checked={showHasDefaultOnly}
             onChange={(_, data) => setShowHasDefaultOnly(Boolean(data.checked))}
           />
@@ -255,7 +257,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
               </Badge>
               {/* Default badge column — placeholder span keeps grid alignment when absent */}
               {envVar.defaultValue && !envVar.currentValue
-                ? <Badge appearance="outline" shape="rounded" size="small">Default</Badge>
+                ? <Badge appearance="tint" shape="rounded" size="small" color="subtle">Default</Badge>
                 : <span aria-hidden="true" />
               }
               <div className={shared.badgeGroup}>
