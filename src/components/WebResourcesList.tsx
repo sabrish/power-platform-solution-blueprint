@@ -12,7 +12,6 @@ import {
 import { ChevronDown20Regular, ChevronRight20Regular, Warning20Regular, Globe20Regular } from '@fluentui/react-icons';
 import type { WebResource, ExternalCall } from '../core';
 import { CodeViewer } from './CodeViewer';
-import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
@@ -29,11 +28,12 @@ const useStyles = makeStyles({
   },
   warningBox: {
     padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorPaletteYellowBackground2,
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderLeft: `3px solid ${tokens.colorStatusWarningBorder1}`,
     borderRadius: tokens.borderRadiusMedium,
     display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalM,
+    gap: tokens.spacingHorizontalS,
+    alignItems: 'start',
   },
   externalCallItem: {
     padding: tokens.spacingVerticalS,
@@ -177,9 +177,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
         {resource.description && (
           <div className={shared.section}>
             <Text className={shared.detailLabel}>Description</Text>
-            <Text>
-              <TruncatedText text={resource.description} />
-            </Text>
+            <Text className={shared.detailValue}>{resource.description}</Text>
           </div>
         )}
 
@@ -256,8 +254,8 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                         {call.confidence}
                       </Badge>
                     </div>
-                    <Text className={shared.codeText}>
-                      <TruncatedText text={call.url} />
+                    <Text className={shared.codeText} style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                      {call.url}
                     </Text>
                     <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                       Domain: {call.domain}
@@ -314,7 +312,11 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
             </ToggleButton>
           ))}
         </FilterGroup>
-        <FilterGroup label="Show:">
+        <FilterGroup
+          label="Show:"
+          hasActiveFilters={showExternalOnly || showDeprecatedOnly}
+          onClear={() => { setShowExternalOnly(false); setShowDeprecatedOnly(false); }}
+        >
           <Checkbox
             label="External calls only"
             checked={showExternalOnly}

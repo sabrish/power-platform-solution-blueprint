@@ -13,7 +13,6 @@ import {
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
-import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
@@ -204,9 +203,7 @@ export function PluginsList({
         {plugin.description && (
           <div className={shared.section}>
             <Text className={shared.detailLabel}>Description</Text>
-            <Text>
-              <TruncatedText text={plugin.description} />
-            </Text>
+            <Text className={shared.detailValue}>{plugin.description}</Text>
           </div>
         )}
 

@@ -9,7 +9,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { OneToManyRelationship, ManyToOneRelationship, ManyToManyRelationship } from '../core';
-import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
 
 const useStyles = makeStyles({
   container: {
@@ -75,19 +75,25 @@ const useStyles = makeStyles({
   },
   detailValue: {
     fontWeight: tokens.fontWeightSemibold,
+    minWidth: 0,
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
     fontSize: tokens.fontSizeBase200,
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXL,
-    textAlign: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
   wrapText: {
     wordBreak: 'break-word',
-    overflowWrap: 'break-word',
+    overflowWrap: 'anywhere',
+  },
+  /**
+   * Name/schema name column inside card-row rows.
+   * AUDIT-005: minWidth: 0 + wordBreak: 'break-word' required.
+   */
+  nameColumn: {
+    minWidth: 0,
+    wordBreak: 'break-word',
   },
 });
 
@@ -214,9 +220,7 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
       <div className={styles.section}>
         <Title3>1:N Relationships (This entity is parent) ({oneToMany.length})</Title3>
         {oneToMany.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Text>No 1:N relationships found.</Text>
-          </div>
+          <EmptyState type="generic" />
         ) : (
           <div className={styles.relationshipList}>
             {oneToMany.map((rel) => {
@@ -232,15 +236,9 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
                     <div className={styles.chevron}>
                       {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                     </div>
-                    <Text weight="semibold">
-                      <TruncatedText text={rel.SchemaName} />
-                    </Text>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={rel.ReferencingEntity} />
-                    </Text>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={rel.ReferencingAttribute} />
-                    </Text>
+                    <Text weight="semibold" className={styles.nameColumn}>{rel.SchemaName}</Text>
+                    <Text className={`${styles.codeText} ${styles.nameColumn}`}>{rel.ReferencingEntity}</Text>
+                    <Text className={`${styles.codeText} ${styles.nameColumn}`}>{rel.ReferencingAttribute}</Text>
                     {getCascadeBadge(rel.CascadeConfiguration?.Delete)}
                     {rel.IsCustomRelationship && <Badge appearance="tint" shape="rounded" color="brand" size="small">Custom</Badge>}
                   </div>
@@ -256,9 +254,7 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
       <div className={styles.section}>
         <Title3>N:1 Relationships (This entity is child) ({manyToOne.length})</Title3>
         {manyToOne.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Text>No N:1 relationships found.</Text>
-          </div>
+          <EmptyState type="generic" />
         ) : (
           <div className={styles.relationshipList}>
             {manyToOne.map((rel) => {
@@ -274,15 +270,9 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
                     <div className={styles.chevron}>
                       {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                     </div>
-                    <Text weight="semibold">
-                      <TruncatedText text={rel.SchemaName} />
-                    </Text>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={rel.ReferencedEntity} />
-                    </Text>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={rel.ReferencingAttribute} />
-                    </Text>
+                    <Text weight="semibold" className={styles.nameColumn}>{rel.SchemaName}</Text>
+                    <Text className={`${styles.codeText} ${styles.nameColumn}`}>{rel.ReferencedEntity}</Text>
+                    <Text className={`${styles.codeText} ${styles.nameColumn}`}>{rel.ReferencingAttribute}</Text>
                     {getCascadeBadge(rel.CascadeConfiguration?.Delete)}
                     {rel.IsCustomRelationship && <Badge appearance="tint" shape="rounded" color="brand" size="small">Custom</Badge>}
                   </div>
@@ -298,9 +288,7 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
       <div className={styles.section}>
         <Title3>N:N Relationships ({manyToMany.length})</Title3>
         {manyToMany.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Text>No N:N relationships found.</Text>
-          </div>
+          <EmptyState type="generic" />
         ) : (
           <div className={styles.relationshipList}>
             {manyToMany.map((rel) => {
@@ -310,15 +298,9 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
               return (
                 <div key={id}>
                   <div className={styles.relationshipRow} style={{ gridTemplateColumns: 'minmax(200px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr) auto' }}>
-                    <Text weight="semibold">
-                      <TruncatedText text={rel.SchemaName} />
-                    </Text>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={relatedEntity} />
-                    </Text>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={rel.IntersectEntityName} />
-                    </Text>
+                    <Text weight="semibold" className={styles.nameColumn}>{rel.SchemaName}</Text>
+                    <Text className={`${styles.codeText} ${styles.nameColumn}`}>{relatedEntity}</Text>
+                    <Text className={`${styles.codeText} ${styles.nameColumn}`}>{rel.IntersectEntityName}</Text>
                     {rel.IsCustomRelationship && <Badge appearance="tint" shape="rounded" color="brand" size="small">Custom</Badge>}
                   </div>
                 </div>
