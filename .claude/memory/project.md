@@ -18,6 +18,7 @@
 
 ## Current Version
 
+**v1.0.1** (released 2026-03-11) — patch: discovery pagination fix + OData injection guards
 **v1.0.0** (released 2026-03-11)
 **v0.9.0** (released 2026-03-07)
 
@@ -125,6 +126,16 @@ pnpm typecheck  # Type check
 ---
 
 ## In Progress / Known Limitations
+
+### Released in v1.0.1 (2026-03-11)
+
+Patch release from the `fix/bug-in-component-discovery` branch. Key fixes:
+- `queryAll()` now uses `@odata.nextLink` cursor pagination; `$skip` removed (error 0x80060888 on customapis and other entity types)
+- Custom API, Connection Reference, and Custom Connector objectid-intersection queries isolated per PATTERN-012; each failure is contained
+- `PublisherDiscovery` derives publishers via `$expand` on solutions — fixes missing publishers in managed-only environments
+- OData injection guards added to `BusinessRuleDiscovery`, `SchemaDiscovery`, and `FieldSecurityProfileDiscovery`
+- Workflow GUIDs normalised before batching in `getBusinessRulesByIds`
+- `FieldSecurityProfileDiscovery` refactored to structured `QueryOptions`
 
 ### Released in v1.0.0 (2026-03-11)
 
