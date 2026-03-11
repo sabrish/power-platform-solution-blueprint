@@ -24,7 +24,7 @@ const ENV_FILTER_SPECS: readonly FilterSpec<EnvironmentVariable>[] = [
 const useStyles = makeStyles({
   row: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto minmax(100px, 1fr) auto',
+    gridTemplateColumns: '24px minmax(200px, 2fr) auto minmax(100px, 1fr) auto auto',
   },
   valueBox: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -211,20 +211,22 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
                 <Text weight="semibold">{envVar.displayName}</Text>
                 <Text className={shared.codeText}>{envVar.schemaName}</Text>
               </div>
-              <Badge appearance="filled" shape="rounded" color={getTypeColor(envVar.typeName)}>
+              <Badge appearance="filled" shape="rounded" size="small" color={getTypeColor(envVar.typeName)}>
                 {envVar.typeName}
               </Badge>
               <div className={shared.badgeGroup}>
                 {envVar.currentValue
                   ? <Text className={shared.codeText}>{envVar.currentValue}</Text>
                   : envVar.defaultValue
-                    ? <>
-                        <Text className={shared.codeText}>{envVar.defaultValue}</Text>
-                        <Badge appearance="outline" shape="rounded" size="small">Default</Badge>
-                      </>
+                    ? <Text className={shared.codeText}>{envVar.defaultValue}</Text>
                     : <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>Not set</Text>
                 }
               </div>
+              {/* Default badge column — placeholder span keeps grid alignment when absent */}
+              {envVar.defaultValue && !envVar.currentValue
+                ? <Badge appearance="outline" shape="rounded" size="small">Default</Badge>
+                : <span aria-hidden="true" />
+              }
               <div className={shared.badgeGroup}>
                 {envVar.isRequired && (
                   <Badge appearance="filled" shape="rounded" color="important" size="small">Required</Badge>
