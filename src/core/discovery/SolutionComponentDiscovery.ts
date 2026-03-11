@@ -278,7 +278,7 @@ export class SolutionComponentDiscovery {
             componentTypes.set(id, ComponentType.CustomAPI);
           }
         }
-      } catch {
+      } catch (error) {
         this.logger?.log({
           timestamp: new Date(t0CustomApis),
           step: 'Solution Component Discovery — Custom APIs (objectid intersection)',
@@ -291,6 +291,7 @@ export class SolutionComponentDiscovery {
           attempts: 1,
           durationMs: Date.now() - t0CustomApis,
           resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
         });
       }
 
@@ -319,7 +320,7 @@ export class SolutionComponentDiscovery {
             componentTypes.set(id, ComponentType.ConnectionReference);
           }
         }
-      } catch {
+      } catch (error) {
         this.logger?.log({
           timestamp: new Date(t0ConnRefs),
           step: 'Solution Component Discovery — Connection References (objectid intersection)',
@@ -332,6 +333,7 @@ export class SolutionComponentDiscovery {
           attempts: 1,
           durationMs: Date.now() - t0ConnRefs,
           resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
         });
       }
 
@@ -361,7 +363,7 @@ export class SolutionComponentDiscovery {
             componentTypes.set(id, ComponentType.CustomConnector);
           }
         }
-      } catch {
+      } catch (error) {
         this.logger?.log({
           timestamp: new Date(t0Connectors),
           step: 'Solution Component Discovery — Custom Connectors (objectid intersection)',
@@ -374,6 +376,7 @@ export class SolutionComponentDiscovery {
           attempts: 1,
           durationMs: Date.now() - t0Connectors,
           resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
         });
       }
 
@@ -508,6 +511,7 @@ export class SolutionComponentDiscovery {
             attempts: 1,
             durationMs: Date.now() - t0,
             resultCount: 0,
+            errorMessage: error instanceof Error ? error.message : String(error),
           });
           throw error;
         }
@@ -635,7 +639,7 @@ export class SolutionComponentDiscovery {
           resultCount: globalChoicesResult.value.length,
         });
         inventory.globalChoiceIds = globalChoicesResult.value.map(g => g.MetadataId.toLowerCase().replace(/[{}]/g, ''));
-      } catch {
+      } catch (error) {
         // Continue with empty globalChoiceIds rather than aborting all discovery (PATTERN-012)
         this.logger?.log({
           timestamp: new Date(t0GlobalChoices),
@@ -649,6 +653,7 @@ export class SolutionComponentDiscovery {
           attempts: 1,
           durationMs: Date.now() - t0GlobalChoices,
           resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
         });
       }
 
