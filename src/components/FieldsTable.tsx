@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import {
   Text,
   Badge,
-  SearchBox,
   makeStyles,
   tokens,
   Button,
@@ -10,21 +9,14 @@ import {
 import { ArrowSort24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { AttributeMetadata } from '../core';
 import { FieldTypeIcon } from './FieldTypeIcon';
+import { FilterBar } from './FilterBar';
+import { EmptyState } from './EmptyState';
 
 const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalM,
-  },
-  controls: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  },
-  searchBox: {
-    minWidth: '300px',
   },
   tableContainer: {
   },
@@ -83,10 +75,13 @@ const useStyles = makeStyles({
   },
   detailValue: {
     fontWeight: tokens.fontWeightSemibold,
+    minWidth: 0,
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
   },
   wrapText: {
     wordBreak: 'break-word',
-    overflowWrap: 'break-word',
+    overflowWrap: 'anywhere',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -256,10 +251,10 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
           <Text className={styles.detailLabel}>Options ({attr.OptionSet.Options.length})</Text>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: tokens.spacingHorizontalS, marginTop: tokens.spacingVerticalXS }}>
             {attr.OptionSet.Options.slice(0, 10).map((option, idx) => (
-              <>
-                <Text key={`v-${idx}`} className={styles.codeText}>{option.Value}</Text>
-                <Text key={`l-${idx}`}>{option.Label?.UserLocalizedLabel?.Label || option.Value}</Text>
-              </>
+              <Fragment key={idx}>
+                <Text className={styles.codeText}>{option.Value}</Text>
+                <Text>{option.Label?.UserLocalizedLabel?.Label || option.Value}</Text>
+              </Fragment>
             ))}
             {attr.OptionSet.Options.length > 10 && (
               <Text style={{ gridColumn: '1 / -1', color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>
@@ -274,18 +269,14 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
 
   return (
     <div className={styles.container}>
-      <div className={styles.controls}>
-        <SearchBox
-          size="medium"
-          className={styles.searchBox}
-          placeholder="Search fields..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {filteredAndSortedAttributes.length} of {attributes.length} fields
-        </Text>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search fields..."
+        filteredCount={filteredAndSortedAttributes.length}
+        totalCount={attributes.length}
+        itemLabel="fields"
+      />
 
       <div className={styles.tableContainer}>
         {/* Table Header */}
@@ -324,6 +315,9 @@ export function FieldsTable({ attributes }: FieldsTableProps) {
         </div>
 
         {/* Table Rows */}
+        {filteredAndSortedAttributes.length === 0 && attributes.length > 0 && (
+          <EmptyState type="search" />
+        )}
         {filteredAndSortedAttributes.map((attr) => {
           const fieldId = attr.MetadataId || attr.LogicalName;
           const isExpanded = expandedFieldId === fieldId;

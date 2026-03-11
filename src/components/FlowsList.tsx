@@ -12,7 +12,6 @@ import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { Flow } from '../core';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
-import { TruncatedText } from './TruncatedText';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
@@ -228,8 +227,8 @@ export function FlowsList({
                     {call.confidence}
                   </Badge>
                 </div>
-                <Text className={shared.codeText}>
-                  <TruncatedText text={call.url} />
+                <Text className={shared.codeText} style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                  {call.url}
                 </Text>
                 <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                   Domain: {call.domain}

@@ -712,3 +712,54 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 - Right: `select: ['canvasappid', 'displayname', 'name', 'description', 'ismanaged', 'canvasapptype']`, then split on `canvasapptype === 2`
 
 ---
+
+## [2026-03-11] — Text overflow violations in components that do not use useCardRowStyles
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** AUDIT-005 and AUDIT-006 must be checked in EVERY component that has a card-row or detail-grid layout, not only those that use `useCardRowStyles`. Components that define their own local `makeStyles` (rather than extending the shared hook) are the highest-risk source of text overflow regressions.
+
+**Components confirmed violating as of 2026-03-11 (now fixed):**
+
+| Component | Violation | Root cause |
+|-----------|-----------|------------|
+| `FieldsTable.tsx` | AUDIT-006: local `detailValue` missing `minWidth: 0`, `wordBreak`, `overflowWrap` | Own makeStyles, not extending shared hook |
+| `FieldsTable.tsx` | AUDIT-008: bare `SearchBox` outside `FilterBar` | Not using FilterBar wrapper |
+| `RelationshipsView.tsx` | AUDIT-006: local `detailValue` missing `minWidth: 0`, `wordBreak`, `overflowWrap` | Own makeStyles, not extending shared hook |
+| `RelationshipsView.tsx` | PATTERN-001 rule 5: `TruncatedText` used in card-row list row cells | Forces `whiteSpace: nowrap` — text overlaps |
+| `PluginsList.tsx` | PATTERN-001 rule 5: `TruncatedText` in expanded description detail | Forces truncation instead of wrapping |
+| `WebResourcesList.tsx` | PATTERN-001 rule 5: `TruncatedText` in expanded description and URL detail | Forces truncation instead of wrapping |
+| `FlowsList.tsx` | PATTERN-001 rule 5: `TruncatedText` in expanded URL detail | Forces truncation instead of wrapping |
+
+**Check every new component for:**
+1. Any local `nameColumn` style — must have `minWidth: 0` AND `wordBreak: 'break-word'`
+2. Any local `detailValue` style — must have `minWidth: 0`, `wordBreak: 'break-word'`, `overflowWrap: 'anywhere'`
+3. Any `TruncatedText` usage in card-row rows or detail values — replace with plain `<Text>` + `wordBreak` styles; `TruncatedText` may only be used in genuine column-constrained contexts where overflow is truly unavoidable
+4. Any `SearchBox` outside `FilterBar` in a component list — wrap in `FilterBar`
+
+**Fix pattern for TruncatedText in card-row rows:**
+```tsx
+// Wrong — causes overlapping text
+<Text weight="semibold"><TruncatedText text={rel.SchemaName} /></Text>
+
+// Right — wraps properly
+<Text weight="semibold" className={styles.nameColumn}>{rel.SchemaName}</Text>
+```
+
+---
+
+## [2026-03-11] — Globe20Regular exception: Web Resources external-call row indicator only
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** `Globe20Regular` is acceptable as the external-call row indicator icon specifically inside `WebResourcesList.tsx`. It must NOT be used as a general external-call indicator in any other component.
+
+**Rationale:** Web Resources already use `DocumentGlobe24Regular` as their component-category icon. Using `Globe20Regular` for the inline external-call indicator in this specific list is a deliberate in-context association: the globe visual ties the "has external calls" signal to the same web/globe metaphor that defines the category. All other components (PluginsList, FlowsList, etc.) must use `ArrowUpRight20Regular` for external-call indicators — the exception is WebResourcesList only.
+
+**Summary:**
+- `WebResourcesList.tsx` row indicator for "has external calls" → `Globe20Regular` (exception — acceptable)
+- All other components' "has external calls" / external-call indicators → `ArrowUpRight20Regular`
+- Web Resources component-category icon → `DocumentGlobe24Regular` (from componentIcons.ts)
+- External Dependencies nav tab → `Globe24Regular` (from componentIcons.ts)
+
+---

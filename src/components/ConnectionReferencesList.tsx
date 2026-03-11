@@ -18,6 +18,14 @@ const useStyles = makeStyles({
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) minmax(120px, 1fr) auto',
   },
+  /** Connector display name column — AUDIT-006: full overflow protection required */
+  connectorColumn: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+    minWidth: 0,
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+  },
 });
 
 interface ConnectionReferencesListProps {
@@ -134,11 +142,11 @@ export function ConnectionReferencesList({ connectionReferences }: ConnectionRef
                 <Text weight="semibold">{ref.displayName}</Text>
                 <Text className={shared.codeText}>{ref.name}</Text>
               </div>
-              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2, minWidth: 0, wordBreak: 'break-word' }}>
+              <Text className={styles.connectorColumn}>
                 {ref.connectorDisplayName || '—'}
               </Text>
               <div className={shared.badgeGroup}>
-                <Badge appearance="tint" shape="rounded" color={isConnected ? 'success' : 'danger'}>
+                <Badge appearance="tint" shape="rounded" size="small" color={isConnected ? 'success' : 'danger'}>
                   {isConnected ? 'Connected' : 'Not Connected'}
                 </Badge>
                 {ref.isManaged && (
