@@ -111,6 +111,10 @@ export class FlowDiscovery {
   }
 
   async getFlowsForEntity(logicalName: string): Promise<Flow[]> {
+    // Guard against OData injection: entity logical names are lowercase alphanumeric + underscores
+    if (!/^[a-z][a-z0-9_]*$/.test(logicalName)) {
+      throw new Error(`Invalid entity logical name: ${logicalName}`);
+    }
     try {
       const response = await this.client.query<WorkflowMetaRecord & { clientdata: string | null }>('workflows', {
         select: [
@@ -148,9 +152,9 @@ export class FlowDiscovery {
       entityDisplayName: record['primaryentity@OData.Community.Display.V1.FormattedValue'] || null,
       scope: record.scope,
       scopeName,
-      owner: record['_ownerid_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      owner: record['_ownerid_value@OData.Community.Display.V1.FormattedValue'] ?? 'Unknown',
       ownerId: record._ownerid_value,
-      modifiedBy: record['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] || 'Unknown',
+      modifiedBy: record['_modifiedby_value@OData.Community.Display.V1.FormattedValue'] ?? 'Unknown',
       modifiedOn: record.modifiedon,
       createdOn: record.createdon,
       definition,

@@ -1,10 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Text,
   Badge,
   ToggleButton,
+  makeStyles,
+  mergeClasses,
+  tokens,
 } from '@fluentui/react-components';
-import { makeStyles, tokens } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { ConnectionReference } from '../core';
@@ -14,8 +16,11 @@ import { useCardRowStyles } from '../hooks/useCardRowStyles';
 const CONN_STATUS_VALUES = ['Connected', 'Not Connected'];
 
 const useStyles = makeStyles({
+  listContainer: {
+    marginTop: tokens.spacingVerticalL,
+  },
   row: {
-    display: 'grid',
+    // display: 'grid' is inherited from shared.cardRow — only override the column template here
     gridTemplateColumns: '24px minmax(200px, 2fr) minmax(120px, 1fr) auto',
   },
   /** Connector display name column — AUDIT-006: full overflow protection required */
@@ -25,6 +30,10 @@ const useStyles = makeStyles({
     minWidth: 0,
     wordBreak: 'break-word',
     overflowWrap: 'anywhere',
+  },
+  /** Muted text for unset / placeholder values */
+  mutedText: {
+    color: tokens.colorNeutralForeground3,
   },
 });
 
@@ -71,7 +80,9 @@ export function ConnectionReferencesList({ connectionReferences }: ConnectionRef
     return filtered;
   }, [sorted, searchQuery, activeStatusFilters]);
 
-  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedId(prev => prev === id ? null : id);
+  }, []);
 
   if (connectionReferences.length === 0) {
     return (
@@ -84,7 +95,7 @@ export function ConnectionReferencesList({ connectionReferences }: ConnectionRef
   }
 
   return (
-    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
+    <div className={mergeClasses(shared.container, styles.listContainer)}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -128,7 +139,7 @@ export function ConnectionReferencesList({ connectionReferences }: ConnectionRef
         return (
           <div key={ref.id}>
             <div
-              className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
+              className={mergeClasses(shared.cardRow, styles.row, isExpanded && shared.cardRowExpanded)}
               role="button"
               tabIndex={0}
               aria-expanded={isExpanded}
@@ -167,9 +178,9 @@ export function ConnectionReferencesList({ connectionReferences }: ConnectionRef
                   </div>
                   <div className={shared.detailItem}>
                     <Text className={shared.detailLabel}>Connection ID</Text>
-                    <Text className={shared.codeText}>
-                      {ref.connectionId || <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>}
-                    </Text>
+                    {ref.connectionId
+                      ? <Text className={shared.codeText}>{ref.connectionId}</Text>
+                      : <span className={styles.mutedText}>Not set</span>}
                   </div>
                   <div className={shared.detailItem}>
                     <Text className={shared.detailLabel}>Owner</Text>
