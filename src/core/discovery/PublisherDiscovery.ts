@@ -1,6 +1,16 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { Publisher } from '../types.js';
 
+/** Exact shape of each row returned by the solutions expand query */
+interface SolutionPublisherRow {
+  publisherid: {
+    publisherid: string;
+    uniquename: string;
+    friendlyname: string;
+    customizationprefix: string;
+  };
+}
+
 /**
  * Discovers custom publishers in the Power Platform environment
  */
@@ -19,23 +29,25 @@ export class PublisherDiscovery {
    */
   async getPublishers(): Promise<Publisher[]> {
     try {
-      const result = await this.client.query<{ publisherid: Publisher }>(
+      const result = await this.client.query<SolutionPublisherRow>(
         'solutions',
         {
-          select: ['solutionid'],
           filter: 'isvisible eq true',
           expand: 'publisherid($select=publisherid,uniquename,friendlyname,customizationprefix)',
         }
       );
 
-      // Deduplicate by publisherid and sort by friendlyname
+      // Deduplicate by publisherid (normalized — lowercase, no braces per PATTERN-003)
+      // and sort by friendlyname
       const seen = new Set<string>();
       const publishers: Publisher[] = [];
       for (const solution of result.value) {
         const pub = solution.publisherid;
-        if (!pub?.publisherid || seen.has(pub.publisherid)) continue;
-        seen.add(pub.publisherid);
-        publishers.push(pub);
+        if (!pub?.publisherid) continue;
+        const normalizedId = pub.publisherid.toLowerCase().replace(/[{}]/g, '');
+        if (seen.has(normalizedId)) continue;
+        seen.add(normalizedId);
+        publishers.push({ ...pub, publisherid: normalizedId });
       }
       publishers.sort((a, b) => a.friendlyname.localeCompare(b.friendlyname));
 

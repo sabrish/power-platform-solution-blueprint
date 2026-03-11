@@ -91,8 +91,8 @@
 | 208 | Import Map | |
 | 210 | WebWizard | |
 | **300** | **Canvas App** | **Power Apps canvas apps** |
-| 371 | Connector | Custom connectors |
-| 372 | Connector | (duplicate entry in docs) |
+| 371 | Connection Reference / Connector | Both labeled "Connector" in official docs. In practice, objectid 371 entries route to `connectionreferences` (not connectors). Discovered via objectid intersection — these entries do NOT appear under type 371 in solutioncomponents in tested environments. |
+| 372 | Custom Connector | Also labeled "Connector" in official docs (duplicate entry). Routes to `connectors` table. Discovered via objectid intersection — same caveat as 371. |
 | 380 | Environment Variable Definition | |
 | 381 | Environment Variable Value | |
 | 400 | AI Project Type | |
@@ -135,22 +135,41 @@ Must query the `workflows` table with category field to classify them.
 
 ## Key Tables for Component Discovery
 
-| Component Type | Query Table | Primary Key Field |
-|---------------|-------------|-------------------|
+There are two discovery strategies depending on whether the component type reliably appears in `solutioncomponents`:
+
+### Strategy A — solutioncomponents filter (preferred, targeted)
+
+These component types appear in `solutioncomponents` under their documented (or verified) type codes. In solution-scoped mode, `SolutionComponentDiscovery` queries `solutioncomponents` filtered by `_solutionid_value` and routes each `objectid` to the correct inventory list via the type code. **No separate entity query is needed for these types in solution-scoped mode.**
+
+| Component Type | Query Table (Default Solution path only) | Primary Key Field |
+|---------------|------------------------------------------|-------------------|
 | 1 (Entity) | `EntityDefinitions` (metadata) | `MetadataId` |
 | 2 (Attribute) | `EntityDefinitions` → Attributes | `MetadataId` |
+| 9 (GlobalOptionSet) | `GlobalOptionSetDefinitions` (metadata) | `MetadataId` |
+| 20 (Security Role) | `roles` | `roleid` |
 | 29 (Workflow) | `workflows` | `workflowid` |
-| 61 (Web Resource) | `webresources` | `webresourceid` |
-| 92 (SDK Message Processing Step) | `sdkmessageprocessingsteps` | `sdkmessageprocessingstepid` |
-| 93 (SDK Message Processing Step Image) | `sdkmessageprocessingstepimages` | `sdkmessageprocessingstepimageid` |
+| 60 (System Form) | `systemforms` | `formid` |
+| 61 (Web Resource) | `webresourceset` | `webresourceid` |
+| 70 (Field Security Profile) | `fieldsecurityprofiles` | `fieldsecurityprofileid` |
 | 80 (App Module) | `appmodules` | `appmoduleid` |
-| 300 (Canvas App) | `canvasapps` | `canvasappid` |
-| 300 (Custom Page) | `canvasapps` | `canvasappid` | Same type code as Canvas App — split post-retrieval by `canvasapptype` (0 = Standard, 1 = Component Library, 2 = Custom Page) |
-| 371 (Connection Reference) | `connectionreferences` | `connectionreferenceid` | Labeled "Connector" in docs but routes to connection references in practice |
-| 372 (Custom Connector) | `connectors` | `connectorid` | Also labeled "Connector" in docs (duplicate entry) |
+| 92 (SDK Message Processing Step) | `sdkmessageprocessingsteps` | `sdkmessageprocessingstepid` |
+| 300 (Canvas App / Custom Page) | `canvasapps` | `canvasappid` — split post-retrieval by `canvasapptype` (0=Standard, 1=Component Library, 2=Custom Page) |
 | 380 (Environment Variable Definition) | `environmentvariabledefinitions` | `environmentvariabledefinitionid` |
-| 10030 (Plugin Package) | `pluginpackages` | `pluginpackageid` | Undocumented in official option set but present in solutioncomponents at runtime |
-| 10076 (Custom API) | `customapis` | `customapiid` | Undocumented in official option set but present in solutioncomponents at runtime |
+| 10030 (Plugin Package) | `pluginpackages` | `pluginpackageid` — verified present in solutioncomponents at runtime |
+
+### Strategy B — objectid intersection (required for broken type codes)
+
+These component types store `solutionid = Default Solution` on every record regardless of which named solution they belong to. They also do **not** appear in `solutioncomponents` under their expected type codes (verified from live environments — type codes 371 and 10076 are absent from the solutioncomponents result set). Server-side filtering by `solutionid` or by `componenttype` is therefore unreliable.
+
+**Discovery pattern:** Query ALL records for the type using `IDataverseClient.queryAll()` (which paginates automatically by following `@odata.nextLink` — `$skip` is NOT used because Dataverse does not support it on all entity types, e.g. `customapis` returns `0x80060888: Skip Clause is not supported in CRM`), then keep only those whose primary key appears in the `solutioncomponents` objectid set for the selected solutions. In Default Solution mode, all records are included without filtering.
+
+**CRITICAL:** Do NOT add a `$filter=solutionid eq <guid>` to these queries — it will return 0 results for any named solution.
+
+| Component Type | Query Table | Primary Key Field | Notes |
+|---------------|-------------|-------------------|-------|
+| 371 (Connection Reference) | `connectionreferences` | `connectionreferenceid` | Type 371 absent from solutioncomponents in tested environments; objectids appear under undocumented codes |
+| 372 (Custom Connector) | `connectors` | `connectorid` | Same caveat as 371 |
+| 10076 (Custom API) | `customapis` | `customapiid` | Type 10076 absent from solutioncomponents in tested environments; objectids appear under undocumented codes |
 
 ---
 
@@ -173,7 +192,7 @@ Must query the `workflows` table with category field to classify them.
 ## Usage in Code
 
 ```typescript
-// From packages/core/src/types/components.ts
+// From src/core/types/components.ts
 export enum ComponentType {
   Entity = 1,
   Attribute = 2,

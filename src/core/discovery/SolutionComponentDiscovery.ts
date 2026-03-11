@@ -1,4 +1,4 @@
-import type { IDataverseClient, QueryOptions } from '../dataverse/IDataverseClient.js';
+import type { IDataverseClient, QueryOptions, QueryResult } from '../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { ComponentType, WorkflowCategory, type ComponentInventory, type ComponentInventoryWithSolutions, type WorkflowInventory, type WorkflowInventoryWithSolutions } from '../types/components.js';
@@ -85,7 +85,14 @@ export class SolutionComponentDiscovery {
         );
         if (specificSolutionIds.length > 0) {
           const mapResult = await this.buildSolutionComponentMap(specificSolutionIds);
-          return { ...unmanagedResult, ...mapResult };
+          // Explicitly reconstruct rather than relying on spread order — ensures
+          // entitiesWithAllSubcomponents from unmanagedResult is never silently overwritten.
+          return {
+            ...unmanagedResult,
+            componentToSolutions: mapResult.componentToSolutions,
+            solutionComponentMap: mapResult.solutionComponentMap,
+            componentTypes: mapResult.componentTypes,
+          };
         }
 
         return unmanagedResult;
@@ -209,15 +216,24 @@ export class SolutionComponentDiscovery {
             }
             break;
           case ComponentType.ConnectionReference:
+            // Safety net: type 371 was not observed in solutioncomponents in tested environments,
+            // but kept here in case some environments do surface it under this code.
+            // The objectid intersection below also handles this case.
             if (!inventory.connectionReferenceIds.includes(objectId)) {
               inventory.connectionReferenceIds.push(objectId);
             }
             break;
           case ComponentType.CustomConnector:
+            // Safety net: type 372 was not observed in solutioncomponents in tested environments,
+            // but kept here in case some environments do surface it under this code.
+            // The objectid intersection below also handles this case.
             if (!inventory.customConnectorIds.includes(objectId)) {
               inventory.customConnectorIds.push(objectId);
             }
             break;
+          // NOTE: ComponentType.CustomAPI (10076) has no switch case here.
+          // Custom APIs do not appear in solutioncomponents under type code 10076 in practice.
+          // They are discovered via objectid intersection below.
           case ComponentType.PluginPackage:
             if (!inventory.pluginPackageIds.includes(objectId)) {
               inventory.pluginPackageIds.push(objectId);
@@ -226,47 +242,139 @@ export class SolutionComponentDiscovery {
         }
       }
 
-      // Custom APIs (type 10076) and Connection References (type 371) do not appear in
-      // solutioncomponents under their expected type codes. Their objectids DO appear in
-      // solutioncomponents under undocumented type codes. Use objectid intersection:
-      // query all records, keep only those whose ID appears in the solutioncomponents objectid set.
+      // Custom APIs (10076), Connection References (371), and Custom Connectors (372) do not
+      // appear in solutioncomponents under their expected type codes in practice. Their objectids
+      // DO appear under undocumented type codes. Use objectid intersection: query all records via
+      // queryAll (follows @odata.nextLink pagination), keep only those whose primary key appears
+      // in the solutioncomponents objectid set for the selected solutions.
       // The tracking maps (componentToSolutions, solutionComponentMap) are already populated
       // for these objectids by the pre-switch tracking code above.
+      // Each query is isolated in its own try/catch (PATTERN-012) so a failure on one type
+      // does not prevent the other types from being discovered.
       const scObjectIds = new Set(result.value.map(c => c.objectid.toLowerCase().replace(/[{}]/g, '')));
 
-      const allCustomApis = await this.client.query<{ customapiid: string }>(
-        'customapis', { select: ['customapiid'] }
-      );
-      for (const api of allCustomApis.value) {
-        const id = api.customapiid.toLowerCase().replace(/[{}]/g, '');
-        if (scObjectIds.has(id) && !inventory.customApiIds.includes(id)) {
-          inventory.customApiIds.push(id);
-          componentTypes.set(id, ComponentType.CustomAPI);
+      const t0CustomApis = Date.now();
+      try {
+        const allCustomApis = await this.client.queryAll<{ customapiid: string }>(
+          'customapis', { select: ['customapiid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0CustomApis),
+          step: 'Solution Component Discovery — Custom APIs (objectid intersection)',
+          entitySet: 'customapis',
+          filterSummary: 'objectid intersection',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0CustomApis,
+          resultCount: allCustomApis.value.length,
+        });
+        for (const api of allCustomApis.value) {
+          const id = api.customapiid.toLowerCase().replace(/[{}]/g, '');
+          if (scObjectIds.has(id) && !inventory.customApiIds.includes(id)) {
+            inventory.customApiIds.push(id);
+            componentTypes.set(id, ComponentType.CustomAPI);
+          }
         }
+      } catch {
+        this.logger?.log({
+          timestamp: new Date(t0CustomApis),
+          step: 'Solution Component Discovery — Custom APIs (objectid intersection)',
+          entitySet: 'customapis',
+          filterSummary: 'objectid intersection',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0CustomApis,
+          resultCount: 0,
+        });
       }
 
-      const allConnRefs = await this.client.query<{ connectionreferenceid: string }>(
-        'connectionreferences', { select: ['connectionreferenceid'] }
-      );
-      for (const ref of allConnRefs.value) {
-        const id = ref.connectionreferenceid.toLowerCase().replace(/[{}]/g, '');
-        if (scObjectIds.has(id) && !inventory.connectionReferenceIds.includes(id)) {
-          inventory.connectionReferenceIds.push(id);
-          componentTypes.set(id, ComponentType.ConnectionReference);
+      const t0ConnRefs = Date.now();
+      try {
+        const allConnRefs = await this.client.queryAll<{ connectionreferenceid: string }>(
+          'connectionreferences', { select: ['connectionreferenceid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0ConnRefs),
+          step: 'Solution Component Discovery — Connection References (objectid intersection)',
+          entitySet: 'connectionreferences',
+          filterSummary: 'objectid intersection',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0ConnRefs,
+          resultCount: allConnRefs.value.length,
+        });
+        for (const ref of allConnRefs.value) {
+          const id = ref.connectionreferenceid.toLowerCase().replace(/[{}]/g, '');
+          if (scObjectIds.has(id) && !inventory.connectionReferenceIds.includes(id)) {
+            inventory.connectionReferenceIds.push(id);
+            componentTypes.set(id, ComponentType.ConnectionReference);
+          }
         }
+      } catch {
+        this.logger?.log({
+          timestamp: new Date(t0ConnRefs),
+          step: 'Solution Component Discovery — Connection References (objectid intersection)',
+          entitySet: 'connectionreferences',
+          filterSummary: 'objectid intersection',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0ConnRefs,
+          resultCount: 0,
+        });
       }
 
-      // Custom Connectors: same pattern as Custom APIs and Connection References —
-      // solutionid points to Default Solution; use objectid intersection instead.
-      const allConnectors = await this.client.query<{ connectorid: string }>(
-        'connectors', { select: ['connectorid'] }
-      );
-      for (const connector of allConnectors.value) {
-        const id = connector.connectorid.toLowerCase().replace(/[{}]/g, '');
-        if (scObjectIds.has(id) && !inventory.customConnectorIds.includes(id)) {
-          inventory.customConnectorIds.push(id);
-          componentTypes.set(id, ComponentType.CustomConnector);
+      // Custom Connectors: same objectid intersection pattern.
+      const t0Connectors = Date.now();
+      try {
+        const allConnectors = await this.client.queryAll<{ connectorid: string }>(
+          'connectors', { select: ['connectorid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0Connectors),
+          step: 'Solution Component Discovery — Custom Connectors (objectid intersection)',
+          entitySet: 'connectors',
+          filterSummary: 'objectid intersection',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0Connectors,
+          resultCount: allConnectors.value.length,
+        });
+        for (const connector of allConnectors.value) {
+          const id = connector.connectorid.toLowerCase().replace(/[{}]/g, '');
+          if (scObjectIds.has(id) && !inventory.customConnectorIds.includes(id)) {
+            inventory.customConnectorIds.push(id);
+            componentTypes.set(id, ComponentType.CustomConnector);
+          }
         }
+      } catch {
+        this.logger?.log({
+          timestamp: new Date(t0Connectors),
+          step: 'Solution Component Discovery — Custom Connectors (objectid intersection)',
+          entitySet: 'connectors',
+          filterSummary: 'objectid intersection',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0Connectors,
+          resultCount: 0,
+        });
       }
 
       return {
@@ -275,7 +383,7 @@ export class SolutionComponentDiscovery {
         solutionComponentMap,
         componentTypes,
         entitiesWithAllSubcomponents,
-      } as ComponentInventoryWithSolutions;
+      };
     } catch (error) {
       throw new Error(
         `Failed to discover solution components: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -301,15 +409,15 @@ export class SolutionComponentDiscovery {
     }).join(' or ');
 
     const queryStart = Date.now();
-    const result = await this.client.query<SolutionComponent>('solutioncomponents', {
+    const result = await this.client.queryAll<SolutionComponent>('solutioncomponents', {
       select: ['objectid', 'componenttype', '_solutionid_value'],
       filter: solutionFilters,
     });
     this.logger?.log({
       timestamp: new Date(queryStart),
-      step: 'Solution Component Discovery',
+      step: 'Solution Component Discovery — Specific Solutions (alongside Default)',
       entitySet: 'solutioncomponents',
-      filterSummary: `${solutionIds.length} specific solution(s) alongside Default`,
+      filterSummary: `${solutionIds.length} specific solution(s) alongside Default Solution`,
       batchIndex: 1,
       batchTotal: 1,
       batchSize: solutionIds.length,
@@ -363,34 +471,53 @@ export class SolutionComponentDiscovery {
     };
 
     try {
+      // logQuery: fetches ALL pages via queryAll (no top/skip needed) and logs the result.
+      // On failure, logs status:'failed' before re-throwing so Fetch Diagnostics stays accurate.
       const logQuery = async <T extends object>(
         entitySet: string,
-        queryOptions: QueryOptions,
+        queryOptions: Omit<QueryOptions, 'top'>,
         step: string
-      ): Promise<{ value: T[] }> => {
+      ): Promise<QueryResult<T>> => {
         const t0 = Date.now();
-        const r = await this.client.query<T>(entitySet, queryOptions);
-        this.logger?.log({
-          timestamp: new Date(t0),
-          step,
-          entitySet,
-          filterSummary: '',
-          batchIndex: 1,
-          batchTotal: 1,
-          batchSize: 0,
-          status: 'success',
-          attempts: 1,
-          durationMs: Date.now() - t0,
-          resultCount: r.value.length,
-        });
-        return r;
+        try {
+          const r = await this.client.queryAll<T>(entitySet, queryOptions);
+          this.logger?.log({
+            timestamp: new Date(t0),
+            step,
+            entitySet,
+            filterSummary: '',
+            batchIndex: 1,
+            batchTotal: 1,
+            batchSize: 0,
+            status: 'success',
+            attempts: 1,
+            durationMs: Date.now() - t0,
+            resultCount: r.value.length,
+          });
+          return r;
+        } catch (error) {
+          this.logger?.log({
+            timestamp: new Date(t0),
+            step,
+            entitySet,
+            filterSummary: '',
+            batchIndex: 1,
+            batchTotal: 1,
+            batchSize: 0,
+            status: 'failed',
+            attempts: 1,
+            durationMs: Date.now() - t0,
+            resultCount: 0,
+          });
+          throw error;
+        }
       };
 
       // Query plugins (SDK Message Processing Steps) - all plugins
       const pluginsResult = await logQuery<{ sdkmessageprocessingstepid: string }>(
         'sdkmessageprocessingsteps',
         { select: ['sdkmessageprocessingstepid'] },
-        'Solution Component Discovery'
+        'Default Solution — Plugin Steps'
       );
       inventory.pluginIds = pluginsResult.value.map(p => p.sdkmessageprocessingstepid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -398,7 +525,7 @@ export class SolutionComponentDiscovery {
       const workflowsResult = await logQuery<{ workflowid: string }>(
         'workflows',
         { select: ['workflowid'] },
-        'Solution Component Discovery'
+        'Default Solution — Workflows'
       );
       inventory.workflowIds = workflowsResult.value.map(w => w.workflowid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -406,7 +533,7 @@ export class SolutionComponentDiscovery {
       const webResourcesResult = await logQuery<{ webresourceid: string }>(
         'webresourceset',
         { select: ['webresourceid'] },
-        'Solution Component Discovery'
+        'Default Solution — Web Resources'
       );
       inventory.webResourceIds = webResourcesResult.value.map(w => w.webresourceid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -414,7 +541,7 @@ export class SolutionComponentDiscovery {
       const customApisResult = await logQuery<{ customapiid: string }>(
         'customapis',
         { select: ['customapiid'] },
-        'Solution Component Discovery'
+        'Default Solution — Custom APIs'
       );
       inventory.customApiIds = customApisResult.value.map(c => c.customapiid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -422,7 +549,7 @@ export class SolutionComponentDiscovery {
       const envVarsResult = await logQuery<{ environmentvariabledefinitionid: string }>(
         'environmentvariabledefinitions',
         { select: ['environmentvariabledefinitionid'] },
-        'Solution Component Discovery'
+        'Default Solution — Environment Variables'
       );
       inventory.environmentVariableIds = envVarsResult.value.map(e => e.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -430,7 +557,7 @@ export class SolutionComponentDiscovery {
       const connRefsResult = await logQuery<{ connectionreferenceid: string }>(
         'connectionreferences',
         { select: ['connectionreferenceid'] },
-        'Solution Component Discovery'
+        'Default Solution — Connection References'
       );
       inventory.connectionReferenceIds = connRefsResult.value.map(c => c.connectionreferenceid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -441,7 +568,7 @@ export class SolutionComponentDiscovery {
       const customConnectorsResult = await logQuery<{ connectorid: string }>(
         'connectors',
         { select: ['connectorid'] },
-        'Solution Component Discovery'
+        'Default Solution — Custom Connectors'
       );
       inventory.customConnectorIds = customConnectorsResult.value.map(c => c.connectorid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -449,7 +576,7 @@ export class SolutionComponentDiscovery {
       const pluginPackagesResult = await logQuery<{ pluginpackageid: string }>(
         'pluginpackages',
         { select: ['pluginpackageid'] },
-        'Solution Component Discovery'
+        'Default Solution — Plugin Packages'
       );
       inventory.pluginPackageIds = pluginPackagesResult.value.map(p => p.pluginpackageid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -457,7 +584,7 @@ export class SolutionComponentDiscovery {
       const securityRolesResult = await logQuery<{ roleid: string }>(
         'roles',
         { select: ['roleid'] },
-        'Solution Component Discovery'
+        'Default Solution — Security Roles'
       );
       inventory.securityRoleIds = securityRolesResult.value.map(r => r.roleid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -465,7 +592,7 @@ export class SolutionComponentDiscovery {
       const fieldSecurityProfilesResult = await logQuery<{ fieldsecurityprofileid: string }>(
         'fieldsecurityprofiles',
         { select: ['fieldsecurityprofileid'] },
-        'Solution Component Discovery'
+        'Default Solution — Field Security Profiles'
       );
       inventory.fieldSecurityProfileIds = fieldSecurityProfilesResult.value.map(f => f.fieldsecurityprofileid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -474,7 +601,7 @@ export class SolutionComponentDiscovery {
       const canvasAppsResult = await logQuery<{ canvasappid: string }>(
         'canvasapps',
         { select: ['canvasappid'] },
-        'Solution Component Discovery'
+        'Default Solution — Canvas Apps'
       );
       inventory.canvasAppIds = canvasAppsResult.value.map(c => c.canvasappid.toLowerCase().replace(/[{}]/g, ''));
 
@@ -482,30 +609,48 @@ export class SolutionComponentDiscovery {
       const appModulesResult = await logQuery<{ appmoduleid: string }>(
         'appmodules',
         { select: ['appmoduleid'] },
-        'Solution Component Discovery'
+        'Default Solution — App Modules'
       );
       inventory.appModuleIds = appModulesResult.value.map(a => a.appmoduleid.toLowerCase().replace(/[{}]/g, ''));
 
-      // Global choices (option sets) - query metadata API for all GlobalOptionSetDefinitions
+      // Global choices (option sets) — wrapped in its own try/catch so a metadata API failure
+      // does not abort the entire Default Solution discovery (PATTERN-012: continue on item failure).
       const t0GlobalChoices = Date.now();
-      const globalChoicesResult = await this.client.queryMetadata<{ MetadataId: string }>(
-        'GlobalOptionSetDefinitions',
-        { select: ['MetadataId'] }
-      );
-      this.logger?.log({
-        timestamp: new Date(t0GlobalChoices),
-        step: 'Solution Component Discovery',
-        entitySet: 'GlobalOptionSetDefinitions',
-        filterSummary: '',
-        batchIndex: 1,
-        batchTotal: 1,
-        batchSize: 0,
-        status: 'success',
-        attempts: 1,
-        durationMs: Date.now() - t0GlobalChoices,
-        resultCount: globalChoicesResult.value.length,
-      });
-      inventory.globalChoiceIds = globalChoicesResult.value.map(g => g.MetadataId.toLowerCase().replace(/[{}]/g, ''));
+      try {
+        const globalChoicesResult = await this.client.queryMetadata<{ MetadataId: string }>(
+          'GlobalOptionSetDefinitions',
+          { select: ['MetadataId'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0GlobalChoices),
+          step: 'Default Solution — Global Choices',
+          entitySet: 'GlobalOptionSetDefinitions',
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0GlobalChoices,
+          resultCount: globalChoicesResult.value.length,
+        });
+        inventory.globalChoiceIds = globalChoicesResult.value.map(g => g.MetadataId.toLowerCase().replace(/[{}]/g, ''));
+      } catch {
+        // Continue with empty globalChoiceIds rather than aborting all discovery (PATTERN-012)
+        this.logger?.log({
+          timestamp: new Date(t0GlobalChoices),
+          step: 'Default Solution — Global Choices',
+          entitySet: 'GlobalOptionSetDefinitions',
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0GlobalChoices,
+          resultCount: 0,
+        });
+      }
 
       // For entities and attributes, we'll use the metadata API via EntityDiscovery
       // These will be handled by the BlueprintGenerator's entity discovery process
@@ -516,8 +661,8 @@ export class SolutionComponentDiscovery {
         componentToSolutions: new Map(),
         solutionComponentMap: new Map(),
         componentTypes: new Map(),
-        entitiesWithAllSubcomponents: new Set(), // Default solution: no rootcomponentbehavior tracking
-      } as ComponentInventoryWithSolutions;
+        entitiesWithAllSubcomponents: new Set<string>(), // Default solution: no rootcomponentbehavior tracking
+      };
     } catch (error) {
       throw new Error(
         `Failed to discover unmanaged components: ${error instanceof Error ? error.message : 'Unknown error'}`
