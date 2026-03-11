@@ -27,7 +27,7 @@ PPSB discovers and documents Dataverse environments across a growing range of co
 | Column Security Profiles | Profile metadata for column-level security | MD / JSON / HTML / ZIP | Included as part of field security discovery |
 | Forms | Main, Quick Create, Quick View, and Dialog forms | MD / JSON / HTML / ZIP | Event handlers and JavaScript library references per form |
 | Entity Relationship Diagram | Visual graph of entity relationships | HTML / ZIP | Interactive Cytoscape.js graph; per-publisher colour coding; PNG/SVG export |
-| Cross-Entity Automation | Pipeline traces across entity boundaries | MD / JSON / HTML / ZIP | Entry point to activation to downstream branch analysis; pending release of feat/cross-entity-automation |
+| Cross-Entity Automation | Pipeline traces across entity boundaries | MD / JSON / HTML / ZIP | Entry point to activation to downstream branch analysis; shipped in v1.0.0 |
 | External Dependency Analysis | Aggregated view of external HTTP/connector calls | MD / JSON / HTML / ZIP | Risk scoring across plugins, flows, and web resources |
 | Solution Distribution | Per-solution component breakdown | MD / JSON / HTML / ZIP | Shared component detection across solutions |
 
@@ -54,5 +54,5 @@ PPSB discovers and documents Dataverse environments across a growing range of co
 | Customer Insights / Journeys | Marketing journeys and customer data platform integration | Requires separate API surface |
 
 ---
-*Last updated: v1.0.0 — 2026-03-10*
+*Last updated: v1.0.0 — 2026-03-11*
 *Component type integer codes: see [COMPONENT_TYPES_REFERENCE.md](./COMPONENT_TYPES_REFERENCE.md)*
