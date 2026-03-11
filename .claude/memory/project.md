@@ -141,6 +141,11 @@ All work from the `feat/cross-entity-automation` branch has been released. The b
 - BPF stages rendered as accordion in HTML export; excluded from JSON/ZIP
 - Classic Workflow deduplication and activation-record-only filtering
 - System Admin role detection fix
+- Carry-forward reviewer fixes across all component lists:
+  - ConnectionReferencesList: mutedText moved to makeStyles, Connection ID conditional lifted out of Text, redundant display:grid removed, toggleExpand in useCallback
+  - PluginsList: toggleExpand/toggleStageFilter/toggleStateFilter wrapped in useCallback, size="medium" on filteringAttributes Badge, explicit React.ReactElement return type on renderPluginDetails
+  - FlowDiscovery: OData injection guard added to getFlowsForEntity
+  - EnvironmentVariablesList: Checkbox replaces ToggleButton for "Has Default" binary filter, mergeClasses replaces string concatenation, toggleExpand in useCallback, listContainer marginTop moved to makeStyles, Default filter logic fixed (!!v.defaultValue && !v.currentValue), Default badge changed to appearance="tint" color="subtle" for light-theme visibility, explicit JSX.Element return types added
 
 ### Known Limitations
 

@@ -146,8 +146,11 @@ Must query the `workflows` table with category field to classify them.
 | 80 (App Module) | `appmodules` | `appmoduleid` |
 | 300 (Canvas App) | `canvasapps` | `canvasappid` |
 | 300 (Custom Page) | `canvasapps` | `canvasappid` | Same type code as Canvas App — split post-retrieval by `canvasapptype` (0 = Standard, 1 = Component Library, 2 = Custom Page) |
-| 371 (Connector) | `connectors` | `connectorid` |
+| 371 (Connection Reference) | `connectionreferences` | `connectionreferenceid` | Labeled "Connector" in docs but routes to connection references in practice |
+| 372 (Custom Connector) | `connectors` | `connectorid` | Also labeled "Connector" in docs (duplicate entry) |
 | 380 (Environment Variable Definition) | `environmentvariabledefinitions` | `environmentvariabledefinitionid` |
+| 10030 (Plugin Package) | `pluginpackages` | `pluginpackageid` | Undocumented in official option set but present in solutioncomponents at runtime |
+| 10076 (Custom API) | `customapis` | `customapiid` | Undocumented in official option set but present in solutioncomponents at runtime |
 
 ---
 
@@ -186,9 +189,11 @@ export enum ComponentType {
   SdkMessageProcessingStep = 92,  // Plugin steps
   SdkMessageProcessingStepImage = 93,  // Plugin step images
   CanvasApp = 300,              // Canvas Apps AND Custom Pages (split by canvasapptype)
+  // 371 and 372 are both labeled "Connector" in official docs; 371 = connection references, 372 = custom connectors
   ConnectionReference = 371,
   CustomConnector = 372,
   EnvironmentVariableDefinition = 380,
+  // 10030 and 10076 are undocumented in the official option set but appear in solutioncomponents at runtime
   PluginPackage = 10030,        // NuGet-based plugin packages
   CustomAPI = 10076,            // Custom API definitions
 }
