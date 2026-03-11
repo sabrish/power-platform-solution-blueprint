@@ -110,6 +110,28 @@ BREAKING CHANGE: BlueprintGenerator.generate() now returns Promise<Blueprint>
 instead of Blueprint. Update all callers to use await.
 ```
 
+## Before You Start — Open an Issue First
+
+If you want to contribute a new feature or a non-trivial change, **please open a GitHub issue before writing any code**.
+
+This matters for a few reasons:
+
+- **Avoid duplicate work** — someone else may already be working on the same thing
+- **Confirm it fits the roadmap** — not every idea is the right fit for PPSB at this stage, and a quick discussion saves you time
+- **Shape the design early** — the maintainer may have context on constraints (API limits, PPTB Desktop compatibility, existing patterns) that affects how something should be built
+- **Reserve the feature** — once an issue is open and acknowledged, other contributors know it's taken
+
+### How to open a feature issue
+
+1. Go to [GitHub Issues](https://github.com/sabrish/power-platform-solution-blueprint/issues)
+2. Click **New issue**
+3. Describe what you want to build and why it would be useful — a sentence or two is fine
+4. Wait for a response before investing significant time in implementation
+
+For **bug fixes** and small improvements (typos, docs, obvious defects), you can skip the issue and go straight to a PR.
+
+---
+
 ## Development Workflow
 
 1. **Create a branch** from `main`:
