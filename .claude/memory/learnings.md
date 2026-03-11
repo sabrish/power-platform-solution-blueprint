@@ -764,3 +764,52 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 - External Dependencies nav tab → `Globe24Regular` (from componentIcons.ts)
 
 ---
+
+## [2026-03-11] — All toggle handlers in list components must be wrapped in useCallback
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** Every toggle handler function in a list component (`toggleExpand`, `toggleStageFilter`, `toggleStateFilter`, `toggleHasDefaultFilter`, and any similar function that closes over component state and is passed as a prop or used in JSX) must be wrapped in `useCallback` with appropriate dependencies. Bare inline arrow functions or `function` declarations directly in the component body are not acceptable.
+**Context:** Carry-forward reviewer fix applied across ConnectionReferencesList, PluginsList, and EnvironmentVariablesList on 2026-03-11. Components without useCallback on toggle handlers cause unnecessary child re-renders and fail the reviewer's React patterns checklist.
+**Example:**
+- Wrong: `const toggleExpand = (id: string) => { setExpanded(prev => ...); };`
+- Right: `const toggleExpand = useCallback((id: string) => { setExpanded(prev => ...); }, []);`
+
+---
+
+## [2026-03-11] — Explicit JSX.Element return types required on exported components and inner render functions
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** All exported React function components and all inner render helper functions (e.g. `renderPluginDetails`, `renderFlowDetails`) must have an explicit `JSX.Element` (or `React.ReactElement`) return type annotation. Never omit the return type annotation and rely on TypeScript inference alone.
+**Context:** Carry-forward reviewer fix applied to PluginsList and EnvironmentVariablesList on 2026-03-11. Explicit return types make contract violations visible at the call site immediately and are required by the reviewer checklist.
+**Example:**
+- Wrong: `const renderPluginDetails = (plugin: Plugin) => { return <div>...</div>; }`
+- Right: `const renderPluginDetails = (plugin: Plugin): JSX.Element => { return <div>...</div>; }`
+- Right (exported component): `export const PluginsList = (): JSX.Element => { ... }`
+
+---
+
+## [2026-03-11] — OData injection guard required in all discovery methods that accept user-supplied strings
+
+**Affects:** Developer, Reviewer
+**Severity:** Blocker
+**Rule:** Any discovery method that inserts a caller-supplied string directly into an OData filter string must sanitise the input before use. The minimum guard is: strip or encode characters that have special meaning in OData (`'`, `"`, `;`, `(`, `)`, `$`). For entity logical names and GUIDs, which follow a known safe pattern, a regex allowlist guard is sufficient: `/^[a-z0-9_]+$/i.test(value)` — throw or skip if the test fails.
+**Context:** FlowDiscovery.getFlowsForEntity accepted an entity logical name from the caller and inserted it directly into an OData filter. An injection guard was added as a carry-forward fix on 2026-03-11. Any discovery method that constructs OData filter strings from external or caller-supplied input must apply the same guard.
+**Example:**
+- Wrong: `` `primaryentity eq '${entityName}'` `` with no validation of entityName
+- Right: `if (!/^[a-z0-9_]+$/i.test(entityName)) throw new Error('Invalid entity name');` then use entityName in filter
+
+---
+
+## [2026-03-11] — mergeClasses must replace string concatenation for Fluent UI class composition
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** When conditionally composing Fluent UI `makeStyles` class names, always use `mergeClasses(...)` from `@fluentui/react-components`. Never concatenate class names with string interpolation (e.g. `` `${styles.base} ${isActive ? styles.active : ''}` ``). String concatenation can produce spurious leading/trailing spaces and bypasses Fluent UI's de-duplication logic.
+**Context:** Carry-forward reviewer fix applied to EnvironmentVariablesList on 2026-03-11. Several class assignments were using template-literal string concatenation instead of `mergeClasses`.
+**Example:**
+- Wrong: `` className={`${styles.cardRow} ${isExpanded ? styles.expanded : ''}`} ``
+- Right: `className={mergeClasses(styles.cardRow, isExpanded && styles.expanded)}`
+
+---

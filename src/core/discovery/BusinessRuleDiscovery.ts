@@ -48,40 +48,45 @@ export class BusinessRuleDiscovery {
       return [];
     }
 
-    try {
-      const { results: allResults } = await withAdaptiveBatch<string, BusinessRuleRecord>(
-        brIds,
-        async (batch) => {
-          const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 2`;
-          const response = await this.client.query<BusinessRuleRecord>('workflows', {
-            select: [
-              'workflowid', 'name', 'description', 'statecode', 'primaryentity',
-              'scope', 'xaml', 'clientdata', 'modifiedon', 'createdon',
-            ],
-            filter,
-            // Note: no orderBy — workflows table does not support $orderby (silent empty result)
-          });
-          return response.value;
-        },
-        {
-          initialBatchSize: 20,
-          step: 'Business Rule Discovery',
-          entitySet: 'workflows (business rules)',
-          logger: this.logger,
-          onProgress: (done, total) => this.onProgress?.(done, total),
-        }
-      );
-
-      return allResults.map(record => this.mapRecordToBusinessRule(record));
-    } catch (error) {
-      throw error;
+    const cleanIds = brIds.map(id => id.replace(/[{}]/g, '').toLowerCase());
+    const invalidIndex = cleanIds.findIndex(id => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id));
+    if (invalidIndex !== -1) {
+      throw new TypeError(`Invalid workflow ID: ${brIds[invalidIndex]}`);
     }
+
+    const { results: allResults } = await withAdaptiveBatch<string, BusinessRuleRecord>(
+      cleanIds,
+      async (batch) => {
+        const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 2`;
+        const response = await this.client.query<BusinessRuleRecord>('workflows', {
+          select: [
+            'workflowid', 'name', 'description', 'statecode', 'primaryentity',
+            'scope', 'xaml', 'clientdata', 'modifiedon', 'createdon',
+          ],
+          filter,
+          // Note: no orderBy — workflows table does not support $orderby (silent empty result)
+        });
+        return response.value;
+      },
+      {
+        initialBatchSize: 20,
+        step: 'Business Rule Discovery',
+        entitySet: 'workflows (business rules)',
+        logger: this.logger,
+        onProgress: (done, total) => this.onProgress?.(done, total),
+      }
+    );
+
+    return allResults.map(record => this.mapRecordToBusinessRule(record));
   }
 
   /**
    * Get all business rules for a specific entity
    */
   async getBusinessRulesForEntity(logicalName: string): Promise<BusinessRule[]> {
+    if (!/^[a-z][a-z0-9_]*$/.test(logicalName)) {
+      throw new TypeError(`Invalid entity logical name: ${logicalName}`);
+    }
     try {
       const response = await this.client.query<BusinessRuleRecord>('workflows', {
         select: [

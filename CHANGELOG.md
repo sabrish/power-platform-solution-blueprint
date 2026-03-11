@@ -5,6 +5,21 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-03-11
+
+### Fixed
+- **Custom API / Connection Reference / Custom Connector not discovered in solution-scoped mode** — `SolutionComponentDiscovery` now uses `queryAll()` with `@odata.nextLink` cursor-based pagination for `buildSolutionComponentMap` and for the objectid-intersection queries (Custom APIs, Connection References, Custom Connectors); previously only the first page of results was retrieved, silently dropping components in solutions with large component lists
+- **Publishers missing when environment has only managed solutions** — `PublisherDiscovery` now derives publishers from the solutions list via `$expand` rather than querying the `publishers` table directly with `isreadonly eq false`; the `isreadonly` filter excluded publishers of managed solutions, causing the publisher filter and scope selector to show no entries for environments that import but do not develop solutions
+- **`$skip` pagination error 0x80060888** — replaced `$skip`/`$top` offset pagination in `queryAll()` with `@odata.nextLink` cursor-based pagination; several Dataverse entity types (including `customapis`) return error `0x80060888 Skip Clause is not supported` when `$skip` is used; cursor pagination is universally supported and eliminates this class of failure
+- **Intersection query failures aborting all component discovery** — each objectid-intersection query (Custom APIs, Connection References, Custom Connectors) is now isolated in its own `try/catch` per PATTERN-012; a failure for one component type no longer aborts discovery of the remaining types
+
+### Security
+- **OData injection guards on entity logical name inputs** — `BusinessRuleDiscovery`, `SchemaDiscovery`, and `FieldSecurityProfileDiscovery` now validate entity logical names against `/^[a-z][a-z0-9_]*$/` before interpolating them into OData `$filter` strings; the guard is placed before any `try/catch` so a `TypeError` propagates cleanly to callers on invalid input
+- **Workflow GUID normalisation before batching** — `BusinessRuleDiscovery.getBusinessRulesByIds` normalises and validates all workflow GUIDs before constructing batched OData queries, preventing malformed GUIDs from reaching the API
+- **`FieldSecurityProfileDiscovery` refactored to structured `QueryOptions`** — replaced raw OData URL string construction with structured `QueryOptions`; eliminates a category of injection risk from manual string interpolation in field security profile queries
+
+---
+
 ## [1.0.0] - 2026-03-11
 
 ### Added
@@ -520,6 +535,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **No Telemetry**: No usage data collected or transmitted
 
 
+[1.0.1]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.7.2...v0.8.0

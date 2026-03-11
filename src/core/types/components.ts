@@ -76,9 +76,15 @@ export enum ComponentType {
   SdkMessageProcessingStepImage = 93,  // Plugin step images
   // Canvas Apps and Custom Pages both use type 300; differentiated by canvasapptype (0 = Standard, 1 = Component Library, 2 = Custom Page)
   CanvasApp = 300,
+  // NOTE: Connection References (371) and Custom Connectors (372) do not appear in solutioncomponents
+  // under these type codes. Both have solutionid pointing to Default Solution on their entity records.
+  // Discovered via objectid intersection: query all records and match against solutioncomponents objectids.
   ConnectionReference = 371,
   CustomConnector = 372,
   EnvironmentVariableDefinition = 380,
+  // NOTE: Custom APIs appear in solutioncomponents under undocumented type codes (not 10076).
+  // Discovered via objectid intersection: query all customapis and match against
+  // solutioncomponents objectids. PluginPackage (10030) does appear in solutioncomponents.
   CustomAPI = 10076,
   PluginPackage = 10030,  // Plugin packages
 }

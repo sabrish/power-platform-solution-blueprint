@@ -17,6 +17,9 @@ export class SchemaDiscovery {
    * @returns Detailed entity metadata with attributes, relationships, and keys
    */
   async getEntitySchema(logicalName: string): Promise<DetailedEntityMetadata> {
+    if (!/^[a-z][a-z0-9_]*$/.test(logicalName)) {
+      throw new TypeError(`Invalid entity logical name: ${logicalName}`);
+    }
     try {
       // Fetch comprehensive entity metadata with all expansions
       const result = await this.client.queryMetadata<DetailedEntityMetadata>(
