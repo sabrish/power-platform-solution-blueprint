@@ -12,14 +12,25 @@ import type {
   Flow,
   BusinessRule,
   WebResource,
-  CrossEntityLink,
   ExternalEndpoint,
+  SolutionDistribution,
+  AttributeMetadata,
+  OneToManyRelationship,
+  ManyToOneRelationship,
+  ManyToManyRelationship,
 } from '../../types/blueprint.js';
+import type { PrivilegeDetail } from '../../discovery/SecurityRoleDiscovery.js';
+import type { CrossEntityAnalysisResult } from '../../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../../types/classicWorkflow.js';
 import type { CustomAPI } from '../../types/customApi.js';
 import type { EnvironmentVariable } from '../../types/environmentVariable.js';
 import type { ConnectionReference } from '../../types/connectionReference.js';
 import type { BusinessProcessFlow } from '../../types/businessProcessFlow.js';
+import type { GlobalChoice } from '../../types/globalChoice.js';
+import type { CustomConnector } from '../../types/customConnector.js';
+import type { CanvasApp } from '../../types/canvasApp.js';
+import type { CustomPage } from '../../types/customPage.js';
+import type { ModelDrivenApp } from '../../types/modelDrivenApp.js';
 
 /**
  * Main HTML Templates class
@@ -54,7 +65,7 @@ export class HtmlTemplates {
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
   <script>
     if (typeof mermaid !== 'undefined') {
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
     }
   </script>
   <style>
@@ -67,30 +78,36 @@ ${this.embeddedCSS()}
    * Generate sidebar navigation
    */
   htmlNavigation(): string {
-    return `<nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+    return `<nav class="sidebar" id="sidebar" role="navigation" aria-label="Blueprint sections">
   <div class="sidebar-header">
     <h3>Blueprint</h3>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
   </div>
   <ul class="nav-links">
-    <li><a href="#summary">📊 Summary</a></li>
-    <li><a href="#erd">🔗 Entity Relationship Diagram</a></li>
-    <li><a href="#entities">📦 Entities</a></li>
-    <li><a href="#plugins">🔌 Plugins</a></li>
-    <li><a href="#flows">⚡ Flows</a></li>
-    <li><a href="#business-rules">📋 Business Rules</a></li>
-    <li><a href="#classic-workflows">⏱️ Classic Workflows</a></li>
-    <li><a href="#business-process-flows">🔄 Business Process Flows</a></li>
-    <li><a href="#web-resources">🌐 Web Resources</a></li>
-    <li><a href="#custom-apis">🔧 Custom APIs</a></li>
-    <li><a href="#environment-variables">⚙️ Environment Variables</a></li>
-    <li><a href="#connection-references">🔗 Connection References</a></li>
-    <li><a href="#security">🔒 Security</a></li>
-    <li><a href="#external-dependencies">🌍 External Dependencies</a></li>
-    <li><a href="#cross-entity">🔀 Cross-Entity Automation (Coming Soon)</a></li>
+    <li><a href="#summary">${this.navIcon('summary')} Summary</a></li>
+    <li><a href="#solutions">${this.navIcon('solutions')} Solutions</a></li>
+    <li><a href="#erd">${this.navIcon('erd')} Entity Relationship Diagram</a></li>
+    <li><a href="#entities">${this.navIcon('entities')} Entities</a></li>
+    <li><a href="#plugins">${this.navIcon('plugins')} Plugins</a></li>
+    <li><a href="#flows">${this.navIcon('flows')} Flows</a></li>
+    <li><a href="#business-rules">${this.navIcon('business-rules')} Business Rules</a></li>
+    <li><a href="#classic-workflows">${this.navIcon('classic-workflows')} Classic Workflows</a></li>
+    <li><a href="#business-process-flows">${this.navIcon('business-process-flows')} Business Process Flows</a></li>
+    <li><a href="#web-resources">${this.navIcon('web-resources')} Web Resources</a></li>
+    <li><a href="#custom-apis">${this.navIcon('custom-apis')} Custom APIs</a></li>
+    <li><a href="#environment-variables">${this.navIcon('environment-variables')} Environment Variables</a></li>
+    <li><a href="#connection-references">${this.navIcon('connection-references')} Connection References</a></li>
+    <li><a href="#global-choices">${this.navIcon('global-choices')} Global Choices</a></li>
+    <li><a href="#custom-connectors">${this.navIcon('custom-connectors')} Custom Connectors</a></li>
+    <li><a href="#canvas-apps">${this.navIcon('canvas-apps')} Canvas Apps</a></li>
+    <li><a href="#custom-pages">${this.navIcon('custom-pages')} Custom Pages</a></li>
+    <li><a href="#model-driven-apps">${this.navIcon('model-driven-apps')} Model-Driven Apps</a></li>
+    <li><a href="#security">${this.navIcon('security')} Security</a></li>
+    <li><a href="#external-dependencies">${this.navIcon('external-dependencies')} External Dependencies</a></li>
+    <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.7em;vertical-align:middle;">Preview</span></a></li>
   </ul>
   <div class="nav-footer">
-    <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">🖨️ Print</button>
+    <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">${this.navIcon('print')} Print</button>
   </div>
 </nav>`;
   }
@@ -100,32 +117,11 @@ ${this.embeddedCSS()}
    */
   htmlHeader(metadata: BlueprintMetadata): string {
     const generatedDate = metadata.generatedAt.toLocaleString();
-    const solutionsHtml = metadata.solutionNames && metadata.solutionNames.length > 0
-      ? `<div class="metadata-item">
-      <span class="metadata-label">Solutions:</span>
-      <span class="metadata-value">${this.escapeHtml(metadata.solutionNames.join(', '))}</span>
-    </div>`
-      : '';
     return `<header class="report-header" role="banner">
   <h1>Power Platform Solution Blueprint</h1>
-  <div class="metadata-grid">
-    <div class="metadata-item">
-      <span class="metadata-label">Environment:</span>
-      <span class="metadata-value">${this.escapeHtml(metadata.environment)}</span>
-    </div>
-    <div class="metadata-item">
-      <span class="metadata-label">Generated:</span>
-      <span class="metadata-value">${this.escapeHtml(generatedDate)}</span>
-    </div>
-    <div class="metadata-item">
-      <span class="metadata-label">Scope:</span>
-      <span class="metadata-value">${this.escapeHtml(metadata.scope.description)}</span>
-    </div>
-    ${solutionsHtml}
-    <div class="metadata-item">
-      <span class="metadata-label">Entities:</span>
-      <span class="metadata-value">${metadata.entityCount}</span>
-    </div>
+  <div class="metadata-item" style="display:flex;flex-direction:column;gap:4px;">
+    <div><span class="metadata-label">Environment:</span> <span class="metadata-value">${this.escapeHtml(metadata.environment)}</span></div>
+    <div><span class="metadata-label">Generated:</span> <span class="metadata-value">${this.escapeHtml(generatedDate)}</span></div>
   </div>
 </header>`;
   }
@@ -136,8 +132,8 @@ ${this.embeddedCSS()}
    */
   htmlErdSection(erd: ERDDefinition | undefined): string {
     if (!erd || erd.diagrams.length === 0) {
-      return `<section id="erd" class="content-section">
-  <h2>Entity Relationship Diagram</h2>
+      return `<section id="erd" class="content-section" aria-labelledby="heading-erd">
+  <h2 id="heading-erd">Entity Relationship Diagram</h2>
   <div class="empty-state">No ERD available</div>
 </section>`;
     }
@@ -166,8 +162,8 @@ ${this.embeddedCSS()}
       const safeJson = JSON.stringify(filteredGraphData)
         .replace(/<\/script/gi, '<\\/script');
 
-      return `<section id="erd" class="content-section">
-  <h2>Entity Relationship Diagram</h2>
+      return `<section id="erd" class="content-section" aria-labelledby="heading-erd">
+  <h2 id="heading-erd">Entity Relationship Diagram</h2>
   <p>${filteredGraphData.nodes.length} entities · ${graphData.edges.length} relationships in scope${isolatedCount > 0 ? ` · ${isolatedCount} entities with no relationships not shown` : ''}</p>
   ${legendHtml}
   <div class="erd-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center;">
@@ -185,10 +181,17 @@ ${this.embeddedCSS()}
     <button class="btn-sm" id="isolateBtn" onclick="erdIsolate()" disabled>Isolate</button>
     <button class="btn-sm" id="clearIsolateBtn" onclick="erdClearIsolate()" style="display:none;">Show all</button>
     <span style="width:1px;height:20px;background:#ddd;margin:0 4px;align-self:center;display:inline-block;"></span>
-    <button class="btn-sm" onclick="downloadErdPng()">⬇ PNG</button>
-    <button class="btn-sm" onclick="downloadErdSvg()">⬇ SVG</button>
+    <button class="btn-sm" onclick="downloadErdPng()">&#8595; PNG</button>
+    <button class="btn-sm" onclick="downloadErdSvg()">&#8595; SVG</button>
   </div>
-  <div id="cy" style="width:100%;height:700px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;position:relative;"></div>
+  <div style="position:relative;">
+    <div id="cy" style="width:100%;height:700px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;"></div>
+    <div style="position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:2px;z-index:5;background:#fff;border:1px solid #ddd;border-radius:6px;padding:2px;box-shadow:0 2px 8px rgba(0,0,0,.12);opacity:0.75;transition:opacity 0.15s ease;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.75'">
+      <button class="btn-sm" onclick="if(_cy){_cy.zoom({level:_cy.zoom()*1.2,renderedPosition:{x:_cy.width()/2,y:_cy.height()/2}});}" title="Zoom in">+</button>
+      <button class="btn-sm" onclick="if(_cy){_cy.zoom({level:_cy.zoom()/1.2,renderedPosition:{x:_cy.width()/2,y:_cy.height()/2}});}" title="Zoom out">−</button>
+      <button class="btn-sm" onclick="erdFit()" title="Fit to screen">⤢</button>
+    </div>
+  </div>
   <p style="font-size:11px;color:#888;margin-top:4px;">Click node to select · Hover edge for details · Scroll to zoom · Drag to pan · Solid = 1:N · Dashed = N:N</p>
   <script type="application/json" id="erd-data">
 ${safeJson}
@@ -208,8 +211,8 @@ ${diagram.mermaidDiagram}
   <p class="diagram-stats">Entities: ${diagram.entityCount} | Relationships: ${diagram.relationshipCount}</p>
 </div>`;
 
-    return `<section id="erd" class="content-section">
-  <h2>Entity Relationship Diagram</h2>
+    return `<section id="erd" class="content-section" aria-labelledby="heading-erd">
+  <h2 id="heading-erd">Entity Relationship Diagram</h2>
   ${legendHtml}
   ${diagramHtml}
 </section>`;
@@ -218,12 +221,15 @@ ${diagram.mermaidDiagram}
   /**
    * Generate legend HTML for ERD
    */
-  private generateLegendHtml(legend: any[]): string {
+  private generateLegendHtml(legend: { color: string; publisherName: string; entityCount: number }[]): string {
     if (!legend || legend.length === 0) return '';
+
+    const sanitizeColor = (c: string): string =>
+      /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '#888888';
 
     const items = legend.map(item => {
       return `<div class="legend-item">
-  <span class="legend-color" style="background-color: ${item.color}"></span>
+  <span class="legend-color" style="background-color: ${sanitizeColor(item.color)}"></span>
   <span class="legend-label">${this.escapeHtml(item.publisherName)} (${item.entityCount})</span>
 </div>`;
     }).join('\n');
@@ -240,8 +246,8 @@ ${items}
    * Generate summary section
    */
   htmlSummary(summary: BlueprintSummary): string {
-    return `<section id="summary" class="content-section">
-  <h2>Summary</h2>
+    return `<section id="summary" class="content-section" role="region" aria-label="Blueprint summary" aria-labelledby="heading-summary">
+  <h2 id="heading-summary">Summary</h2>
   <div class="summary-grid">
     <div class="summary-card">
       <div class="card-number">${summary.totalEntities}</div>
@@ -256,6 +262,10 @@ ${items}
       <div class="card-label">Plugins</div>
     </div>
     <div class="summary-card">
+      <div class="card-number">${summary.totalPluginPackages}</div>
+      <div class="card-label">Plugin Packages</div>
+    </div>
+    <div class="summary-card">
       <div class="card-number">${summary.totalFlows}</div>
       <div class="card-label">Flows</div>
     </div>
@@ -263,13 +273,41 @@ ${items}
       <div class="card-number">${summary.totalBusinessRules}</div>
       <div class="card-label">Business Rules</div>
     </div>
+    <div class="summary-card ${summary.totalClassicWorkflows > 0 ? 'card-warning' : ''}">
+      <div class="card-number">${summary.totalClassicWorkflows}</div>
+      <div class="card-label">Classic Workflows</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalBusinessProcessFlows}</div>
+      <div class="card-label">Business Process Flows</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalCustomAPIs}</div>
+      <div class="card-label">Custom APIs</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalEnvironmentVariables}</div>
+      <div class="card-label">Environment Variables</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalConnectionReferences}</div>
+      <div class="card-label">Connection References</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalGlobalChoices}</div>
+      <div class="card-label">Global Choices</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-number">${summary.totalCustomConnectors}</div>
+      <div class="card-label">Custom Connectors</div>
+    </div>
     <div class="summary-card">
       <div class="card-number">${summary.totalWebResources}</div>
       <div class="card-label">Web Resources</div>
     </div>
     <div class="summary-card">
-      <div class="card-number">${summary.totalCustomAPIs}</div>
-      <div class="card-label">Custom APIs</div>
+      <div class="card-number">${summary.totalCustomPages}</div>
+      <div class="card-label">Custom Pages</div>
     </div>
     <div class="summary-card">
       <div class="card-number">${summary.totalSecurityRoles}</div>
@@ -278,10 +316,6 @@ ${items}
     <div class="summary-card">
       <div class="card-number">${summary.totalFieldSecurityProfiles}</div>
       <div class="card-label">Field Security Profiles</div>
-    </div>
-    <div class="summary-card ${summary.totalClassicWorkflows > 0 ? 'card-warning' : ''}">
-      <div class="card-number">${summary.totalClassicWorkflows}</div>
-      <div class="card-label">Classic Workflows</div>
     </div>
   </div>
 </section>`;
@@ -292,8 +326,8 @@ ${items}
    */
   htmlEntitiesAccordion(entities: EntityBlueprint[]): string {
     if (entities.length === 0) {
-      return `<section id="entities" class="content-section">
-  <h2>Entities</h2>
+      return `<section id="entities" class="content-section" aria-labelledby="heading-entities">
+  <h2 id="heading-entities">Entities</h2>
   <div class="empty-state">No entities found</div>
 </section>`;
     }
@@ -311,7 +345,7 @@ ${items}
       const hasExecutionPipeline = this.hasEntityExecutionPipeline(entityBp);
 
       return `<div class="accordion-item">
-  <div class="accordion-header" onclick="toggleAccordion('entity-${index}')">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="entity-${index}" onclick="toggleAccordion('entity-${index}')" onkeydown="accordionKeydown(event,'entity-${index}')">
     <span class="accordion-icon" id="icon-entity-${index}">+</span>
     <h3>${this.escapeHtml(displayName)}</h3>
     <span class="entity-badges">
@@ -362,8 +396,8 @@ ${items}
 </div>`;
     }).join('\n');
 
-    return `<section id="entities" class="content-section">
-  <h2>Entities (${entities.length})</h2>
+    return `<section id="entities" class="content-section" aria-labelledby="heading-entities">
+  <h2 id="heading-entities">Entities (${entities.length})</h2>
   <div class="accordion">
 ${accordionItems}
   </div>
@@ -373,7 +407,7 @@ ${accordionItems}
   /**
    * Generate attributes table for entity detail
    */
-  private generateAttributesTable(attributes: any[]): string {
+  private generateAttributesTable(attributes: AttributeMetadata[]): string {
     if (attributes.length === 0) return '';
 
     const rows = attributes.slice(0, 50).map(attr => {
@@ -398,11 +432,11 @@ ${accordionItems}
   <table class="data-table">
     <thead>
       <tr>
-        <th>Logical Name</th>
-        <th>Display Name</th>
-        <th>Type</th>
-        <th>Required</th>
-        <th>Description</th>
+        <th scope="col">Logical Name</th>
+        <th scope="col">Display Name</th>
+        <th scope="col">Type</th>
+        <th scope="col">Required</th>
+        <th scope="col">Description</th>
       </tr>
     </thead>
     <tbody>
@@ -434,11 +468,11 @@ ${rows}
   <table class="data-table">
     <thead>
       <tr>
-        <th>Name</th>
-        <th>Message</th>
-        <th>Stage</th>
-        <th>Mode</th>
-        <th>Description</th>
+        <th scope="col">Name</th>
+        <th scope="col">Message</th>
+        <th scope="col">Stage</th>
+        <th scope="col">Mode</th>
+        <th scope="col">Description</th>
       </tr>
     </thead>
     <tbody>
@@ -457,7 +491,7 @@ ${rows}
     const rows = flows.map(flow => {
       return `<tr>
   <td>${this.escapeHtml(flow.name)}</td>
-  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${flow.state}</span></td>
+  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(flow.state)}</span></td>
   <td>${this.escapeHtml(flow.definition.triggerEvent)}</td>
   <td style="word-break: break-word;">${this.escapeHtml(flow.description || '')}</td>
 </tr>`;
@@ -468,10 +502,10 @@ ${rows}
   <table class="data-table">
     <thead>
       <tr>
-        <th>Name</th>
-        <th>State</th>
-        <th>Trigger</th>
-        <th>Description</th>
+        <th scope="col">Name</th>
+        <th scope="col">State</th>
+        <th scope="col">Trigger</th>
+        <th scope="col">Description</th>
       </tr>
     </thead>
     <tbody>
@@ -618,10 +652,10 @@ ${rows}
           <table class="data-table" style="font-size: 0.9em;">
             <thead>
               <tr>
-                <th>Event</th>
-                <th>Library</th>
-                <th>Function</th>
-                <th>Status</th>
+                <th scope="col">Event</th>
+                <th scope="col">Library</th>
+                <th scope="col">Function</th>
+                <th scope="col">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -763,7 +797,7 @@ ${rows}
       const syncPlugins = sortedPlugins.filter(p => p.mode === 0);
       if (syncPlugins.length > 0) {
         content += `<div class="info-box">
-          <strong>ℹ️ Synchronous Plugins</strong>
+          <strong>${this.alertIcon('info')} Synchronous Plugins</strong>
           <p>${syncPlugins.length} synchronous plugin(s) execute in this pipeline. Synchronous plugins block the transaction and should complete quickly.</p>
         </div>`;
       }
@@ -881,12 +915,12 @@ ${rows}
     return `<table class="data-table pipeline-table">
       <thead>
         <tr>
-          <th>Order</th>
-          <th>Type</th>
-          <th>Name</th>
-          <th>Stage/Details</th>
-          <th>Mode</th>
-          <th>Rank</th>
+          <th scope="col">Order</th>
+          <th scope="col">Type</th>
+          <th scope="col">Name</th>
+          <th scope="col">Stage/Details</th>
+          <th scope="col">Mode</th>
+          <th scope="col">Rank</th>
         </tr>
       </thead>
       <tbody>
@@ -920,12 +954,12 @@ ${rows}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Scope</th>
-            <th>Context</th>
-            <th>State</th>
-            <th>Conditions</th>
-            <th>Actions</th>
+            <th scope="col">Name</th>
+            <th scope="col">Scope</th>
+            <th scope="col">Context</th>
+            <th scope="col">State</th>
+            <th scope="col">Conditions</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -938,13 +972,16 @@ ${rows}
   /**
    * Generate relationships section
    */
-  private generateRelationshipsSection(type: string, relationships: any[]): string {
+  private generateRelationshipsSection(type: string, relationships: (OneToManyRelationship | ManyToOneRelationship | ManyToManyRelationship)[]): string {
     if (relationships.length === 0) return '';
 
     const rows = relationships.slice(0, 20).map(rel => {
-      const schemaName = rel.SchemaName || 'N/A';
-      const referencingEntity = rel.ReferencingEntity || rel.ReferencedEntity || 'N/A';
-      const referencedAttribute = rel.ReferencedAttribute || rel.ReferencingAttribute || 'N/A';
+      // Cast to a display-shape covering all three relationship subtypes.
+      // OneToMany/ManyToOne use ReferencingEntity; ManyToMany uses Entity1LogicalName.
+      const r = rel as { SchemaName?: string; ReferencingEntity?: string; ReferencedEntity?: string; ReferencedAttribute?: string; ReferencingAttribute?: string; Entity1LogicalName?: string };
+      const schemaName = r.SchemaName || 'N/A';
+      const referencingEntity = r.ReferencingEntity || r.ReferencedEntity || r.Entity1LogicalName || 'N/A';
+      const referencedAttribute = r.ReferencedAttribute || r.ReferencingAttribute || 'N/A';
 
       return `<tr>
         <td>${this.escapeHtml(schemaName)}</td>
@@ -960,9 +997,9 @@ ${rows}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Schema Name</th>
-            <th>Related Entity</th>
-            <th>Related Attribute</th>
+            <th scope="col">Schema Name</th>
+            <th scope="col">Related Entity</th>
+            <th scope="col">Related Attribute</th>
           </tr>
         </thead>
         <tbody>
@@ -978,8 +1015,8 @@ ${rows}
    */
   htmlPluginsTable(plugins: PluginStep[]): string {
     if (plugins.length === 0) {
-      return `<section id="plugins" class="content-section">
-  <h2>Plugins</h2>
+      return `<section id="plugins" class="content-section" aria-labelledby="heading-plugins">
+  <h2 id="heading-plugins">Plugins</h2>
   <div class="empty-state">No plugins found</div>
 </section>`;
     }
@@ -993,7 +1030,7 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(plugin.name)}</td>
   <td>${this.escapeHtml(plugin.entity || 'N/A')}</td>
-  <td><span class="badge badge-${plugin.state === 'Enabled' ? 'success' : 'error'}">${plugin.state}</span></td>
+  <td><span class="badge badge-${plugin.state === 'Enabled' ? 'success' : 'error'}">${this.escapeHtml(plugin.state)}</span></td>
   <td>${this.escapeHtml(plugin.message || 'N/A')}</td>
   <td>${this.escapeHtml(plugin.stageName || 'N/A')}</td>
   <td>${this.escapeHtml(plugin.modeName || 'N/A')}</td>
@@ -1002,20 +1039,20 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="plugins" class="content-section">
-  <h2>Plugins (${plugins.length})</h2>
+    return `<section id="plugins" class="content-section" aria-labelledby="heading-plugins">
+  <h2 id="heading-plugins">Plugins (${plugins.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="plugins-table">
       <thead>
         <tr>
-          <th onclick="sortTable('plugins-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 3)">Message <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 4)">Stage <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 5)">Mode <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('plugins-table', 6)">Rank <span class="sort-indicator"></span></th>
-          <th>Images</th>
+          <th scope="col" onclick="sortTable('plugins-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 2)">State <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 3)">Message <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 4)">Stage <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 5)">Mode <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('plugins-table', 6)">Rank <span class="sort-indicator"></span></th>
+          <th scope="col">Images</th>
         </tr>
       </thead>
       <tbody>
@@ -1031,8 +1068,8 @@ ${rows}
    */
   htmlFlowsTable(flows: Flow[]): string {
     if (flows.length === 0) {
-      return `<section id="flows" class="content-section">
-  <h2>Flows</h2>
+      return `<section id="flows" class="content-section" aria-labelledby="heading-flows">
+  <h2 id="heading-flows">Flows</h2>
   <div class="empty-state">No flows found</div>
 </section>`;
     }
@@ -1044,7 +1081,7 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(flow.name)}</td>
   <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${flow.state}</span></td>
+  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(flow.state)}</span></td>
   <td>${this.escapeHtml(flow.definition.triggerEvent)}</td>
   <td>${this.escapeHtml(flow.definition.scopeType)}</td>
   <td>${flow.definition.actionsCount}</td>
@@ -1052,19 +1089,19 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="flows" class="content-section">
-  <h2>Flows (${flows.length})</h2>
+    return `<section id="flows" class="content-section" aria-labelledby="heading-flows">
+  <h2 id="heading-flows">Flows (${flows.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="flows-table">
       <thead>
         <tr>
-          <th onclick="sortTable('flows-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 3)">Trigger <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 4)">Scope <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('flows-table', 5)">Actions <span class="sort-indicator"></span></th>
-          <th>External Calls</th>
+          <th scope="col" onclick="sortTable('flows-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 2)">State <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 3)">Trigger <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 4)">Scope <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('flows-table', 5)">Actions <span class="sort-indicator"></span></th>
+          <th scope="col">External Calls</th>
         </tr>
       </thead>
       <tbody>
@@ -1080,45 +1117,66 @@ ${rows}
    */
   htmlBusinessRulesTable(businessRules: BusinessRule[]): string {
     if (businessRules.length === 0) {
-      return `<section id="business-rules" class="content-section">
-  <h2>Business Rules</h2>
+      return `<section id="business-rules" class="content-section" aria-labelledby="heading-business-rules">
+  <h2 id="heading-business-rules" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-rules')} Business Rules</h2>
   <div class="empty-state">No business rules found</div>
 </section>`;
     }
 
-    const rows = businessRules.map(rule => {
-      const entityDisplay = rule.entityDisplayName || rule.entity;
-      const conditions = rule.definition.conditions?.length || 0;
-      const actions = rule.definition.actions?.length || 0;
-      return `<tr>
-  <td>${this.escapeHtml(rule.name)}</td>
-  <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${rule.state}</span></td>
-  <td>${this.escapeHtml(rule.scope)}</td>
-  <td>${conditions}</td>
-  <td>${actions}</td>
-</tr>`;
+    const items = businessRules.map((rule, i) => {
+      const entityDisplay = this.escapeHtml(rule.entityDisplayName || rule.entity);
+      const conditions = rule.definition.conditions ?? [];
+      const actions = rule.definition.actions ?? [];
+      const id = `br-${i}`;
+
+      const condRows = conditions.map(c => `<tr>
+        <td><code>${this.escapeHtml(c.field)}</code></td>
+        <td>${this.escapeHtml(c.operator)}</td>
+        <td>${c.value ? this.escapeHtml(c.value) : '—'}</td>
+        <td>${this.escapeHtml(c.logicOperator)}</td>
+      </tr>`).join('');
+
+      const actRows = actions.map(a => `<tr>
+        <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.escapeHtml(a.type)}</span></td>
+        <td><code>${this.escapeHtml(a.field)}</code></td>
+        <td>${a.value ? this.escapeHtml(a.value) : a.message ? this.escapeHtml(a.message) : '—'}</td>
+      </tr>`).join('');
+
+      return `<div class="accordion-item">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')">
+    <span class="accordion-icon" id="icon-${id}">+</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <strong>${this.escapeHtml(rule.name)}</strong>
+        <span style="color:#666;font-size:0.9em">${entityDisplay}</span>
+        <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${this.escapeHtml(rule.state)}</span>
+        <span class="badge">${this.escapeHtml(rule.scope)}</span>
+        <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.escapeHtml(rule.definition.executionContext)}</span>
+        ${conditions.length > 0 ? `<span class="badge">${conditions.length} condition${conditions.length !== 1 ? 's' : ''}</span>` : ''}
+        ${actions.length > 0 ? `<span class="badge">${actions.length} action${actions.length !== 1 ? 's' : ''}</span>` : ''}
+      </div>
+      ${rule.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(rule.description)}</div>` : ''}
+    </div>
+  </div>
+  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.escapeHtml(rule.definition.parseError)}</div>` : ''}
+    <div style="display:grid;grid-template-columns:minmax(200px,1fr) minmax(200px,1fr);gap:16px;">
+      <div>
+        <h5 style="margin-bottom:6px">Conditions${rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.escapeHtml(rule.definition.conditionLogic)})</span>` : ''}</h5>
+        ${conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Field</th><th scope="col">Operator</th><th scope="col">Value</th><th scope="col">Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
+      </div>
+      <div>
+        <h5 style="margin-bottom:6px">Actions</h5>
+        ${actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${actRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No actions detected.</p>'}
+      </div>
+    </div>
+  </div>
+</div>`;
     }).join('\n');
 
-    return `<section id="business-rules" class="content-section">
-  <h2>Business Rules (${businessRules.length})</h2>
-  <div class="table-container">
-    <table class="data-table sortable" id="business-rules-table">
-      <thead>
-        <tr>
-          <th onclick="sortTable('business-rules-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 3)">Scope <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 4)">Conditions <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('business-rules-table', 5)">Actions <span class="sort-indicator"></span></th>
-        </tr>
-      </thead>
-      <tbody>
-${rows}
-      </tbody>
-    </table>
-  </div>
+    return `<section id="business-rules" class="content-section" aria-labelledby="heading-business-rules">
+  <h2 id="heading-business-rules" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-rules')} Business Rules (${businessRules.length})</h2>
+  <div class="accordion">${items}</div>
 </section>`;
   }
 
@@ -1127,8 +1185,8 @@ ${rows}
    */
   htmlClassicWorkflowsTable(workflows: ClassicWorkflow[]): string {
     if (workflows.length === 0) {
-      return `<section id="classic-workflows" class="content-section">
-  <h2>Classic Workflows (Legacy)</h2>
+      return `<section id="classic-workflows" class="content-section" aria-labelledby="heading-classic-workflows">
+  <h2 id="heading-classic-workflows">Classic Workflows (Legacy)</h2>
   <div class="empty-state">No classic workflows found</div>
 </section>`;
     }
@@ -1144,7 +1202,7 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(workflow.name)}</td>
   <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${workflow.state}</span></td>
+  <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(workflow.state)}</span></td>
   <td>${this.escapeHtml(workflow.modeName)}</td>
   <td><span class="badge badge-${complexity === 'Critical' ? 'error' : complexity === 'High' ? 'warning' : 'info'}">${complexity}</span></td>
 </tr>`;
@@ -1155,31 +1213,31 @@ ${rows}
     if (asyncWorkflows.length > 0) {
       advisorySection += `
   <div class="alert alert-info">
-    <strong>ℹ️ Async Workflows (${asyncWorkflows.length}):</strong> These async workflows can be migrated to Power Automate cloud flows. Classic workflows are legacy technology. Microsoft recommends migrating to Power Automate for continued support and access to modern features.
+    <strong>${this.alertIcon('info')} Info &mdash; Async Workflows (${asyncWorkflows.length}):</strong> These async workflows can be migrated to Power Automate cloud flows. Classic workflows are legacy technology. Microsoft recommends migrating to Power Automate for continued support and access to modern features.
   </div>`;
     }
     if (realtimeWorkflows.length > 0) {
       advisorySection += `
   <div class="alert alert-warning">
-    <strong>⚠️ Real-time Workflows (${realtimeWorkflows.length}):</strong> Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.
+    <strong>${this.alertIcon('warning')} Warning &mdash; Real-time Workflows (${realtimeWorkflows.length}):</strong> Real-time workflows cannot be fully migrated to Power Automate cloud flows due to their synchronous nature. Consider using Dataverse plugins for synchronous business logic, or migrate to Power Automate with the understanding that flows are asynchronous and cannot block user operations.
   </div>`;
     }
 
-    return `<section id="classic-workflows" class="content-section">
-  <h2>Classic Workflows - Migration Recommended (${workflows.length})</h2>
+    return `<section id="classic-workflows" class="content-section" aria-labelledby="heading-classic-workflows">
+  <h2 id="heading-classic-workflows">Classic Workflows - Migration Recommended (${workflows.length})</h2>
   <div class="alert alert-warning">
-    <strong>⚠️ Legacy Technology:</strong> Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows. <a href="https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows" target="_blank" rel="noopener noreferrer">Learn more</a>
+    <strong>${this.alertIcon('warning')} Warning &mdash; Legacy Technology:</strong> Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows. <a href="https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows" target="_blank" rel="noopener noreferrer">Learn more</a>
   </div>
   ${advisorySection}
   <div class="table-container">
     <table class="data-table sortable" id="classic-workflows-table">
       <thead>
         <tr>
-          <th onclick="sortTable('classic-workflows-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 1)">Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 3)">Mode <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('classic-workflows-table', 4)">Complexity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 2)">State <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 3)">Mode <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('classic-workflows-table', 4)">Complexity <span class="sort-indicator"></span></th>
         </tr>
       </thead>
       <tbody>
@@ -1195,46 +1253,57 @@ ${rows}
    */
   htmlBusinessProcessFlowsTable(bpfs: BusinessProcessFlow[]): string {
     if (bpfs.length === 0) {
-      return `<section id="business-process-flows" class="content-section">
-  <h2>Business Process Flows</h2>
+      return `<section id="business-process-flows" class="content-section" aria-labelledby="heading-business-process-flows">
+  <h2 id="heading-business-process-flows" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-process-flows')} Business Process Flows</h2>
   <div class="empty-state">No business process flows found</div>
 </section>`;
     }
 
-    const rows = bpfs.map(bpf => {
-      const entityDisplay = bpf.primaryEntityDisplayName || bpf.primaryEntity;
-      const stages = bpf.definition.stages?.length || 0;
-      const crossEntity = bpf.definition.crossEntityFlow;
+    const items = bpfs.map((bpf, i) => {
+      const entityDisplay = this.escapeHtml(bpf.primaryEntityDisplayName || bpf.primaryEntity);
+      const stages = bpf.definition.stages ?? [];
+      const id = `bpf-${i}`;
 
-      return `<tr>
-  <td>${this.escapeHtml(bpf.name)}</td>
-  <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${bpf.state === 'Active' ? 'success' : 'warning'}">${bpf.state}</span></td>
-  <td>${stages}</td>
-  <td>${bpf.definition.totalSteps}</td>
-  <td>${crossEntity ? '<span class="badge badge-info">Yes</span>' : 'No'}</td>
-</tr>`;
+      const stageBlocks = stages.map((stage, si) => {
+        const isLast = si === stages.length - 1;
+        return `<div style="display:flex;flex-direction:column;align-items:flex-start;">
+  <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f3f3f3;border-radius:6px;min-width:0;">
+    <div style="min-width:26px;height:26px;border-radius:50%;background:#0078d4;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.8em;flex-shrink:0;">${si + 1}</div>
+    <span style="font-weight:600;font-size:0.9em">${this.escapeHtml(stage.name)}</span>
+    <code style="font-size:0.8em;color:#666;">${this.escapeHtml(stage.entity)}</code>
+    ${stage.steps.length > 0 ? `<span class="badge">${stage.steps.length} step${stage.steps.length !== 1 ? 's' : ''}</span>` : ''}
+  </div>
+  ${!isLast ? '<div style="padding:2px 0 2px 12px;color:#999;font-size:1em;">↓</div>' : ''}
+</div>`;
+      }).join('');
+
+      return `<div class="accordion-item">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')">
+    <span class="accordion-icon" id="icon-${id}">+</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <strong>${this.escapeHtml(bpf.name)}</strong>
+        <span style="color:#666;font-size:0.9em">${entityDisplay}</span>
+        <span class="badge badge-${bpf.state === 'Active' ? 'success' : 'warning'}">${this.escapeHtml(bpf.state)}</span>
+        <span class="badge">${stages.length} stage${stages.length !== 1 ? 's' : ''}</span>
+        <span class="badge">${bpf.definition.totalSteps} step${bpf.definition.totalSteps !== 1 ? 's' : ''}</span>
+        ${bpf.definition.crossEntityFlow ? '<span class="badge badge-info">Cross-entity</span>' : ''}
+        ${bpf.isManaged ? '<span class="badge badge-info">Managed</span>' : ''}
+      </div>
+      ${bpf.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(bpf.description)}</div>` : ''}
+    </div>
+  </div>
+  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    ${bpf.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.escapeHtml(bpf.definition.parseError)}</div>` : ''}
+    ${stages.length > 0 ? stageBlocks : '<p style="color:#666">No stage details available.</p>'}
+    ${bpf.definition.entities.length > 1 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Entities involved:</strong> ${bpf.definition.entities.map(e => this.escapeHtml(e)).join(', ')}</p>` : ''}
+  </div>
+</div>`;
     }).join('\n');
 
-    return `<section id="business-process-flows" class="content-section">
-  <h2>Business Process Flows (${bpfs.length})</h2>
-  <div class="table-container">
-    <table class="data-table sortable" id="bpfs-table">
-      <thead>
-        <tr>
-          <th onclick="sortTable('bpfs-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('bpfs-table', 1)">Primary Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('bpfs-table', 2)">State <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('bpfs-table', 3)">Stages <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('bpfs-table', 4)">Steps <span class="sort-indicator"></span></th>
-          <th>Cross-Entity</th>
-        </tr>
-      </thead>
-      <tbody>
-${rows}
-      </tbody>
-    </table>
-  </div>
+    return `<section id="business-process-flows" class="content-section" aria-labelledby="heading-business-process-flows">
+  <h2 id="heading-business-process-flows" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('business-process-flows')} Business Process Flows (${bpfs.length})</h2>
+  <div class="accordion">${items}</div>
 </section>`;
   }
 
@@ -1243,8 +1312,8 @@ ${rows}
    */
   htmlWebResourcesTable(webResources: WebResource[]): string {
     if (webResources.length === 0) {
-      return `<section id="web-resources" class="content-section">
-  <h2>Web Resources</h2>
+      return `<section id="web-resources" class="content-section" aria-labelledby="heading-web-resources">
+  <h2 id="heading-web-resources">Web Resources</h2>
   <div class="empty-state">No web resources found</div>
 </section>`;
     }
@@ -1264,18 +1333,18 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="web-resources" class="content-section">
-  <h2>Web Resources (${webResources.length})</h2>
+    return `<section id="web-resources" class="content-section" aria-labelledby="heading-web-resources">
+  <h2 id="heading-web-resources">Web Resources (${webResources.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="web-resources-table">
       <thead>
         <tr>
-          <th onclick="sortTable('web-resources-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('web-resources-table', 1)">Display Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('web-resources-table', 2)">Type <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('web-resources-table', 3)">Size <span class="sort-indicator"></span></th>
-          <th>External Calls</th>
-          <th>Deprecated</th>
+          <th scope="col" onclick="sortTable('web-resources-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('web-resources-table', 1)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('web-resources-table', 2)">Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('web-resources-table', 3)">Size <span class="sort-indicator"></span></th>
+          <th scope="col">External Calls</th>
+          <th scope="col">Deprecated</th>
         </tr>
       </thead>
       <tbody>
@@ -1291,47 +1360,70 @@ ${rows}
    */
   htmlCustomAPIsTable(customAPIs: CustomAPI[]): string {
     if (customAPIs.length === 0) {
-      return `<section id="custom-apis" class="content-section">
-  <h2>Custom APIs</h2>
+      return `<section id="custom-apis" class="content-section" aria-labelledby="heading-custom-apis">
+  <h2 id="heading-custom-apis" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-apis')} Custom APIs</h2>
   <div class="empty-state">No custom APIs found</div>
 </section>`;
     }
 
-    const rows = customAPIs.map(api => {
-      const type = api.isFunction ? 'Function' : 'Action';
-      const binding = api.bindingType;
-      const params = api.requestParameters?.length || 0;
-      const responses = api.responseProperties?.length || 0;
+    const paramTable = (params: CustomAPI['requestParameters'], label: string) => {
+      if (!params || params.length === 0) return `<p style="margin:4px 0;color:#666;font-size:0.85em">No ${label.toLowerCase()}.</p>`;
+      return `<table class="data-table" style="font-size:0.85em;margin-top:4px;">
+  <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead>
+  <tbody>${params.map(p => `<tr>
+    <td><code>${this.escapeHtml(p.uniqueName)}</code>${p.displayName && p.displayName !== p.uniqueName ? ` <span style="color:#666;font-size:0.9em">${this.escapeHtml(p.displayName)}</span>` : ''}</td>
+    <td><span class="badge badge-info">${this.escapeHtml(p.typeName || p.type)}</span>${p.logicalEntityName ? ` <span style="font-size:0.8em;color:#666">${this.escapeHtml(p.logicalEntityName)}</span>` : ''}</td>
+    <td>${p.isOptional ? 'Optional' : '<span class="badge badge-warning">Required</span>'}</td>
+    <td style="color:#666;font-size:0.9em">${p.description ? this.escapeHtml(p.description) : '—'}</td>
+  </tr>`).join('')}</tbody>
+</table>`;
+    };
 
-      return `<tr>
-  <td>${this.escapeHtml(api.uniqueName)}</td>
-  <td>${this.escapeHtml(api.displayName)}</td>
-  <td><span class="badge badge-${api.isFunction ? 'info' : 'primary'}">${type}</span></td>
-  <td>${this.escapeHtml(binding)}</td>
-  <td>${params}</td>
-  <td>${responses}</td>
-</tr>`;
+    const items = customAPIs.map((api, i) => {
+      const type = api.isFunction ? 'Function' : 'Action';
+      const id = `capi-${i}`;
+      const paramCount = api.requestParameters?.length || 0;
+      const respCount = api.responseProperties?.length || 0;
+      const badges = [
+        `<span class="badge badge-${api.isFunction ? 'info' : 'primary'}">${type}</span>`,
+        `<span class="badge">${this.escapeHtml(api.bindingType)}</span>`,
+        paramCount > 0 ? `<span class="badge badge-success">${paramCount} param${paramCount !== 1 ? 's' : ''}</span>` : '',
+        respCount > 0 ? `<span class="badge badge-success">${respCount} response${respCount !== 1 ? 's' : ''}</span>` : '',
+        api.isPrivate ? `<span class="badge badge-warning">Private</span>` : '',
+        api.isManaged ? `<span class="badge badge-info">Managed</span>` : '',
+      ].filter(Boolean).join(' ');
+
+      return `<div class="accordion-item">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')">
+    <span class="accordion-icon" id="icon-${id}">+</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <strong>${this.escapeHtml(api.displayName || api.uniqueName)}</strong>
+        <code style="font-size:0.8em;color:#666">${this.escapeHtml(api.uniqueName)}</code>
+        ${badges}
+      </div>
+      ${api.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(api.description)}</div>` : ''}
+    </div>
+  </div>
+  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    <div style="display:grid;grid-template-columns:minmax(200px,1fr) minmax(200px,1fr);gap:16px;">
+      <div>
+        <h5 style="margin-bottom:6px">Request Parameters</h5>
+        ${paramTable(api.requestParameters, 'Request parameters')}
+      </div>
+      <div>
+        <h5 style="margin-bottom:6px">Response Properties</h5>
+        ${paramTable(api.responseProperties, 'Response properties')}
+      </div>
+    </div>
+    ${api.allowedCustomProcessingStepType !== 'None' ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Custom processing steps:</strong> ${this.escapeHtml(api.allowedCustomProcessingStepType)}</p>` : ''}
+  </div>
+</div>`;
     }).join('\n');
 
-    return `<section id="custom-apis" class="content-section">
-  <h2>Custom APIs (${customAPIs.length})</h2>
-  <div class="table-container">
-    <table class="data-table sortable" id="custom-apis-table">
-      <thead>
-        <tr>
-          <th onclick="sortTable('custom-apis-table', 0)">Unique Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 1)">Display Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 2)">Type <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 3)">Binding <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 4)">Parameters <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('custom-apis-table', 5)">Responses <span class="sort-indicator"></span></th>
-        </tr>
-      </thead>
-      <tbody>
-${rows}
-      </tbody>
-    </table>
-  </div>
+    return `<section id="custom-apis" class="content-section" aria-labelledby="heading-custom-apis">
+  <h2 id="heading-custom-apis" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-apis')} Custom APIs (${customAPIs.length})</h2>
+  <div class="accordion">${items}</div>
 </section>`;
   }
 
@@ -1340,8 +1432,8 @@ ${rows}
    */
   htmlEnvironmentVariablesTable(envVars: EnvironmentVariable[]): string {
     if (envVars.length === 0) {
-      return `<section id="environment-variables" class="content-section">
-  <h2>Environment Variables</h2>
+      return `<section id="environment-variables" class="content-section" aria-labelledby="heading-environment-variables">
+  <h2 id="heading-environment-variables">Environment Variables</h2>
   <div class="empty-state">No environment variables found</div>
 </section>`;
     }
@@ -1359,17 +1451,17 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="environment-variables" class="content-section">
-  <h2>Environment Variables (${envVars.length})</h2>
+    return `<section id="environment-variables" class="content-section" aria-labelledby="heading-environment-variables">
+  <h2 id="heading-environment-variables">Environment Variables (${envVars.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="env-vars-table">
       <thead>
         <tr>
-          <th onclick="sortTable('env-vars-table', 0)">Schema Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('env-vars-table', 1)">Display Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('env-vars-table', 2)">Type <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('env-vars-table', 3)">Required <span class="sort-indicator"></span></th>
-          <th>Value Status</th>
+          <th scope="col" onclick="sortTable('env-vars-table', 0)">Schema Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('env-vars-table', 1)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('env-vars-table', 2)">Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('env-vars-table', 3)">Required <span class="sort-indicator"></span></th>
+          <th scope="col">Value Status</th>
         </tr>
       </thead>
       <tbody>
@@ -1385,8 +1477,8 @@ ${rows}
    */
   htmlConnectionReferencesTable(connRefs: ConnectionReference[]): string {
     if (connRefs.length === 0) {
-      return `<section id="connection-references" class="content-section">
-  <h2>Connection References</h2>
+      return `<section id="connection-references" class="content-section" aria-labelledby="heading-connection-references">
+  <h2 id="heading-connection-references">Connection References</h2>
   <div class="empty-state">No connection references found</div>
 </section>`;
     }
@@ -1403,16 +1495,236 @@ ${rows}
 </tr>`;
     }).join('\n');
 
-    return `<section id="connection-references" class="content-section">
-  <h2>Connection References (${connRefs.length})</h2>
+    return `<section id="connection-references" class="content-section" aria-labelledby="heading-connection-references">
+  <h2 id="heading-connection-references">Connection References (${connRefs.length})</h2>
   <div class="table-container">
     <table class="data-table sortable" id="conn-refs-table">
       <thead>
         <tr>
-          <th onclick="sortTable('conn-refs-table', 0)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('conn-refs-table', 1)">Display Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('conn-refs-table', 2)">Connector <span class="sort-indicator"></span></th>
-          <th>Status</th>
+          <th scope="col" onclick="sortTable('conn-refs-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('conn-refs-table', 1)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('conn-refs-table', 2)">Connector <span class="sort-indicator"></span></th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  /**
+   * Generate global choices section
+   */
+  htmlGlobalChoicesTable(globalChoices: GlobalChoice[]): string {
+    if (globalChoices.length === 0) {
+      return `<section id="global-choices" class="content-section" aria-labelledby="heading-global-choices">
+  <h2 id="heading-global-choices" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('global-choices')} Global Choices</h2>
+  <div class="empty-state">No global choices found</div>
+</section>`;
+    }
+
+    const items = globalChoices.map(gc => {
+      const managedBadge = gc.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      const optionsHtml = gc.options.slice(0, 5).map(o =>
+        `<span class="badge badge-info">${this.escapeHtml(o.label)} (${String(o.value)})</span>`
+      ).join(' ');
+      const moreCount = gc.options.length > 5 ? ` <span class="badge">+${String(gc.options.length - 5)} more</span>` : '';
+
+      return `<div class="accordion-item">
+  <button class="accordion-header" aria-expanded="false">
+    <span class="accordion-title">${this.escapeHtml(gc.displayName)}</span>
+    <span class="accordion-meta">${managedBadge} <span class="badge">${String(gc.totalOptions)} options</span></span>
+    <span class="accordion-toggle">▼</span>
+  </button>
+  <div class="accordion-content" hidden>
+    <div class="details-grid">
+      <div class="detail-item"><span class="detail-label">Schema Name</span><span class="detail-value">${this.escapeHtml(gc.name)}</span></div>
+      ${gc.description ? `<div class="detail-item"><span class="detail-label">Description</span><span class="detail-value">${this.escapeHtml(gc.description)}</span></div>` : ''}
+      <div class="detail-item"><span class="detail-label">Customizable</span><span class="detail-value">${gc.isCustomizable ? 'Yes' : 'No'}</span></div>
+      <div class="detail-item"><span class="detail-label">Modified</span><span class="detail-value">${this.escapeHtml(new Date(gc.modifiedOn).toLocaleDateString())}</span></div>
+    </div>
+    ${gc.options.length > 0 ? `<div class="detail-item"><span class="detail-label">Options</span><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">${optionsHtml}${moreCount}</div></div>` : ''}
+  </div>
+</div>`;
+    }).join('\n');
+
+    return `<section id="global-choices" class="content-section" aria-labelledby="heading-global-choices">
+  <h2 id="heading-global-choices" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('global-choices')} Global Choices (${globalChoices.length})</h2>
+  <div class="accordion">${items}</div>
+</section>`;
+  }
+
+  /**
+   * Generate custom connectors section
+   */
+  htmlCustomConnectorsTable(connectors: CustomConnector[]): string {
+    if (connectors.length === 0) {
+      return `<section id="custom-connectors" class="content-section" aria-labelledby="heading-custom-connectors">
+  <h2 id="heading-custom-connectors" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-connectors')} Custom Connectors</h2>
+  <div class="empty-state">No custom connectors found</div>
+</section>`;
+    }
+
+    const rows = connectors.map(c => {
+      const managedBadge = c.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.escapeHtml(c.displayName)}</td>
+  <td>${this.escapeHtml(c.name)}</td>
+  ${c.description ? `<td>${this.escapeHtml(c.description)}</td>` : '<td>—</td>'}
+  <td>${managedBadge}</td>
+  <td>${this.escapeHtml(new Date(c.modifiedOn).toLocaleDateString())}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="custom-connectors" class="content-section" aria-labelledby="heading-custom-connectors">
+  <h2 id="heading-custom-connectors" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-connectors')} Custom Connectors (${connectors.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="custom-connectors-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('custom-connectors-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('custom-connectors-table', 1)">Name <span class="sort-indicator"></span></th>
+          <th scope="col">Description</th>
+          <th scope="col" onclick="sortTable('custom-connectors-table', 3)">Managed <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('custom-connectors-table', 4)">Modified <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  /**
+   * Generate canvas apps section
+   */
+  htmlCanvasAppsTable(apps: CanvasApp[]): string {
+    if (apps.length === 0) {
+      return `<section id="canvas-apps" class="content-section" aria-labelledby="heading-canvas-apps">
+  <h2 id="heading-canvas-apps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('canvas-apps')} Canvas Apps</h2>
+  <div class="empty-state">No canvas apps found</div>
+</section>`;
+    }
+
+    const rows = apps.map(a => {
+      const managedBadge = a.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.escapeHtml(a.displayName)}</td>
+  <td>${this.escapeHtml(a.name)}</td>
+  ${a.description ? `<td>${this.escapeHtml(a.description)}</td>` : '<td>—</td>'}
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="canvas-apps" class="content-section" aria-labelledby="heading-canvas-apps">
+  <h2 id="heading-canvas-apps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('canvas-apps')} Canvas Apps (${apps.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="canvas-apps-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('canvas-apps-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('canvas-apps-table', 1)">Name <span class="sort-indicator"></span></th>
+          <th scope="col">Description</th>
+          <th scope="col" onclick="sortTable('canvas-apps-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  /**
+   * Generate custom pages section
+   */
+  htmlCustomPagesTable(pages: CustomPage[]): string {
+    if (pages.length === 0) {
+      return `<section id="custom-pages" class="content-section" aria-labelledby="heading-custom-pages">
+  <h2 id="heading-custom-pages" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-pages')} Custom Pages</h2>
+  <div class="empty-state">No custom pages found</div>
+</section>`;
+    }
+
+    const rows = pages.map(p => {
+      const managedBadge = p.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.escapeHtml(p.displayName)}</td>
+  <td>${this.escapeHtml(p.name)}</td>
+  ${p.description ? `<td>${this.escapeHtml(p.description)}</td>` : '<td>—</td>'}
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="custom-pages" class="content-section" aria-labelledby="heading-custom-pages">
+  <h2 id="heading-custom-pages" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('custom-pages')} Custom Pages (${pages.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="custom-pages-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('custom-pages-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('custom-pages-table', 1)">Name <span class="sort-indicator"></span></th>
+          <th scope="col">Description</th>
+          <th scope="col" onclick="sortTable('custom-pages-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  /**
+   * Generate model-driven apps section
+   */
+  htmlModelDrivenAppsTable(apps: ModelDrivenApp[]): string {
+    if (apps.length === 0) {
+      return `<section id="model-driven-apps" class="content-section" aria-labelledby="heading-model-driven-apps">
+  <h2 id="heading-model-driven-apps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('model-driven-apps')} Model-Driven Apps</h2>
+  <div class="empty-state">No model-driven apps found</div>
+</section>`;
+    }
+
+    const rows = apps.map(a => {
+      const managedBadge = a.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.escapeHtml(a.displayName)}</td>
+  <td>${this.escapeHtml(a.name)}</td>
+  ${a.description ? `<td>${this.escapeHtml(a.description)}</td>` : '<td>—</td>'}
+  <td>${managedBadge}</td>
+  <td>${a.modifiedOn ? this.escapeHtml(new Date(a.modifiedOn).toLocaleDateString()) : '—'}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="model-driven-apps" class="content-section" aria-labelledby="heading-model-driven-apps">
+  <h2 id="heading-model-driven-apps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('model-driven-apps')} Model-Driven Apps (${apps.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="model-driven-apps-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('model-driven-apps-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('model-driven-apps-table', 1)">Unique Name <span class="sort-indicator"></span></th>
+          <th scope="col">Description</th>
+          <th scope="col" onclick="sortTable('model-driven-apps-table', 3)">Managed <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('model-driven-apps-table', 4)">Modified <span class="sort-indicator"></span></th>
         </tr>
       </thead>
       <tbody>
@@ -1428,8 +1740,8 @@ ${rows}
    */
   htmlExternalDependenciesSection(endpoints: ExternalEndpoint[] | undefined): string {
     if (!endpoints || endpoints.length === 0) {
-      return `<section id="external-dependencies" class="content-section">
-  <h2>External Dependencies</h2>
+      return `<section id="external-dependencies" class="content-section" aria-labelledby="heading-external-dependencies">
+  <h2 id="heading-external-dependencies">External Dependencies</h2>
   <div class="empty-state">No external dependencies detected</div>
 </section>`;
     }
@@ -1441,26 +1753,26 @@ ${rows}
       return `<tr>
   <td>${this.escapeHtml(endpoint.domain)}</td>
   <td>${this.escapeHtml(endpoint.protocol.toUpperCase())}</td>
-  <td><span class="badge badge-${riskColor}">${endpoint.riskLevel}</span></td>
-  <td>${endpoint.callCount}</td>
+  <td><span class="badge badge-${riskColor}">${this.escapeHtml(endpoint.riskLevel)}</span></td>
+  <td>${String(endpoint.callCount)}</td>
   <td>${this.escapeHtml(riskFactorsText)}</td>
 </tr>`;
     }).join('\n');
 
-    return `<section id="external-dependencies" class="content-section">
-  <h2>External Dependencies (${endpoints.length})</h2>
+    return `<section id="external-dependencies" class="content-section" aria-labelledby="heading-external-dependencies">
+  <h2 id="heading-external-dependencies">External Dependencies (${endpoints.length})</h2>
   <div class="alert alert-info">
-    <strong>ℹ️ Note:</strong> External API calls can introduce security risks and performance concerns. Review each endpoint carefully.
+    <strong>${this.alertIcon('info')} Note:</strong> External API calls can introduce security risks and performance concerns. Review each endpoint carefully.
   </div>
   <div class="table-container">
     <table class="data-table sortable" id="external-deps-table">
       <thead>
         <tr>
-          <th onclick="sortTable('external-deps-table', 0)">Domain <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('external-deps-table', 1)">Protocol <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('external-deps-table', 2)">Risk Level <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('external-deps-table', 3)">Calls <span class="sort-indicator"></span></th>
-          <th>Risk Factors</th>
+          <th scope="col" onclick="sortTable('external-deps-table', 0)">Domain <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('external-deps-table', 1)">Protocol <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('external-deps-table', 2)">Risk Level <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('external-deps-table', 3)">Calls <span class="sort-indicator"></span></th>
+          <th scope="col">Risk Factors</th>
         </tr>
       </thead>
       <tbody>
@@ -1472,76 +1784,327 @@ ${rows}
   }
 
   /**
+   * Generate solution distribution section
+   */
+  htmlSolutionDistribution(distributions: SolutionDistribution[] | undefined): string {
+    if (!distributions || distributions.length === 0) {
+      return `<section id="solutions" class="content-section" aria-labelledby="heading-solutions">
+  <h2 id="heading-solutions" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('solutions')} Solutions</h2>
+  <div class="empty-state">No solution distribution information available.</div>
+</section>`;
+    }
+
+    const rows = distributions.map((sol) => {
+      const counts = sol.componentCounts;
+      const countRows = [
+        ['Entities', counts.entities],
+        ['Plugins', counts.plugins],
+        ['Flows', counts.flows],
+        ['Business Rules', counts.businessRules],
+        ['Classic Workflows', counts.classicWorkflows],
+        ['Business Process Flows', counts.bpfs],
+        ['Web Resources', counts.webResources],
+        ['Custom APIs', counts.customAPIs],
+        ['Environment Variables', counts.environmentVariables],
+        ['Connection References', counts.connectionReferences],
+        ['Global Choices', counts.globalChoices],
+        ['Custom Connectors', counts.customConnectors],
+        ['Security Roles', counts.securityRoles],
+        ['Field Security Profiles', counts.fieldSecurityProfiles],
+        ['Canvas Apps', counts.canvasApps],
+        ['Custom Pages', counts.customPages],
+        ['Model-Driven Apps', counts.modelDrivenApps],
+      ].filter(([, n]) => (n as number) > 0);
+
+      const countHtml = countRows.map(([label, n]) =>
+        `<tr><td>${this.htmlEscape(String(label))}</td><td style="text-align:right;font-weight:600;">${n}</td></tr>`
+      ).join('');
+
+      const sharedHtml = sol.sharedComponents.length > 0
+        ? `<details style="margin-top:12px;"><summary style="cursor:pointer;font-weight:600;">Shared Components (${sol.sharedComponents.length})</summary>
+        <table class="data-table" style="margin-top:8px;"><thead><tr><th scope="col">Type</th><th scope="col">Name</th><th scope="col">Also In</th></tr></thead>
+        <tbody>${sol.sharedComponents.map(sc => `<tr><td>${this.htmlEscape(sc.componentType)}</td><td>${this.htmlEscape(sc.componentName)}</td><td>${sc.alsoInSolutions.map(s => this.htmlEscape(s)).join(', ')}</td></tr>`).join('')}</tbody></table>
+        </details>`
+        : '';
+
+      return `<div class="card" style="margin-bottom:16px;padding:16px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <span style="font-size:1.1em;font-weight:700;">${this.htmlEscape(sol.solutionName)}</span>
+    <span class="badge ${sol.isManaged ? 'badge-warning' : 'badge-success'}">${sol.isManaged ? 'Managed' : 'Unmanaged'}</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;">
+    <div><span style="color:#666;font-size:0.85em;">Publisher</span><div style="font-weight:600;">${this.htmlEscape(sol.publisher)}</div></div>
+    <div><span style="color:#666;font-size:0.85em;">Version</span><div style="font-weight:600;">${this.htmlEscape(sol.version)}</div></div>
+    <div><span style="color:#666;font-size:0.85em;">Total Components</span><div style="font-weight:600;">${counts.total}</div></div>
+  </div>
+  ${countRows.length > 0 ? `<table class="data-table" style="max-width:400px;"><thead><tr><th scope="col">Component Type</th><th scope="col" style="text-align:right;">Count</th></tr></thead><tbody>${countHtml}</tbody></table>` : ''}
+  ${sharedHtml}
+</div>`;
+    });
+
+    return `<section id="solutions" class="content-section" aria-labelledby="heading-solutions">
+  <h2 id="heading-solutions" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('solutions')} Solutions (${distributions.length})</h2>
+  ${rows.join('\n  ')}
+</section>`;
+  }
+
+  /**
    * Generate cross-entity automation section
    */
-  htmlCrossEntitySection(_links: CrossEntityLink[] | undefined): string {
-    // Always show Coming Soon banner with sample data
-    const sampleRows = `<tr>
-  <td>Contact</td>
-  <td>Account</td>
-  <td><span class="badge badge-success">Flow</span></td>
-  <td>Update Account when Contact Changes</td>
-  <td>Update</td>
-  <td><span class="badge badge-success">Async</span></td>
-</tr>
-<tr>
-  <td>Opportunity</td>
-  <td>Quote</td>
-  <td><span class="badge badge-brand">Plugin</span></td>
-  <td>Generate Quote from Opportunity</td>
-  <td>Create</td>
-  <td><span class="badge badge-warning">Sync ⚠️</span></td>
-</tr>
-<tr>
-  <td>Case</td>
-  <td>Email</td>
-  <td><span class="badge badge-success">Flow</span></td>
-  <td>Send Email on Case Resolution</td>
-  <td>Create</td>
-  <td><span class="badge badge-success">Async</span></td>
-</tr>`;
+  htmlCrossEntitySection(analysis: CrossEntityAnalysisResult | undefined): string {
+    const coverageNotice = `<div class="alert alert-info" style="margin-bottom: 16px;">
+      <strong>Detection Coverage</strong> <span class="badge badge-warning" style="font-size:0.75em;vertical-align:middle;">Preview</span>
+      <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('flows')} <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></div>
+        <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('classic-workflows')} <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></div>
+        <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('business-rules')} <span><strong>Business Rules (server-scoped)</strong> — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.</span></div>
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.1);">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span style="font-size:0.8em;color:#666;">Coming soon</span>
+          <span class="badge badge-info" style="font-size:0.75em;">Planned</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:6px;color:#666;">${this.navIcon('plugins')} <span><strong>Plugins (deep detection)</strong> — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.</span></div>
+          <div style="display:flex;align-items:center;gap:6px;color:#666;">${this.navIcon('web-resources')} <span><strong>JavaScript Web Resources (static analysis)</strong> — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.</span></div>
+        </div>
+      </div>
+    </div>`;
 
-    return `<section id="cross-entity" class="content-section">
-  <h2>💡 Cross-Entity Automation - Coming Soon</h2>
-
-  <div style="padding: 20px; background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px; margin-bottom: 20px;">
-    <h3 style="margin-top: 0;">Advanced Cross-Entity Analysis in Development</h3>
-    <p>This feature is currently being developed and will provide comprehensive analysis of automation that operates across multiple entities.</p>
-    <p><strong>Planned capabilities:</strong></p>
-    <ul>
-      <li>Plugin assembly decompilation (ILSpy integration) for cross-entity operations</li>
-      <li>Classic workflow XAML parsing to identify entity relationships</li>
-      <li>Business rule condition and action analysis</li>
-      <li>Synchronous operation detection for performance impact</li>
-      <li>Complete data flow mapping between entities</li>
-    </ul>
-    <p>Check <a href="https://github.com/sabrish/power-platform-solution-blueprint" target="_blank" rel="noopener noreferrer">our GitHub repository</a> for updates.</p>
-  </div>
-
-  <div style="padding: 12px; background-color: #f5f5f5; border-radius: 4px; margin-bottom: 16px; font-style: italic;">
-    <strong>💡 Sample Data Below</strong> - This demonstrates what the feature will look like when completed
-  </div>
-
-  <div class="table-container">
-    <table class="data-table sortable" id="cross-entity-table">
-      <thead>
-        <tr>
-          <th onclick="sortTable('cross-entity-table', 0)">Source Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 1)">Target Entity <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 2)">Type <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 3)">Name <span class="sort-indicator"></span></th>
-          <th onclick="sortTable('cross-entity-table', 4)">Operation <span class="sort-indicator"></span></th>
-          <th>Mode</th>
-        </tr>
-      </thead>
-      <tbody>
-${sampleRows}
-      </tbody>
-    </table>
-  </div>
-
-  <p style="margin-top: 16px; color: #666; font-style: italic;">⚠️ Synchronous cross-entity operations may impact performance</p>
+    if (!analysis || (analysis.allEntityPipelines.size === 0 && analysis.totalEntryPoints === 0)) {
+      return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.75em;">Preview</span></h2>
+  ${coverageNotice}
+  <p>No cross-entity automation entry points detected in this solution scope.</p>
 </section>`;
+    }
+
+    // Stats — matches the React UI summary cards
+    const noFilterCard = analysis.noFilterPluginCount > 0
+      ? `<div class="stats-card"><div class="stats-value stats-value-danger">${analysis.noFilterPluginCount}</div><div class="stats-label">No-Filter Plugins</div></div>`
+      : '';
+    const statsHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;">
+      <div class="stats-card"><div class="stats-value">${analysis.allEntityPipelines.size}</div><div class="stats-label">Entities w/ Automation</div></div>
+      <div class="stats-card"><div class="stats-value">${analysis.entityViews.size}</div><div class="stats-label">Target Entities</div></div>
+      <div class="stats-card"><div class="stats-value">${analysis.totalBranches}</div><div class="stats-label">Cross-Entity Writes</div></div>
+      ${noFilterCard}
+      <div class="stats-card"><div class="stats-value stats-value-danger">${analysis.risks.filter(r => r.severity === 'High').length}</div><div class="stats-label">High Risks</div></div>
+    </div>`;
+
+    // Risks
+    const risksHtml = analysis.risks.length > 0 ? `
+      <h3>Performance &amp; Risk Warnings</h3>
+      ${analysis.risks.map(r => `
+        <div class="alert ${r.severity === 'High' ? 'alert-danger' : 'alert-warning'}" style="margin-bottom:8px;">
+          <strong>${this.htmlEscape(r.type)}</strong> (${this.htmlEscape(r.severity)}) ${r.automationName ? `— ${this.htmlEscape(r.automationName)}` : ''}<br/>
+          <span>${this.htmlEscape(r.description)}</span>
+        </div>`).join('')}` : '';
+
+    // Pipeline Traces — default view matches the React UI "Pipeline Traces" tab
+    const pipelineTracesHtml = `
+      <h3>Pipeline Traces</h3>
+      <p style="color:#666;margin-bottom:12px;">Per-entity activation analysis. By default shows entities with cross-entity outputs. Use the checkbox to reveal all entities with automation.</p>
+      ${this.htmlPipelineTraces(analysis)}`;
+
+    // Global Chain Map — matches the React UI "Global Chain Map" tab
+    const chainRows = analysis.chainLinks.map(l => `<tr>
+      <td>${this.htmlEscape(l.sourceEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.sourceEntity)}</small></td>
+      <td>${this.htmlEscape(l.automationName)}<br/><span class="badge badge-${l.automationType === 'Flow' ? 'success' : 'warning'}">${this.htmlEscape(l.automationType)}</span></td>
+      <td>→</td>
+      <td>${this.htmlEscape(l.targetEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.targetEntity)}</small></td>
+      <td><span class="badge badge-${l.operation === 'Create' ? 'success' : l.operation === 'Delete' ? 'danger' : 'warning'}">${this.htmlEscape(l.operation)}</span></td>
+      <td><span class="badge badge-${l.isAsynchronous ? 'success' : 'warning'}">${l.isAsynchronous ? 'Async' : 'Sync'}</span></td>
+    </tr>`).join('');
+    const globalChainHtml = analysis.chainLinks.length > 0 ? `
+      <h3>Global Chain Map (${analysis.chainLinks.length})</h3>
+      <p style="color:#666;margin-bottom:12px;">All detected cross-entity write operations. Synchronous operations may impact performance.</p>
+      <div class="table-container">
+        <table class="data-table sortable" id="cross-entity-table">
+          <thead>
+            <tr>
+              <th scope="col" onclick="sortTable('cross-entity-table', 0)">Source Entity <span class="sort-indicator"></span></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 1)">Automation <span class="sort-indicator"></span></th>
+              <th scope="col"></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 3)">Target Entity <span class="sort-indicator"></span></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 4)">Operation <span class="sort-indicator"></span></th>
+              <th scope="col">Mode</th>
+            </tr>
+          </thead>
+          <tbody>${chainRows}</tbody>
+        </table>
+      </div>` : '';
+
+    return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.75em;">Preview</span></h2>
+  ${coverageNotice}
+  ${statsHtml}
+  ${risksHtml}
+  ${pipelineTracesHtml}
+  ${globalChainHtml}
+</section>`;
+  }
+
+  /**
+   * Render pipeline trace accordions for all entities with automation.
+   * Matches the React UI "Pipeline Traces" tab behaviour:
+   *   - Default: shows only entities with cross-entity output (hasCrossEntityOutput)
+   *   - Checkbox: reveals all entities with any automation
+   *   - Entities with inbound entry points (entityViews) → CEA trace accordion
+   *   - Entities without inbound entry points → message pipeline step table
+   */
+  private htmlPipelineTraces(analysis: CrossEntityAnalysisResult): string {
+    const pipelines = Array.from(analysis.allEntityPipelines.entries())
+      .sort(([, a], [, b]) => a.entityDisplayName.localeCompare(b.entityDisplayName));
+    if (pipelines.length === 0) return '<p>No pipeline traces available.</p>';
+
+    const COLORS = ['#0078d4','#107c10','#ca5010','#8764b8','#038387','#c239b3','#e3008c','#004b50'];
+    const colorMap = new Map(pipelines.map(([k], i) => [k, i]));
+    const entityColor = (key: string) => COLORS[(colorMap.get(key) ?? 0) % COLORS.length];
+
+    const firingBadge = (status: string): string => {
+      if (status === 'WillFire') return '<span class="badge badge-success">Yes</span>';
+      if (status === 'WontFire') return '<span class="badge badge-danger">No (field mismatch)</span>';
+      return '<span class="badge badge-warning">Yes (no filter)</span>';
+    };
+
+    const hasCrossCount = pipelines.filter(([, p]) => p.hasCrossEntityOutput).length;
+    const allCount = pipelines.length;
+    const checkboxHtml = allCount > hasCrossCount ? `<div style="margin-bottom:12px;">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:0.9em;">
+    <input type="checkbox" id="cea-show-all" onchange="toggleCeaAllEntities(this.checked)" style="cursor:pointer">
+    Show all entities with automation (${allCount} total, ${allCount - hasCrossCount} without cross-entity output)
+  </label>
+</div>` : '';
+
+    const items: string[] = [];
+    let idx = 0;
+    for (const [logicalName, pipeline] of pipelines) {
+      const entityView = analysis.entityViews.get(logicalName);
+      const color = entityColor(logicalName);
+      const id = `cea-entity-${idx++}`;
+      const hasCrossOutput = pipeline.hasCrossEntityOutput;
+      const wrapClass = hasCrossOutput ? 'cea-entity' : 'cea-entity cea-entity-no-output';
+      const hiddenAttr = hasCrossOutput ? '' : ' style="display:none"';
+
+      const opBadges = pipeline.messagePipelines
+        .map(mp => {
+          const c = mp.message === 'Create' ? 'success' : mp.message === 'Delete' ? 'danger' : 'warning';
+          return `<span class="badge badge-${c}">${mp.message}</span>`;
+        }).join(' ');
+      const crossBadge = hasCrossOutput ? `<span class="badge badge-info">→ cross-entity</span>` : '';
+
+      let bodyHtml: string;
+      let entryCountHtml = '';
+
+      if (entityView) {
+        // Entity receives cross-entity writes — show full CEA trace
+        entryCountHtml = entityView.traces.length > 1
+          ? `<span style="font-size:0.85em;color:#666;margin-left:8px">${entityView.traces.length} entry points</span>` : '';
+
+        const traceBlocks = entityView.traces.map((trace, ti) => {
+          const { entryPoint, activations, risks } = trace;
+          const tid = `${id}-trace-${ti}`;
+          const actRows = activations.map(act => {
+            const ds = act.downstream
+              ? `→ <strong>${this.htmlEscape(act.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(act.downstream.operation)})`
+              : '';
+            return `<tr>
+              <td>${this.htmlEscape(act.automationName)}</td>
+              <td><span class="badge badge-${act.automationType === 'Plugin' ? 'warning' : 'success'}">${act.automationType}</span></td>
+              <td>${this.htmlEscape(act.stageName ?? '—')}</td>
+              <td>${act.mode}</td>
+              <td>${firingBadge(act.firingStatus)}</td>
+              <td style="font-family:monospace;font-size:0.8em">${act.matchedFields.length > 0 ? this.htmlEscape(act.matchedFields.join(', ')) : '—'}</td>
+              <td>${ds}</td>
+            </tr>`;
+          }).join('');
+          const riskHtml = risks.length > 0
+            ? risks.map(r => `<div style="padding:6px 10px;border-left:3px solid ${r.severity === 'High' ? '#d32f2f' : '#f57c00'};background:${r.severity === 'High' ? '#ffebee' : '#fff8e1'};border-radius:3px;margin-bottom:6px;font-size:0.85em"><strong>${this.htmlEscape(r.type)}</strong>: ${this.htmlEscape(r.description)}</div>`).join('')
+            : '';
+          const modeLabel = entryPoint.isAsynchronous ? 'Async' : 'Sync';
+          const header = `${this.htmlEscape(entryPoint.automationName)} <span style="font-weight:normal;color:#666">(${this.htmlEscape(entryPoint.automationType)} — ${this.htmlEscape(entryPoint.operation)} from ${this.htmlEscape(entryPoint.sourceEntityDisplayName)} — ${modeLabel})</span>`;
+          return `<div class="accordion-item" style="margin-bottom:8px;">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${tid}" onclick="toggleAccordion('${tid}')" onkeydown="accordionKeydown(event,'${tid}')" style="font-size:0.9em;">
+    <span class="accordion-icon" id="icon-${tid}">+</span>
+    <span>${header}</span>
+    <span class="badge badge-${entryPoint.confidence === 'High' ? 'success' : entryPoint.confidence === 'Medium' ? 'warning' : 'danger'}" style="margin-left:auto">${this.htmlEscape(entryPoint.confidence)} confidence</span>
+  </div>
+  <div class="accordion-content" id="${tid}" style="display:none;padding:12px;">
+    ${riskHtml}
+    <table class="data-table" style="font-size:0.85em;">
+      <thead><tr><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Fires?</th><th scope="col">Matched Fields</th><th scope="col">Downstream</th></tr></thead>
+      <tbody>${actRows}</tbody>
+    </table>
+    ${entryPoint.fields.length > 0 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Fields set by source:</strong> <code>${this.htmlEscape(entryPoint.fields.join(', '))}</code></p>` : ''}
+  </div>
+</div>`;
+        }).join('');
+        bodyHtml = `<div class="accordion">${traceBlocks}</div>`;
+      } else {
+        // Entity has outgoing automation but no inbound entry points — show message pipelines
+        const msgBlocks = pipeline.messagePipelines.map(mp => {
+          const stepRows = mp.steps.map((step, si) => {
+            const noFilterHtml = step.firesForAllUpdates ? '<span class="badge badge-danger">No filter</span>' : '';
+            const filters = step.filteringAttributes.length > 0 && !step.firesForAllUpdates
+              ? `<span style="font-size:0.8em;color:#666">filters: ${this.htmlEscape(step.filteringAttributes.slice(0, 3).join(', '))}${step.filteringAttributes.length > 3 ? ` +${step.filteringAttributes.length - 3}` : ''}</span>`
+              : '';
+            const ds = step.downstream
+              ? `→ <strong>${this.htmlEscape(step.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(step.downstream.operation)})`
+              : '';
+            return `<tr>
+              <td>${si + 1}</td>
+              <td>${this.htmlEscape(step.automationName)}</td>
+              <td><span class="badge badge-${step.automationType === 'Plugin' ? 'warning' : 'success'}">${step.automationType}</span></td>
+              <td>${this.htmlEscape(step.stageName ?? '—')}</td>
+              <td><span class="badge badge-${step.mode === 'Sync' ? 'warning' : 'success'}">${step.mode}</span></td>
+              <td>${noFilterHtml}${filters}</td>
+              <td>${ds}</td>
+            </tr>`;
+          }).join('');
+          return `${pipeline.messagePipelines.length > 1 ? `<h5 style="margin:4px 0 6px">${mp.message} Pipeline</h5>` : ''}<table class="data-table" style="font-size:0.85em;">
+  <thead><tr><th scope="col">#</th><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Filter</th><th scope="col">Downstream</th></tr></thead>
+  <tbody>${stepRows}</tbody>
+</table>`;
+        }).join('<hr style="margin:8px 0;border:none;border-top:1px solid #eee">');
+        bodyHtml = msgBlocks;
+      }
+
+      const totalSteps = pipeline.messagePipelines.reduce((sum, mp) => sum + mp.steps.length, 0);
+      const stepCount = entityView
+        ? `${entityView.traces.length} ${entityView.traces.length === 1 ? 'entry point' : 'entry points'}`
+        : `${totalSteps} ${totalSteps === 1 ? 'step' : 'steps'}`;
+
+      items.push(`<div class="${wrapClass}"${hiddenAttr}><div class="accordion-item">
+  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')" style="border-left:4px solid ${color}">
+    <span class="accordion-icon" id="icon-${id}">+</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <strong>${this.htmlEscape(pipeline.entityDisplayName)}</strong>
+        <small style="color:#666;font-family:monospace">${this.htmlEscape(logicalName)}</small>
+        ${opBadges} ${crossBadge} ${entryCountHtml}
+      </div>
+    </div>
+    <span style="font-size:0.85em;color:#666;flex-shrink:0">${stepCount}</span>
+  </div>
+  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    ${bodyHtml}
+  </div>
+</div></div>`);
+    }
+
+    return `${checkboxHtml}<div class="accordion">${items.join('\n')}</div>`;
+  }
+
+  /**
+   * HTML-escape a string to prevent XSS
+   */
+  private htmlEscape(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
@@ -1564,10 +2127,95 @@ ${this.embeddedJavaScript()}
   }
 
   /**
+   * Returns a small inline SVG icon string for use in navigation and headings.
+   * Uses actual Fluent UI icon path data extracted from @fluentui/react-icons.
+   * All icons use fill="currentColor" so they inherit the surrounding text colour.
+   * ViewBox is "0 0 24 24" matching the 24-size Fluent UI Regular icons.
+   */
+  private navIcon(key: string): string {
+    const s = `width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"`;
+    const icons: Record<string, string> = {
+      // Grid24Regular
+      summary:   `<svg ${s}><path d="M6.25 3A3.25 3.25 0 0 0 3 6.25v11.5C3 19.55 4.46 21 6.25 21h11.5c1.8 0 3.25-1.46 3.25-3.25V6.25C21 4.45 19.54 3 17.75 3H6.25ZM4.5 6.25c0-.97.78-1.75 1.75-1.75h5V7h-1.5A2.75 2.75 0 0 0 7 9.75v1.5H4.5v-5Zm2.5 6.5v1.5A2.75 2.75 0 0 0 9.75 17h1.5v2.5h-5c-.97 0-1.75-.78-1.75-1.75v-5H7Zm4.25 2.75h-1.5c-.69 0-1.25-.56-1.25-1.25v-1.5h2.75v2.75Zm1.5 1.5h1.5A2.75 2.75 0 0 0 17 14.25v-1.5h2.5v5c0 .97-.78 1.75-1.75 1.75h-5V17Zm2.75-4.25v1.5c0 .69-.56 1.25-1.25 1.25h-1.5v-2.75h2.75Zm1.5-1.5v-1.5A2.75 2.75 0 0 0 14.25 7h-1.5V4.5h5c.97 0 1.75.78 1.75 1.75v5H17ZM12.75 8.5h1.5c.69 0 1.25.56 1.25 1.25v1.5h-2.75V8.5Zm-1.5 0v2.75H8.5v-1.5c0-.69.56-1.25 1.25-1.25h1.5Z"/></svg>`,
+      // LayerDiagonal24Regular — stacked layers = solutions/packages
+      solutions: `<svg ${s}><path d="M13.13 2.12a3.25 3.25 0 0 0-2.26 0L3.65 4.8A1.75 1.75 0 0 0 3.65 8l7.22 2.68c.73.27 1.53.27 2.26 0L20.35 8a1.75 1.75 0 0 0 0-3.2l-7.22-2.68Zm-1.75 1.41c.4-.14.84-.14 1.24 0l7.04 2.6-7.04 2.6a1.75 1.75 0 0 1-1.24 0L4.34 6.13l7.04-2.6ZM3.2 11.1l7.66 2.84c.73.27 1.53.27 2.27 0l7.66-2.84a.75.75 0 1 1 .52 1.41l-7.66 2.84a3.25 3.25 0 0 1-2.3 0L3.69 12.5a.75.75 0 1 1 .52-1.41Zm0 4.5 7.66 2.83c.73.27 1.53.27 2.27 0l7.66-2.83a.75.75 0 1 1 .52 1.4l-7.66 2.84a3.25 3.25 0 0 1-2.3 0L3.69 17a.75.75 0 1 1 .52-1.4Z"/></svg>`,
+      // Organization24Regular
+      erd:       `<svg ${s}><path d="M11.75 2A3.75 3.75 0 0 0 11 9.43v2.07H7.75c-1.24 0-2.25 1-2.25 2.25v.83a3.75 3.75 0 1 0 1.5 0v-.83c0-.41.34-.75.75-.75h8c.41 0 .75.34.75.75v.83a3.75 3.75 0 1 0 1.5 0v-.83c0-1.24-1-2.25-2.25-2.25H12.5V9.43A3.75 3.75 0 0 0 11.75 2ZM9.5 5.75a2.25 2.25 0 1 1 4.5 0 2.25 2.25 0 0 1-4.5 0ZM4 18.25a2.25 2.25 0 1 1 4.5 0 2.25 2.25 0 0 1-4.5 0ZM17.25 16a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5Z"/></svg>`,
+      // Table24Regular
+      entities:  `<svg ${s}><path d="M3 6.25C3 4.45 4.46 3 6.25 3h11.5C19.55 3 21 4.46 21 6.25v11.5c0 1.8-1.46 3.25-3.25 3.25H6.25A3.25 3.25 0 0 1 3 17.75V6.25ZM6.25 4.5c-.97 0-1.75.78-1.75 1.75V8.5h4v-4H6.25ZM4.5 10v4h4v-4h-4Zm5.5 0v4h4v-4h-4Zm5.5 0v4h4v-4h-4ZM14 15.5h-4v4h4v-4Zm1.5 4h2.25c.97 0 1.75-.78 1.75-1.75V15.5h-4v4Zm0-11h4V6.25c0-.97-.78-1.75-1.75-1.75H15.5v4Zm-1.5-4h-4v4h4v-4Zm-9.5 11v2.25c0 .97.78 1.75 1.75 1.75H8.5v-4h-4Z"/></svg>`,
+      // PuzzlePiece24Regular — matches Microsoft's "Plug-in assemblies" icon
+      plugins:   `<svg ${s}><path d="M13 2a3 3 0 0 1 3 2.82V5h2.25c.87 0 1.59.63 1.73 1.46l.01.15.01.14v3.75h-2a1.5 1.5 0 0 0-1.48 1.24l-.01.13V12c0 .74.53 1.37 1.23 1.48l.13.02H20v3.75c0 .92-.7 1.67-1.6 1.75H16v.17a3 3 0 0 1-2.64 2.8l-.18.02H13a3 3 0 0 1-3-2.81V19H7.75c-.87 0-1.59-.63-1.73-1.46l-.01-.14-.01-.15V15h-.16a3 3 0 0 1-2.8-2.64l-.02-.18V12a3 3 0 0 1 2.82-3H6V6.75c0-.87.63-1.59 1.46-1.73l.15-.01.14-.01H10v-.17a3 3 0 0 1 2.64-2.8l.18-.02H13Zm0 1.5c-.78 0-1.42.6-1.5 1.36V6.5H7.75a.25.25 0 0 0-.24.2l-.01.05v3.75H6a1.5 1.5 0 0 0-.14 3H7.5v3.75c0 .12.08.22.2.25h3.8V19a1.5 1.5 0 0 0 3 .14V17.5h3.75c.12 0 .22-.08.24-.19l.01-.06V15h-.7a3 3 0 0 1-2.8-2.85v-.35A3 3 0 0 1 17.84 9h.67V6.75c0-.1-.05-.18-.13-.22l-.06-.02-.06-.01H14.5V5c0-.82-.67-1.5-1.5-1.5Z"/></svg>`,
+      // CloudFlow24Regular
+      flows:     `<svg ${s}><path d="M7.5 7.79a4.5 4.5 0 0 1 9 0c.01.4.34.71.74.71h.26a3 3 0 0 1 2.99 2.7c.56.2 1.06.53 1.46.95a4.5 4.5 0 0 0-4.03-5.13 6 6 0 0 0-11.84 0A4.5 4.5 0 0 0 6.5 16h6.68l.13-.5a3 3 0 0 1 .47-1H6.5a3 3 0 1 1 0-6h.26c.4 0 .73-.31.75-.71Zm11.75 5.71a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm-3.03 2.25h.47a2.75 2.75 0 1 0-.14-1.5h-.33a2 2 0 0 0-1.94 1.5l-1.01 3.88a.5.5 0 0 1-.49.37h-.8a2.75 2.75 0 1 0-.28 1.5h1.08a2 2 0 0 0 1.94-1.5l1.01-3.88a.5.5 0 0 1 .49-.37ZM8 20.25a1.25 1.25 0 1 1 2.5 0 1.25 1.25 0 0 1-2.5 0Z"/></svg>`,
+      // ClipboardTaskListLtr24Regular
+      'business-rules': `<svg ${s}><path d="M12.5 10.25c0-.41.34-.75.75-.75h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1-.75-.75Zm.75 4.75a.75.75 0 1 0 0 1.5h3.5a.75.75 0 1 0 0-1.5h-3.5Zm-2.47-5.22a.75.75 0 1 0-1.06-1.06l-1.47 1.47-.47-.47a.75.75 0 0 0-1.06 1.06l1 1c.3.3.77.3 1.06 0l2-2Zm0 4.44c.3.3.3.77 0 1.06l-2 2c-.3.3-.77.3-1.06 0l-1-1a.75.75 0 1 1 1.06-1.06l.47.47 1.47-1.47c.3-.3.77-.3 1.06 0Zm5.21-10.14A2.25 2.25 0 0 0 13.75 2h-3.5c-1.16 0-2.11.87-2.24 2H6.25C5.01 4 4 5 4 6.25v13.5C4 20.99 5 22 6.25 22h11.5c1.24 0 2.25-1 2.25-2.25V6.25C20 5.01 19 4 17.75 4h-1.76v.08Zm0 .02.01.15V4.1Zm-5.74 2.4h3.5c.78 0 1.47-.4 1.87-1h2.13c.41 0 .75.34.75.75v13.5c0 .41-.34.75-.75.75H6.25a.75.75 0 0 1-.75-.75V6.25c0-.41.34-.75.75-.75h2.13c.4.6 1.09 1 1.87 1Zm0-3h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1 0-1.5Z"/></svg>`,
+      // ClipboardSettings24Regular — matches Microsoft's "Processes" icon
+      'classic-workflows': `<svg ${s}><path d="M13.75 2c1.16 0 2.11.87 2.24 2h1.76C18.99 4 20 5 20 6.25v5.25c-.47-.2-.98-.34-1.5-.42V6.25a.75.75 0 0 0-.75-.75h-2.13c-.4.6-1.09 1-1.87 1h-3.5c-.78 0-1.47-.4-1.87-1H6.25a.75.75 0 0 0-.75.75v13.5c0 .41.34.75.75.75h5.48c.29.55.65 1.06 1.08 1.5H6.25C5.01 22 4 21 4 19.75V6.25C4 5.01 5 4 6.25 4h1.76c.13-1.13 1.08-2 2.24-2h3.5Zm2.24 2.03V4v.03Zm0 .07.01.15v-.17.02Zm-2.24-.6h-3.5a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5Zm.53 10.48a2 2 0 0 1-1.44 2.5l-.59.14a5.73 5.73 0 0 0 0 1.8l.55.13a2 2 0 0 1 1.45 2.51l-.19.64c.44.38.94.7 1.49.92l.49-.52a2 2 0 0 1 2.9 0l.5.52a5.28 5.28 0 0 0 1.48-.91l-.2-.69a2 2 0 0 1 1.44-2.5l.59-.14a5.73 5.73 0 0 0 0-1.8l-.55-.13a2 2 0 0 1-1.45-2.51l.19-.63c-.44-.4-.94-.7-1.49-.93l-.49.52a2 2 0 0 1-2.9 0l-.5-.52c-.54.22-1.04.53-1.48.9l.2.7ZM17.5 19c-.8 0-1.45-.67-1.45-1.5S16.7 16 17.5 16c.8 0 1.45.67 1.45 1.5S18.3 19 17.5 19Z"/></svg>`,
+      // Flowchart24Regular
+      'business-process-flows': `<svg ${s}><path d="M5.25 3C4 3 3 4 3 5.25v2.5C3 9 4 10 5.25 10h.5v3.71c-.05.03-.1.07-.13.12l-2.8 2.79a1.25 1.25 0 0 0 0 1.77l2.8 2.79c.48.49 1.28.49 1.76 0l2.8-2.8.11-.13H14v.5C14 20 15.01 21 16.25 21h2.5c1.24 0 2.25-1 2.25-2.25v-2.5c0-1.24-1-2.25-2.25-2.25h-2.5C15.01 14 14 15 14 16.25v.5H10.3c-.03-.05-.07-.09-.12-.13l-2.79-2.8a1.26 1.26 0 0 0-.13-.11v-3.7h.5C9 10 10 9 10 7.74v-2.5C10 4 9 3 7.75 3h-2.5ZM4.5 5.25c0-.42.33-.75.75-.75h2.5c.42 0 .75.33.75.75v2.5c0 .42-.33.75-.75.75h-2.5a.75.75 0 0 1-.75-.75v-2.5ZM4.06 17.5l2.44-2.44 2.44 2.44-2.44 2.44-2.44-2.44Zm12.2-2h2.49c.41 0 .75.34.75.75v2.5c0 .42-.34.75-.75.75h-2.5a.75.75 0 0 1-.75-.75v-2.5c0-.41.34-.75.75-.75Z"/></svg>`,
+      // DocumentGlobe24Regular — matches Microsoft's "Web resources" icon
+      'web-resources': `<svg ${s}><path d="M4 4c0-1.1.9-2 2-2h6.17a2 2 0 0 1 1.42.59L19.4 8.4A2 2 0 0 1 20 9.83V20a2 2 0 0 1-2 2h-6.81c.43-.44.8-.95 1.08-1.5H18a.5.5 0 0 0 .5-.5V10H14a2 2 0 0 1-2-2V3.5H6a.5.5 0 0 0-.5.5v7.08c-.52.08-1.03.22-1.5.42V4Zm10 4.5h3.38L13.5 4.62V8c0 .28.22.5.5.5Zm-8.44 4.92c-.3.91-.51 2.17-.55 3.58h2.98a12.92 12.92 0 0 0-.55-3.58c-.17-.52-.36-.9-.55-1.14-.2-.25-.33-.28-.39-.28s-.2.03-.39.28c-.19.24-.38.62-.55 1.14Zm-.58-1.2c-.14.26-.26.56-.37.88-.34 1.03-.56 2.4-.6 3.9H1.02a5.5 5.5 0 0 1 3.96-4.79Zm3.4.88c-.1-.32-.22-.62-.36-.89A5.5 5.5 0 0 1 11.98 17H8.99c-.04-1.5-.26-2.87-.6-3.9Zm3.6 4.9H8.99c-.04 1.5-.26 2.87-.6 3.9-.1.32-.23.62-.37.89A5.5 5.5 0 0 0 11.98 18Zm-5.1 4.72c-.19.25-.32.28-.38.28s-.2-.03-.39-.28a3.84 3.84 0 0 1-.55-1.14c-.3-.91-.51-2.17-.55-3.58h2.98a12.92 12.92 0 0 1-.55 3.58c-.17.52-.36.9-.55 1.14Zm-1.9.07A5.5 5.5 0 0 1 1.02 18h2.99c.04 1.5.26 2.87.6 3.9.1.32.23.62.37.89Z"/></svg>`,
+      // FlashSettings24Regular — lightning bolt + gear for Custom APIs
+      'custom-apis': `<svg ${s}><path d="M7.42 2.83C7.6 2.33 8.07 2 8.6 2h6.46c.85 0 1.45.84 1.18 1.65L14.8 8h3.96c1.1 0 1.66 1.33.9 2.12l-.96.99a6.53 6.53 0 0 0-2.04-.06l1.5-1.55h-4.4a.75.75 0 0 1-.71-.99L14.7 3.5H8.78l-3.26 9.16c-.06.16.06.33.23.33l2.5.01a.75.75 0 0 1 .73.91L7.51 20.5l3.52-3.63a6.57 6.57 0 0 0 .12 2.03l-2.56 2.65c-1.06 1.08-2.88.1-2.55-1.38l1.27-5.66-1.57-.01c-1.2 0-2.04-1.2-1.64-2.34l3.32-9.32Zm6.86 11.15a2 2 0 0 1-1.44 2.5l-.59.14a5.73 5.73 0 0 0 0 1.8l.55.13a2 2 0 0 1 1.45 2.51l-.19.64c.44.38.94.7 1.49.92l.49-.52a2 2 0 0 1 2.9 0l.5.52a5.28 5.28 0 0 0 1.48-.9l-.2-.7a2 2 0 0 1 1.44-2.5l.59-.14a5.73 5.73 0 0 0-.01-1.8l-.54-.13a2 2 0 0 1-1.45-2.51l.19-.63c-.44-.39-.94-.7-1.49-.93l-.49.52a2 2 0 0 1-2.9 0l-.5-.52c-.54.22-1.04.53-1.48.91l.2.69ZM17.5 19c-.8 0-1.45-.67-1.45-1.5S16.7 16 17.5 16c.8 0 1.45.67 1.45 1.5S18.3 19 17.5 19Z"/></svg>`,
+      // BracesVariable24Regular — {x} variable box matches Microsoft's Environment Variables icon
+      'environment-variables': `<svg ${s}><path d="M3.5 5.75A2.75 2.75 0 0 1 6.25 3a.75.75 0 0 1 0 1.5C5.56 4.5 5 5.06 5 5.75v4.3c0 .75-.3 1.45-.8 1.95.5.5.8 1.2.8 1.94v4.31c0 .69.56 1.25 1.25 1.25a.75.75 0 0 1 0 1.5 2.75 2.75 0 0 1-2.75-2.75v-4.3c0-.55-.34-1.02-.85-1.2l-.14-.04a.75.75 0 0 1 0-1.42l.14-.05c.5-.17.85-.64.85-1.18V5.75Zm17 0A2.75 2.75 0 0 0 17.75 3a.75.75 0 0 0 0 1.5c.69 0 1.25.56 1.25 1.25v4.3c0 .75.3 1.45.8 1.95-.5.5-.8 1.2-.8 1.94v4.31c0 .69-.56 1.25-1.25 1.25a.75.75 0 0 0 0 1.5 2.75 2.75 0 0 0 2.75-2.75v-4.3c0-.55.34-1.02.85-1.2l.14-.04a.75.75 0 0 0 0-1.42l-.14-.05a1.25 1.25 0 0 1-.85-1.18V5.75ZM9.1 7.04a.75.75 0 1 0-1.2.92L11.06 12l-3.14 4.04a.75.75 0 0 0 1.18.92L12 13.22l2.9 3.74a.75.75 0 0 0 1.2-.92L12.94 12l3.14-4.04a.75.75 0 0 0-1.18-.92L12 10.78 9.1 7.04Z"/></svg>`,
+      // PlugDisconnected24Regular — angled disconnected plug matches Microsoft's Custom Connectors icon
+      'custom-connectors': `<svg ${s}><path d="M21.78 3.28a.75.75 0 0 0-1.06-1.06l-2.01 2.01a4.25 4.25 0 0 0-5.47.46l-1.06 1.07c-.69.69-.69 1.8 0 2.48l3.58 3.58c.69.69 1.8.69 2.48 0l1.07-1.06a4.25 4.25 0 0 0 .46-5.47l2.01-2.01Zm-3.59 2.48.03.02.02.03a2.75 2.75 0 0 1 0 3.88l-1.06 1.07c-.1.1-.26.1-.36 0l-3.58-3.58a.25.25 0 0 1 0-.36l1.07-1.06a2.75 2.75 0 0 1 3.88 0Zm-7.41 5.52a.75.75 0 1 0-1.06-1.06L8 11.94l-.47-.47a.75.75 0 0 0-1.06 0l-1.78 1.77a4.25 4.25 0 0 0-.46 5.47l-2.01 2.01a.75.75 0 1 0 1.06 1.06l2.01-2.01a4.25 4.25 0 0 0 5.47-.46l1.77-1.78c.3-.3.3-.77 0-1.06l-.47-.47 1.72-1.72a.75.75 0 1 0-1.06-1.06L11 14.94 9.06 13l1.72-1.72Zm-3.31 2.25 3 3 .47.47-1.25 1.24a2.75 2.75 0 0 1-3.88 0l-.05-.05a2.75 2.75 0 0 1 0-3.88L7 13.06l.47.47Z"/></svg>`,
+      // AppsList24Regular — apps list matches Canvas Apps
+      'canvas-apps': `<svg ${s}><path d="M6.25 16C7.2 16 8 16.8 8 17.75v2.5C8 21.22 7.2 22 6.25 22h-2.5C2.78 22 2 21.22 2 20.25v-2.5C2 16.8 2.78 16 3.75 16h2.5Zm0 1.5h-2.5a.25.25 0 0 0-.25.25v2.5c0 .14.11.25.25.25h2.5c.14 0 .25-.11.25-.25v-2.5a.25.25 0 0 0-.25-.25Zm3.5.5h11.5a.75.75 0 0 1 .1 1.5H9.75a.75.75 0 0 1-.1-1.5h11.6-11.5Zm-3.5-9C7.2 9 8 9.78 8 10.75v2.5C8 14.22 7.2 15 6.25 15h-2.5C2.78 15 2 14.22 2 13.25v-2.5C2 9.78 2.78 9 3.75 9h2.5Zm0 1.5h-2.5a.25.25 0 0 0-.25.25v2.5c0 .14.11.25.25.25h2.5c.14 0 .25-.11.25-.25v-2.5a.25.25 0 0 0-.25-.25Zm3.5.5h11.5a.75.75 0 0 1 .1 1.5H9.75a.75.75 0 0 1-.1-1.5h11.6-11.5Zm-3.5-9C7.2 2 8 2.78 8 3.75v2.5C8 7.2 7.2 8 6.25 8h-2.5C2.78 8 2 7.2 2 6.25v-2.5C2 2.78 2.78 2 3.75 2h2.5Zm0 1.5h-2.5a.25.25 0 0 0-.25.25v2.5c0 .14.11.25.25.25h2.5c.14 0 .25-.11.25-.25v-2.5a.25.25 0 0 0-.25-.25Zm3.5.5h11.5a.75.75 0 0 1 .1 1.5H9.75a.75.75 0 0 1-.1-1.5h11.6-11.5Z"/></svg>`,
+      // DocumentEdit24Regular — document + pencil matches Custom Pages
+      'custom-pages': `<svg ${s}><path d="M6.25 3.5a.75.75 0 0 0-.75.75v15.5c0 .41.34.75.75.75h3.78c-.1.55 0 1.07.27 1.5H6.25C5.01 22 4 21 4 19.75V4.25C4 3.01 5 2 6.25 2h6.09c.46 0 .9.18 1.23.51l5.92 5.92c.33.32.51.77.51 1.23V10h-6a2 2 0 0 1-2-2V3.5H6.25Zm7.25 1.06V8c0 .28.22.5.5.5h3.44L13.5 4.56ZM19.71 11a2.28 2.28 0 0 1 1.62 3.9l-5.9 5.9c-.35.35-.78.6-1.25.71l-1.83.46c-.8.2-1.52-.52-1.32-1.32l.46-1.83c.12-.47.36-.9.7-1.25l5.9-5.9a2.28 2.28 0 0 1 1.62-.67Z"/></svg>`,
+      // AppGeneric24Regular — generic app icon for Model-Driven Apps
+      'model-driven-apps': `<svg ${s}><path d="M3 6.25C3 4.45 4.46 3 6.25 3h11.5C19.55 3 21 4.46 21 6.25v11.5c0 1.8-1.46 3.25-3.25 3.25H6.25A3.25 3.25 0 0 1 3 17.75V6.25ZM6.25 4.5c-.97 0-1.75.78-1.75 1.75v.25h15v-.25c0-.97-.78-1.75-1.75-1.75H6.25ZM4.5 17.75c0 .97.78 1.75 1.75 1.75h11.5c.97 0 1.75-.78 1.75-1.75V8h-15v9.75ZM6.85 9.5h3.3c.47 0 .85.38.85.85v6.8c0 .47-.38.85-.85.85h-3.3a.85.85 0 0 1-.85-.85v-6.8c0-.47.38-.85.85-.85Zm.65 7h2V11h-2v5.5Zm4.5-6.25c0-.41.34-.75.75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5Z"/></svg>`,
+      // NumberSymbolSquare24Regular — numbered list in a box matches Microsoft's Option Sets icon
+      'global-choices': `<svg ${s}><path d="M6.25 3A3.25 3.25 0 0 0 3 6.25v11.5C3 19.55 4.46 21 6.25 21h11.5c1.8 0 3.25-1.46 3.25-3.25V6.25C21 4.45 19.54 3 17.75 3H6.25ZM4.5 6.25c0-.97.78-1.75 1.75-1.75h11.5c.97 0 1.75.78 1.75 1.75v11.5c0 .97-.78 1.75-1.75 1.75H6.25A1.75 1.75 0 0 1 4.5 17.75V6.25ZM9 8.75a.75.75 0 0 0-1.5 0v1H7a.75.75 0 0 0 0 1.5h.5v4.75a.75.75 0 0 0 1.5 0v-7Zm5.25.75a.75.75 0 0 1 .75.75v5a.75.75 0 0 1-1.5 0v-3.44l-.22.22a.75.75 0 1 1-1.06-1.06l1.5-1.5c.2-.2.48-.28.75-.22.17.04.32.13.44.25H14Zm-2 5.75a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5h-4Z"/></svg>`,
+      // UsbPlug24Regular — vertical USB/plug connector matches Microsoft's Connection References icon
+      'connection-references': `<svg ${s}><path d="M11 21.25a.75.75 0 0 1-1.5.1V17h-.75c-1.19 0-2.16-.93-2.24-2.1V9.25c0-.98.63-1.82 1.5-2.13V2.75c0-.38.29-.7.65-.75h6.6c.39 0 .7.28.75.65V7.13c.82.3 1.42 1.05 1.49 1.95v5.67c0 1.2-.92 2.17-2.1 2.24l-.15.01h-.75v4.25a.75.75 0 0 1-1.5.1V17h-2v4.25ZM15.25 8.5h-6.5c-.38 0-.69.28-.74.65v5.6c0 .38.28.7.64.74l.1.01h6.5c.38 0 .7-.28.75-.65v-5.6c0-.38-.28-.7-.64-.74l-.1-.01Zm-.73-5h-5V7h5V3.5Z"/></svg>`,
+      // PeopleLock24Regular — two people + lock badge matches Microsoft's Security Roles icon
+      security:  `<svg ${s}><path d="M8 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM4 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0Zm13-.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM14 8a3 3 0 1 1 4.45 2.63 3.5 3.5 0 0 0-2.44.2A3 3 0 0 1 14 8Zm-.3 6.13A2.25 2.25 0 0 0 11.75 13h-7.5C3.01 13 2 14 2 15.25v.28a2.07 2.07 0 0 0 .01.2c.02.14.04.32.1.53.09.42.29.98.68 1.55C3.61 18.97 5.17 20 8 20c1.8 0 3.1-.42 4-1.02V16.9l-.02.03c-.5.71-1.56 1.56-3.98 1.56s-3.49-.85-3.98-1.56a2.99 2.99 0 0 1-.52-1.43v-.26c0-.41.34-.75.75-.75h7.5c.34 0 .63.23.72.54.3-.42.73-.74 1.23-.91Zm.8.87h.5v-1a2.5 2.5 0 0 1 5 0v1h.5c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5h-6a1.5 1.5 0 0 1-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5Zm2-1v1h2v-1a1 1 0 1 0-2 0Zm2 5a1 1 0 1 0-2 0 1 1 0 0 0 2 0Z"/></svg>`,
+      // Globe24Regular — globe = "the internet / external world" for External Dependencies
+      'external-dependencies': `<svg ${s}><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm2.94 14.5H9.06c.65 2.41 1.79 4 2.94 4s2.29-1.59 2.94-4Zm-7.43 0H4.79a8.53 8.53 0 0 0 4.09 3.41c-.52-.82-.95-1.85-1.27-3.02l-.1-.39Zm11.7 0H16.5c-.32 1.33-.79 2.5-1.37 3.41a8.53 8.53 0 0 0 3.9-3.13l.2-.28ZM7.1 10H3.74v.02a8.52 8.52 0 0 0 .3 4.98h3.18a20.3 20.3 0 0 1-.13-5Zm8.3 0H8.6a18.97 18.97 0 0 0 .14 5h6.52a18.5 18.5 0 0 0 .14-5Zm4.87 0h-3.35a20.85 20.85 0 0 1-.13 5h3.18a8.48 8.48 0 0 0 .3-5ZM8.88 4.09h-.02a8.53 8.53 0 0 0-4.61 4.4l3.05.01c.31-1.75.86-3.28 1.58-4.41Zm3.12-.6-.12.01c-1.26.12-2.48 2.12-3.05 5h6.34c-.56-2.87-1.78-4.87-3.04-5H12Zm3.12.6.1.17A12.64 12.64 0 0 1 16.7 8.5h3.05a8.53 8.53 0 0 0-4.34-4.29l-.29-.12Z"/></svg>`,
+      // ArrowBetweenDown24Regular — downward arrows between bars
+      'cross-entity': `<svg ${s}><path d="M6 1.75a.75.75 0 0 0-1.5 0v.5c0 1.24 1 2.25 2.25 2.25h10c1.24 0 2.25-1 2.25-2.25v-.5a.75.75 0 0 0-1.5 0v.5c0 .41-.34.75-.75.75h-10A.75.75 0 0 1 6 2.25v-.5ZM11.75 6c.41 0 .75.34.75.75v8.69l3.72-3.72a.75.75 0 1 1 1.06 1.06l-5 5c-.3.3-.77.3-1.06 0l-5-5a.75.75 0 1 1 1.06-1.06L11 15.44V6.75c0-.41.34-.75.75-.75ZM4.5 21.75c0-1.24 1-2.25 2.25-2.25h10c1.24 0 2.25 1 2.25 2.25v.5a.75.75 0 0 1-1.5 0v-.5a.75.75 0 0 0-.75-.75h-10a.75.75 0 0 0-.75.75v.5a.75.75 0 0 1-1.5 0v-.5Z"/></svg>`,
+      // Simple printer icon (hand-crafted — no matching Fluent UI component icon needed)
+      print:     `<svg ${s}><path d="M7 3h10a1 1 0 0 1 1 1v4H6V4a1 1 0 0 1 1-1ZM5 8h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2Zm2 9v2h10v-2H7Zm-2-4a1 1 0 1 0 2 0 1 1 0 0 0-2 0Z" fill-rule="evenodd"/></svg>`,
+    };
+    return icons[key] ?? '';
+  }
+
+  /**
+   * Returns a small inline SVG icon for alert boxes (info or warning).
+   * Uses explicit colours so it stands out on the light alert background.
+   */
+  private alertIcon(type: 'info' | 'warning'): string {
+    if (type === 'info') {
+      return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><circle cx="8" cy="8" r="7.5" fill="#0078d4"/><rect x="7.1" y="7" width="1.8" height="5.5" rx="0.9" fill="white"/><circle cx="8" cy="4.5" r="1.1" fill="white"/></svg>`;
+    }
+    return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><path d="M8 1.5L1 14.5h14z" fill="#ffb900"/><rect x="7.1" y="7" width="1.8" height="4.5" rx="0.9" fill="white"/><circle cx="8" cy="13" r="0.9" fill="white"/></svg>`;
+  }
+
+  /**
    * Embedded CSS styles
    */
   private embeddedCSS(): string {
-    return `    /* Base styles */
+    return `    /* Skip navigation link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #0078d4;
+      color: #ffffff;
+      padding: 8px 16px;
+      z-index: 1000;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 0 0 4px 0;
+    }
+    .skip-link:focus {
+      top: 0;
+    }
+
+    /* Base styles */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -1628,7 +2276,9 @@ ${this.embeddedJavaScript()}
     }
 
     .nav-links a {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       padding: 10px 20px;
       color: #e1dfdd;
       text-decoration: none;
@@ -1653,6 +2303,10 @@ ${this.embeddedJavaScript()}
       color: white;
       border: none;
       border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       cursor: pointer;
       font-size: 0.9rem;
     }
@@ -2322,6 +2976,16 @@ ${this.embeddedJavaScript()}
       color: #3d2e00;
     }
 
+    .alert-danger {
+      background: #fde7e9;
+      border-left: 4px solid #d13438;
+      color: #6e0811;
+    }
+
+    .stats-value-danger {
+      color: #d13438;
+    }
+
     .alert-info {
       background: #deecf9;
       border-left: 4px solid #0078d4;
@@ -2329,7 +2993,9 @@ ${this.embeddedJavaScript()}
     }
 
     .alert strong {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       margin-bottom: 5px;
     }
 
@@ -2511,6 +3177,33 @@ ${this.embeddedJavaScript()}
         }
       });
 
+      // ── Node hover — tooltip
+      _cy.on('mouseover', 'node', function(evt) {
+        var n = evt.target;
+        var tip = _getOrCreateTip();
+        var connected = n.neighborhood('node').length;
+        var content = '<strong style="word-break:break-all">' + _esc(n.data('label')) + '</strong>';
+        content += '<br><span style="color:#888;font-size:11px;word-break:break-all">Logical name: ' + _esc(n.data('id')) + '</span>';
+        if (n.data('publisherPrefix')) {
+          content += '<br><span style="color:#888;font-size:11px;">Publisher: ' + _esc(n.data('publisherPrefix')) + '</span>';
+        }
+        content += '<br><span style="color:#888;font-size:11px;">Relationships: ' + connected + '</span>';
+        tip.innerHTML = content;
+        tip.style.left = (evt.originalEvent.clientX + 12) + 'px';
+        tip.style.top = (evt.originalEvent.clientY + 12) + 'px';
+        tip.style.display = 'block';
+      });
+
+      _cy.on('mousemove', 'node', function(evt) {
+        var tip = document.getElementById('erd-tip');
+        if (tip) { tip.style.left = (evt.originalEvent.clientX + 12) + 'px'; tip.style.top = (evt.originalEvent.clientY + 12) + 'px'; }
+      });
+
+      _cy.on('mouseout', 'node', function() {
+        var tip = document.getElementById('erd-tip');
+        if (tip) tip.style.display = 'none';
+      });
+
       // ── Edge hover — tooltip
       _cy.on('mouseover', 'edge', function(evt) {
         var e = evt.target;
@@ -2649,17 +3342,35 @@ ${this.embeddedJavaScript()}
     }
     // ── End Cytoscape ERD ──────────────────────────────────────────────────
 
+    // Cross-entity "show all entities with automation" toggle
+    function toggleCeaAllEntities(showAll) {
+      document.querySelectorAll('.cea-entity-no-output').forEach(function(el) {
+        el.style.display = showAll ? '' : 'none';
+      });
+    }
+
     // Accordion toggle
     function toggleAccordion(id) {
       const content = document.getElementById(id);
       const icon = document.getElementById('icon-' + id);
+      const header = document.querySelector('[aria-controls="' + id + '"]');
 
       if (content.style.display === 'none' || content.style.display === '') {
         content.style.display = 'block';
         icon.textContent = '−';
+        if (header) header.setAttribute('aria-expanded', 'true');
       } else {
         content.style.display = 'none';
         icon.textContent = '+';
+        if (header) header.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    // Accordion keyboard handler
+    function accordionKeydown(event, id) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleAccordion(id);
       }
     }
 
@@ -2816,8 +3527,8 @@ ${this.embeddedJavaScript()}
     }
 
     let html = `
-      <section id="security" class="content-section">
-        <h2 class="section-title">🔒 Security</h2>
+      <section id="security" class="content-section" aria-labelledby="heading-security">
+        <h2 id="heading-security" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('security')} Security</h2>
         <p class="section-description">Security roles and field security profiles in the selected solution(s).</p>
 
         <div class="tabs-container">
@@ -2852,9 +3563,19 @@ ${this.embeddedJavaScript()}
             <h3>Security Roles</h3>
 
             <div class="subsection">
-              <h4>Special Permissions Matrix</h4>
-              <p>This table shows which security roles have special/miscellaneous permissions.</p>
-              ${this.generateSpecialPermissionsTable(securityRoles)}
+              <div class="accordion">
+                <div class="accordion-item">
+                  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="special-perms-matrix" onclick="toggleAccordion('special-perms-matrix')" onkeydown="accordionKeydown(event,'special-perms-matrix')">
+                    <span class="accordion-icon" id="icon-special-perms-matrix">+</span>
+                    <h4 style="margin:0">Special Permissions Matrix</h4>
+                    <span style="font-size:0.85em;color:#666;margin-left:auto">Roles with miscellaneous permissions — click to expand</span>
+                  </div>
+                  <div class="accordion-content" id="special-perms-matrix" style="display:none;padding:12px 0;">
+                    <p>This table shows which security roles have special/miscellaneous permissions.</p>
+                    ${this.generateSpecialPermissionsTable(securityRoles)}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="subsection">
@@ -2926,11 +3647,11 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Role Name</th>
-            <th>Business Unit</th>`;
+            <th scope="col">Role Name</th>
+            <th scope="col">Business Unit</th>`;
 
     for (const key of specialPermissionKeys) {
-      html += `<th>${this.formatSpecialPermissionName(key)}</th>`;
+      html += `<th scope="col">${this.formatSpecialPermissionName(key)}</th>`;
     }
 
     html += `
@@ -2938,7 +3659,16 @@ ${this.embeddedJavaScript()}
         </thead>
         <tbody>`;
 
-    for (const role of securityRoles) {
+    // Only include roles that have at least one special permission set
+    const rolesWithPerms = securityRoles.filter(role =>
+      specialPermissionKeys.some(key => role.specialPermissions[key])
+    );
+
+    if (rolesWithPerms.length === 0) {
+      return '<p style="color:#666">No roles have special/miscellaneous permissions set.</p>';
+    }
+
+    for (const role of rolesWithPerms) {
       html += `
           <tr>
             <td><strong>${this.escapeHtml(role.name)}</strong></td>
@@ -2968,7 +3698,7 @@ ${this.embeddedJavaScript()}
       const role = securityRoles[i];
       html += `
         <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion('role-${i}')">
+          <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="role-${i}" onclick="toggleAccordion('role-${i}')" onkeydown="accordionKeydown(event,'role-${i}')">
             <span class="accordion-icon" id="icon-role-${i}">+</span>
             <div class="accordion-title">
               <strong>${this.escapeHtml(role.name)}</strong>
@@ -2992,6 +3722,19 @@ ${this.embeddedJavaScript()}
   }
 
   /**
+   * Map Dataverse privilege depth strings to Power Platform UI terminology.
+   */
+  private privDepthLabel(depth: string): string {
+    switch (depth) {
+      case 'Basic':  return 'User';
+      case 'Local':  return 'BU';
+      case 'Deep':   return 'P:CBU';
+      case 'Global': return 'Org';
+      default:       return this.escapeHtml(depth);
+    }
+  }
+
+  /**
    * Generate entity permissions table for a security role
    */
   private generateEntityPermissionsTable(entityPermissions: import('../../discovery/SecurityRoleDiscovery.js').EntityPermission[]): string {
@@ -3003,15 +3746,15 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Entity</th>
-            <th>Create</th>
-            <th>Read</th>
-            <th>Write</th>
-            <th>Delete</th>
-            <th>Append</th>
-            <th>AppendTo</th>
-            <th>Assign</th>
-            <th>Share</th>
+            <th scope="col">Entity</th>
+            <th scope="col">Create</th>
+            <th scope="col">Read</th>
+            <th scope="col">Write</th>
+            <th scope="col">Delete</th>
+            <th scope="col">Append</th>
+            <th scope="col">AppendTo</th>
+            <th scope="col">Assign</th>
+            <th scope="col">Share</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3029,8 +3772,9 @@ ${this.embeddedJavaScript()}
             <td><strong>${this.escapeHtml(entityPerm.entityLogicalName)}</strong></td>`;
 
       for (const type of ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share']) {
-        const priv = privMap.get(type as any);
-        html += `<td class="center">${priv ? this.escapeHtml(priv.depth) : ''}</td>`;
+        const priv = privMap.get(type as PrivilegeDetail['type']);
+        const label = priv ? this.privDepthLabel(priv.depth) : '';
+        html += `<td class="center">${label}</td>`;
       }
 
       html += `</tr>`;
@@ -3039,7 +3783,7 @@ ${this.embeddedJavaScript()}
     html += `
         </tbody>
       </table>
-      <p class="legend"><strong>Privilege Depth:</strong> Basic = User, Local = Business Unit, Deep = Parent+Child BU, Global = Organization</p>`;
+      <p class="legend"><strong>Access levels:</strong> User = own records · BU = Business Unit · P:CBU = Parent &amp; Child BUs · Org = Organisation-wide</p>`;
 
     return html;
   }
@@ -3052,8 +3796,8 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Profile Name</th>
-            <th>Description</th>
+            <th scope="col">Profile Name</th>
+            <th scope="col">Description</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3081,10 +3825,10 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Entity</th>
-            <th>Attribute</th>
-            <th>Masking Rule</th>
-            <th>Managed</th>
+            <th scope="col">Entity</th>
+            <th scope="col">Attribute</th>
+            <th scope="col">Masking Rule</th>
+            <th scope="col">Managed</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3114,9 +3858,9 @@ ${this.embeddedJavaScript()}
       <table class="data-table">
         <thead>
           <tr>
-            <th>Profile Name</th>
-            <th>Description</th>
-            <th>Managed</th>
+            <th scope="col">Profile Name</th>
+            <th scope="col">Description</th>
+            <th scope="col">Managed</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3158,13 +3902,13 @@ ${this.embeddedJavaScript()}
 
     let html = `
       <div class="entity-subsection">
-        <h4>🛡️ Field Security (${fieldSecurity.securedFields.length} secured field${fieldSecurity.securedFields.length > 1 ? 's' : ''})</h4>
+        <h4>Field Security (${fieldSecurity.securedFields.length} secured field${fieldSecurity.securedFields.length > 1 ? 's' : ''})</h4>
         <p class="subsection-description">The following fields have field-level security permissions:</p>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Field</th>
-              <th>Profiles with Access</th>
+              <th scope="col">Field</th>
+              <th scope="col">Profiles with Access</th>
             </tr>
           </thead>
           <tbody>`;

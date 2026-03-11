@@ -38,6 +38,7 @@ export class HtmlReporter {
     const nav = this.templates.htmlNavigation();
     const header = this.templates.htmlHeader(result.metadata);
     const summary = this.templates.htmlSummary(result.summary);
+    const solutions = this.templates.htmlSolutionDistribution(result.solutionDistribution);
     const erd = this.templates.htmlErdSection(result.erd);
     const entities = this.templates.htmlEntitiesAccordion(result.entities);
     const plugins = this.templates.htmlPluginsTable(result.plugins);
@@ -49,8 +50,13 @@ export class HtmlReporter {
     const customAPIs = this.templates.htmlCustomAPIsTable(result.customAPIs);
     const environmentVariables = this.templates.htmlEnvironmentVariablesTable(result.environmentVariables);
     const connectionReferences = this.templates.htmlConnectionReferencesTable(result.connectionReferences);
+    const globalChoices = this.templates.htmlGlobalChoicesTable(result.globalChoices);
+    const customConnectors = this.templates.htmlCustomConnectorsTable(result.customConnectors);
+    const canvasApps = this.templates.htmlCanvasAppsTable(result.canvasApps);
+    const customPages = this.templates.htmlCustomPagesTable(result.customPages);
+    const modelDrivenApps = this.templates.htmlModelDrivenAppsTable(result.modelDrivenApps);
     const externalDependencies = this.templates.htmlExternalDependenciesSection(result.externalEndpoints);
-    const crossEntity = this.templates.htmlCrossEntitySection(result.crossEntityLinks);
+    const crossEntity = this.templates.htmlCrossEntitySection(result.crossEntityAnalysis);
     const security = this.templates.htmlSecuritySection(
       result.securityRoles,
       result.fieldSecurityProfiles,
@@ -65,10 +71,12 @@ export class HtmlReporter {
 <html lang="en">
 ${head}
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   ${nav}
-  <main>
+  <main id="main-content">
     ${header}
     ${summary}
+    ${solutions}
     ${erd}
     ${entities}
     ${plugins}
@@ -80,6 +88,11 @@ ${head}
     ${customAPIs}
     ${environmentVariables}
     ${connectionReferences}
+    ${globalChoices}
+    ${customConnectors}
+    ${canvasApps}
+    ${customPages}
+    ${modelDrivenApps}
     ${security}
     ${externalDependencies}
     ${crossEntity}

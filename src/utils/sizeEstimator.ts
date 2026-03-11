@@ -99,9 +99,12 @@ export function estimateJsonSize(result: BlueprintResult): number {
     size += JSON.stringify(result.erd).length;
   }
 
-  // Cross-entity links
-  if (result.crossEntityLinks) {
-    size += result.crossEntityLinks.length * 200;
+  // Cross-entity analysis
+  if (result.crossEntityAnalysis) {
+    size += result.crossEntityAnalysis.chainLinks.length * 200;
+    size += result.crossEntityAnalysis.entityViews.size * 800;   // traces + activations per entity
+    size += result.crossEntityAnalysis.allEntityPipelines.size * 500; // pipeline steps per entity
+    size += result.crossEntityAnalysis.risks.length * 100;
   }
 
   // External endpoints
@@ -163,21 +166,4 @@ export function formatBytes(bytes: number): string {
   const value = bytes / Math.pow(k, i);
 
   return `${value.toFixed(decimals)} ${sizes[i]}`;
-}
-
-/**
- * Estimate total ZIP size (with compression)
- * @param markdownSize Markdown size estimate
- * @param jsonSize JSON size estimate
- * @param htmlSize HTML size estimate
- * @returns Estimated ZIP size in bytes (accounting for ~60% compression)
- */
-export function estimateZipSize(
-  markdownSize: number,
-  jsonSize: number,
-  htmlSize: number
-): number {
-  const totalUncompressed = markdownSize + jsonSize + htmlSize;
-  // Assume ~40% compression ratio (text compresses well)
-  return Math.round(totalUncompressed * 0.6);
 }

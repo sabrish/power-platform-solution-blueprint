@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-07
+**Last updated:** 2026-03-11
 
 ---
 
@@ -18,11 +18,12 @@
 
 ## Current Version
 
+**v1.0.0** (released 2026-03-11)
 **v0.9.0** (released 2026-03-07)
 
 ---
 
-## What is Working (as of v0.9.0)
+## What is Working (as of v1.0.0)
 
 ### Core Discovery
 - Entity schema discovery (fields, relationships, keys, alternate keys)
@@ -54,6 +55,12 @@
 - Interactive ERD: Cytoscape.js force-directed graph with pan/zoom, node isolation, publisher filter, edge hover (relationship name + attribute), PNG/SVG export
 - Export: JSON, Markdown, HTML, ZIP (all static imports — dynamic imports broken under pptb-webview://)
 - Real-time progress reporting with phase-specific labels
+- Canvas Apps, Custom Pages, and Model-Driven Apps tabs in the Component Browser (metadata discovery)
+- Cross-Entity Automation Trace tab with pipeline accordion, branch blocks, field-match analysis
+- Full WCAG 2.1 accessibility pass on all interactive card-row elements
+- Centralised `componentIcons.ts` — single source of truth for all component/tab icons
+- `useListFilter` hook — shared filter/search logic across all component lists
+- `useCardRowStyles` hook — shared card-row styles ensuring AUDIT-005/006 compliance
 
 ### Key fixes since v0.7.2
 - Business rule parser completely rewritten — covers all condition/action patterns including `controls.forEach` delegate, double-wrapped parens, date-derived variables
@@ -119,8 +126,25 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
-- **Cross-Entity Automation tab:** Shows "Coming Soon" preview with sample data. Full implementation requires plugin decompilation (ILSpy) and deeper XAML parsing.
-- **Canvas Apps:** Metadata only (no component-level analysis available from API)
+### Released in v1.0.0 (2026-03-11)
+
+All work from the `feat/cross-entity-automation` branch has been released. The branch was merged to `main` as part of the v1.0.0 release.
+
+**Key features shipped in v1.0.0:**
+- Cross-Entity Automation Trace — full pipeline accordion UI with field-match analysis and risk detection
+- Canvas Apps, Custom Pages, and Model-Driven Apps discovery tabs
+- Full WCAG 2.1 accessibility pass
+- `componentIcons.ts` single source of truth for all icons
+- `useListFilter` hook for shared filter/search logic
+- Solutions section in HTML export; additional XSS fixes
+- Complete card-row pattern compliance across all component lists (`TruncatedText` deleted)
+- BPF stages rendered as accordion in HTML export; excluded from JSON/ZIP
+- Classic Workflow deduplication and activation-record-only filtering
+- System Admin role detection fix
+
+### Known Limitations
+
+- **Canvas Apps:** Basic metadata discovery supported; component-level screen analysis not available from API
 - **Custom Pages:** Metadata only
 - **Power Pages:** Only if deployed to Dataverse
 - **Customer Insights - Journeys:** Not included
@@ -129,7 +153,7 @@ pnpm typecheck  # Type check
 
 ## Next Steps (from roadmap.md)
 
-### Near-term (v0.8+)
+### Near-term
 - Baseline Comparison: Load previous blueprint JSON, detect added/removed/modified components
 - CLI tool: `ppsb generate [options]` with service principal auth
 - CI/CD integration: GitHub Actions and Azure DevOps tasks
@@ -141,11 +165,11 @@ pnpm typecheck  # Type check
 - Custom analysis rules (compliance/quality, JSON/YAML config)
 
 ### Extended Platform Support
-- Canvas Apps (requires .msapp extraction)
-- Power Pages (full portal component analysis)
+- Canvas Apps enhanced analysis (component-level screen analysis; requires .msapp extraction)
+- Power Pages full portal component analysis (forms, lists, Liquid templates)
 - Customer Insights and Marketing journeys
 - Additional Dataverse component types (virtual/elastic tables, AI models, PCF controls)
-- Model-driven app documentation (modules, forms, views, dashboards)
+- Model-driven app enhanced documentation (deep module, form, view, and dashboard analysis beyond metadata)
 
 ---
 

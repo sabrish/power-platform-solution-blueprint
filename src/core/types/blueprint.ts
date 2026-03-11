@@ -4,6 +4,10 @@
 import type { PluginStep } from '../types.js';
 import type { EntityFieldSecurity } from '../discovery/FieldSecurityProfileDiscovery.js';
 import type { SecurityRoleDetail } from '../discovery/SecurityRoleDiscovery.js';
+import type { FetchLogEntry } from '../utils/FetchLogger.js';
+import type { CanvasApp } from './canvasApp.js';
+import type { CustomPage } from './customPage.js';
+import type { ModelDrivenApp } from './modelDrivenApp.js';
 
 /**
  * Progress phases during blueprint generation
@@ -14,6 +18,7 @@ export type ProgressPhase =
   | 'plugins'
   | 'flows'
   | 'business-rules'
+  | 'apps'
   | 'complete';
 
 /**
@@ -33,6 +38,7 @@ export interface ProgressInfo {
 export interface GeneratorOptions {
   includeSystemEntities: boolean;
   onProgress?: (progress: ProgressInfo) => void;
+  onFetchEntry?: (entry: FetchLogEntry) => void;
   signal?: AbortSignal;
 }
 
@@ -246,6 +252,8 @@ export interface FlowDefinition {
   externalCalls: ExternalCall[];
   connectionReferences: string[];
   dataverseActions?: DataverseAction[];
+  /** Child flow IDs referenced by "Run a Child Flow" actions */
+  childFlowIds?: string[];
 }
 
 /**
@@ -258,15 +266,6 @@ export interface ExternalCall {
   actionName: string;
   confidence: 'High' | 'Medium' | 'Low';
 }
-
-/**
- * Flow state color coding
- */
-export const FLOW_STATE_COLORS = {
-  'Active': '#107C10',
-  'Draft': '#FFB900',
-  'Suspended': '#D13438',
-} as const;
 
 /**
  * Business rule information
@@ -378,23 +377,6 @@ export interface JavaScriptAnalysis {
 }
 
 /**
- * Web resource type name mapping
- */
-export const WEB_RESOURCE_TYPE_NAMES = {
-  1: 'HTML',
-  2: 'CSS',
-  3: 'JavaScript',
-  4: 'XML',
-  5: 'PNG',
-  6: 'JPG',
-  7: 'GIF',
-  9: 'XSL',
-  10: 'ICO',
-  11: 'SVG',
-  12: 'RESX',
-} as const;
-
-/**
  * Execution pipeline for an entity event
  */
 export interface ExecutionPipeline {
@@ -477,6 +459,7 @@ export interface BlueprintSummary {
   totalWebResources: number;
   totalCanvasApps: number;
   totalCustomPages: number;
+  totalModelDrivenApps: number;
 }
 
 /**
@@ -582,22 +565,6 @@ export interface EntityQuickLink {
 }
 
 /**
- * Cross-entity automation link
- */
-export interface CrossEntityLink {
-  sourceEntity: string;
-  sourceEntityDisplayName: string;
-  targetEntity: string;
-  targetEntityDisplayName: string;
-  automationType: 'Plugin' | 'Flow' | 'BusinessRule' | 'ClassicWorkflow';
-  automationName: string;
-  automationId: string;
-  operation: string; // Create, Update, Delete, Read
-  description: string;
-  isAsynchronous: boolean;
-}
-
-/**
  * External API endpoint with risk assessment
  */
 export interface ExternalEndpoint {
@@ -661,6 +628,12 @@ export interface ComponentCounts {
   environmentVariables: number;
   connectionReferences: number;
   globalChoices: number;
+  customConnectors: number;
+  securityRoles: number;
+  fieldSecurityProfiles: number;
+  canvasApps: number;
+  customPages: number;
+  modelDrivenApps: number;
   total: number;
 }
 
@@ -691,6 +664,22 @@ export interface DataverseAction {
   targetEntity: string;
   actionName: string;
   confidence: 'High' | 'Medium' | 'Low';
+  /** Fields being set (only populated for Create/Update operations) */
+  fields?: string[];
+}
+
+/**
+ * Warning recorded when a discovery step fails partially or fully.
+ * The blueprint continues — the affected section is empty or partial.
+ */
+export interface StepWarning {
+  /** Human-readable step name, e.g. "Security Roles" */
+  step: string;
+  message: string;
+  /** true if some data was returned before the failure */
+  partial: boolean;
+  /** Number of items that could not be fetched */
+  failedCount?: number;
 }
 
 /**
@@ -715,16 +704,23 @@ export interface BlueprintResult {
   connectionReferences: import('./connectionReference.js').ConnectionReference[];
   globalChoices: import('./globalChoice.js').GlobalChoice[];
   customConnectors: import('./customConnector.js').CustomConnector[];
+  canvasApps: CanvasApp[];
+  customPages: CustomPage[];
+  modelDrivenApps: ModelDrivenApp[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
   erd?: ERDDefinition;
-  crossEntityLinks?: CrossEntityLink[];
+  crossEntityAnalysis?: import('./crossEntityTrace.js').CrossEntityAnalysisResult;
   externalEndpoints?: ExternalEndpoint[];
   solutionDistribution?: SolutionDistribution[];
   securityRoles?: SecurityRoleDetail[];
   fieldSecurityProfiles?: import('../discovery/FieldSecurityProfileDiscovery.js').FieldSecurityProfile[];
   attributeMaskingRules?: import('../discovery/ColumnSecurityDiscovery.js').AttributeMaskingRule[];
   columnSecurityProfiles?: import('../discovery/ColumnSecurityDiscovery.js').ColumnSecurityProfile[];
+  /** Warnings from steps that failed or returned partial data */
+  stepWarnings?: StepWarning[];
+  /** Full fetch diagnostic log — every batched API call made during generation */
+  fetchLog?: FetchLogEntry[];
 }
 
 /**

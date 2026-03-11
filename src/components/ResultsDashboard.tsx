@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import {
+  Badge,
   Button,
   Title2,
   Title3,
@@ -17,8 +18,37 @@ import {
   CheckmarkCircle24Regular,
   ArrowDownload24Regular,
   ArrowLeft24Regular,
+  Warning24Regular,
+  ErrorCircle24Regular,
 } from '@fluentui/react-icons';
-import type { BlueprintResult, CustomAPI, ConnectionReference } from '../core';
+import {
+  EntitiesIcon,
+  PluginsIcon,
+  PluginPackagesIcon,
+  FlowsIcon,
+  BusinessRulesIcon,
+  ClassicWorkflowsIcon,
+  BusinessProcessFlowsIcon,
+  CustomAPIsIcon,
+  EnvironmentVariablesIcon,
+  ConnectionReferencesIcon,
+  WebResourcesIcon,
+  GlobalChoicesIcon,
+  CustomConnectorsIcon,
+  SecurityRolesIcon,
+  FieldSecurityProfilesIcon,
+  CustomPagesIcon,
+  CanvasAppsIcon,
+  ModelDrivenAppsIcon,
+  DashboardIcon,
+  ErdIcon,
+  ExternalDependenciesIcon,
+  SolutionDistributionIcon,
+  CrossEntityAutomationIcon,
+  FetchLogIcon,
+} from './componentIcons';
+import type { BlueprintResult, CustomAPI } from '../core';
+import type { BlueprintGenerator } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -33,16 +63,19 @@ import { CustomAPIsList } from './CustomAPIsList';
 import { CustomAPIDetailView } from './CustomAPIDetailView';
 import { EnvironmentVariablesList } from './EnvironmentVariablesList';
 import { ConnectionReferencesList } from './ConnectionReferencesList';
-import { ConnectionReferenceDetailView } from './ConnectionReferenceDetailView';
 import { GlobalChoicesList } from './GlobalChoicesList';
 import { CustomConnectorsList } from './CustomConnectorsList';
+import { CanvasAppsList } from './CanvasAppsList';
+import { CustomPagesList } from './CustomPagesList';
+import { ModelDrivenAppsList } from './ModelDrivenAppsList';
 import { ERDView } from './ERDView';
-import { CrossEntityMapView } from './CrossEntityMapView';
+import { CrossEntityAutomationView } from './CrossEntityAutomationView';
 import { ExternalDependenciesView } from './ExternalDependenciesView';
 import { SolutionDistributionView } from './SolutionDistributionView';
 import { ExportDialog } from './ExportDialog';
 import { SecurityRolesView } from './SecurityRolesView';
 import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
+import { FetchDiagnosticsView } from './FetchDiagnosticsView';
 import { Footer } from './Footer';
 
 const useStyles = makeStyles({
@@ -145,24 +178,43 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalM,
   },
-  browserSection: {
-    marginTop: tokens.spacingVerticalXL,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
+  warningsPanel: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
+    gap: tokens.spacingVerticalS,
+    padding: tokens.spacingVerticalM,
+    borderRadius: tokens.borderRadiusMedium,
+    border: `1px solid ${tokens.colorStatusWarningBorderActive}`,
+    backgroundColor: tokens.colorStatusWarningBackground1,
+  },
+  warningsPanelError: {
+    border: `1px solid ${tokens.colorStatusDangerBorderActive}`,
+    backgroundColor: tokens.colorStatusDangerBackground1,
+  },
+  warningRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: tokens.spacingHorizontalS,
+  },
+  warningStep: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+    minWidth: '110px',
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  warningMessage: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+  },
+  browserSection: {
+    marginTop: tokens.spacingVerticalXL,
   },
 });
 
 export interface ResultsDashboardProps {
   result: BlueprintResult;
   scope: ScopeSelection;
-  blueprintGenerator: any;
+  blueprintGenerator: BlueprintGenerator;
   onStartOver: () => void;
 }
 
@@ -188,6 +240,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
     if ((result.securityRoles?.length ?? 0) > 0) return 'securityRoles';
     if ((result.fieldSecurityProfiles?.length ?? 0) > 0) return 'fieldSecurityProfiles';
     if (s.totalCustomPages > 0) return 'customPages';
+    if (s.totalCanvasApps > 0) return 'canvasApps';
+    if (s.totalModelDrivenApps > 0) return 'modelDrivenApps';
     return 'entities';
   })();
 
@@ -196,7 +250,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
   const [selectedTab, setSelectedTab] = useState<string>(defaultSelectedKey);
   const [selectedCard, setSelectedCard] = useState<string | null>(defaultSelectedKey);
   const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
-  const [selectedConnRef, setSelectedConnRef] = useState<ConnectionReference | null>(null);
   const browserSectionRef = useRef<HTMLDivElement>(null);
 
   // Check what architecture features are available
@@ -263,6 +316,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         return (result.fieldSecurityProfiles?.length ?? 0) > 0;
       case 'customPages':
         return result.summary.totalCustomPages > 0;
+      case 'canvasApps':
+        return result.summary.totalCanvasApps > 0;
+      case 'modelDrivenApps':
+        return result.summary.totalModelDrivenApps > 0;
       default:
         return false;
     }
@@ -303,6 +360,10 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         return result.fieldSecurityProfiles?.length ?? 0;
       case 'customPages':
         return result.summary.totalCustomPages;
+      case 'canvasApps':
+        return result.summary.totalCanvasApps;
+      case 'modelDrivenApps':
+        return result.summary.totalModelDrivenApps;
       default:
         return 0;
     }
@@ -310,22 +371,24 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
 
   // Component types for summary cards
   const componentTypes = [
-    { key: 'entities', label: 'Entities', icon: '📊' },
-    { key: 'plugins', label: 'Plugins', icon: '🔌' },
-    { key: 'pluginPackages', label: 'Plugin Packages', icon: '📦' },
-    { key: 'flows', label: 'Flows', icon: '🌊' },
-    { key: 'businessRules', label: 'Business Rules', icon: '📋' },
-    { key: 'classicWorkflows', label: 'Classic Workflows', icon: '⚠️' },
-    { key: 'businessProcessFlows', label: 'Business Process Flows', icon: '🔄' },
-    { key: 'customAPIs', label: 'Custom APIs', icon: '🔧' },
-    { key: 'environmentVariables', label: 'Environment Variables', icon: '⚙️' },
-    { key: 'connectionReferences', label: 'Connection References', icon: '🔗' },
-    { key: 'globalChoices', label: 'Global Choices', icon: '🎯' },
-    { key: 'customConnectors', label: 'Custom Connectors', icon: '🔀' },
-    { key: 'webResources', label: 'Web Resources', icon: '🌐' },
-    { key: 'securityRoles', label: 'Security Roles', icon: '🔒' },
-    { key: 'fieldSecurityProfiles', label: 'Field Security Profiles', icon: '🛡️' },
-    { key: 'customPages', label: 'Custom Pages', icon: '📄' },
+    { key: 'entities', label: 'Entities', icon: <EntitiesIcon /> },
+    { key: 'plugins', label: 'Plugins', icon: <PluginsIcon /> },
+    { key: 'pluginPackages', label: 'Plugin Packages', icon: <PluginPackagesIcon /> },
+    { key: 'flows', label: 'Flows', icon: <FlowsIcon /> },
+    { key: 'businessRules', label: 'Business Rules', icon: <BusinessRulesIcon /> },
+    { key: 'classicWorkflows', label: 'Classic Workflows', icon: <ClassicWorkflowsIcon /> },
+    { key: 'businessProcessFlows', label: 'Business Process Flows', icon: <BusinessProcessFlowsIcon /> },
+    { key: 'customAPIs', label: 'Custom APIs', icon: <CustomAPIsIcon /> },
+    { key: 'environmentVariables', label: 'Environment Variables', icon: <EnvironmentVariablesIcon /> },
+    { key: 'connectionReferences', label: 'Connection References', icon: <ConnectionReferencesIcon /> },
+    { key: 'globalChoices', label: 'Global Choices', icon: <GlobalChoicesIcon /> },
+    { key: 'customConnectors', label: 'Custom Connectors', icon: <CustomConnectorsIcon /> },
+    { key: 'webResources', label: 'Web Resources', icon: <WebResourcesIcon /> },
+    { key: 'securityRoles', label: 'Security Roles', icon: <SecurityRolesIcon /> },
+    { key: 'fieldSecurityProfiles', label: 'Field Security Profiles', icon: <FieldSecurityProfilesIcon /> },
+    { key: 'customPages', label: 'Custom Pages', icon: <CustomPagesIcon /> },
+    { key: 'canvasApps', label: 'Canvas Apps', icon: <CanvasAppsIcon /> },
+    { key: 'modelDrivenApps', label: 'Model-Driven Apps', icon: <ModelDrivenAppsIcon /> },
   ];
 
 
@@ -366,6 +429,40 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
         </div>
       </div>
 
+      {/* Step warnings — complete failures and partial failures from batch processing */}
+      {result.stepWarnings && result.stepWarnings.length > 0 && (() => {
+        const hasFullFailures = result.stepWarnings!.some(w => !w.partial);
+        return (
+          <div className={`${styles.warningsPanel}${hasFullFailures ? ` ${styles.warningsPanelError}` : ''}`}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+              {hasFullFailures
+                ? <ErrorCircle24Regular style={{ color: tokens.colorStatusDangerForeground1, flexShrink: 0 }} />
+                : <Warning24Regular style={{ color: tokens.colorStatusWarningForeground1, flexShrink: 0 }} />
+              }
+              <Text weight="semibold" style={{ color: hasFullFailures ? tokens.colorStatusDangerForeground1 : tokens.colorStatusWarningForeground1 }}>
+                {hasFullFailures ? 'Some components could not be loaded' : 'Some data may be incomplete'}
+              </Text>
+              <Badge color="danger" shape="rounded" size="small" style={{ marginLeft: 'auto' }}>
+                {result.stepWarnings!.length} {result.stepWarnings!.length === 1 ? 'issue' : 'issues'}
+              </Badge>
+            </div>
+            {result.stepWarnings!.map((w, i) => (
+              <div key={i} className={styles.warningRow}>
+                <Text className={styles.warningStep}>
+                  {w.step}
+                </Text>
+                <Text className={styles.warningMessage}>
+                  {w.message}
+                </Text>
+              </div>
+            ))}
+            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+              Open the <strong>Fetch Log</strong> tab for full API call details.
+            </Text>
+          </div>
+        );
+      })()}
+
       {/* Main Tabs */}
       <div className={styles.mainTabsSection}>
         <TabList
@@ -374,21 +471,35 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             setMainTab(data.value as string);
           }}
         >
-          <Tab value="dashboard">📊 Dashboard</Tab>
+          <Tab value="dashboard" icon={<DashboardIcon />}>Dashboard</Tab>
 
           {hasERD && (
-            <Tab value="erd">📐 Entity Relationship Diagram</Tab>
+            <Tab value="erd" icon={<ErdIcon />}>Entity Relationship Diagram</Tab>
           )}
 
           {hasExternalDeps && (
-            <Tab value="externalDeps">🌐 External Dependencies</Tab>
+            <Tab value="externalDeps" icon={<ExternalDependenciesIcon />}>External Dependencies</Tab>
           )}
 
           {hasSolutionDist && (
-            <Tab value="solutionDist">📦 Solution Distribution</Tab>
+            <Tab value="solutionDist" icon={<SolutionDistributionIcon />}>Solution Distribution</Tab>
           )}
 
-          <Tab value="crossEntity">🔗 Cross-Entity Automation (Coming Soon)</Tab>
+          <Tab value="crossEntity" icon={<CrossEntityAutomationIcon />}>
+            Cross-Entity Automation
+            <Badge appearance="filled" shape="rounded" color="warning" size="small" style={{ marginLeft: tokens.spacingHorizontalXXS }}>Preview</Badge>
+          </Tab>
+
+          {(result.fetchLog && result.fetchLog.length > 0) && (
+            <Tab value="fetchLog" icon={<FetchLogIcon />}>
+              Fetch Log
+              {result.fetchLog.some(e => e.status === 'failed') && (
+                <Badge color="danger" shape="circular" size="small" style={{ marginLeft: tokens.spacingHorizontalXXS }}>
+                  {result.fetchLog.filter(e => e.status === 'failed').length}
+                </Badge>
+              )}
+            </Tab>
+          )}
         </TabList>
       </div>
 
@@ -428,7 +539,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                       style={hasData ? { cursor: 'pointer' } : undefined}
                     >
                       <div className={styles.summaryCardContent}>
-                        <Text style={{ fontSize: '18px' }}>{type.icon}</Text>
+                        <span style={{ color: hasData ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground4, lineHeight: 1 }}>{type.icon}</span>
                         <Text className={styles.summaryCount}>{count}</Text>
                         <Text className={styles.summaryLabel}>{type.label}</Text>
                       </div>
@@ -463,10 +574,8 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
               const isSelected = selectedTab === type.key;
               return (
                 <Tooltip key={type.key} content={type.label} relationship="label">
-                  <Tab value={type.key}>
-                    {isSelected
-                      ? `${type.icon} ${type.label} (${count})`
-                      : `${type.icon} (${count})`}
+                  <Tab value={type.key} icon={type.icon}>
+                    {isSelected ? `${type.label} (${count})` : `${count}`}
                   </Tab>
                 </Tooltip>
               );
@@ -510,7 +619,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
                     <Button
                       appearance="secondary"
                       onClick={() => setSelectedCustomAPI(null)}
-                      style={{ marginBottom: '16px' }}
+                      style={{ marginBottom: tokens.spacingVerticalL }}
                     >
                       ← Back to List
                     </Button>
@@ -530,25 +639,9 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'connectionReferences' && hasResults('connectionReferences') && (
-              <div>
-                {selectedConnRef ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedConnRef(null)}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <ConnectionReferenceDetailView connectionRef={selectedConnRef} />
-                  </div>
-                ) : (
-                  <ConnectionReferencesList
-                    connectionReferences={result.connectionReferences}
-                    onSelectReference={setSelectedConnRef}
-                  />
-                )}
-              </div>
+              <ConnectionReferencesList
+                connectionReferences={result.connectionReferences}
+              />
             )}
 
             {selectedTab === 'globalChoices' && hasResults('globalChoices') && (
@@ -578,11 +671,15 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'customPages' && hasResults('customPages') && (
-              <div className={styles.emptyState}>
-                <Text style={{ fontSize: '48px' }}>📄</Text>
-                <Title3>Custom Pages</Title3>
-                <Text>Custom pages browser coming soon...</Text>
-              </div>
+              <CustomPagesList customPages={result.customPages} />
+            )}
+
+            {selectedTab === 'canvasApps' && hasResults('canvasApps') && (
+              <CanvasAppsList canvasApps={result.canvasApps} />
+            )}
+
+            {selectedTab === 'modelDrivenApps' && hasResults('modelDrivenApps') && (
+              <ModelDrivenAppsList modelDrivenApps={result.modelDrivenApps} />
             )}
           </div>
         </Card>
@@ -614,7 +711,17 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       {/* Cross-Entity Automation Tab Content */}
       {mainTab === 'crossEntity' && (
         <div className={styles.tabContent}>
-          <CrossEntityMapView links={result.crossEntityLinks || []} />
+          <CrossEntityAutomationView
+            analysis={result.crossEntityAnalysis}
+            blueprints={result.entities}
+          />
+        </div>
+      )}
+
+      {/* Fetch Log Tab Content */}
+      {mainTab === 'fetchLog' && (
+        <div className={styles.tabContent}>
+          <FetchDiagnosticsView entries={result.fetchLog ?? []} />
         </div>
       )}
 

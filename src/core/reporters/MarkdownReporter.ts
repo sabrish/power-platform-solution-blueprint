@@ -21,9 +21,18 @@ import type {
   ERDDefinition,
   EntityQuickLink,
 } from '../types/blueprint.js';
+import type {
+  CrossEntityAnalysisResult,
+  CrossEntityEntityView,
+  CrossEntityTrace,
+  AutomationActivation,
+} from '../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../types/classicWorkflow.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
 import type { CustomAPI } from '../types/customApi.js';
+import type { CanvasApp } from '../types/canvasApp.js';
+import type { CustomPage } from '../types/customPage.js';
+import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
 import MarkdownFormatter from './markdown/MarkdownFormatter.js';
 
 export class MarkdownReporter {
@@ -46,14 +55,36 @@ export class MarkdownReporter {
     files.set('summary/all-custom-apis.md', this.generateAllCustomAPIs(result));
     files.set('summary/all-environment-variables.md', this.generateAllEnvironmentVariables(result));
     files.set('summary/all-connection-references.md', this.generateAllConnectionReferences(result));
+    files.set('summary/all-global-choices.md', this.generateAllGlobalChoices(result));
+    files.set('summary/all-custom-connectors.md', this.generateAllCustomConnectors(result));
     files.set('summary/all-business-process-flows.md', this.generateAllBusinessProcessFlows(result));
+    files.set('summary/all-canvas-apps.md', this.generateAllCanvasApps(result));
+    files.set('summary/all-custom-pages.md', this.generateAllCustomPages(result));
+    files.set('summary/all-model-driven-apps.md', this.generateAllModelDrivenApps(result));
 
     if (result.externalEndpoints && result.externalEndpoints.length > 0) {
       files.set('summary/external-integrations.md', this.generateExternalIntegrations(result));
     }
 
-    // Always generate cross-entity automation (shows "Coming Soon" if not available)
+    // Generate cross-entity automation summary
     files.set('summary/cross-entity-automation.md', this.generateCrossEntityAutomation(result));
+
+    // Generate per-entity cross-entity trace files (only if entity has entry points)
+    if (result.crossEntityAnalysis) {
+      for (const blueprint of result.entities) {
+        const logicalName = blueprint.entity.LogicalName.toLowerCase();
+        if (result.crossEntityAnalysis.entityViews.has(logicalName)) {
+          files.set(
+            `entities/${blueprint.entity.LogicalName}/cross-entity-trace.md`,
+            this.generateEntityCrossEntityTrace(
+              blueprint,
+              result.crossEntityAnalysis.entityViews.get(logicalName)!,
+              result.crossEntityAnalysis
+            )
+          );
+        }
+      }
+    }
 
     if (result.solutionDistribution && result.solutionDistribution.length > 0) {
       files.set('summary/solution-distribution.md', this.generateSolutionDistribution(result));
@@ -451,10 +482,15 @@ export class MarkdownReporter {
       MarkdownFormatter.formatLink('All Custom APIs', 'summary/all-custom-apis.md'),
       MarkdownFormatter.formatLink('All Environment Variables', 'summary/all-environment-variables.md'),
       MarkdownFormatter.formatLink('All Connection References', 'summary/all-connection-references.md'),
+      MarkdownFormatter.formatLink('All Global Choices', 'summary/all-global-choices.md'),
+      MarkdownFormatter.formatLink('All Custom Connectors', 'summary/all-custom-connectors.md'),
       MarkdownFormatter.formatLink('All Business Process Flows', 'summary/all-business-process-flows.md'),
+      MarkdownFormatter.formatLink('All Canvas Apps', 'summary/all-canvas-apps.md'),
+      MarkdownFormatter.formatLink('All Custom Pages', 'summary/all-custom-pages.md'),
+      MarkdownFormatter.formatLink('All Model-Driven Apps', 'summary/all-model-driven-apps.md'),
       MarkdownFormatter.formatLink('External Integrations', 'summary/external-integrations.md'),
       MarkdownFormatter.formatLink('Solution Distribution', 'summary/solution-distribution.md'),
-      MarkdownFormatter.formatLink('Cross-Entity Automation (Coming Soon)', 'summary/cross-entity-automation.md'),
+      MarkdownFormatter.formatLink('Cross-Entity Automation', 'summary/cross-entity-automation.md'),
     ]));
     sections.push('');
 
@@ -718,6 +754,41 @@ export class MarkdownReporter {
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
+
+      // Detail sections per rule
+      for (const rule of rules) {
+        sections.push(MarkdownFormatter.formatHeading(rule.name, 3));
+        if (rule.definition.conditionLogic) {
+          sections.push(`**Condition Logic:** \`${rule.definition.conditionLogic}\``);
+          sections.push('');
+        }
+        if (rule.definition.conditions.length > 0) {
+          sections.push('**Conditions**');
+          sections.push('');
+          const cHeaders = ['#', 'Field', 'Operator', 'Value', 'Logic'];
+          const cRows = rule.definition.conditions.map((c, i) => [
+            (i + 1).toString(),
+            c.field,
+            c.operator,
+            c.value,
+            c.logicOperator,
+          ]);
+          sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
+          sections.push('');
+        }
+        if (rule.definition.actions.length > 0) {
+          sections.push('**Actions**');
+          sections.push('');
+          const aHeaders = ['Type', 'Field', 'Value / Message'];
+          const aRows = rule.definition.actions.map(a => [
+            a.type,
+            a.field,
+            a.value ?? a.message ?? '',
+          ]);
+          sections.push(MarkdownFormatter.formatTable(aHeaders, aRows));
+          sections.push('');
+        }
+      }
     }
 
     return sections.join('\n');
@@ -865,6 +936,38 @@ export class MarkdownReporter {
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
+
+      // Detail section for each API
+      for (const api of apis) {
+        sections.push(MarkdownFormatter.formatHeading(`${api.uniqueName}`, 3));
+        if (api.description) sections.push(`> ${api.description}`);
+        sections.push('');
+        if (api.requestParameters.length > 0) {
+          sections.push('**Request Parameters**');
+          sections.push('');
+          const pHeaders = ['Name', 'Type', 'Required', 'Description'];
+          const pRows = api.requestParameters.map(p => [
+            `\`${p.uniqueName}\``,
+            p.typeName || p.type,
+            p.isOptional ? 'Optional' : 'Required',
+            p.description || '',
+          ]);
+          sections.push(MarkdownFormatter.formatTable(pHeaders, pRows));
+          sections.push('');
+        }
+        if (api.responseProperties.length > 0) {
+          sections.push('**Response Properties**');
+          sections.push('');
+          const rHeaders = ['Name', 'Type', 'Description'];
+          const rRows = api.responseProperties.map(p => [
+            `\`${p.uniqueName}\``,
+            p.typeName || p.type,
+            p.description || '',
+          ]);
+          sections.push(MarkdownFormatter.formatTable(rHeaders, rRows));
+          sections.push('');
+        }
+      }
     }
 
     return sections.join('\n');
@@ -943,6 +1046,69 @@ export class MarkdownReporter {
   }
 
   /**
+   * Generate summary/all-global-choices.md
+   */
+  private generateAllGlobalChoices(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Global Choices', 1));
+    sections.push('');
+    sections.push(`**Total Global Choices:** ${result.summary.totalGlobalChoices}`);
+    sections.push('');
+
+    if (result.globalChoices.length === 0) {
+      sections.push('No global choices found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Schema Name', 'Options', 'Customizable', 'Managed', 'Modified'];
+    const rows = result.globalChoices.map(gc => [
+      gc.displayName,
+      gc.name,
+      gc.totalOptions.toString(),
+      gc.isCustomizable ? 'Yes' : 'No',
+      gc.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      this.formatDate(gc.modifiedOn),
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-custom-connectors.md
+   */
+  private generateAllCustomConnectors(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Custom Connectors', 1));
+    sections.push('');
+    sections.push(`**Total Custom Connectors:** ${result.summary.totalCustomConnectors}`);
+    sections.push('');
+
+    if (result.customConnectors.length === 0) {
+      sections.push('No custom connectors found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Name', 'Description', 'Managed', 'Modified'];
+    const rows = result.customConnectors.map(c => [
+      c.displayName,
+      c.name,
+      c.description || '—',
+      c.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      this.formatDate(c.modifiedOn),
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
    * Generate summary/all-business-process-flows.md
    */
   private generateAllBusinessProcessFlows(result: BlueprintResult): string {
@@ -977,6 +1143,26 @@ export class MarkdownReporter {
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
+
+      // Detail sections per BPF
+      for (const bpf of bpfs) {
+        sections.push(MarkdownFormatter.formatHeading(bpf.name, 3));
+        if (bpf.description) {
+          sections.push(`> ${bpf.description}`);
+          sections.push('');
+        }
+        if (bpf.definition.stages.length > 0) {
+          const sHeaders = ['#', 'Stage', 'Entity', 'Steps'];
+          const sRows = bpf.definition.stages.map((stage, si) => [
+            (si + 1).toString(),
+            stage.name,
+            stage.entity || '—',
+            stage.steps.length.toString(),
+          ]);
+          sections.push(MarkdownFormatter.formatTable(sHeaders, sRows));
+          sections.push('');
+        }
+      }
     }
 
     return sections.join('\n');
@@ -1031,48 +1217,232 @@ export class MarkdownReporter {
   /**
    * Generate summary/cross-entity-automation.md
    */
-  private generateCrossEntityAutomation(_result: BlueprintResult): string {
+  private generateCrossEntityAutomation(result: BlueprintResult): string {
     const sections: string[] = [];
+    const analysis = result.crossEntityAnalysis;
 
-    sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation (Coming Soon)', 1));
-    sections.push('');
-
-    // Coming Soon Banner
-    sections.push('## 💡 Coming Soon: Advanced Cross-Entity Analysis');
-    sections.push('');
-    sections.push('This feature is currently in development and will provide comprehensive analysis of automation that operates across multiple entities.');
-    sections.push('');
-    sections.push('**Planned capabilities:**');
-    sections.push('- Plugin assembly decompilation (ILSpy integration) for cross-entity operations');
-    sections.push('- Classic workflow XAML parsing to identify entity relationships');
-    sections.push('- Business rule condition and action analysis');
-    sections.push('- Synchronous operation detection for performance impact');
-    sections.push('- Complete data flow mapping between entities');
-    sections.push('');
-    sections.push('Check [our GitHub repository](https://github.com/sabrish/power-platform-solution-blueprint) for updates.');
+    sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation', 1));
     sections.push('');
 
-    // Sample Data Section
-    sections.push('---');
-    sections.push('');
-    sections.push('## Sample Data');
-    sections.push('');
-    sections.push('_The table below demonstrates what this feature will look like when completed:_');
+    // Detection coverage notice
+    sections.push('> **Detection Coverage**');
+    sections.push('> ');
+    sections.push('> ✅ **Power Automate flows** — cross-entity writes detected from flow JSON definitions.');
+    sections.push('> ');
+    sections.push('> ✅ **Classic Workflows** — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).');
+    sections.push('> ');
+    sections.push('> ✅ **Business Rules (server-scoped)** — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.');
+    sections.push('> ');
+    sections.push('> 🔜 **Coming soon — Planned**');
+    sections.push('> ');
+    sections.push('> 🔌 **Plugins (deep detection)** — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.');
+    sections.push('> ');
+    sections.push('> 🌐 **JavaScript Web Resources (static analysis)** — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.');
     sections.push('');
 
-    const headers = ['Source Entity', 'Target Entity', 'Type', 'Automation', 'Operation', 'Mode'];
-    const sampleRows = [
-      ['Contact', 'Account', 'Flow', 'Update Account when Contact Changes', 'Update', 'Async'],
-      ['Opportunity', 'Quote', 'Plugin', 'Generate Quote from Opportunity', 'Create', 'Sync ⚠️'],
-      ['Case', 'Email', 'Flow', 'Send Email on Case Resolution', 'Create', 'Async'],
+    if (!analysis || analysis.totalEntryPoints === 0) {
+      sections.push('No cross-entity automation entry points detected in this solution scope.');
+      sections.push('');
+      return sections.join('\n');
+    }
+
+    // Stats
+    sections.push('## Summary');
+    sections.push('');
+    const statsHeaders = ['Metric', 'Value'];
+    const statsRows = [
+      ['Entry Points Detected', String(analysis.totalEntryPoints)],
+      ['Target Entities', String(analysis.entityViews.size)],
+      ['Downstream Branches', String(analysis.totalBranches)],
+      ['Chain Links', String(analysis.chainLinks.length)],
+      ['Total Risks', String(analysis.risks.length)],
+      ['High Severity Risks', String(analysis.risks.filter(r => r.severity === 'High').length)],
     ];
+    sections.push(MarkdownFormatter.formatTable(statsHeaders, statsRows));
+    sections.push('');
 
-    sections.push(MarkdownFormatter.formatTable(headers, sampleRows));
+    // Risk table
+    if (analysis.risks.length > 0) {
+      sections.push('## Risks');
+      sections.push('');
+      const highRisks = analysis.risks.filter(r => r.severity === 'High');
+      const medRisks = analysis.risks.filter(r => r.severity === 'Medium');
+
+      if (highRisks.length > 0) {
+        sections.push('### High Severity');
+        sections.push('');
+        const riskHeaders = ['Type', 'Description', 'Automation'];
+        const riskRows = highRisks.map(r => [r.type, r.description, r.automationName || '—']);
+        sections.push(MarkdownFormatter.formatTable(riskHeaders, riskRows));
+        sections.push('');
+      }
+
+      if (medRisks.length > 0) {
+        sections.push('### Medium Severity');
+        sections.push('');
+        const riskHeaders = ['Type', 'Description', 'Automation'];
+        const riskRows = medRisks.map(r => [r.type, r.description, r.automationName || '—']);
+        sections.push(MarkdownFormatter.formatTable(riskHeaders, riskRows));
+        sections.push('');
+      }
+    }
+
+    // Mermaid global overview diagram
+    sections.push('## Global Automation Chain');
     sections.push('');
-    sections.push('_⚠️ Synchronous cross-entity operations may impact performance_');
+    const mermaidLines: string[] = ['```mermaid', 'graph LR'];
+    const addedNodes = new Set<string>();
+    for (const link of analysis.chainLinks) {
+      const srcId = link.sourceEntity.replace(/[^a-z0-9]/gi, '_');
+      const tgtId = link.targetEntity.replace(/[^a-z0-9]/gi, '_');
+      if (!addedNodes.has(srcId)) {
+        mermaidLines.push(`    ${srcId}["${link.sourceEntityDisplayName}"]`);
+        addedNodes.add(srcId);
+      }
+      if (!addedNodes.has(tgtId)) {
+        mermaidLines.push(`    ${tgtId}["${link.targetEntityDisplayName}"]`);
+        addedNodes.add(tgtId);
+      }
+      const edgeLabel = `${link.operation}`;
+      mermaidLines.push(`    ${srcId} -->|"${edgeLabel}"| ${tgtId}`);
+    }
+    mermaidLines.push('```');
+    sections.push(mermaidLines.join('\n'));
     sections.push('');
+
+    // Chain links table
+    sections.push('## Chain Links');
+    sections.push('');
+    const chainHeaders = ['Source Entity', 'Automation', 'Type', '→', 'Target Entity', 'Operation', 'Mode'];
+    const chainRows = analysis.chainLinks.map(l => [
+      l.sourceEntityDisplayName,
+      l.automationName,
+      l.automationType,
+      '→',
+      l.targetEntityDisplayName,
+      l.operation,
+      l.isAsynchronous ? 'Async' : 'Sync',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(chainHeaders, chainRows));
+    sections.push('');
+
+    // Consolidated pipeline traces
+    if (analysis.entityViews.size > 0) {
+      sections.push('## Pipeline Traces');
+      sections.push('');
+      sections.push('Per-entity activation analysis — which automations fire (or don\'t) when an external source writes to the entity.');
+      sections.push('');
+      for (const [, view] of analysis.entityViews) {
+        sections.push(`### ${view.entityDisplayName}`);
+        sections.push('');
+        sections.push(`**Entity:** \`${view.entityLogicalName}\` | **Entry Points:** ${view.traces.length}`);
+        sections.push('');
+        for (const trace of view.traces) {
+          sections.push(this.formatTraceDetails(trace));
+        }
+      }
+    }
 
     return sections.join('\n');
+  }
+
+  /**
+   * Generate entities/{entity}/cross-entity-trace.md
+   */
+  private generateEntityCrossEntityTrace(
+    blueprint: EntityBlueprint,
+    view: CrossEntityEntityView,
+    _analysis: CrossEntityAnalysisResult
+  ): string {
+    const sections: string[] = [];
+    const displayName = blueprint.entity.DisplayName?.UserLocalizedLabel?.Label || blueprint.entity.LogicalName;
+
+    sections.push(MarkdownFormatter.formatHeading(`Cross-Entity Trace — ${displayName}`, 1));
+    sections.push('');
+    sections.push(`**Entity:** \`${blueprint.entity.LogicalName}\``);
+    sections.push(`**Entry Points:** ${view.traces.length}`);
+    sections.push('');
+
+    for (const trace of view.traces) {
+      sections.push(this.formatTraceDetails(trace));
+    }
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Format a single cross-entity trace as a markdown details block
+   */
+  private formatTraceDetails(trace: CrossEntityTrace): string {
+    const lines: string[] = [];
+    const { entryPoint, activations, risks } = trace;
+
+    lines.push(`<details>`);
+    lines.push(`<summary><strong>${entryPoint.automationName}</strong> (${entryPoint.automationType} — ${entryPoint.operation} from ${entryPoint.sourceEntityDisplayName})</summary>`);
+    lines.push('');
+    lines.push(`**Source:** ${entryPoint.sourceEntityDisplayName} (\`${entryPoint.sourceEntity}\`)`);
+    lines.push(`**Operation:** ${entryPoint.operation}`);
+    lines.push(`**Type:** ${entryPoint.automationType}`);
+    lines.push(`**Mode:** ${entryPoint.isAsynchronous ? 'Asynchronous' : 'Synchronous'}`);
+    lines.push(`**Confidence:** ${entryPoint.confidence}`);
+    if (entryPoint.isScheduled) lines.push('**Scheduled:** Yes');
+    if (entryPoint.isOnDemand) lines.push('**On Demand:** Yes');
+    if (entryPoint.fields.length > 0) {
+      lines.push(`**Fields Set:** \`${entryPoint.fields.join('`, `')}\``);
+    }
+    lines.push('');
+
+    // Risks
+    if (risks.length > 0) {
+      lines.push('**Risks:**');
+      for (const risk of risks) {
+        lines.push(`- ⚠️ **${risk.type}** (${risk.severity}): ${risk.description}`);
+      }
+      lines.push('');
+    }
+
+    // Activation table
+    lines.push('**Activation Analysis:**');
+    lines.push('');
+    const actHeaders = ['Automation', 'Type', 'Stage', 'Mode', 'Fires?', 'Matched Fields'];
+    const actRows = activations.map(act => [
+      act.automationName,
+      act.automationType,
+      act.stageName || '—',
+      act.mode,
+      this.formatFiringStatus(act),
+      act.matchedFields.length > 0 ? act.matchedFields.join(', ') : '—',
+    ]);
+    lines.push(MarkdownFormatter.formatTable(actHeaders, actRows));
+    lines.push('');
+
+    // Downstream branches
+    const withDownstream = activations.filter(a => a.downstream);
+    if (withDownstream.length > 0) {
+      lines.push('**Downstream Branches:**');
+      for (const act of withDownstream) {
+        const ds = act.downstream!;
+        lines.push(`- \`${act.automationName}\` → **${ds.targetEntityDisplayName}** (\`${ds.targetEntity}\`) — ${ds.operation}`);
+        if (ds.fields.length > 0) {
+          lines.push(`  - Fields: \`${ds.fields.join('`, `')}\``);
+        }
+      }
+      lines.push('');
+    }
+
+    lines.push('</details>');
+    lines.push('');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Format firing status for markdown
+   */
+  private formatFiringStatus(act: AutomationActivation): string {
+    if (act.firingStatus === 'WillFire') return '✅ Yes';
+    if (act.firingStatus === 'WontFire') return '❌ No (field mismatch)';
+    return '⚠️ Yes (no filter — fires always)';
   }
 
   /**
@@ -1113,6 +1483,12 @@ export class MarkdownReporter {
         ['Environment Variables', solution.componentCounts.environmentVariables.toString()],
         ['Connection References', solution.componentCounts.connectionReferences.toString()],
         ['Global Choices', solution.componentCounts.globalChoices.toString()],
+        ['Custom Connectors', solution.componentCounts.customConnectors.toString()],
+        ['Security Roles', solution.componentCounts.securityRoles.toString()],
+        ['Field Security Profiles', solution.componentCounts.fieldSecurityProfiles.toString()],
+        ['Canvas Apps', solution.componentCounts.canvasApps.toString()],
+        ['Custom Pages', solution.componentCounts.customPages.toString()],
+        ['Model-Driven Apps', solution.componentCounts.modelDrivenApps.toString()],
       ];
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
@@ -2465,7 +2841,7 @@ export class MarkdownReporter {
         const privMap = new Map(entityPerm.privileges.map(p => [p.type, p]));
 
         for (const type of ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share']) {
-          const priv = privMap.get(type as any);
+          const priv = privMap.get(type as import('../discovery/SecurityRoleDiscovery.js').PrivilegeDetail['type']);
           row.push(priv ? priv.depth : '');
         }
 
@@ -2611,5 +2987,96 @@ export class MarkdownReporter {
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase())
       .trim();
+  }
+
+  /**
+   * Generate summary/all-canvas-apps.md
+   */
+  private generateAllCanvasApps(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Canvas Apps', 1));
+    sections.push('');
+    sections.push(`**Total Canvas Apps:** ${result.summary.totalCanvasApps}`);
+    sections.push('');
+
+    if (result.canvasApps.length === 0) {
+      sections.push('No canvas apps found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Name', 'Description', 'Managed'];
+    const rows = result.canvasApps.map((a: CanvasApp) => [
+      a.displayName,
+      a.name,
+      a.description || '—',
+      a.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-custom-pages.md
+   */
+  private generateAllCustomPages(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Custom Pages', 1));
+    sections.push('');
+    sections.push(`**Total Custom Pages:** ${result.summary.totalCustomPages}`);
+    sections.push('');
+
+    if (result.customPages.length === 0) {
+      sections.push('No custom pages found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Name', 'Description', 'Managed'];
+    const rows = result.customPages.map((p: CustomPage) => [
+      p.displayName,
+      p.name,
+      p.description || '—',
+      p.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-model-driven-apps.md
+   */
+  private generateAllModelDrivenApps(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Model-Driven Apps', 1));
+    sections.push('');
+    sections.push(`**Total Model-Driven Apps:** ${result.summary.totalModelDrivenApps}`);
+    sections.push('');
+
+    if (result.modelDrivenApps.length === 0) {
+      sections.push('No model-driven apps found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Unique Name', 'Description', 'Managed', 'Modified'];
+    const rows = result.modelDrivenApps.map((a: ModelDrivenApp) => [
+      a.displayName,
+      a.name,
+      a.description || '—',
+      a.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      a.modifiedOn ? this.formatDate(a.modifiedOn) : '—',
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
   }
 }

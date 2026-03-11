@@ -21,6 +21,15 @@ If either has NOT been run or did NOT pass — stop immediately. Report:
 "Build verification required: please run `pnpm typecheck && pnpm build` and confirm both pass before continuing."
 Do not proceed to Step 1 until the project owner confirms both commands passed.
 
+## Step 0b: Dead Code Check
+
+Run `pnpm lint:unused` and review the output.
+- Unused files → blocker (delete before committing)
+- Unused exports (non-Props, non-enum) → blocker
+- Unused dependencies → blocker
+- Unused Props interfaces / enum members → acceptable, skip
+- New barrel re-exports with no consumers → blocker
+
 ## Step 1: Reviewer
 
 Invoke the reviewer agent with the files listed above.

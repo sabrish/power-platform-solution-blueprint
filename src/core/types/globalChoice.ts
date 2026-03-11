@@ -27,7 +27,3 @@ export interface GlobalChoiceOption {
 /**
  * Color mapping for managed vs unmanaged global choices
  */
-export const GLOBAL_CHOICE_STATUS_COLORS = {
-  managed: 'warning',
-  unmanaged: 'success',
-} as const;

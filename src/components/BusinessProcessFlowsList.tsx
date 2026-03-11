@@ -7,116 +7,30 @@ import {
   Card,
   Title3,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import {
   ChevronDown20Regular,
   ChevronRight20Regular,
-  Flowchart20Regular,
   Layer20Regular,
   ArrowDown20Regular,
 } from '@fluentui/react-icons';
 import type { BusinessProcessFlow, BPFStage } from '../core';
 import { formatDate } from '../utils/dateFormat';
-import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 const BPF_STATE_VALUES = ['Active', 'Inactive'];
 
+const BPF_FILTER_SPECS: readonly FilterSpec<BusinessProcessFlow>[] = [
+  { name: 'state', getKey: (bpf) => bpf.state },
+];
+
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   row: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  rowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-    minWidth: 0,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-    wordBreak: 'break-word',
-    overflowWrap: 'anywhere',
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    flexWrap: 'wrap',
-    marginTop: tokens.spacingVerticalXS,
   },
   stagesList: {
     display: 'flex',
@@ -159,9 +73,8 @@ interface BusinessProcessFlowsListProps {
 
 export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProcessFlowsListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     return [...businessProcessFlows].sort((a, b) => a.name.localeCompare(b.name));
@@ -173,83 +86,71 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
     return counts;
   }, [sorted]);
 
-  // Apply ToggleButton filters
-  const toggleFilteredBPFs = useMemo(() => {
-    if (activeStateFilters.size === 0) return sorted;
-    return sorted.filter((bpf) => activeStateFilters.has(bpf.state));
-  }, [sorted, activeStateFilters]);
-
-  const searchedBPFs = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return toggleFilteredBPFs;
-    return toggleFilteredBPFs.filter((bpf) =>
+  const {
+    filteredItems: searchedBPFs,
+    searchQuery,
+    setSearchQuery,
+    toggleKey,
+    clearFilter,
+    activeFilters,
+  } = useListFilter(
+    sorted,
+    (bpf, q) =>
       bpf.name.toLowerCase().includes(q) ||
       bpf.primaryEntity.toLowerCase().includes(q) ||
-      (bpf.primaryEntityDisplayName && bpf.primaryEntityDisplayName.toLowerCase().includes(q))
-    );
-  }, [toggleFilteredBPFs, searchQuery]);
-
-  const toggleStateFilter = (state: string) => {
-    setActiveStateFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(state)) {
-        next.delete(state);
-      } else {
-        next.add(state);
-      }
-      return next;
-    });
-  };
+      (bpf.primaryEntityDisplayName?.toLowerCase().includes(q) ?? false),
+    BPF_FILTER_SPECS,
+  );
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
   const renderDetail = (bpf: BusinessProcessFlow) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>Business Process Flow Details</Title3>
 
-        <div className={`${styles.detailsGrid} ${styles.section}`}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Unique Name</Text>
-            <Text className={styles.codeText} style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{bpf.uniqueName}</Text>
+        <div className={`${shared.detailsGrid} ${shared.section}`}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Unique Name</Text>
+            <Text className={shared.codeText} style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{bpf.uniqueName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Primary Entity</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Primary Entity</Text>
+            <Text className={shared.detailValue}>
               {bpf.primaryEntityDisplayName || bpf.primaryEntity}
             </Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Total Stages</Text>
-            <Text className={styles.detailValue}>{bpf.definition.stages.length}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Total Stages</Text>
+            <Text className={shared.detailValue}>{bpf.definition.stages.length}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Total Steps</Text>
-            <Text className={styles.detailValue}>{bpf.definition.totalSteps}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Total Steps</Text>
+            <Text className={shared.detailValue}>{bpf.definition.totalSteps}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Owner</Text>
-            <Text className={styles.detailValue}>{bpf.owner}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Owner</Text>
+            <Text className={shared.detailValue}>{bpf.owner}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Last Modified</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Last Modified</Text>
+            <Text className={shared.detailValue}>
               {formatDate(bpf.modifiedOn)} by {bpf.modifiedBy}
             </Text>
           </div>
         </div>
 
         {bpf.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
             <Text>{bpf.description}</Text>
           </div>
         )}
 
         {bpf.definition.crossEntityFlow && bpf.definition.entities.length > 0 && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Entities Involved</Text>
-            <div className={styles.badgeGroup}>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Entities Involved</Text>
+            <div className={shared.badgeGroup}>
               {bpf.definition.entities.map((entity) => (
                 <Badge key={entity} appearance="outline" shape="rounded">{entity}</Badge>
               ))}
@@ -268,7 +169,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
         )}
 
         {bpf.definition.stages.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
               <Layer20Regular style={{ color: tokens.colorNeutralForeground3 }} />
               <Text weight="semibold">Process Stages</Text>
@@ -304,7 +205,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
         )}
 
         {bpf.definition.parseError && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Text style={{ color: tokens.colorPaletteRedForeground1, fontSize: tokens.fontSizeBase200 }}>
               Parse warning: {bpf.definition.parseError}
             </Text>
@@ -316,16 +217,15 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
 
   if (businessProcessFlows.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Flowchart20Regular style={{ fontSize: '48px' }} />
-        <Text size={500} weight="semibold">No Business Process Flows Found</Text>
-        <Text>No business process flows were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="workflows"
+        message="No business process flows were found in the selected solution(s)."
+      />
     );
   }
 
   return (
-    <div className={styles.container} style={{ marginTop: '16px' }}>
+    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -334,49 +234,47 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
         totalCount={sorted.length}
         itemLabel="BPFs"
       >
-        <FilterGroup label="State:">
+        <FilterGroup
+          label="State:"
+          hasActiveFilters={(activeFilters['state']?.size ?? 0) > 0}
+          onClear={() => clearFilter('state')}
+        >
           {BPF_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
-              className={styles.filterButton}
+              appearance="outline"
+              className={shared.filterButton}
               size="small"
-              checked={activeStateFilters.has(state)}
+              checked={activeFilters['state']?.has(state) ?? false}
               disabled={stateCounts[state] === 0}
-              onClick={() => toggleStateFilter(state)}
+              onClick={() => toggleKey('state', state)}
             >
               {state}
             </ToggleButton>
           ))}
-          {activeStateFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
       {searchedBPFs.length === 0 && sorted.length > 0 && (
-        <div className={styles.emptyState}>
-          <Text>No business process flows match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       )}
       {searchedBPFs.map((bpf) => {
         const isExpanded = expandedId === bpf.id;
         return (
           <div key={bpf.id}>
             <div
-              className={`${styles.row} ${isExpanded ? styles.rowExpanded : ''}`}
+              className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
               onClick={() => toggleExpand(bpf.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(bpf.id); } }}
             >
-              <div className={styles.chevron}>
+              <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
-              <div className={styles.nameColumn}>
-                <Text weight="semibold">
-                  <TruncatedText text={bpf.name} />
-                </Text>
-                <Text className={styles.codeText}>
-                  <TruncatedText text={bpf.uniqueName} />
-                </Text>
+              <div className={shared.nameColumn}>
+                <Text weight="semibold">{bpf.name}</Text>
+                <Text className={shared.codeText}>{bpf.uniqueName}</Text>
               </div>
               <Badge appearance="outline" shape="rounded" size="small">
                 {bpf.primaryEntityDisplayName || bpf.primaryEntity}

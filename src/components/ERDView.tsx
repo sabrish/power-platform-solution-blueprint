@@ -6,7 +6,7 @@ import {
   Card,
   Button,
   ToggleButton,
-  Input,
+  SearchBox,
   makeStyles,
   tokens,
   Tooltip,
@@ -22,12 +22,21 @@ import {
   ZoomIn24Regular,
   ZoomOut24Regular,
   ZoomFit24Regular,
-  Search24Regular,
   Dismiss24Regular,
   Checkmark24Regular,
 } from '@fluentui/react-icons';
 import type { ERDDefinition, BlueprintResult } from '../core';
 import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
+import { EmptyState } from './EmptyState';
+
+// ─── Tooltip sizing constants ─────────────────────────────────────────────────
+// Named constants used in makeStyles — raw pixels are required for these
+// layout-constraint values since no equivalent spacing tokens exist.
+const EDGE_TOOLTIP_MAX_WIDTH = '300px';   // edge hover: wider to show full attribute path
+const NODE_TOOLTIP_MAX_WIDTH = '240px';   // node hover: narrower; content is shorter
+// Fluent UI v9 does not expose zIndex tokens. 1000 is below browser popups (1100+)
+// but above the Cytoscape canvas (z-index ~auto) and the graph overlays (z-index 5–10).
+const TOOLTIP_Z_INDEX = 1000;
 
 // ─── Layout names ────────────────────────────────────────────────────────────
 type LayoutName = 'cose' | 'breadthfirst';
@@ -57,15 +66,15 @@ const useStyles = makeStyles({
     flexShrink: 0,
   },
   divider: {
-    width: '1px',
-    height: '24px',
+    width: '1px', // hairline divider — no token
+    height: '24px', // icon-row height — no token
     backgroundColor: tokens.colorNeutralStroke1,
     margin: `0 ${tokens.spacingHorizontalXS}`,
     alignSelf: 'center',
     flexShrink: 0,
   },
   searchBox: {
-    width: '180px',
+    width: '180px', // fixed search width — no token equivalent
   },
   graphCard: {
     padding: 0,
@@ -74,7 +83,7 @@ const useStyles = makeStyles({
   },
   graphContainer: {
     width: '100%',
-    height: '720px',
+    height: '720px', // fixed canvas height — no token
     backgroundColor: tokens.colorNeutralBackground2,
   },
   loadingOverlay: {
@@ -94,27 +103,27 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: tokens.borderRadiusMedium,
     padding: tokens.spacingVerticalS,
-    maxWidth: '220px',
+    maxWidth: '220px', // fixed panel width — no token
     zIndex: 5,
     boxShadow: tokens.shadow4,
   },
   infoPanelClose: {
     position: 'absolute',
-    top: '4px',
-    right: '4px',
+    top: tokens.spacingVerticalXS,
+    right: tokens.spacingHorizontalXS,
   },
   infoPanelTitle: {
     fontWeight: tokens.fontWeightSemibold,
     wordBreak: 'break-all',
     marginBottom: tokens.spacingVerticalXS,
-    paddingRight: '24px',
+    paddingRight: '24px', // 24px padding for close-button clearance — no exact token
   },
   infoPanelRow: {
     display: 'flex',
     justifyContent: 'space-between',
     gap: tokens.spacingHorizontalS,
     fontSize: tokens.fontSizeBase200,
-    marginBottom: '2px',
+    marginBottom: '2px', // micro-spacing between info rows — no token equivalent
   },
   infoPanelLabel: {
     color: tokens.colorNeutralForeground3,
@@ -137,7 +146,7 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
-    minHeight: '40px',
+    minHeight: '40px', // minimum row height — no token
   },
   hintActions: {
     display: 'flex',
@@ -145,11 +154,34 @@ const useStyles = makeStyles({
     gap: '2px',
     flexShrink: 0,
   },
+  // Fixed-position hover tooltips rendered over the Cytoscape canvas
+  edgeTooltip: {
+    position: 'fixed',
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+    boxShadow: tokens.shadow8,
+    zIndex: TOOLTIP_Z_INDEX,
+    maxWidth: EDGE_TOOLTIP_MAX_WIDTH,
+    pointerEvents: 'none',
+  },
+  nodeTooltip: {
+    position: 'fixed',
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: tokens.spacingVerticalS,
+    boxShadow: tokens.shadow4,
+    zIndex: TOOLTIP_Z_INDEX,
+    maxWidth: NODE_TOOLTIP_MAX_WIDTH,
+    pointerEvents: 'none',
+  },
   // Zoom controls overlay on the graph canvas
   zoomOverlay: {
     position: 'absolute',
-    bottom: tokens.spacingVerticalM,
-    left: tokens.spacingHorizontalM,
+    top: tokens.spacingVerticalM,
+    right: tokens.spacingHorizontalM,
     display: 'flex',
     flexDirection: 'column',
     gap: '2px',
@@ -338,16 +370,14 @@ function downloadAsSVG(cy: Core): void {
 // ─── N-hop neighborhood ───────────────────────────────────────────────────────
 function getNHopCollection(cy: Core, nodeId: string, hops: IsolateHops) {
   const start = cy.getElementById(nodeId);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let collected: any = start;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let frontier: any = start;
+  let collected: cytoscape.CollectionReturnValue = start;
+  let frontier: cytoscape.CollectionReturnValue = start;
   for (let i = 0; i < hops; i++) {
     const next = frontier.neighborhood();
     collected = collected.union(next);
     frontier = next;
   }
-  return collected as cytoscape.CollectionReturnValue;
+  return collected;
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -389,6 +419,8 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
   const [hiddenPublishers, setHiddenPublishers] = useState<Set<string>>(new Set());
   const [hoveredEdge, setHoveredEdge] = useState<EdgeHoverInfo | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<NodeInfo | null>(null);
+  const [nodeTooltipPos, setNodeTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
   const toasterId = useId('toaster');
   const { dispatchToast } = useToastController(toasterId);
@@ -455,7 +487,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
     // Hide edge labels by default
     cy.edges().addClass('label-hidden');
 
-    // Node click — select
+    // Node click — select for isolation
     cy.on('tap', 'node', (evt) => {
       const node = evt.target as NodeSingular;
       const d = node.data();
@@ -466,6 +498,31 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         publisherPrefix: d.publisherPrefix as string,
         connectedCount: connected.length,
       });
+    });
+
+    // Node hover — tooltip
+    cy.on('mouseover', 'node', (evt) => {
+      const node = evt.target as NodeSingular;
+      const d = node.data();
+      const connected = node.neighborhood('node');
+      const me = evt.originalEvent as MouseEvent;
+      setHoveredNode({
+        id: d.id as string,
+        label: d.label as string,
+        publisherPrefix: d.publisherPrefix as string,
+        connectedCount: connected.length,
+      });
+      setNodeTooltipPos({ x: me.clientX + 14, y: me.clientY + 14 });
+    });
+
+    cy.on('mousemove', 'node', (evt) => {
+      const me = evt.originalEvent as MouseEvent;
+      setNodeTooltipPos({ x: me.clientX + 14, y: me.clientY + 14 });
+    });
+
+    cy.on('mouseout', 'node', () => {
+      setHoveredNode(null);
+      setNodeTooltipPos(null);
     });
 
     // Background tap — clear selection
@@ -697,19 +754,10 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
 
       {/* ── Edge hover tooltip (fixed, portal-like) ── */}
       {hoveredEdge && tooltipPos && (
-        <div style={{
-          position: 'fixed',
-          left: tooltipPos.x,
-          top: tooltipPos.y,
-          backgroundColor: tokens.colorNeutralBackground1,
-          border: `1px solid ${tokens.colorNeutralStroke1}`,
-          borderRadius: tokens.borderRadiusMedium,
-          padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
-          boxShadow: tokens.shadow8,
-          zIndex: 9999,
-          maxWidth: '300px',
-          pointerEvents: 'none',
-        }}>
+        <div
+          className={styles.edgeTooltip}
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
           <Text weight="semibold" block style={{ marginBottom: '2px', wordBreak: 'break-all' }}>
             {hoveredEdge.id}
           </Text>
@@ -735,7 +783,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         <Text size={500} weight="semibold" block>Entity Relationship Diagram</Text>
         <Text style={{ color: tokens.colorNeutralForeground3 }}>
           {filteredNodes.length} entities · {graphData?.edges.length ?? 0} relationships in scope
-          {isolatedEntityCount > 0 && ` · ${isolatedEntityCount} entity${isolatedEntityCount > 1 ? 'ies' : ''} with no relationships hidden`}
+          {isolatedEntityCount > 0 && ` · ${isolatedEntityCount} entit${isolatedEntityCount > 1 ? 'ies' : 'y'} with no relationships hidden`}
         </Text>
       </div>
 
@@ -760,18 +808,12 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             <div className={styles.divider} />
 
             {/* Search */}
-            <Input
+            <SearchBox
               className={styles.searchBox}
-              size="small"
+              size="medium"
               placeholder="Search entities..."
-              contentBefore={<Search24Regular style={{ fontSize: '14px' }} />}
               value={searchQuery}
               onChange={(_, d) => setSearchQuery(d.value)}
-              contentAfter={
-                searchQuery
-                  ? <Dismiss24Regular style={{ fontSize: '14px', cursor: 'pointer' }} onClick={() => setSearchQuery('')} />
-                  : undefined
-              }
             />
 
             {/* Hops selector + Isolate (next to search) */}
@@ -808,12 +850,14 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               return (
                 <ToggleButton
                   key={pub.publisherPrefix}
+                  appearance="outline"
                   size="small"
                   checked={!isHidden}
                   style={{
                     minWidth: 'unset',
                     paddingLeft: tokens.spacingHorizontalS,
                     paddingRight: tokens.spacingHorizontalS,
+                    // dynamic publisher colour from ERD generator palette — cannot use static token
                     borderLeft: `3px solid ${pub.color}`,
                   }}
                   onClick={() =>
@@ -833,6 +877,7 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
             <div className={styles.divider} />
 
             <ToggleButton
+              appearance="outline"
               size="small"
               checked={showEdgeLabels}
               onClick={() => setShowEdgeLabels((v) => !v)}
@@ -900,17 +945,17 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
           <div style={{ position: 'relative' }}>
             <div ref={graphRef} className={styles.graphContainer} />
 
-            {/* Zoom overlay — bottom-left of canvas */}
+            {/* Zoom overlay — top-right of canvas */}
             {!isInitializing && (
               <div className={styles.zoomOverlay}>
                 <Tooltip content="Zoom in" relationship="label">
-                  <Button size="small" appearance="subtle" icon={<ZoomIn24Regular />} onClick={handleZoomIn} />
+                  <Button size="small" appearance="subtle" aria-label="Zoom in" icon={<ZoomIn24Regular />} onClick={handleZoomIn} />
                 </Tooltip>
                 <Tooltip content="Zoom out" relationship="label">
-                  <Button size="small" appearance="subtle" icon={<ZoomOut24Regular />} onClick={handleZoomOut} />
+                  <Button size="small" appearance="subtle" aria-label="Zoom out" icon={<ZoomOut24Regular />} onClick={handleZoomOut} />
                 </Tooltip>
                 <Tooltip content="Fit to screen" relationship="label">
-                  <Button size="small" appearance="subtle" icon={<ZoomFit24Regular />} onClick={handleFit} />
+                  <Button size="small" appearance="subtle" aria-label="Fit to screen" icon={<ZoomFit24Regular />} onClick={handleFit} />
                 </Tooltip>
               </div>
             )}
@@ -921,30 +966,26 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
               </div>
             )}
 
-            {/* Node info panel */}
-            {selectedNode && (
-              <div className={styles.infoPanel}>
-                <Button
-                  className={styles.infoPanelClose}
-                  size="small"
-                  appearance="subtle"
-                  icon={<Dismiss24Regular />}
-                  onClick={() => { setSelectedNode(null); if (cyRef.current) clearIsolationOn(cyRef.current); setIsIsolated(false); }}
-                />
-                <Text block className={styles.infoPanelTitle}>{selectedNode.label}</Text>
+            {/* Node hover tooltip */}
+            {hoveredNode && nodeTooltipPos && (
+              <div
+                className={styles.nodeTooltip}
+                style={{ left: nodeTooltipPos.x, top: nodeTooltipPos.y }}
+              >
+                <Text block style={{ fontWeight: tokens.fontWeightSemibold, wordBreak: 'break-all', marginBottom: tokens.spacingVerticalXS }}>{hoveredNode.label}</Text>
                 <div className={styles.infoPanelRow}>
                   <Text className={styles.infoPanelLabel}>Logical name</Text>
-                  <Text style={{ wordBreak: 'break-all' }}>{selectedNode.id}</Text>
+                  <Text style={{ wordBreak: 'break-all', fontSize: tokens.fontSizeBase200 }}>{hoveredNode.id}</Text>
                 </div>
-                {selectedNode.publisherPrefix && (
+                {hoveredNode.publisherPrefix && (
                   <div className={styles.infoPanelRow}>
                     <Text className={styles.infoPanelLabel}>Publisher</Text>
-                    <Text>{selectedNode.publisherPrefix}</Text>
+                    <Text style={{ fontSize: tokens.fontSizeBase200 }}>{hoveredNode.publisherPrefix}</Text>
                   </div>
                 )}
                 <div className={styles.infoPanelRow}>
                   <Text className={styles.infoPanelLabel}>Relationships</Text>
-                  <Text>{selectedNode.connectedCount}</Text>
+                  <Text style={{ fontSize: tokens.fontSizeBase200 }}>{hoveredNode.connectedCount}</Text>
                 </div>
               </div>
             )}
@@ -953,9 +994,11 @@ export function ERDView({ erd, blueprintResult }: ERDViewProps) {
         </Card>
       ) : (
         <Card>
-          <div style={{ padding: tokens.spacingVerticalXL, textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-            <Text>No relationship data available.</Text>
-          </div>
+          <EmptyState
+            type="generic"
+            title="No relationship data"
+            message="No entity relationships were found in the selected solution scope."
+          />
         </Card>
       )}
 

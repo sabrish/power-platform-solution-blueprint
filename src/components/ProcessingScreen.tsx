@@ -1,15 +1,29 @@
+import { useEffect, useRef } from 'react';
 import {
   Text,
   Title2,
   Button,
   ProgressBar,
   Spinner,
+  Badge,
   makeStyles,
   tokens,
 } from '@fluentui/react-components';
-import { ArrowClockwise24Regular } from '@fluentui/react-icons';
-import type { ProgressInfo } from '../core';
+import {
+  CheckmarkCircle16Regular,
+  ErrorCircle16Regular,
+  ArrowCounterclockwise16Regular,
+  ArrowDown16Regular,
+  Record16Regular,
+  Beaker16Regular,
+} from '@fluentui/react-icons';
+import type { ProgressInfo, FetchLogEntry } from '../core';
 import { Footer } from './Footer';
+
+// Fixed column width for the step-name column in the API call feed.
+// 130px is intentional: it keeps step names aligned without wrapping
+// in the compact monospace feed while leaving most width for the entity column.
+const FETCH_STEP_COLUMN_WIDTH = '130px';
 
 const useStyles = makeStyles({
   container: {
@@ -43,29 +57,62 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground2,
     borderRadius: tokens.borderRadiusMedium,
   },
-  activityLog: {
+  fetchFeed: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalXS,
-    maxHeight: '200px',
+    maxHeight: '180px', // fixed scroll viewport height — no token equivalent
     overflowY: 'auto',
-    padding: tokens.spacingVerticalM,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
     backgroundColor: tokens.colorNeutralBackground1,
     borderRadius: tokens.borderRadiusMedium,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
   },
-  activityItem: {
+  fetchHint: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+    textAlign: 'center' as const,
+  },
+  fetchHeader: {
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalS,
+  },
+  fetchSectionLabel: {
     fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
   },
-  completedIcon: {
-    color: tokens.colorPaletteGreenForeground1,
-    flexShrink: 0,
+  fetchRow: {
+    display: 'grid',
+    gridTemplateColumns: `14px ${FETCH_STEP_COLUMN_WIDTH} 1fr auto`,
+    gap: tokens.spacingHorizontalXS,
+    alignItems: 'baseline',
+    fontFamily: tokens.fontFamilyMonospace,
+    fontSize: tokens.fontSizeBase200,
+    lineHeight: '1.5', // unitless line-height for monospace readability — no Fluent token equivalent
   },
-  processingIcon: {
-    flexShrink: 0,
+  fetchRowNormal: {
+    color: tokens.colorNeutralForeground2,
+  },
+  fetchRowError: {
+    color: tokens.colorStatusDangerForeground1,
+  },
+  fetchRowWarning: {
+    color: tokens.colorStatusWarningForeground1,
+  },
+  fetchStep: {
+    color: tokens.colorNeutralForeground3,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  fetchEntity: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  fetchMeta: {
+    color: tokens.colorNeutralForeground3,
+    whiteSpace: 'nowrap',
   },
   progressText: {
     color: tokens.colorNeutralForeground3,
@@ -80,11 +127,21 @@ const useStyles = makeStyles({
 
 export interface ProcessingScreenProps {
   progress: ProgressInfo;
+  recentFetches?: FetchLogEntry[];
   onCancel: () => void;
+  isCancelling?: boolean;
 }
 
-export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) {
+export function ProcessingScreen({ progress, recentFetches = [], onCancel, isCancelling = false }: ProcessingScreenProps) {
   const styles = useStyles();
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll the fetch feed to the bottom as new entries arrive
+  useEffect(() => {
+    if (feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+    }
+  }, [recentFetches]);
 
   const percentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
 
@@ -99,12 +156,17 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
         return 'flows';
       case 'business-rules':
         return 'business rules';
+      case 'apps':
+        return 'apps';
       default:
         return 'items';
     }
   };
 
   const componentLabel = getComponentLabel(progress.phase);
+
+  const failedCount = recentFetches.filter(e => e.status === 'failed').length;
+  const retriedCount = recentFetches.filter(e => e.status === 'retried' || e.status === 'batch-reduced').length;
 
   return (
     <div className={styles.container}>
@@ -119,23 +181,83 @@ export function ProcessingScreen({ progress, onCancel }: ProcessingScreenProps) 
         </Text>
       </div>
 
-      {progress.phase !== 'discovering' && (
+      {isCancelling && (
         <div className={styles.currentActivity}>
-          <ArrowClockwise24Regular className={styles.processingIcon} />
+          <Spinner size="small" />
+          <Text weight="semibold">Cancelling, please wait...</Text>
+        </div>
+      )}
+
+      {!isCancelling && progress.phase !== 'discovering' && (
+        <div className={styles.currentActivity}>
           <Spinner size="tiny" />
           <Text weight="semibold">{progress.message}</Text>
         </div>
       )}
 
-      {progress.phase === 'discovering' && (
+      {!isCancelling && progress.phase === 'discovering' && (
         <div className={styles.currentActivity}>
           <Spinner size="small" />
           <Text weight="semibold">{progress.message}</Text>
         </div>
       )}
 
+      {recentFetches.length > 0 && (
+        <>
+          <div className={styles.fetchHeader}>
+            <Text className={styles.fetchSectionLabel}>
+              API Calls
+            </Text>
+            {failedCount > 0 && <Badge color="danger" shape="rounded" size="small">{failedCount} failed</Badge>}
+            {retriedCount > 0 && failedCount === 0 && <Badge color="warning" shape="rounded" size="small">{retriedCount} retried</Badge>}
+          </div>
+          <div className={styles.fetchFeed} ref={feedRef}>
+            {recentFetches.slice(-20).map(entry => {
+              const isError = entry.status === 'failed';
+              const isWarning = entry.status === 'retried' || entry.status === 'batch-reduced';
+              const StatusIcon = entry.status === 'success' ? CheckmarkCircle16Regular
+                : entry.status === 'failed' ? ErrorCircle16Regular
+                : entry.status === 'retried' ? ArrowCounterclockwise16Regular
+                : entry.status === 'batch-reduced' ? ArrowDown16Regular
+                : Record16Regular;
+              const batchLabel = entry.batchTotal > 0
+                ? `[${entry.batchIndex + 1}/${entry.batchTotal}]`
+                : `#${entry.batchIndex + 1}`;
+              const suffix = entry.resultCount !== undefined
+                ? ` — ${entry.durationMs}ms, ${entry.resultCount} records`
+                : ` — ${entry.durationMs}ms`;
+
+              return (
+                <div
+                  key={entry.id}
+                  className={`${styles.fetchRow} ${isError ? styles.fetchRowError : isWarning ? styles.fetchRowWarning : styles.fetchRowNormal}`}
+                >
+                  <StatusIcon style={{ flexShrink: 0, marginTop: '1px' }} />
+                  <span className={styles.fetchStep}>
+                    {entry.step}
+                  </span>
+                  <span className={styles.fetchEntity}>
+                    {entry.filterSummary && entry.filterSummary !== entry.entitySet
+                      ? entry.filterSummary
+                      : entry.entitySet}
+                    {entry.errorMessage && ` — ${entry.errorMessage}`}
+                  </span>
+                  <span className={styles.fetchMeta}>
+                    {batchLabel}{suffix}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <Text className={styles.fetchHint}>
+            <Beaker16Regular style={{ verticalAlign: 'middle', marginRight: tokens.spacingHorizontalXS }} />
+            Full API call log available in the <strong>Fetch Log</strong> tab once generation completes.
+          </Text>
+        </>
+      )}
+
       <div className={styles.buttonContainer}>
-        <Button appearance="secondary" onClick={onCancel}>
+        <Button appearance="secondary" onClick={onCancel} disabled={isCancelling}>
           Cancel
         </Button>
       </div>

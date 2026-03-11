@@ -13,6 +13,8 @@ import {
   PlugConnected24Regular,
   CloudFlow24Regular,
   DataPie24Regular,
+  ClipboardTaskListLtr24Regular,
+  Options24Regular,
 } from '@fluentui/react-icons';
 import { ReactNode } from 'react';
 
@@ -48,6 +50,8 @@ export type EmptyStateType =
   | 'security'
   | 'customapis'
   | 'workflows'
+  | 'businessrules'
+  | 'globalchoices'
   | 'generic'
   | 'search';
 
@@ -92,6 +96,16 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
     icon: <FlowRegular />,
     title: 'No workflows found',
     message: 'No classic workflows or business process flows are included in the selected solution(s).',
+  },
+  businessrules: {
+    icon: <ClipboardTaskListLtr24Regular />,
+    title: 'No business rules found',
+    message: 'No business rules are included in the selected solution(s).',
+  },
+  globalchoices: {
+    icon: <Options24Regular />,
+    title: 'No global choices found',
+    message: 'No global choices are included in the selected solution(s).',
   },
   generic: {
     icon: <DataPie24Regular />,

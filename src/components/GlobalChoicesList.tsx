@@ -16,99 +16,20 @@ import {
   TableCellLayout,
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import { FilterBar } from './FilterBar';
+import { FilterBar, FilterGroup } from './FilterBar';
 import type { GlobalChoice, GlobalChoiceOption } from '../core';
-import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
-  },
   listContainer: {
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   choiceRow: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  choiceRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  wrapText: {
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-    marginBottom: tokens.spacingVerticalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
   },
 });
 
@@ -118,6 +39,7 @@ interface GlobalChoicesListProps {
 
 export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedChoiceId, setExpandedChoiceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showManagedOnly, setShowManagedOnly] = useState(false);
@@ -159,51 +81,51 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
   };
 
   const renderChoiceDetails = (choice: GlobalChoice) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>{choice.displayName}</Title3>
 
-        <div className={styles.detailsGrid}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Logical Name</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`}>{choice.name}</Text>
+        <div className={shared.detailsGrid}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Logical Name</Text>
+            <Text className={`${shared.detailValue} ${shared.codeText}`}>{choice.name}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Options</Text>
-            <Text className={styles.detailValue}>{choice.totalOptions} options</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Options</Text>
+            <Text className={shared.detailValue}>{choice.totalOptions} options</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Status</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Status</Text>
             <Badge appearance="filled" shape="rounded" color={choice.isManaged ? 'warning' : 'success'}>
               {choice.isManaged ? 'Managed' : 'Unmanaged'}
             </Badge>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Customizable</Text>
-            <Text className={styles.detailValue}>{choice.isCustomizable ? 'Yes' : 'No'}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Customizable</Text>
+            <Text className={shared.detailValue}>{choice.isCustomizable ? 'Yes' : 'No'}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Last Modified</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Last Modified</Text>
+            <Text className={shared.detailValue}>
               {new Date(choice.modifiedOn).toLocaleString()}
             </Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Modified By</Text>
-            <Text className={styles.detailValue}>{choice.modifiedBy}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Modified By</Text>
+            <Text className={shared.detailValue}>{choice.modifiedBy}</Text>
           </div>
         </div>
 
         {choice.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
-            <Text className={styles.wrapText}>{choice.description}</Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
+            <Text className={shared.wrapText}>{choice.description}</Text>
           </div>
         )}
 
         {/* Options Table */}
         {choice.options.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Options ({choice.options.length})</Title3>
             <Table aria-label="Global Choice Options" size="small" style={{ marginTop: tokens.spacingVerticalM }}>
               <TableHeader>
@@ -226,7 +148,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                     </TableCell>
                     <TableCell>
                       <TableCellLayout>
-                        <span style={{ fontWeight: 500 }}>{option.label}</span>
+                        <span style={{ fontWeight: tokens.fontWeightSemibold }}>{option.label}</span>
                       </TableCellLayout>
                     </TableCell>
                     <TableCell>
@@ -239,17 +161,17 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
                     <TableCell>
                       <TableCellLayout>
                         {option.color ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
                             <div
                               style={{
-                                width: '16px',
-                                height: '16px',
+                                width: tokens.spacingHorizontalM,
+                                height: tokens.spacingHorizontalM,
                                 backgroundColor: option.color,
-                                border: '1px solid ' + tokens.colorNeutralStroke1,
-                                borderRadius: '4px',
+                                border: `1px solid ${tokens.colorNeutralStroke1}`,
+                                borderRadius: tokens.borderRadiusSmall,
                               }}
                             />
-                            <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: tokens.fontSizeBase200 }}>
                               {option.color}
                             </span>
                           </div>
@@ -270,19 +192,11 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
 
   // Empty state
   if (globalChoices.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <Text style={{ fontSize: '48px' }}>🎯</Text>
-        <Text size={500} weight="semibold">
-          No Global Choices Found
-        </Text>
-        <Text>No global choices were found in the selected solution(s).</Text>
-      </div>
-    );
+    return <EmptyState type="globalchoices" />;
   }
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -291,19 +205,19 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
         totalCount={globalChoices.length}
         itemLabel="global choices"
       >
-        <Checkbox
-          label="Show managed only"
-          checked={showManagedOnly}
-          onChange={(_, data) => setShowManagedOnly(data.checked === true)}
-        />
+        <FilterGroup label="Show:">
+          <Checkbox
+            label="Show managed only"
+            checked={showManagedOnly}
+            onChange={(_, data) => setShowManagedOnly(data.checked === true)}
+          />
+        </FilterGroup>
       </FilterBar>
 
       {/* Global Choices List */}
       <div className={styles.listContainer}>
         {filteredChoices.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Text>No global choices match your filters.</Text>
-          </div>
+          <EmptyState type="search" />
         ) : (
           filteredChoices.map((choice) => {
             const isExpanded = expandedChoiceId === choice.id;
@@ -311,19 +225,19 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
             return (
               <div key={choice.id}>
                 <div
-                  className={`${styles.choiceRow} ${isExpanded ? styles.choiceRowExpanded : ''}`}
+                  className={`${shared.cardRow} ${styles.choiceRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
                   onClick={() => toggleExpand(choice.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(choice.id); } }}
                 >
-                  <div className={styles.chevron}>
+                  <div className={shared.chevron}>
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                   </div>
-                  <div className={styles.nameColumn}>
-                    <Text weight="semibold">
-                      <TruncatedText text={choice.displayName} />
-                    </Text>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={choice.name} />
-                    </Text>
+                  <div className={shared.nameColumn}>
+                    <Text weight="semibold">{choice.displayName}</Text>
+                    <Text className={shared.codeText}>{choice.name}</Text>
                   </div>
                   <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                     {choice.totalOptions} options

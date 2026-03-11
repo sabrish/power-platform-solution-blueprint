@@ -1,5 +1,8 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface RawBusinessProcessFlow {
   workflowid: string;
@@ -53,38 +56,51 @@ interface RawProcessStage {
 export class BusinessProcessFlowDiscovery {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger
+  ) {
     this.client = client;
     this.onProgress = onProgress;
+    this.logger = logger;
   }
 
   async getBusinessProcessFlowsByIds(workflowIds: string[]): Promise<BusinessProcessFlow[]> {
     if (workflowIds.length === 0) return [];
 
     try {
-      const batchSize = 20;
-      const allResults: RawBusinessProcessFlow[] = [];
-
-      for (let i = 0; i < workflowIds.length; i += batchSize) {
-        const batch = workflowIds.slice(i, i + batchSize);
-        const filter = `(${batch.map((id) => `workflowid eq ${id}`).join(' or ')}) and category eq 4`;
-        const result = await this.client.query<RawBusinessProcessFlow>('workflows', {
-          select: ['workflowid', 'name', 'description', 'category', 'uniquename',
-            'primaryentity', 'statecode', 'ismanaged', 'createdon', 'modifiedon',
-            'clientdata', '_ownerid_value', '_modifiedby_value'],
-          filter,
-        });
-        allResults.push(...result.value);
-        if (this.onProgress) this.onProgress(allResults.length, workflowIds.length);
-      }
+      // Pass 1 — fetch BPF workflow records
+      const { results: allResults } = await withAdaptiveBatch<string, RawBusinessProcessFlow>(
+        workflowIds,
+        async (batch) => {
+          const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 4`;
+          const result = await this.client.query<RawBusinessProcessFlow>('workflows', {
+            select: [
+              'workflowid', 'name', 'description', 'category', 'uniquename',
+              'primaryentity', 'statecode', 'ismanaged', 'createdon', 'modifiedon',
+              'clientdata', '_ownerid_value', '_modifiedby_value',
+            ],
+            filter,
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'BPF Discovery',
+          entitySet: 'workflows (BPF)',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(done, total),
+        }
+      );
 
       const stagesByBpfId = await this.fetchStages(allResults);
-
       const allStages = [...stagesByBpfId.values()].flat();
       const stepsByStageId = await this.fetchStepsByStageIds(allStages);
 
-      return allResults.map((raw) => this.mapToBusinessProcessFlow(raw, stagesByBpfId, stepsByStageId));
+      return allResults.map(raw => this.mapToBusinessProcessFlow(raw, stagesByBpfId, stepsByStageId));
     } catch (error) {
       throw new Error(
         `Failed to retrieve Business Process Flows: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -93,9 +109,8 @@ export class BusinessProcessFlowDiscovery {
   }
 
   /**
-   * Fetch top-level process stages.
-   * Also attempts $expand on processstageparameter and selects clientdata
-   * as potential sources for step information.
+   * Fetch top-level process stages for all BPFs in a single batched query.
+   * Also attempts $expand on processstageparameter and selects clientdata.
    */
   private async fetchStages(
     bpfs: RawBusinessProcessFlow[]
@@ -103,52 +118,63 @@ export class BusinessProcessFlowDiscovery {
     const stagesByBpfId = new Map<string, RawProcessStage[]>();
     if (bpfs.length === 0) return stagesByBpfId;
 
-    const batchSize = 20;
-    for (let i = 0; i < bpfs.length; i += batchSize) {
-      const batch = bpfs.slice(i, i + batchSize);
-      const filterClauses = batch.map((raw) => {
-        const cleanId = raw.workflowid.toLowerCase().replace(/[{}]/g, '');
-        return `_processid_value eq ${cleanId}`;
-      });
+    const bpfIds = bpfs.map(b => b.workflowid);
+    const idToName = new Map(bpfs.map(b => [b.workflowid.toLowerCase().replace(/[{}]/g, ''), b.name]));
 
-      try {
-        const result = await this.client.query<RawProcessStage>('processstages', {
-          select: ['processstageid', 'stagename', 'primaryentitytypecode',
-            'parametername', 'clientdata',
-            '_processid_value', '_parentprocessstageid_value'],
-          filter: filterClauses.join(' or '),
-          expand: 'processstage_processstageparameter($select=processstageparameterid,name,value)',
-        });
-
-        for (const record of result.value) {
-          const parentId = (record['_parentprocessstageid_value'] || '').toLowerCase().replace(/[{}]/g, '');
-          if (parentId) continue;
-          const processId = (record['_processid_value'] || '').toLowerCase().replace(/[{}]/g, '');
-          if (!stagesByBpfId.has(processId)) stagesByBpfId.set(processId, []);
-          stagesByBpfId.get(processId)!.push(record);
-        }
-      } catch (err) {
-        void err;
-        // Try without $expand as fallback
-        try {
-          const result = await this.client.query<RawProcessStage>('processstages', {
-            select: ['processstageid', 'stagename', 'primaryentitytypecode',
-              'parametername', 'clientdata',
-              '_processid_value', '_parentprocessstageid_value'],
-            filter: filterClauses.join(' or '),
-          });
-          for (const record of result.value) {
-            const parentId = (record['_parentprocessstageid_value'] || '').toLowerCase().replace(/[{}]/g, '');
-            if (parentId) continue;
-            const processId = (record['_processid_value'] || '').toLowerCase().replace(/[{}]/g, '');
-            if (!stagesByBpfId.has(processId)) stagesByBpfId.set(processId, []);
-            stagesByBpfId.get(processId)!.push(record);
+    try {
+      const { results: allStages } = await withAdaptiveBatch<string, RawProcessStage>(
+        bpfIds,
+        async (batch) => {
+          const stageFilter = buildOrFilter(
+            batch.map(id => id.toLowerCase().replace(/[{}]/g, '')),
+            '_processid_value',
+            { guids: true }
+          );
+          try {
+            const result = await this.client.query<RawProcessStage>('processstages', {
+              select: [
+                'processstageid', 'stagename', 'primaryentitytypecode',
+                'parametername', 'clientdata',
+                '_processid_value', '_parentprocessstageid_value',
+              ],
+              filter: stageFilter,
+              expand: 'processstage_processstageparameter($select=processstageparameterid,name,value)',
+            });
+            return result.value;
+          } catch {
+            // Fallback without $expand
+            const result = await this.client.query<RawProcessStage>('processstages', {
+              select: [
+                'processstageid', 'stagename', 'primaryentitytypecode',
+                'parametername', 'clientdata',
+                '_processid_value', '_parentprocessstageid_value',
+              ],
+              filter: stageFilter,
+            });
+            return result.value;
           }
-        } catch (err2) {
-          void err2;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'BPF Discovery',
+          entitySet: 'processstages (stages)',
+          logger: this.logger,
+          getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
         }
+      );
+
+      // Group top-level stages (no parent) by process ID
+      for (const record of allStages) {
+        const parentId = (record['_parentprocessstageid_value'] || '').toLowerCase().replace(/[{}]/g, '');
+        if (parentId) continue;
+        const processId = (record['_processid_value'] || '').toLowerCase().replace(/[{}]/g, '');
+        if (!stagesByBpfId.has(processId)) stagesByBpfId.set(processId, []);
+        stagesByBpfId.get(processId)!.push(record);
       }
+    } catch {
+      // Return empty map on total failure — BPF will show 0 stages
     }
+
     return stagesByBpfId;
   }
 
@@ -162,32 +188,46 @@ export class BusinessProcessFlowDiscovery {
     const stepsByStageId = new Map<string, RawProcessStage[]>();
     if (stages.length === 0) return stepsByStageId;
 
-    const batchSize = 20;
-    for (let i = 0; i < stages.length; i += batchSize) {
-      const batch = stages.slice(i, i + batchSize);
-      const filterClauses = batch.map((s) => {
-        const cleanId = s.processstageid.toLowerCase().replace(/[{}]/g, '');
-        return `_parentprocessstageid_value eq ${cleanId}`;
-      });
-      const filter = filterClauses.join(' or ');
+    const stageIds = stages.map(s => s.processstageid);
+    const idToName = new Map(stages.map(s => [s.processstageid.toLowerCase().replace(/[{}]/g, ''), s.stagename]));
 
-      try {
-        const result = await this.client.query<RawProcessStage>('processstages', {
-          select: ['processstageid', 'stagename', 'parametername', 'parametervalue',
-            '_parentprocessstageid_value'],
-          filter,
-        });
-
-        for (const step of result.value) {
-          const parentId = (step['_parentprocessstageid_value'] || '').toLowerCase().replace(/[{}]/g, '');
-          if (!parentId) continue;
-          if (!stepsByStageId.has(parentId)) stepsByStageId.set(parentId, []);
-          stepsByStageId.get(parentId)!.push(step);
+    try {
+      const { results: allSteps } = await withAdaptiveBatch<string, RawProcessStage>(
+        stageIds,
+        async (batch) => {
+          const stepFilter = buildOrFilter(
+            batch.map(id => id.toLowerCase().replace(/[{}]/g, '')),
+            '_parentprocessstageid_value',
+            { guids: true }
+          );
+          const result = await this.client.query<RawProcessStage>('processstages', {
+            select: [
+              'processstageid', 'stagename', 'parametername', 'parametervalue',
+              '_parentprocessstageid_value',
+            ],
+            filter: stepFilter,
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'BPF Discovery',
+          entitySet: 'processstages (steps)',
+          logger: this.logger,
+          getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
         }
-      } catch (err) {
-        void err;
+      );
+
+      for (const step of allSteps) {
+        const parentId = (step['_parentprocessstageid_value'] || '').toLowerCase().replace(/[{}]/g, '');
+        if (!parentId) continue;
+        if (!stepsByStageId.has(parentId)) stepsByStageId.set(parentId, []);
+        stepsByStageId.get(parentId)!.push(step);
       }
+    } catch {
+      // Return empty map on total failure
     }
+
     return stepsByStageId;
   }
 
@@ -238,8 +278,8 @@ export class BusinessProcessFlowDiscovery {
       // { DisplayName, Type, Field: { AttributeName, IsRequired } }
       if (Array.isArray(data)) {
         return (data as Record<string, unknown>[])
-          .filter((item) => item['Type'] === 'Field' && item['Field'])
-          .map((item) => {
+          .filter(item => item['Type'] === 'Field' && item['Field'])
+          .map(item => {
             const field = item['Field'] as Record<string, unknown>;
             return {
               displayName: String(item['DisplayName'] || ''),
@@ -247,22 +287,22 @@ export class BusinessProcessFlowDiscovery {
               required: Boolean(field['IsRequired']),
             };
           })
-          .filter((s) => s.fieldName);
+          .filter(s => s.fieldName);
       }
       // Legacy nested formats
-      if (Array.isArray(data?.steps)) {
-        return (data.steps as Record<string, unknown>[]).map((s) => ({
+      if (Array.isArray((data as Record<string, unknown>)?.steps)) {
+        return ((data as Record<string, unknown>).steps as Record<string, unknown>[]).map(s => ({
           displayName: String(s['displayName'] || s['name'] || ''),
           fieldName: String(s['dataFieldName'] || s['fieldName'] || s['name'] || ''),
           required: Boolean(s['required'] || s['isRequired']),
-        })).filter((s) => s.fieldName);
+        })).filter(s => s.fieldName);
       }
-      if (Array.isArray(data?.fields)) {
-        return (data.fields as Record<string, unknown>[]).map((f) => ({
+      if (Array.isArray((data as Record<string, unknown>)?.fields)) {
+        return ((data as Record<string, unknown>).fields as Record<string, unknown>[]).map(f => ({
           displayName: String(f['displayName'] || f['name'] || ''),
           fieldName: String(f['logicalName'] || f['name'] || ''),
           required: false,
-        })).filter((s) => s.fieldName);
+        })).filter(s => s.fieldName);
       }
     } catch {
       // not valid JSON
@@ -279,7 +319,6 @@ export class BusinessProcessFlowDiscovery {
     const rawStages = stagesByBpfId.get(bpfId) || [];
 
     // Sort stages by the order defined in workflow clientdata.
-    // The clientdata encodes a linked list of StageStep objects in sequence.
     const stageOrder = this.parseStageOrder(raw.clientdata);
     if (stageOrder.length > 0) {
       rawStages.sort((a, b) => {
@@ -332,7 +371,7 @@ export class BusinessProcessFlowDiscovery {
       return { id: s.processstageid, name: s.stagename, entity: s.primaryentitytypecode, order: index, steps };
     });
 
-    const entities = [...new Set(stages.map((s) => s.entity))];
+    const entities = [...new Set(stages.map(s => s.entity))];
     const totalSteps = stages.reduce((sum, s) => sum + s.steps.length, 0);
 
     return {

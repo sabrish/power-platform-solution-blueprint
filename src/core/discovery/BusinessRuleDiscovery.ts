@@ -1,6 +1,9 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { BusinessRule } from '../types/blueprint.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
 import { BusinessRuleParser } from '../parsers/BusinessRuleParser.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface BusinessRuleRecord {
   workflowid: string;
@@ -25,10 +28,16 @@ interface BusinessRuleRecord {
 export class BusinessRuleDiscovery {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger
+  ) {
     this.client = client;
     this.onProgress = onProgress;
+    this.logger = logger;
   }
 
   /**
@@ -40,43 +49,30 @@ export class BusinessRuleDiscovery {
     }
 
     try {
-      const batchSize = 20;
-      const allResults: BusinessRuleRecord[] = [];
-
-      for (let i = 0; i < brIds.length; i += batchSize) {
-        const batch = brIds.slice(i, i + batchSize);
-        const filterClauses = batch.map((id) => `workflowid eq ${id}`);
-        const filter = `(${filterClauses.join(' or ')}) and category eq 2`;
-
-        const response = await this.client.query<BusinessRuleRecord>('workflows', {
-          select: [
-            'workflowid',
-            'name',
-            'description',
-            'statecode',
-            'primaryentity',
-            'scope',
-            'xaml',
-            'clientdata',
-            'modifiedon',
-            'createdon',
-          ],
-          filter,
-          orderBy: ['primaryentity', 'name'],
-        });
-
-        allResults.push(...response.value);
-
-        // Report progress after each batch
-        if (this.onProgress) {
-          this.onProgress(allResults.length, brIds.length);
+      const { results: allResults } = await withAdaptiveBatch<string, BusinessRuleRecord>(
+        brIds,
+        async (batch) => {
+          const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 2`;
+          const response = await this.client.query<BusinessRuleRecord>('workflows', {
+            select: [
+              'workflowid', 'name', 'description', 'statecode', 'primaryentity',
+              'scope', 'xaml', 'clientdata', 'modifiedon', 'createdon',
+            ],
+            filter,
+            // Note: no orderBy — workflows table does not support $orderby (silent empty result)
+          });
+          return response.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Business Rule Discovery',
+          entitySet: 'workflows (business rules)',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(done, total),
         }
-      }
+      );
 
-      // Map to BusinessRule objects
-      const businessRules = allResults.map((record) => this.mapRecordToBusinessRule(record));
-
-      return businessRules;
+      return allResults.map(record => this.mapRecordToBusinessRule(record));
     } catch (error) {
       throw error;
     }
@@ -89,25 +85,17 @@ export class BusinessRuleDiscovery {
     try {
       const response = await this.client.query<BusinessRuleRecord>('workflows', {
         select: [
-          'workflowid',
-          'name',
-          'description',
-          'statecode',
-          'primaryentity',
-          'scope',
-          'xaml',
-          'clientdata',
-          'modifiedon',
-          'createdon',
+          'workflowid', 'name', 'description', 'statecode', 'primaryentity',
+          'scope', 'xaml', 'clientdata', 'modifiedon', 'createdon',
         ],
         filter: `category eq 2 and primaryentity eq '${logicalName}'`,
-        orderBy: ['name'],
+        // Note: no orderBy — workflows table does not support $orderby (silent empty result)
       });
 
-      const records = response.value;
-
-      return records.map((record) => this.mapRecordToBusinessRule(record));
-    } catch (error) {
+      // Sort in memory after fetch
+      const sorted = response.value.slice().sort((a, b) => a.name.localeCompare(b.name));
+      return sorted.map(record => this.mapRecordToBusinessRule(record));
+    } catch {
       return [];
     }
   }
@@ -116,7 +104,7 @@ export class BusinessRuleDiscovery {
    * Map workflow record to BusinessRule object
    */
   private mapRecordToBusinessRule(record: BusinessRuleRecord): BusinessRule {
-    // Parse business rule definition — tries clientdata (JSON) first, falls back to XAML
+    // Parse business rule definition — tries clientdata first, falls back to XAML
     const definition = BusinessRuleParser.parse(record.xaml ?? null, record.clientdata ?? null, record.name);
 
     // Determine state

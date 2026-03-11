@@ -31,16 +31,6 @@ const PREDEFINED_COLORS: Record<string, PublisherColors> = {
 };
 
 /**
- * Generate a consistent color for a publisher prefix using hash-based generation
- * @param prefix Publisher customization prefix
- * @returns Hex color code (for backward compatibility)
- */
-export function generatePublisherColor(prefix: string): string {
-  const colors = getPublisherColors(prefix);
-  return colors.fill;
-}
-
-/**
  * Get complete publisher color scheme for class diagrams
  * @param prefix Publisher customization prefix
  * @returns PublisherColors object with fill, stroke, and text colors

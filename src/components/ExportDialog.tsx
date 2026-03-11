@@ -16,6 +16,7 @@ import {
 } from '@fluentui/react-components';
 import { Dismiss24Regular } from '@fluentui/react-icons';
 import type { BlueprintResult } from '../core';
+import type { BlueprintGenerator } from '../core';
 import { estimateMarkdownSize, estimateJsonSize, estimateHtmlSize, formatBytes } from '../utils/sizeEstimator';
 import { ExportProgressOverlay } from './ExportProgressOverlay';
 import { useExport } from '../hooks/useExport';
@@ -67,7 +68,7 @@ const useStyles = makeStyles({
 export interface ExportDialogProps {
   isOpen: boolean;
   result: BlueprintResult;
-  blueprintGenerator: any;
+  blueprintGenerator: BlueprintGenerator;
   onClose: () => void;
 }
 
@@ -214,6 +215,9 @@ export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: Ex
                   </div>
                   <div className={styles.formatDescription}>
                     Self-contained document - open in any browser
+                  </div>
+                  <div className={styles.formatDescription} style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+                    ERD diagrams require internet access (loads Mermaid &amp; Cytoscape from cdn.jsdelivr.net). All other sections work offline.
                   </div>
                   <div className={styles.formatPreview}>
                     ~{formatBytes(estimates.html)}

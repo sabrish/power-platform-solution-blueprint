@@ -190,12 +190,25 @@ const { MarkdownReporter } = await import('./reporters/MarkdownReporter');
 
 ---
 
+## [2026-03-10] — canvasapptype === undefined treated as Standard Canvas App
+
+**Status:** Accepted and implemented (v0.9.x)
+
+**Decision:** In `AppDiscovery.getAppsAndPagesByIds`, when `canvasapptype` is absent from the Dataverse OData response, the record is classified as a standard Canvas App (type 0).
+
+**Reason:** The `$select` includes `canvasapptype`. When a field is selected but missing from the response, Dataverse is omitting a null field (its standard OData behaviour). A null `canvasapptype` maps to type 0 (Standard Canvas App) per the Dataverse data model — the field only has three meaningful values: 0 (Standard), 1 (Component Library/skip), 2 (Custom Page). Any truly anomalous record would be surfaced during review of the canvas apps list in the UI.
+
+**Risk accepted:** Component Library records that return null for `canvasapptype` in unusual environments could be misclassified. This is extremely low probability; Component Libraries always set `canvasapptype = 1`.
+
+---
+
 ## [ongoing] — GUID Handling: Three Rules
 
 **Status:** Non-negotiable, always apply
 
 1. **OData filters:** Raw GUID, no quotes, no braces: `id eq a1b2c3d4-...`
+   - **EXCEPTION — `_solutionid_value` on `solutioncomponents`:** requires braces + single quotes: `_solutionid_value eq '{guid}'`. Raw GUID format returns 0 results silently (verified 2026-03-10). Do NOT apply PATTERN-003 Rule 1 to this field.
 2. **Comparisons:** Normalize — lowercase, no braces: `guid.toLowerCase().replace(/[{}]/g, '')`
 3. **Storage:** Always store normalized GUIDs (lowercase, no braces)
 
-**Why:** Dataverse returns GUIDs with braces. OData needs them without. Missing any step causes silent failures (0 results returned).
+**Why:** Dataverse returns GUIDs with braces. OData needs them without for most fields. The `_solutionid_value` exception is a confirmed Dataverse quirk — changing it causes production failures.
