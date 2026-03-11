@@ -106,7 +106,7 @@ export class SolutionComponentDiscovery {
       }).join(' or ');
 
       const queryStart = Date.now();
-      const result = await this.client.query<SolutionComponent>('solutioncomponents', {
+      const result = await this.client.queryAll<SolutionComponent>('solutioncomponents', {
         select: ['objectid', 'componenttype', '_solutionid_value', 'rootcomponentbehavior'],
         filter: solutionFilters,
       });

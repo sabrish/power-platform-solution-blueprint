@@ -29,9 +29,10 @@ export class PublisherDiscovery {
    */
   async getPublishers(): Promise<Publisher[]> {
     try {
-      const result = await this.client.query<SolutionPublisherRow>(
+      const result = await this.client.queryAll<SolutionPublisherRow>(
         'solutions',
         {
+          select: ['solutionid'],
           filter: 'isvisible eq true',
           expand: 'publisherid($select=publisherid,uniquename,friendlyname,customizationprefix)',
         }

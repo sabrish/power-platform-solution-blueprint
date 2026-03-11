@@ -273,7 +273,7 @@ Types using Strategy A: Entity(1), Attribute(2), GlobalOptionSet(9), SecurityRol
 **Strategy B — objectid intersection (required for broken type codes)**
 Custom APIs (10076), Connection References (371), and Custom Connectors (372) store `solutionid = Default Solution` on every record regardless of which named solution they actually belong to. They also do NOT appear in `solutioncomponents` under their expected type codes (confirmed from live data — types 371 and 10076 are absent from the solutioncomponents result set).
 
-Pattern: query ALL records for the type (`$top=5000`), then keep only those whose primary key appears in the `solutioncomponents` objectid set for the selected solutions.
+Pattern: query ALL records for the type using `queryAll()` (which follows `@odata.nextLink` cursor pagination automatically), then keep only those whose primary key appears in the `solutioncomponents` objectid set for the selected solutions.
 
 ```typescript
 // CORRECT — objectid intersection for broken types
