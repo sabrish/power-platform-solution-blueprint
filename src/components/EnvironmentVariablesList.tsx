@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   Text,
   Badge,
+  Checkbox,
   makeStyles,
+  mergeClasses,
   tokens,
   Card,
   Title3,
@@ -22,6 +24,9 @@ const ENV_FILTER_SPECS: readonly FilterSpec<EnvironmentVariable>[] = [
 ];
 
 const useStyles = makeStyles({
+  listContainer: {
+    marginTop: tokens.spacingVerticalL,
+  },
   row: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
@@ -97,9 +102,9 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     [baseFiltered, showHasDefaultOnly],
   );
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedId(prev => prev === id ? null : id);
+  }, []);
 
   const renderDetail = (envVar: EnvironmentVariable) => (
     <div className={shared.expandedDetails}>
@@ -134,7 +139,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
           </div>
         )}
 
-        <div className={`${shared.detailsGrid} ${shared.section}`}>
+        <div className={mergeClasses(shared.detailsGrid, shared.section)}>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Type</Text>
             <Text className={shared.detailValue}>{envVar.typeName}</Text>
@@ -175,7 +180,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
   }
 
   return (
-    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
+    <div className={mergeClasses(shared.container, styles.listContainer)}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -208,15 +213,11 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
           hasActiveFilters={showHasDefaultOnly}
           onClear={() => setShowHasDefaultOnly(false)}
         >
-          <ToggleButton
-            appearance="outline"
-            className={shared.filterButton}
-            size="small"
+          <Checkbox
+            label="Include: Has Default"
             checked={showHasDefaultOnly}
-            onClick={() => setShowHasDefaultOnly((prev) => !prev)}
-          >
-            Has Default
-          </ToggleButton>
+            onChange={(_, data) => setShowHasDefaultOnly(Boolean(data.checked))}
+          />
         </FilterGroup>
       </FilterBar>
       {displayedVars.length === 0 && sorted.length > 0 && (
@@ -227,7 +228,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
         return (
           <div key={envVar.id}>
             <div
-              className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
+              className={mergeClasses(shared.cardRow, styles.row, isExpanded && shared.cardRowExpanded)}
               role="button"
               tabIndex={0}
               aria-expanded={isExpanded}

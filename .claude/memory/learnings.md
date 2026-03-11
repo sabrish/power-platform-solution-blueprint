@@ -346,7 +346,7 @@ var _esc = function(s) {
 
 **Affects:** Developer, Architect
 **Severity:** High
-**Rule:** When discovering flow entry points for cross-entity automation tracing, always scan flows as the starting point and group by their *target* entity. Do NOT iterate over blueprints as targets and match flows into them — this misses flows that write to entities not in the current blueprint scope (e.g., out-of-scope entities like `custom_award`, `connections`). Additionally, pass the full flat `flows` array separately to handle unscoped flows (scheduled, manual, no primary entity) which never appear on any `EntityBlueprint.flows` list.
+**Rule:** When discovering flow entry points for cross-entity automation tracing, always scan flows as the starting point and group by their *target* entity. Do NOT iterate over blueprints as targets and match flows into them — this misses flows that write to entities not in the current blueprint scope (e.g., out-of-scope entities like `custom_entity`, `connections`). Additionally, pass the full flat `flows` array separately to handle unscoped flows (scheduled, manual, no primary entity) which never appear on any `EntityBlueprint.flows` list.
 **Context:** The initial implementation of `discoverEntryPoints` iterated over blueprints as target entities, so flows pointing at out-of-scope targets were silently dropped. The fix (`discoverAllEntryPoints`) groups by target entity derived from flow definitions directly — even entities not in blueprints appear in the chain. A third `allFlows` argument was added to `CrossEntityAnalyzer.analyze()` to cover unscoped flows.
 **Example:**
 - Wrong: `for (const bp of blueprints) { matchFlowsInto(bp) }` — drops out-of-scope targets
