@@ -63,12 +63,15 @@ export class PptbDataverseClient implements IDataverseClient {
     // First page — no $top so Dataverse uses its default page size and includes
     // @odata.nextLink when more records exist.
     let page = await this.query<T>(entitySet, options);
+    // Capture @odata.count from the first page before overwriting `page` in the loop.
+    // Dataverse only includes @odata.count on the first response when $count=true is requested.
+    const firstPageCount = page.count;
     allResults.push(...page.value);
 
     // Follow @odata.nextLink until exhausted
     while (page.nextLink) {
-      const relativePath = this.extractRelativePath(page.nextLink);
       try {
+        const relativePath = this.extractRelativePath(page.nextLink);
         const response = await withRetry(
           () => this.dataverseApi.queryData(relativePath, 'primary'),
           { maxAttempts: 3 }
@@ -82,7 +85,9 @@ export class PptbDataverseClient implements IDataverseClient {
       }
     }
 
-    return { value: allResults };
+    // Preserve the first-page @odata.count when present — QueryResult exposes it
+    // and callers may use it for progress reporting or UI display.
+    return { value: allResults, count: firstPageCount };
   }
 
   /**
