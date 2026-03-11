@@ -24,7 +24,7 @@ const ENV_FILTER_SPECS: readonly FilterSpec<EnvironmentVariable>[] = [
 const useStyles = makeStyles({
   row: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto minmax(100px, 1fr) auto auto',
+    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
   },
   valueBox: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -67,7 +67,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
   }, [sorted]);
 
   const {
-    filteredItems: searchedVars,
+    filteredItems: baseFiltered,
     searchQuery,
     setSearchQuery,
     toggleKey,
@@ -80,6 +80,13 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
       v.schemaName.toLowerCase().includes(q) ||
       v.typeName.toLowerCase().includes(q),
     ENV_FILTER_SPECS,
+  );
+
+  const [showHasDefaultOnly, setShowHasDefaultOnly] = useState(false);
+
+  const searchedVars = useMemo(
+    () => (showHasDefaultOnly ? baseFiltered.filter((v) => !!v.defaultValue) : baseFiltered),
+    [baseFiltered, showHasDefaultOnly],
   );
 
   const toggleExpand = (id: string) => {
@@ -188,6 +195,21 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
             </ToggleButton>
           ))}
         </FilterGroup>
+        <FilterGroup
+          label="Show:"
+          hasActiveFilters={showHasDefaultOnly}
+          onClear={() => setShowHasDefaultOnly(false)}
+        >
+          <ToggleButton
+            appearance="outline"
+            className={shared.filterButton}
+            size="small"
+            checked={showHasDefaultOnly}
+            onClick={() => setShowHasDefaultOnly((prev) => !prev)}
+          >
+            Has Default
+          </ToggleButton>
+        </FilterGroup>
       </FilterBar>
       {searchedVars.length === 0 && sorted.length > 0 && (
         <EmptyState type="search" />
@@ -211,9 +233,6 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
                 <Text weight="semibold">{envVar.displayName}</Text>
                 <Text className={shared.codeText}>{envVar.schemaName}</Text>
               </div>
-              <Badge appearance="filled" shape="rounded" size="small" color={getTypeColor(envVar.typeName)}>
-                {envVar.typeName}
-              </Badge>
               <div className={shared.badgeGroup}>
                 {envVar.currentValue
                   ? <Text className={shared.codeText}>{envVar.currentValue}</Text>
@@ -222,6 +241,9 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
                     : <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>Not set</Text>
                 }
               </div>
+              <Badge appearance="filled" shape="rounded" size="small" color={getTypeColor(envVar.typeName)}>
+                {envVar.typeName}
+              </Badge>
               {/* Default badge column — placeholder span keeps grid alignment when absent */}
               {envVar.defaultValue && !envVar.currentValue
                 ? <Badge appearance="outline" shape="rounded" size="small">Default</Badge>
