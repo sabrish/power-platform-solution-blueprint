@@ -20,6 +20,11 @@ import {
 import type { ProgressInfo, FetchLogEntry } from '../core';
 import { Footer } from './Footer';
 
+// Fixed column width for the step-name column in the API call feed.
+// 130px is intentional: it keeps step names aligned without wrapping
+// in the compact monospace feed while leaving most width for the entity column.
+const FETCH_STEP_COLUMN_WIDTH = '130px';
+
 const useStyles = makeStyles({
   container: {
     padding: tokens.spacingVerticalXXL,
@@ -55,7 +60,7 @@ const useStyles = makeStyles({
   fetchFeed: {
     display: 'flex',
     flexDirection: 'column',
-    maxHeight: '180px',
+    maxHeight: '180px', // fixed scroll viewport height — no token equivalent
     overflowY: 'auto',
     padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
     backgroundColor: tokens.colorNeutralBackground1,
@@ -78,24 +83,24 @@ const useStyles = makeStyles({
   },
   fetchRow: {
     display: 'grid',
-    gridTemplateColumns: '14px 130px 1fr auto',
+    gridTemplateColumns: `14px ${FETCH_STEP_COLUMN_WIDTH} 1fr auto`,
     gap: tokens.spacingHorizontalXS,
     alignItems: 'baseline',
-    fontFamily: 'var(--fontFamilyMonospace, monospace)',
+    fontFamily: tokens.fontFamilyMonospace,
     fontSize: tokens.fontSizeBase200,
-    lineHeight: '1.5',
+    lineHeight: '1.5', // unitless line-height for monospace readability — no Fluent token equivalent
   },
   fetchRowNormal: {
-    color: 'var(--colorNeutralForeground2)',
+    color: tokens.colorNeutralForeground2,
   },
   fetchRowError: {
-    color: 'var(--colorStatusDangerForeground1)',
+    color: tokens.colorStatusDangerForeground1,
   },
   fetchRowWarning: {
-    color: 'var(--colorStatusWarningForeground1)',
+    color: tokens.colorStatusWarningForeground1,
   },
   fetchStep: {
-    color: 'var(--colorNeutralForeground3)',
+    color: tokens.colorNeutralForeground3,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -106,7 +111,7 @@ const useStyles = makeStyles({
     whiteSpace: 'nowrap',
   },
   fetchMeta: {
-    color: 'var(--colorNeutralForeground3)',
+    color: tokens.colorNeutralForeground3,
     whiteSpace: 'nowrap',
   },
   progressText: {

@@ -98,7 +98,7 @@ export class CustomAPIDiscovery {
           step: 'Custom API Discovery',
           entitySet: 'customapis',
           logger: this.logger,
-          onProgress: (completed, total) => this.onProgress?.(completed, total),
+          onProgress: this.onProgress,
         }
       );
 
@@ -170,18 +170,18 @@ export class CustomAPIDiscovery {
         requestParamsByApiId.get(apiId)!.push(param);
       }
 
-      const responseProsByApiId = new Map<string, RawCustomAPIParameter[]>();
+      const responsePropsByApiId = new Map<string, RawCustomAPIParameter[]>();
       for (const prop of allResponseProps) {
         const apiId = (prop._customapiid_value ?? '').toLowerCase().replace(/[{}]/g, '');
-        if (!responseProsByApiId.has(apiId)) responseProsByApiId.set(apiId, []);
-        responseProsByApiId.get(apiId)!.push(prop);
+        if (!responsePropsByApiId.has(apiId)) responsePropsByApiId.set(apiId, []);
+        responsePropsByApiId.get(apiId)!.push(prop);
       }
 
       // Build each CustomAPI using grouped parameter maps
       const customAPIs: CustomAPI[] = allResults.map(rawApi => {
         const normalizedId = rawApi.customapiid.toLowerCase().replace(/[{}]/g, '');
         const requestParams = (requestParamsByApiId.get(normalizedId) ?? []).map(p => this.mapToParameter(p, true));
-        const responseProps = (responseProsByApiId.get(normalizedId) ?? []).map(p => this.mapToParameter(p, false));
+        const responseProps = (responsePropsByApiId.get(normalizedId) ?? []).map(p => this.mapToParameter(p, false));
         return this.mapToCustomAPI(rawApi, requestParams, responseProps);
       });
 

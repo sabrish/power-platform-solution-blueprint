@@ -94,7 +94,8 @@ export class EnvironmentVariableDiscovery {
           step: 'Environment Variable Discovery',
           entitySet: 'environmentvariabledefinitions',
           logger: this.logger,
-          onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
+          // Use envVarIds.length as the stable total for both passes
+          onProgress: (done) => this.onProgress?.(Math.floor(done / 2), envVarIds.length),
         }
       );
 
@@ -128,10 +129,7 @@ export class EnvironmentVariableDiscovery {
           step: 'Environment Variable Discovery',
           entitySet: 'environmentvariablevalues',
           logger: this.logger,
-          onProgress: (done, total) => this.onProgress?.(
-            Math.floor(allDefs.length / 2) + Math.floor(done / 2),
-            total
-          ),
+          // Pass 2 is silent — no onProgress; snap to 100% after completion using stable total
           getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
         }
       );
@@ -144,7 +142,8 @@ export class EnvironmentVariableDiscovery {
         valuesByDefId.get(defId)!.push(val);
       }
 
-      this.onProgress?.(allDefs.length, allDefs.length);
+      // Snap to 100% after Pass 2 completes, using the stable total from Pass 1
+      this.onProgress?.(envVarIds.length, envVarIds.length);
 
       return allDefs.map(rawDef => {
         const defId = rawDef.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, '');
