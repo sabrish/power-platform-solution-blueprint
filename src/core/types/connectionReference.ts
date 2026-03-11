@@ -20,9 +20,3 @@ export interface ConnectionReference {
   modifiedOn: string;
   createdOn: string;
 }
-
-export const CONNECTION_STATUS_COLORS = {
-  Connected: '#107C10',
-  Disconnected: '#D13438',
-  Unknown: '#605E5C',
-} as const;

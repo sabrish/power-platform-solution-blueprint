@@ -16,6 +16,8 @@ export interface ClassicWorkflow {
   triggerOnCreate: boolean;
   triggerOnUpdate: boolean;
   triggerOnDelete: boolean;
+  /** Parsed from triggeronupdateattributelist; empty array = fires on all updates */
+  triggerOnUpdateAttributes: string[];
   onDemand: boolean; // Manual trigger
   scope: number;
   scopeName: string;

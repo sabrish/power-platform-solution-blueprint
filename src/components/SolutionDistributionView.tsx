@@ -10,7 +10,7 @@ import {
   AccordionHeader,
   AccordionPanel,
 } from '@fluentui/react-components';
-import type { SolutionDistribution } from '../core';
+import type { SolutionDistribution, ComponentCounts, SolutionDependency, SharedComponent } from '../core';
 
 const useStyles = makeStyles({
   container: {
@@ -71,6 +71,48 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     display: 'block',
   },
+  sectionHeadingBlock: {
+    marginBottom: tokens.spacingVerticalM,
+  },
+  sectionTitle: {
+    marginBottom: tokens.spacingVerticalXS,
+  },
+  solutionNameText: {
+    fontSize: tokens.fontSizeBase400,
+  },
+  metaText: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  smallText: {
+    fontSize: tokens.fontSizeBase200,
+  },
+  smallTextIndented: {
+    fontSize: tokens.fontSizeBase200,
+    marginTop: tokens.spacingVerticalXXS,
+  },
+  accordionList: {
+    marginTop: tokens.spacingVerticalM,
+  },
+  accordionHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+  },
+  panelContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalL,
+  },
+  itemCard: {
+    marginTop: tokens.spacingVerticalS,
+    padding: tokens.spacingVerticalS,
+  },
+  sharedItemRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+  },
 });
 
 export interface SolutionDistributionViewProps {
@@ -81,36 +123,42 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
   const styles = useStyles();
 
   // Calculate color for component type in bar chart
-  const componentTypeColors: Record<string, string> = {
-    entities: tokens.colorPaletteBlueForeground2,
-    plugins: tokens.colorPalettePurpleForeground2,
-    flows: tokens.colorPaletteGreenForeground1,
-    businessRules: tokens.colorPaletteDarkOrangeForeground1,
-    classicWorkflows: tokens.colorPaletteRedForeground1,
-    bpfs: tokens.colorPaletteTealForeground2,
-    webResources: tokens.colorPaletteYellowForeground1,
-    customAPIs: tokens.colorPalettePinkForeground2,
+  // Typed to enforce sync with ComponentCounts — compiler flags unknown keys
+  const componentTypeColors: Partial<Record<keyof Omit<ComponentCounts, 'total'>, string>> = {
+    entities: tokens.colorPaletteBlueBackground2,
+    plugins: tokens.colorPalettePurpleBackground2,
+    flows: tokens.colorPaletteGreenBackground2,
+    businessRules: tokens.colorPaletteDarkOrangeBackground2,
+    classicWorkflows: tokens.colorPaletteRedBackground2,
+    bpfs: tokens.colorPaletteTealBackground2,
+    webResources: tokens.colorPaletteYellowBackground2,
+    customAPIs: tokens.colorPalettePinkBackground2,
+    environmentVariables: tokens.colorPaletteSteelBackground2,
+    connectionReferences: tokens.colorPaletteCornflowerBackground2,
+    globalChoices: tokens.colorPaletteMarigoldBackground2,
+    customConnectors: tokens.colorPaletteLavenderBackground2,
+    securityRoles: tokens.colorPaletteCranberryBackground2,
+    fieldSecurityProfiles: tokens.colorPalettePumpkinBackground2,
+    canvasApps: tokens.colorPaletteForestBackground2,
+    customPages: tokens.colorPaletteMinkBackground2,
+    modelDrivenApps: tokens.colorPalettePlumBackground2,
   };
 
   // Calculate percentages for bar chart
-  const calculatePercentages = (counts: any) => {
+  const calculatePercentages = (counts: ComponentCounts) => {
     const total = counts.total;
     if (total === 0) return {};
 
-    return {
-      entities: (counts.entities / total) * 100,
-      plugins: (counts.plugins / total) * 100,
-      flows: (counts.flows / total) * 100,
-      businessRules: (counts.businessRules / total) * 100,
-      webResources: (counts.webResources / total) * 100,
-      customAPIs: (counts.customAPIs / total) * 100,
-    };
+    return Object.fromEntries(
+      (Object.keys(componentTypeColors) as (keyof ComponentCounts)[])
+        .map(key => [key, ((counts[key] as number) / total) * 100])
+    );
   };
 
   return (
     <div className={styles.container}>
-      <div style={{ marginBottom: tokens.spacingVerticalM }}>
-        <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Solution Distribution Analysis</Title3>
+      <div className={styles.sectionHeadingBlock}>
+        <Title3 className={styles.sectionTitle}>Solution Distribution Analysis</Title3>
         <Text>
           Analyzing {distributions.length} solution{distributions.length !== 1 ? 's' : ''}
         </Text>
@@ -125,11 +173,11 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
             <Card key={solution.solutionId} className={styles.solutionCard}>
               <div className={styles.solutionHeader}>
                 <div className={styles.solutionTitle}>
-                  <Text weight="bold" style={{ fontSize: tokens.fontSizeBase400 }}>
+                  <Text weight="bold" className={styles.solutionNameText}>
                     {solution.solutionName}
                   </Text>
                   {solution.isManaged && (
-                    <Badge appearance="filled" shape="rounded" color="informative">
+                    <Badge appearance="filled" shape="rounded" size="small" color="informative">
                       Managed
                     </Badge>
                   )}
@@ -137,21 +185,23 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
               </div>
 
               <div>
-                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                <Text className={styles.metaText}>
                   Publisher: {solution.publisher}
                 </Text>
               </div>
 
               <div>
-                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                <Text className={styles.metaText}>
                   Version: {solution.version}
                 </Text>
               </div>
 
               <div className={styles.componentCount}>{solution.componentCounts.total}</div>
-              <Text style={{ fontSize: tokens.fontSizeBase200 }}>Total Components</Text>
+              <Text className={styles.smallText}>Total Components</Text>
 
-              {/* Mini bar chart */}
+              {/* Mini bar chart — inline style is intentional: width is dynamic (runtime %) and
+                  backgroundColor comes from componentTypeColors (palette Background2 tokens).
+                  AUDIT-001 does not apply — these segments contain no text content. */}
               <div className={styles.barChart}>
                 {Object.entries(percentages).map(([type, percentage]) => {
                   if (percentage === 0) return null;
@@ -161,7 +211,7 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
                       className={styles.barSegment}
                       style={{
                         width: `${percentage}%`,
-                        backgroundColor: componentTypeColors[type] || tokens.colorNeutralBackground3,
+                        backgroundColor: componentTypeColors[type as keyof typeof componentTypeColors] || tokens.colorNeutralBackground3,
                       }}
                       title={`${type}: ${percentage.toFixed(1)}%`}
                     />
@@ -169,38 +219,31 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
                 })}
               </div>
 
-              {/* Top component counts */}
+              {/* Component counts — all types, non-zero only */}
               <div className={styles.countsGrid}>
-                {solution.componentCounts.entities > 0 && (
-                  <div className={styles.countItem}>
-                    <Text>Entities: <Text weight="semibold">{solution.componentCounts.entities}</Text></Text>
+                {([
+                  ['Entities', solution.componentCounts.entities],
+                  ['Plugins', solution.componentCounts.plugins],
+                  ['Flows', solution.componentCounts.flows],
+                  ['Business Rules', solution.componentCounts.businessRules],
+                  ['Classic Workflows', solution.componentCounts.classicWorkflows],
+                  ['Business Process Flows', solution.componentCounts.bpfs],
+                  ['Web Resources', solution.componentCounts.webResources],
+                  ['Custom APIs', solution.componentCounts.customAPIs],
+                  ['Environment Variables', solution.componentCounts.environmentVariables],
+                  ['Connection References', solution.componentCounts.connectionReferences],
+                  ['Global Choices', solution.componentCounts.globalChoices],
+                  ['Custom Connectors', solution.componentCounts.customConnectors],
+                  ['Security Roles', solution.componentCounts.securityRoles],
+                  ['Field Security Profiles', solution.componentCounts.fieldSecurityProfiles],
+                  ['Canvas Apps', solution.componentCounts.canvasApps],
+                  ['Custom Pages', solution.componentCounts.customPages],
+                  ['Model-Driven Apps', solution.componentCounts.modelDrivenApps],
+                ] as [string, number][]).filter(([, n]) => n > 0).map(([label, n]) => (
+                  <div key={label} className={styles.countItem}>
+                    <Text>{label}: <Text weight="semibold">{n}</Text></Text>
                   </div>
-                )}
-                {solution.componentCounts.plugins > 0 && (
-                  <div className={styles.countItem}>
-                    <Text>Plugins: <Text weight="semibold">{solution.componentCounts.plugins}</Text></Text>
-                  </div>
-                )}
-                {solution.componentCounts.flows > 0 && (
-                  <div className={styles.countItem}>
-                    <Text>Flows: <Text weight="semibold">{solution.componentCounts.flows}</Text></Text>
-                  </div>
-                )}
-                {solution.componentCounts.businessRules > 0 && (
-                  <div className={styles.countItem}>
-                    <Text>Business Rules: <Text weight="semibold">{solution.componentCounts.businessRules}</Text></Text>
-                  </div>
-                )}
-                {solution.componentCounts.webResources > 0 && (
-                  <div className={styles.countItem}>
-                    <Text>Web Resources: <Text weight="semibold">{solution.componentCounts.webResources}</Text></Text>
-                  </div>
-                )}
-                {solution.componentCounts.customAPIs > 0 && (
-                  <div className={styles.countItem}>
-                    <Text>Custom APIs: <Text weight="semibold">{solution.componentCounts.customAPIs}</Text></Text>
-                  </div>
-                )}
+                ))}
               </div>
             </Card>
           );
@@ -210,14 +253,14 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
       {/* Solution Details - Only show if there are dependencies or shared components */}
       {!distributions.every(s => s.dependencies.length === 0 && s.sharedComponents.length === 0) && (
         <div className={styles.detailsSection}>
-          <div style={{ marginBottom: tokens.spacingVerticalM }}>
-            <Title3 style={{ marginBottom: tokens.spacingVerticalXS }}>Solution Dependencies & Shared Components</Title3>
+          <div className={styles.sectionHeadingBlock}>
+            <Title3 className={styles.sectionTitle}>Solution Dependencies & Shared Components</Title3>
             <Text className={styles.description}>
               View dependencies between solutions and components shared across multiple solutions
             </Text>
           </div>
 
-          <Accordion multiple collapsible style={{ marginTop: tokens.spacingVerticalM }}>
+          <Accordion multiple collapsible className={styles.accordionList}>
             {distributions.map((solution) => {
               const hasDependencies = solution.dependencies.length > 0;
               const hasSharedComponents = solution.sharedComponents.length > 0;
@@ -230,33 +273,33 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
               return (
               <AccordionItem key={solution.solutionId} value={solution.solutionId}>
                 <AccordionHeader>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+                  <div className={styles.accordionHeaderRow}>
                     <Text weight="semibold">{solution.solutionName}</Text>
                     {hasDependencies && (
-                      <Badge appearance="outline" shape="rounded" color="warning">
+                      <Badge appearance="outline" shape="rounded" size="small" color="warning">
                         {solution.dependencies.length} dependencies
                       </Badge>
                     )}
                     {hasSharedComponents && (
-                      <Badge appearance="outline" shape="rounded" color="informative">
+                      <Badge appearance="outline" shape="rounded" size="small" color="informative">
                         {solution.sharedComponents.length} shared
                       </Badge>
                     )}
                   </div>
                 </AccordionHeader>
                 <AccordionPanel>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalL }}>
+                  <div className={styles.panelContent}>
                     {/* Dependencies */}
                     {solution.dependencies.length > 0 && (
                       <div>
                         <Text weight="semibold">Dependencies</Text>
-                        {solution.dependencies.map((dep: any, index: number) => (
-                          <Card key={index} style={{ marginTop: tokens.spacingVerticalS, padding: tokens.spacingVerticalS }}>
+                        {solution.dependencies.map((dep: SolutionDependency, index: number) => (
+                          <Card key={index} className={styles.itemCard}>
                             <Text weight="semibold">{dep.dependsOnSolution}</Text>
-                            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                            <Text className={styles.metaText}>
                               {dep.reason}
                             </Text>
-                            <Text style={{ fontSize: tokens.fontSizeBase200, marginTop: tokens.spacingVerticalXXS }}>
+                            <Text className={styles.smallTextIndented}>
                               References: {dep.componentReferences.join(', ')}
                             </Text>
                           </Card>
@@ -268,16 +311,16 @@ export function SolutionDistributionView({ distributions }: SolutionDistribution
                     {solution.sharedComponents.length > 0 && (
                       <div>
                         <Text weight="semibold">Shared Components</Text>
-                        <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                        <Text className={styles.metaText}>
                           Components that appear in multiple solutions
                         </Text>
-                        {solution.sharedComponents.map((shared: any, index: number) => (
-                          <Card key={index} style={{ marginTop: tokens.spacingVerticalS, padding: tokens.spacingVerticalS }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+                        {solution.sharedComponents.map((shared: SharedComponent, index: number) => (
+                          <Card key={index} className={styles.itemCard}>
+                            <div className={styles.accordionHeaderRow}>
                               <Badge appearance="outline" shape="rounded">{shared.componentType}</Badge>
                               <Text weight="semibold">{shared.componentName}</Text>
                             </div>
-                            <Text style={{ fontSize: tokens.fontSizeBase200, marginTop: tokens.spacingVerticalXXS }}>
+                            <Text className={styles.smallTextIndented}>
                               Also in: {shared.alsoInSolutions.join(', ')}
                             </Text>
                           </Card>

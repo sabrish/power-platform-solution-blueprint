@@ -6,130 +6,34 @@ import {
   tokens,
   Card,
   Title3,
-  SearchBox,
   Checkbox,
-  Dropdown,
-  Option,
+  ToggleButton,
 } from '@fluentui/react-components';
-import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import type { WebResource } from '../core';
+import { ChevronDown20Regular, ChevronRight20Regular, Warning20Regular, Globe20Regular } from '@fluentui/react-icons';
+import type { WebResource, ExternalCall } from '../core';
 import { CodeViewer } from './CodeViewer';
-import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
+import { FilterBar, FilterGroup } from './FilterBar';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
-  },
-  filters: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalM,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderRadius: tokens.borderRadiusMedium,
-  },
-  searchBox: {
-    minWidth: '300px',
-  },
   listContainer: {
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   resourceRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  resourceRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  wrapText: {
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
+    gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto auto',
   },
   warningBox: {
     padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorPaletteYellowBackground2,
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderLeft: `3px solid ${tokens.colorStatusWarningBorder1}`,
     borderRadius: tokens.borderRadiusMedium,
     display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalM,
+    gap: tokens.spacingHorizontalS,
+    alignItems: 'start',
   },
   externalCallItem: {
     padding: tokens.spacingVerticalS,
@@ -148,16 +52,24 @@ export interface WebResourcesListProps {
 
 export function WebResourcesList({ webResources }: WebResourcesListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('All');
+  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
   const [showExternalOnly, setShowExternalOnly] = useState(false);
   const [showDeprecatedOnly, setShowDeprecatedOnly] = useState(false);
 
-  // Get unique types
+  // Get unique types sorted
   const availableTypes = useMemo(() => {
     const types = new Set(webResources.map((r) => r.typeName));
-    return ['All', ...Array.from(types).sort()];
+    return Array.from(types).sort();
+  }, [webResources]);
+
+  // Count per type (for disabling empty filter buttons)
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of webResources) counts[r.typeName] = (counts[r.typeName] ?? 0) + 1;
+    return counts;
   }, [webResources]);
 
   // Filter and search web resources
@@ -166,9 +78,9 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
 
     let filtered = webResources;
 
-    // Type filter
-    if (typeFilter !== 'All') {
-      filtered = filtered.filter((r) => r.typeName === typeFilter);
+    // Type filter (OR logic)
+    if (activeTypeFilters.size > 0) {
+      filtered = filtered.filter((r) => activeTypeFilters.has(r.typeName));
     }
 
     // External calls filter
@@ -197,7 +109,15 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
       if (a.typeName !== b.typeName) return a.typeName.localeCompare(b.typeName);
       return a.name.localeCompare(b.name);
     });
-  }, [webResources, searchQuery, typeFilter, showExternalOnly, showDeprecatedOnly]);
+  }, [webResources, searchQuery, activeTypeFilters, showExternalOnly, showDeprecatedOnly]);
+
+  const toggleTypeFilter = (type: string) => {
+    setActiveTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type); else next.add(type);
+      return next;
+    });
+  };
 
   const toggleExpand = (resourceId: string) => {
     setExpandedResourceId(expandedResourceId === resourceId ? null : resourceId);
@@ -223,74 +143,72 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
   };
 
   const renderResourceDetails = (resource: WebResource) => (
-    <div className={styles.expandedDetails}>
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>{resource.displayName}</Title3>
 
-        <div className={styles.detailsGrid}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Unique Name</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`}>{resource.name}</Text>
+        <div className={shared.detailsGrid}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Unique Name</Text>
+            <Text className={`${shared.detailValue} ${shared.codeText}`}>{resource.name}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Type</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Type</Text>
             <Badge appearance="tint" shape="rounded" color={getTypeBadgeColor(resource.typeName)}>
               {resource.typeName}
             </Badge>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Size</Text>
-            <Text className={styles.detailValue}>{formatSize(resource.contentSize)}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Size</Text>
+            <Text className={shared.detailValue}>{formatSize(resource.contentSize)}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Last Modified</Text>
-            <Text className={styles.detailValue}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Last Modified</Text>
+            <Text className={shared.detailValue}>
               {new Date(resource.modifiedOn).toLocaleString()}
             </Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Modified By</Text>
-            <Text className={styles.detailValue}>{resource.modifiedBy}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Modified By</Text>
+            <Text className={shared.detailValue}>{resource.modifiedBy}</Text>
           </div>
         </div>
 
         {resource.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
-            <Text>
-              <TruncatedText text={resource.description} />
-            </Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
+            <Text className={shared.detailValue}>{resource.description}</Text>
           </div>
         )}
 
         {/* JavaScript Analysis */}
         {resource.analysis && (
           <>
-            <div className={styles.section}>
+            <div className={shared.section}>
               <Title3>JavaScript Analysis</Title3>
-              <div className={styles.detailsGrid}>
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Lines of Code</Text>
-                  <Text className={styles.detailValue}>{resource.analysis.linesOfCode}</Text>
+              <div className={shared.detailsGrid}>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Lines of Code</Text>
+                  <Text className={shared.detailValue}>{resource.analysis.linesOfCode}</Text>
                 </div>
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Complexity</Text>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Complexity</Text>
                   <Badge appearance="filled" shape="rounded" color={getComplexityBadgeColor(resource.analysis.complexity)}>
                     {resource.analysis.complexity}
                   </Badge>
                 </div>
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Uses Xrm API</Text>
-                  <Text className={styles.detailValue}>{resource.analysis.usesXrm ? 'Yes' : 'No'}</Text>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Uses Xrm API</Text>
+                  <Text className={shared.detailValue}>{resource.analysis.usesXrm ? 'Yes' : 'No'}</Text>
                 </div>
               </div>
 
               {resource.analysis.frameworks.length > 0 && (
                 <div style={{ marginTop: tokens.spacingVerticalM }}>
-                  <Text className={styles.detailLabel}>Frameworks Used</Text>
-                  <div className={styles.badgeGroup} style={{ marginTop: tokens.spacingVerticalXS }}>
+                  <Text className={shared.detailLabel}>Frameworks Used</Text>
+                  <div className={shared.badgeGroup} style={{ marginTop: tokens.spacingVerticalXS }}>
                     {resource.analysis.frameworks.map((fw: string, idx: number) => (
-                      <Badge key={idx} appearance="tint" color="brand">
+                      <Badge key={idx} appearance="tint" shape="rounded" color="brand">
                         {fw}
                       </Badge>
                     ))}
@@ -300,9 +218,9 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
             </div>
 
             {resource.isDeprecated && (
-              <div className={styles.section}>
+              <div className={shared.section}>
                 <div className={styles.warningBox}>
-                  <Text style={{ fontSize: '24px' }}>⚠️</Text>
+                  <Warning20Regular style={{ color: tokens.colorStatusWarningForeground1, flexShrink: 0 }} />
                   <div>
                     <Text weight="semibold">Deprecated Code Detected</Text>
                     <Text>This script uses deprecated Xrm.Page API. Should migrate to formContext.</Text>
@@ -312,13 +230,13 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
             )}
 
             {resource.analysis.externalCalls.length > 0 && (
-              <div className={styles.section}>
+              <div className={shared.section}>
                 <Title3>External API Calls ({resource.analysis.externalCalls.length})</Title3>
                 <div className={styles.warningBox} style={{ marginBottom: tokens.spacingVerticalM }}>
-                  <Text style={{ fontSize: '24px' }}>🌐</Text>
+                  <Globe20Regular style={{ color: tokens.colorBrandForeground1, flexShrink: 0 }} />
                   <Text weight="semibold">This script calls external endpoints</Text>
                 </div>
-                {resource.analysis.externalCalls.map((call: any, idx: number) => (
+                {resource.analysis.externalCalls.map((call: ExternalCall, idx: number) => (
                   <div key={idx} className={styles.externalCallItem}>
                     <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center', flexWrap: 'wrap' }}>
                       <Text weight="semibold">{call.actionName}</Text>
@@ -329,14 +247,15 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                       )}
                       <Badge
                         appearance="tint"
+                        shape="rounded"
                         color={call.confidence === 'High' ? 'success' : call.confidence === 'Medium' ? 'warning' : 'subtle'}
                         size="small"
                       >
                         {call.confidence}
                       </Badge>
                     </div>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={call.url} />
+                    <Text className={shared.codeText} style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                      {call.url}
                     </Text>
                     <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                       Domain: {call.domain}
@@ -350,7 +269,7 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
 
         {/* Content Preview */}
         {resource.content && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Content Preview</Title3>
             <CodeViewer content={resource.content} language={resource.typeName.toLowerCase()} />
           </div>
@@ -361,59 +280,60 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
 
   // Empty state
   if (webResources.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <Text style={{ fontSize: '48px' }}>📦</Text>
-        <Text size={500} weight="semibold">
-          No Web Resources Found
-        </Text>
-        <Text>No web resources were found in the selected solution(s).</Text>
-      </div>
-    );
+    return <EmptyState type="webresources" />;
   }
 
   return (
-    <div className={styles.container}>
-      {/* Filters */}
-      <div className={styles.filters}>
-        <SearchBox
-          className={styles.searchBox}
-          placeholder="Search web resources..."
-          value={searchQuery}
-          onChange={(_, data) => setSearchQuery(data.value || '')}
-        />
-        <Dropdown
-          placeholder="Filter by type"
-          value={typeFilter}
-          onOptionSelect={(_, data) => setTypeFilter(data.optionValue || 'All')}
+    <div className={shared.container}>
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search web resources..."
+        filteredCount={filteredResources.length}
+        totalCount={webResources.length}
+        itemLabel="web resources"
+      >
+        <FilterGroup
+          label="Type:"
+          hasActiveFilters={activeTypeFilters.size > 0}
+          onClear={() => setActiveTypeFilters(new Set())}
         >
           {availableTypes.map((type) => (
-            <Option key={type} value={type}>
+            <ToggleButton
+              key={type}
+              appearance="outline"
+              className={shared.filterButton}
+              size="small"
+              checked={activeTypeFilters.has(type)}
+              disabled={typeCounts[type] === 0}
+              onClick={() => toggleTypeFilter(type)}
+            >
               {type}
-            </Option>
+            </ToggleButton>
           ))}
-        </Dropdown>
-        <Checkbox
-          label="External calls only"
-          checked={showExternalOnly}
-          onChange={(_, data) => setShowExternalOnly(data.checked === true)}
-        />
-        <Checkbox
-          label="Deprecated code only"
-          checked={showDeprecatedOnly}
-          onChange={(_, data) => setShowDeprecatedOnly(data.checked === true)}
-        />
-        <Text style={{ marginLeft: 'auto', color: tokens.colorNeutralForeground3 }}>
-          {filteredResources.length} of {webResources.length} resources
-        </Text>
-      </div>
+        </FilterGroup>
+        <FilterGroup
+          label="Show:"
+          hasActiveFilters={showExternalOnly || showDeprecatedOnly}
+          onClear={() => { setShowExternalOnly(false); setShowDeprecatedOnly(false); }}
+        >
+          <Checkbox
+            label="External calls only"
+            checked={showExternalOnly}
+            onChange={(_, data) => setShowExternalOnly(data.checked === true)}
+          />
+          <Checkbox
+            label="Deprecated code only"
+            checked={showDeprecatedOnly}
+            onChange={(_, data) => setShowDeprecatedOnly(data.checked === true)}
+          />
+        </FilterGroup>
+      </FilterBar>
 
       {/* Resources List */}
       <div className={styles.listContainer}>
         {filteredResources.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Text>No web resources match your filters.</Text>
-          </div>
+          <EmptyState type="search" />
         ) : (
           filteredResources.map((resource) => {
             const isExpanded = expandedResourceId === resource.id;
@@ -421,19 +341,19 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
             return (
               <div key={resource.id}>
                 <div
-                  className={`${styles.resourceRow} ${isExpanded ? styles.resourceRowExpanded : ''}`}
+                  className={`${shared.cardRow} ${styles.resourceRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
                   onClick={() => toggleExpand(resource.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(resource.id); } }}
                 >
-                  <div className={styles.chevron}>
+                  <div className={shared.chevron}>
                     {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                   </div>
-                  <div className={styles.nameColumn}>
-                    <Text weight="semibold">
-                      <TruncatedText text={resource.displayName} />
-                    </Text>
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={resource.name} />
-                    </Text>
+                  <div className={shared.nameColumn}>
+                    <Text weight="semibold">{resource.displayName}</Text>
+                    <Text className={shared.codeText}>{resource.name}</Text>
                   </div>
                   <Badge appearance="tint" shape="rounded" color={getTypeBadgeColor(resource.typeName)} size="small">
                     {resource.typeName}
@@ -442,14 +362,10 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
                     {formatSize(resource.contentSize)}
                   </Text>
                   {resource.hasExternalCalls && (
-                    <Text style={{ fontSize: '18px' }} title="Has external calls">
-                      🌐
-                    </Text>
+                    <Globe20Regular style={{ color: tokens.colorBrandForeground1 }} title="Has external calls" />
                   )}
                   {resource.isDeprecated && (
-                    <Text style={{ fontSize: '18px' }} title="Uses deprecated Xrm.Page">
-                      ⚠️
-                    </Text>
+                    <Warning20Regular style={{ color: tokens.colorStatusWarningForeground1 }} title="Uses deprecated Xrm.Page" />
                   )}
                   {resource.analysis && (
                     <Badge appearance="filled" shape="rounded" color={getComplexityBadgeColor(resource.analysis.complexity)} size="small">

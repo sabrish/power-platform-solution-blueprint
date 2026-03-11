@@ -1,9 +1,9 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { PluginStep, ImageDefinition } from '../types.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
-/**
- * Raw plugin step data from Dataverse
- */
 interface RawPluginStep {
   sdkmessageprocessingstepid: string;
   name: string;
@@ -15,25 +15,13 @@ interface RawPluginStep {
   asyncautodelete: boolean;
   configuration: string | null;
   statecode: number;
-  sdkmessageid?: {
-    name: string;
-  };
-  plugintypeid?: {
-    typename: string;
-    name: string;
-    assemblyname: string;
-    plugintypeid: string;
-  };
-  sdkmessagefilterid?: {
-    primaryobjecttypecode: string;
-  };
+  sdkmessageid?: { name: string };
+  plugintypeid?: { typename: string; name: string; assemblyname: string; plugintypeid: string };
+  sdkmessagefilterid?: { primaryobjecttypecode: string };
   _impersonatinguserid_value?: string;
   '_impersonatinguserid_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
-/**
- * Raw image data from Dataverse
- */
 interface RawPluginImage {
   sdkmessageprocessingstepimageid: string;
   _sdkmessageprocessingstepid_value?: string;
@@ -43,89 +31,69 @@ interface RawPluginImage {
   messagepropertyname: string;
 }
 
-/**
- * Discovers plugins for entities
- */
 export class PluginDiscovery {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger
+  ) {
     this.client = client;
     this.onProgress = onProgress;
+    this.logger = logger;
   }
 
-  /**
-   * Get plugin steps by their IDs
-   * @param pluginIds Array of plugin step IDs
-   * @returns Array of complete plugin steps with all metadata
-   */
   async getPluginsByIds(pluginIds: string[]): Promise<PluginStep[]> {
-    if (pluginIds.length === 0) {
-      return [];
-    }
+    if (pluginIds.length === 0) return [];
 
     try {
-      // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
-      // Split plugin IDs into batches of 20 to keep URL length manageable
-      const batchSize = 20;
-      const allPluginSteps: RawPluginStep[] = [];
-
-      for (let i = 0; i < pluginIds.length; i += batchSize) {
-        const batch = pluginIds.slice(i, i + batchSize);
-
-        // Build filter for this batch
-        const filterClauses = batch.map((id) => {
-          // Remove braces if present for OData guid literal
-          const cleanGuid = id.replace(/[{}]/g, '');
-          return `sdkmessageprocessingstepid eq ${cleanGuid}`;
-        });
-        const filter = filterClauses.join(' or ');
-
-        // Query this batch of plugin steps with expanded relationships
-        const result = await this.client.query<RawPluginStep>('sdkmessageprocessingsteps', {
-          select: [
+      // Fetch plugin steps in adaptive batches
+      const { results: allPluginSteps } = await withAdaptiveBatch<string, RawPluginStep>(
+        pluginIds,
+        async (batch) => {
+          const filter = buildOrFilter(
+            batch.map(id => id.replace(/[{}]/g, '')),
             'sdkmessageprocessingstepid',
-            'name',
-            'stage',
-            'mode',
-            'rank',
-            'filteringattributes',
-            'description',
-            'asyncautodelete',
-            'configuration',
-            'statecode',
-            '_impersonatinguserid_value',
-          ],
-          filter,
-          expand:
-            'sdkmessageid($select=name),plugintypeid($select=typename,name,assemblyname,plugintypeid),sdkmessagefilterid($select=primaryobjecttypecode)',
-          orderBy: ['stage asc', 'rank asc'],
-        });
-
-        allPluginSteps.push(...result.value);
-
-        // Report progress after each batch
-        if (this.onProgress) {
-          this.onProgress(allPluginSteps.length, pluginIds.length);
+            { guids: true }
+          );
+          const result = await this.client.query<RawPluginStep>('sdkmessageprocessingsteps', {
+            select: [
+              'sdkmessageprocessingstepid', 'name', 'stage', 'mode', 'rank',
+              'filteringattributes', 'description', 'asyncautodelete', 'configuration',
+              'statecode', '_impersonatinguserid_value',
+            ],
+            filter,
+            expand: 'sdkmessageid($select=name),plugintypeid($select=typename,name,assemblyname,plugintypeid),sdkmessagefilterid($select=primaryobjecttypecode)',
+            orderBy: ['stage asc', 'rank asc'],
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Plugin Discovery',
+          entitySet: 'sdkmessageprocessingsteps',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
         }
-      }
-
-      // OPTIMIZED: Pre-fetch all plugin images in batched queries
-      // This reduces N queries (one per plugin) to fewer batch queries
-      const allImages = await this.getPluginImagesForAllSteps(
-        allPluginSteps.map(r => r.sdkmessageprocessingstepid)
       );
 
-      // Process each plugin step
-      const pluginSteps: PluginStep[] = [];
+      // Build step name map for getBatchLabel in images pass
+      const stepIdToName = new Map(allPluginSteps.map(r => [r.sdkmessageprocessingstepid.toLowerCase(), r.name]));
 
-      for (const raw of allPluginSteps) {
-        // Get images from pre-fetched data
+      // Fetch all plugin images in adaptive batches
+      const allImages = await this.getPluginImagesForAllSteps(
+        allPluginSteps.map(r => r.sdkmessageprocessingstepid),
+        stepIdToName
+      );
+
+      this.onProgress?.(pluginIds.length, pluginIds.length);
+
+      return allPluginSteps.map(raw => {
         const images = allImages.get(raw.sdkmessageprocessingstepid) || { preImage: null, postImage: null };
-
-        // Build complete plugin step
-        const pluginStep: PluginStep = {
+        return {
           id: raw.sdkmessageprocessingstepid,
           name: raw.name,
           stage: raw.stage,
@@ -141,20 +109,17 @@ export class PluginDiscovery {
           filteringAttributes: this.parseFilteringAttributes(raw.filteringattributes),
           description: raw.description,
           asyncAutoDelete: raw.asyncautodelete,
-          configuration: null, // Secure config requires separate lookup
-          customConfiguration: raw.configuration, // Unsecure configuration
+          configuration: null,
+          customConfiguration: raw.configuration,
           preImage: images.preImage,
           postImage: images.postImage,
           impersonatingUserId: raw._impersonatinguserid_value || null,
           impersonatingUserName: raw['_impersonatinguserid_value@OData.Community.Display.V1.FormattedValue'] || null,
           stateCode: raw.statecode,
           state: this.getStateName(raw.statecode),
-        };
+        } as PluginStep;
+      });
 
-        pluginSteps.push(pluginStep);
-      }
-
-      return pluginSteps;
     } catch (error) {
       throw new Error(
         `Failed to retrieve plugins: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -162,59 +127,49 @@ export class PluginDiscovery {
     }
   }
 
-  /**
-   * Get plugin images (pre and post) for multiple plugin steps in batched queries
-   * OPTIMIZED: Reduces N queries to fewer batch queries, avoiding HTTP 414 errors
-   */
   private async getPluginImagesForAllSteps(
-    pluginStepIds: string[]
+    pluginStepIds: string[],
+    stepIdToName: Map<string, string>
   ): Promise<Map<string, { preImage: ImageDefinition | null; postImage: ImageDefinition | null }>> {
     const imageMap = new Map<string, { preImage: ImageDefinition | null; postImage: ImageDefinition | null }>();
-
-    // Initialize map with null images for all steps
     for (const stepId of pluginStepIds) {
       imageMap.set(stepId, { preImage: null, postImage: null });
     }
-
-    if (pluginStepIds.length === 0) {
-      return imageMap;
-    }
+    if (pluginStepIds.length === 0) return imageMap;
 
     try {
-      // BATCH QUERIES to avoid HTTP 414 errors
-      // Split into batches of 20 plugin step IDs
-      const batchSize = 20;
-      const allImages: RawPluginImage[] = [];
+      const { results: allImages } = await withAdaptiveBatch<string, RawPluginImage>(
+        pluginStepIds,
+        async (batch) => {
+          const imageFilters = batch.map(id => {
+            const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+            return `_sdkmessageprocessingstepid_value eq '${guidWithBraces}'`;
+          }).join(' or ');
+          const result = await this.client.query<RawPluginImage>('sdkmessageprocessingstepimages', {
+            select: [
+              'sdkmessageprocessingstepimageid', '_sdkmessageprocessingstepid_value',
+              'imagetype', 'name', 'attributes', 'messagepropertyname',
+            ],
+            filter: imageFilters,
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Plugin Discovery',
+          entitySet: 'sdkmessageprocessingstepimages',
+          logger: this.logger,
+          onProgress: (done, total) => this.onProgress?.(
+            Math.floor(pluginStepIds.length / 2) + Math.floor(done / 2),
+            total
+          ),
+          getBatchLabel: (batch) => batch.map(id => stepIdToName.get(id.toLowerCase()) ?? id).join(', '),
+        }
+      );
 
-      for (let i = 0; i < pluginStepIds.length; i += batchSize) {
-        const batch = pluginStepIds.slice(i, i + batchSize);
-
-        // Batch query images for this batch with OR filter (GUIDs need braces and quotes in OData)
-        const imageFilters = batch.map(id => {
-          const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
-          return `_sdkmessageprocessingstepid_value eq '${guidWithBraces}'`;
-        }).join(' or ');
-
-        const result = await this.client.query<RawPluginImage>('sdkmessageprocessingstepimages', {
-          select: [
-            'sdkmessageprocessingstepimageid',
-            '_sdkmessageprocessingstepid_value',
-            'imagetype',
-            'name',
-            'attributes',
-            'messagepropertyname',
-          ],
-          filter: imageFilters,
-        });
-
-        allImages.push(...result.value);
-      }
-
-      // Group images by plugin step ID
       for (const raw of allImages) {
         const stepId = (raw as any)._sdkmessageprocessingstepid_value?.toLowerCase();
         if (!stepId) continue;
-
         const imageType = raw.imagetype === 0 ? 'PreImage' : 'PostImage';
         const image: ImageDefinition = {
           id: raw.sdkmessageprocessingstepimageid,
@@ -223,90 +178,49 @@ export class PluginDiscovery {
           attributes: this.parseImageAttributes(raw.attributes),
           messagePropertyName: raw.messagepropertyname,
         };
-
         const stepImages = imageMap.get(stepId);
         if (stepImages) {
-          if (imageType === 'PreImage') {
-            stepImages.preImage = image;
-          } else {
-            stepImages.postImage = image;
-          }
+          if (imageType === 'PreImage') stepImages.preImage = image;
+          else stepImages.postImage = image;
         }
       }
-
-      return imageMap;
-    } catch (error) {
-      // If images query fails, return map with null images
-      return imageMap;
+    } catch {
+      // Partial failure — return what we have
     }
+
+    return imageMap;
   }
 
-  /**
-   * Get human-readable stage name
-   */
   getStageName(stage: number): string {
     switch (stage) {
-      case 10:
-        return 'PreValidation';
-      case 20:
-        return 'PreOperation';
-      case 30:
-        return 'MainOperation';
-      case 40:
-        return 'PostOperation';
-      case 50:
-        return 'Asynchronous';
-      default:
-        return 'Unknown';
+      case 10: return 'PreValidation';
+      case 20: return 'PreOperation';
+      case 30: return 'MainOperation';
+      case 40: return 'PostOperation';
+      case 50: return 'Asynchronous';
+      default: return 'Unknown';
     }
   }
 
-  /**
-   * Get human-readable mode name
-   */
   getModeName(mode: number): string {
     switch (mode) {
-      case 0:
-        return 'Synchronous';
-      case 1:
-        return 'Asynchronous';
-      default:
-        return 'Unknown';
+      case 0: return 'Synchronous';
+      case 1: return 'Asynchronous';
+      default: return 'Unknown';
     }
   }
 
-  /**
-   * Get human-readable state name
-   */
   getStateName(stateCode: number): 'Enabled' | 'Disabled' {
     return stateCode === 0 ? 'Enabled' : 'Disabled';
   }
 
-  /**
-   * Parse filtering attributes from comma-separated string
-   */
   parseFilteringAttributes(filteringAttributes: string | null): string[] {
-    if (!filteringAttributes) {
-      return [];
-    }
-
-    return filteringAttributes
-      .split(',')
-      .map((attr) => attr.trim())
-      .filter((attr) => attr.length > 0);
+    if (!filteringAttributes) return [];
+    return filteringAttributes.split(',').map(a => a.trim()).filter(a => a.length > 0);
   }
 
-  /**
-   * Parse image attributes from comma-separated string
-   */
   private parseImageAttributes(attributes: string | null): string[] {
-    if (!attributes) {
-      return [];
-    }
-
-    return attributes
-      .split(',')
-      .map((attr) => attr.trim())
-      .filter((attr) => attr.length > 0);
+    if (!attributes) return [];
+    return attributes.split(',').map(a => a.trim()).filter(a => a.length > 0);
   }
 }

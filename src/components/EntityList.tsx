@@ -2,18 +2,18 @@ import { useState, useMemo } from 'react';
 import {
   Text,
   Badge,
-  Button,
   Tooltip,
   ToggleButton,
   makeStyles,
   tokens,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { Database24Regular, ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { EntityBlueprint, ClassicWorkflow, BusinessProcessFlow } from '../core';
 import { SchemaView } from './SchemaView';
+import { EmptyState } from './EmptyState';
 import { filterDescription } from '../utils/descriptionFilter';
-import { TruncatedText } from './TruncatedText';
 
 const useStyles = makeStyles({
   container: {
@@ -82,16 +82,14 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase400,
     color: tokens.colorNeutralForeground1,
     minWidth: 0,
-    maxWidth: '250px',
-    flexShrink: 0,
+    wordBreak: 'break-word',
   },
   entityLogicalName: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase300,
     fontFamily: 'Consolas, Monaco, monospace',
     minWidth: 0,
-    maxWidth: '200px',
-    flexShrink: 0,
+    wordBreak: 'break-word',
   },
   entityFlags: {
     display: 'flex',
@@ -105,13 +103,6 @@ const useStyles = makeStyles({
     alignItems: 'center',
     flexShrink: 0,
     marginLeft: 'auto',
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
   },
   statBadge: {
     fontSize: tokens.fontSizeBase200,
@@ -142,6 +133,9 @@ const useStyles = makeStyles({
   },
   detailValue: {
     fontWeight: tokens.fontWeightSemibold,
+    minWidth: 0,
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
   },
   codeText: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -160,15 +154,6 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     flexWrap: 'wrap',
     marginTop: tokens.spacingVerticalM,
-  },
-  emptyState: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: tokens.spacingVerticalXXXL,
-    gap: tokens.spacingVerticalM,
-    color: tokens.colorNeutralForeground3,
   },
 });
 
@@ -223,6 +208,7 @@ const getPublisherPrefix = (schemaName: string): string => {
 
 export function EntityList({ blueprints, classicWorkflows = [], businessProcessFlows = [] }: EntityListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEntityId, setExpandedEntityId] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<Set<FlagType>>(new Set());
@@ -408,11 +394,15 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
       >
         {availableFlags.length > 0 && (
           <>
-            <FilterGroup label="Match:">
+            <FilterGroup
+              label="Match:"
+              hasActiveFilters={matchMode !== 'all'}
+              onClear={() => setMatchMode('all')}
+            >
               <Tooltip content="Show entities that have ALL selected features" relationship="description">
                 <ToggleButton
                   size="small"
-                  className={styles.filterButton}
+                  className={shared.filterButton}
                   checked={matchMode === 'all'}
                   onClick={() => setMatchMode('all')}
                   appearance={matchMode === 'all' ? 'primary' : 'outline'}
@@ -423,7 +413,7 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
               <Tooltip content="Show entities that have ANY of the selected features" relationship="description">
                 <ToggleButton
                   size="small"
-                  className={styles.filterButton}
+                  className={shared.filterButton}
                   checked={matchMode === 'any'}
                   onClick={() => setMatchMode('any')}
                   appearance={matchMode === 'any' ? 'primary' : 'outline'}
@@ -432,14 +422,18 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                 </ToggleButton>
               </Tooltip>
             </FilterGroup>
-            <FilterGroup label={matchMode === 'all' ? 'Has all of:' : 'Has any of:'}>
+            <FilterGroup
+              label={matchMode === 'all' ? 'Has all of:' : 'Has any of:'}
+              hasActiveFilters={(activeFilters?.size ?? 0) > 0}
+              onClear={() => setActiveFilters(new Set())}
+            >
               {availableFlags.map(flagKey => {
                 const cfg = FLAG_CONFIGS.find(c => c.key === flagKey)!;
                 return (
                   <ToggleButton
                     key={flagKey}
                     size="small"
-                    className={styles.filterButton}
+                    className={shared.filterButton}
                     checked={activeFilters.has(flagKey)}
                     onClick={() => toggleFilter(flagKey)}
                     appearance={activeFilters.has(flagKey) ? 'primary' : 'outline'}
@@ -448,16 +442,6 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                   </ToggleButton>
                 );
               })}
-              {activeFilters.size > 0 && (
-                <Button
-                  size="small"
-                  className={styles.filterButton}
-                  appearance="transparent"
-                  onClick={() => setActiveFilters(new Set())}
-                >
-                  Clear
-                </Button>
-              )}
             </FilterGroup>
           </>
         )}
@@ -465,14 +449,9 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
 
       <div className={styles.listContainer}>
         {filteredBlueprints.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Database24Regular />
-            <Text>
-              {searchQuery
-                ? 'No entities found matching your search'
-                : 'No entities found for this selection'}
-            </Text>
-          </div>
+          searchQuery
+            ? <EmptyState type="search" />
+            : <EmptyState type="generic" title="No Entities Found" message="No entities were found for this selection." />
         ) : (
           filteredBlueprints.map((blueprint) => {
             const entity = blueprint.entity;
@@ -487,7 +466,11 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
               <div key={entity.MetadataId}>
                 <div
                   className={`${styles.entityRow} ${isExpanded ? styles.entityRowExpanded : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
                   onClick={() => toggleExpand(entity.MetadataId)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(entity.MetadataId); } }}
                 >
                   {/* Row 1: chevron + icon + name/logicalName + flags + stats */}
                   <div className={styles.entityRowMain}>
@@ -496,12 +479,8 @@ export function EntityList({ blueprints, classicWorkflows = [], businessProcessF
                     </div>
                     <Database24Regular className={styles.entityIcon} />
                     <div className={styles.entityInfo}>
-                      <Text className={styles.entityName}>
-                        <TruncatedText text={displayName} />
-                      </Text>
-                      <Text className={styles.entityLogicalName}>
-                        <TruncatedText text={entity.LogicalName} />
-                      </Text>
+                      <Text className={styles.entityName}>{displayName}</Text>
+                      <Text className={styles.entityLogicalName}>{entity.LogicalName}</Text>
                     </div>
                     {entityFlagCounts.size > 0 && (
                       <div className={styles.entityFlags}>

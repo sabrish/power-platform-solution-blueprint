@@ -1,23 +1,25 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
   makeStyles,
+  mergeClasses,
   tokens,
   Card,
   Title3,
   ToggleButton,
-  Button,
   Dropdown,
   Option,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
-import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 // These must exactly match PluginDiscovery.getStageName() output (no hyphens)
 const STAGE_VALUES = ['PreValidation', 'PreOperation', 'PostOperation', 'Asynchronous'];
+const PLUGIN_TYPE_DROPDOWN_MIN_WIDTH = '130px'; // fixed dropdown width — no token equivalent
 const STATE_VALUES = ['Enabled', 'Disabled'];
 
 /** Convert internal stageName to a human-readable display label */
@@ -32,108 +34,16 @@ const formatStageLabel = (stageName: string): string => {
 };
 
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   pluginRow: {
     display: 'grid',
     gridTemplateColumns: '24px 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  pluginRowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
   },
   rank: {
     fontWeight: tokens.fontWeightSemibold,
     textAlign: 'center',
   },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  wrapText: {
-    wordBreak: 'break-word',
-    overflowWrap: 'break-word',
-    hyphens: 'auto',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  badgeGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-    minWidth: 0,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-    wordBreak: 'break-word',
-    overflowWrap: 'anywhere',
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
+  typeDropdown: {
+    minWidth: PLUGIN_TYPE_DROPDOWN_MIN_WIDTH, // fixed dropdown width — no token equivalent
   },
 });
 
@@ -147,6 +57,7 @@ export function PluginsList({
   entityLogicalName,
 }: PluginsListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedPluginId, setExpandedPluginId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStageFilters, setActiveStageFilters] = useState<Set<string>>(new Set());
@@ -216,7 +127,7 @@ export function PluginsList({
     );
   }, [toggleFilteredPlugins, searchQuery]);
 
-  const toggleStageFilter = (stage: string) => {
+  const toggleStageFilter = useCallback((stage: string) => {
     setActiveStageFilters((prev) => {
       const next = new Set(prev);
       if (next.has(stage)) {
@@ -226,9 +137,9 @@ export function PluginsList({
       }
       return next;
     });
-  };
+  }, []);
 
-  const toggleStateFilter = (state: string) => {
+  const toggleStateFilter = useCallback((state: string) => {
     setActiveStateFilters((prev) => {
       const next = new Set(prev);
       if (next.has(state)) {
@@ -238,77 +149,75 @@ export function PluginsList({
       }
       return next;
     });
+  }, []);
+
+  const getStageBadgeColor = (stageName: string): 'brand' | 'informative' | 'success' | 'severe' => {
+    switch (stageName) {
+      case 'PreValidation': return 'brand';
+      case 'PreOperation': return 'informative';
+      case 'PostOperation': return 'success';
+      case 'Asynchronous': return 'severe';
+      default: return 'brand';
+    }
   };
 
-  const getStageBadgeColor = (stage: number): string => {
-    const stageColors: Record<number, string> = {
-      10: '#0078D4', // PreValidation - Blue
-      20: '#2B579A', // PreOperation - Navy
-      40: '#107C10', // PostOperation - Green
-      50: '#5C2D91', // Asynchronous - Purple
-    };
-    return stageColors[stage] || tokens.colorNeutralForeground3;
-  };
+  const toggleExpand = useCallback((pluginId: string) => {
+    setExpandedPluginId(prev => prev === pluginId ? null : pluginId);
+  }, []);
 
-  const toggleExpand = (pluginId: string) => {
-    setExpandedPluginId(expandedPluginId === pluginId ? null : pluginId);
-  };
-
-  const renderPluginDetails = (plugin: PluginStep) => (
-    <div className={styles.expandedDetails}>
+  const renderPluginDetails = (plugin: PluginStep): React.ReactElement => (
+    <div className={shared.expandedDetails}>
       <Card>
         <Title3>Plugin Step Details</Title3>
 
-        <div className={styles.detailsGrid}>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Step ID</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`}>{plugin.id}</Text>
+        <div className={shared.detailsGrid}>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Step ID</Text>
+            <Text className={mergeClasses(shared.detailValue, shared.codeText)}>{plugin.id}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Plugin Type</Text>
-            <Text className={styles.detailValue}>{plugin.typeName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Plugin Type</Text>
+            <Text className={shared.detailValue}>{plugin.typeName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Assembly</Text>
-            <Text className={styles.detailValue}>{plugin.assemblyName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Assembly</Text>
+            <Text className={shared.detailValue}>{plugin.assemblyName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Entity</Text>
-            <Text className={`${styles.detailValue} ${styles.codeText}`}>{plugin.entity}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Entity</Text>
+            <Text className={mergeClasses(shared.detailValue, shared.codeText)}>{plugin.entity}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Message</Text>
-            <Text className={styles.detailValue}>{plugin.message}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Message</Text>
+            <Text className={shared.detailValue}>{plugin.message}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Execution Stage</Text>
-            <Text className={styles.detailValue}>{plugin.stageName} ({plugin.stage})</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Execution Stage</Text>
+            <Text className={shared.detailValue}>{plugin.stageName} ({plugin.stage})</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Execution Mode</Text>
-            <Text className={styles.detailValue}>{plugin.modeName}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Execution Mode</Text>
+            <Text className={shared.detailValue}>{plugin.modeName}</Text>
           </div>
-          <div className={styles.detailItem}>
-            <Text className={styles.detailLabel}>Execution Order</Text>
-            <Text className={styles.detailValue}>{plugin.rank}</Text>
+          <div className={shared.detailItem}>
+            <Text className={shared.detailLabel}>Execution Order</Text>
+            <Text className={shared.detailValue}>{plugin.rank}</Text>
           </div>
         </div>
 
         {plugin.description && (
-          <div className={styles.section}>
-            <Text className={styles.detailLabel}>Description</Text>
-            <Text>
-              <TruncatedText text={plugin.description} />
-            </Text>
+          <div className={shared.section}>
+            <Text className={shared.detailLabel}>Description</Text>
+            <Text className={shared.detailValue}>{plugin.description}</Text>
           </div>
         )}
 
         {plugin.filteringAttributes.length > 0 && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Filtering Attributes ({plugin.filteringAttributes.length})</Title3>
-            <div className={styles.badgeGroup}>
+            <div className={shared.badgeGroup}>
               {plugin.filteringAttributes.map((attr, idx) => (
-                <Badge key={idx} appearance="tint" color="warning">
+                <Badge key={idx} appearance="tint" shape="rounded" size="medium" color="warning">
                   {attr}
                 </Badge>
               ))}
@@ -317,25 +226,25 @@ export function PluginsList({
         )}
 
         {(plugin.preImage || plugin.postImage) && (
-          <div className={styles.section}>
+          <div className={shared.section}>
             <Title3>Entity Images</Title3>
-            <div className={styles.detailsGrid}>
+            <div className={shared.detailsGrid}>
               {plugin.preImage && (
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Pre-Image</Text>
-                  <Text className={styles.detailValue}>{plugin.preImage.name}</Text>
-                  <Text className={styles.codeText}>Property: {plugin.preImage.messagePropertyName}</Text>
-                  <Text className={styles.codeText}>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Pre-Image</Text>
+                  <Text className={shared.detailValue}>{plugin.preImage.name}</Text>
+                  <Text className={shared.codeText}>Property: {plugin.preImage.messagePropertyName}</Text>
+                  <Text className={shared.codeText}>
                     Attributes: {plugin.preImage.attributes?.join(', ') || 'All'}
                   </Text>
                 </div>
               )}
               {plugin.postImage && (
-                <div className={styles.detailItem}>
-                  <Text className={styles.detailLabel}>Post-Image</Text>
-                  <Text className={styles.detailValue}>{plugin.postImage.name}</Text>
-                  <Text className={styles.codeText}>Property: {plugin.postImage.messagePropertyName}</Text>
-                  <Text className={styles.codeText}>
+                <div className={shared.detailItem}>
+                  <Text className={shared.detailLabel}>Post-Image</Text>
+                  <Text className={shared.detailValue}>{plugin.postImage.name}</Text>
+                  <Text className={shared.codeText}>Property: {plugin.postImage.messagePropertyName}</Text>
+                  <Text className={shared.codeText}>
                     Attributes: {plugin.postImage.attributes?.join(', ') || 'All'}
                   </Text>
                 </div>
@@ -350,22 +259,19 @@ export function PluginsList({
   // Empty state
   if (filteredPlugins.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Text style={{ fontSize: '48px' }}>🔌</Text>
-        <Text size={500} weight="semibold">
-          No Plugins Found
-        </Text>
-        <Text>
-          {entityLogicalName
+      <EmptyState
+        type="plugins"
+        message={
+          entityLogicalName
             ? `No plugins registered for the ${entityLogicalName} entity.`
-            : 'No plugins were found in the selected solution(s).'}
-        </Text>
-      </div>
+            : 'No plugins are registered in the selected solution(s).'
+        }
+      />
     );
   }
 
   return (
-    <div className={styles.container}>
+    <div className={shared.container}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -374,10 +280,15 @@ export function PluginsList({
         totalCount={sortedPlugins.length}
         itemLabel="plugins"
       >
-        <FilterGroup label="Message:">
+        <FilterGroup
+          label="Message:"
+          hasActiveFilters={selectedMessage !== ''}
+          onClear={() => setSelectedMessage('')}
+        >
           <Dropdown
             size="small"
-            style={{ minWidth: '130px' }}
+            className={styles.typeDropdown}
+            aria-label="Filter by message"
             value={selectedMessage || 'All'}
             selectedOptions={selectedMessage ? [selectedMessage] : []}
             onOptionSelect={(_, data) => setSelectedMessage(data.optionValue === '' ? '' : (data.optionValue ?? ''))}
@@ -388,11 +299,16 @@ export function PluginsList({
             ))}
           </Dropdown>
         </FilterGroup>
-        <FilterGroup label="Stage:">
+        <FilterGroup
+          label="Stage:"
+          hasActiveFilters={activeStageFilters.size > 0}
+          onClear={() => setActiveStageFilters(new Set())}
+        >
           {STAGE_VALUES.map((stage) => (
             <ToggleButton
               key={stage}
-              className={styles.filterButton}
+              appearance="outline"
+              className={shared.filterButton}
               size="small"
               checked={activeStageFilters.has(stage)}
               disabled={stageCounts[stage] === 0}
@@ -401,17 +317,17 @@ export function PluginsList({
               {formatStageLabel(stage)}
             </ToggleButton>
           ))}
-          {activeStageFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStageFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
-        <FilterGroup label="State:">
+        <FilterGroup
+          label="State:"
+          hasActiveFilters={activeStateFilters.size > 0}
+          onClear={() => setActiveStateFilters(new Set())}
+        >
           {STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
-              className={styles.filterButton}
+              appearance="outline"
+              className={shared.filterButton}
               size="small"
               checked={activeStateFilters.has(state)}
               disabled={stateCounts[state] === 0}
@@ -420,59 +336,47 @@ export function PluginsList({
               {state}
             </ToggleButton>
           ))}
-          {activeStateFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
       {searchedPlugins.length === 0 && sortedPlugins.length > 0 ? (
-        <div className={styles.emptyState}>
-          <Text>No plugins match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       ) : null}
       {searchedPlugins.map((plugin) => {
         const isExpanded = expandedPluginId === plugin.id;
         return (
           <div key={plugin.id}>
             <div
-              className={`${styles.pluginRow} ${isExpanded ? styles.pluginRowExpanded : ''}`}
+              className={mergeClasses(shared.cardRow, styles.pluginRow, isExpanded && shared.cardRowExpanded)}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
               onClick={() => toggleExpand(plugin.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(plugin.id); } }}
             >
-              <div className={styles.chevron}>
+              <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
               <Text className={styles.rank}>{plugin.rank}</Text>
-              <div className={styles.nameColumn}>
-                <Text weight="semibold">
-                  <TruncatedText text={plugin.name} />
-                </Text>
-                <Text className={styles.codeText}>
-                  <TruncatedText text={plugin.assemblyName} />
-                </Text>
+              <div className={shared.nameColumn}>
+                <Text weight="semibold">{plugin.name}</Text>
+                <Text className={shared.codeText}>{plugin.assemblyName}</Text>
               </div>
               {!entityLogicalName && (
-                <Text className={styles.codeText}>
-                  <TruncatedText text={plugin.entity} />
-                </Text>
+                <Text className={shared.codeText}>{plugin.entity}</Text>
               )}
-              <Badge appearance="outline" shape="rounded" size="medium">{plugin.message}</Badge>
+              <Badge appearance="outline" shape="rounded" size="small">{plugin.message}</Badge>
               <Badge
-                appearance="filled"
-                size="medium"
+                appearance="tint"
+                size="small"
                 shape="rounded"
-                style={{
-                  backgroundColor: getStageBadgeColor(plugin.stage),
-                  color: 'white',
-                }}
+                color={getStageBadgeColor(plugin.stageName)}
               >
                 {plugin.stageName}
               </Badge>
-              <Badge appearance={plugin.mode === 0 ? 'outline' : 'tint'} color={plugin.mode === 0 ? 'brand' : 'important'} size="medium" shape="rounded">
+              <Badge appearance={plugin.mode === 0 ? 'outline' : 'tint'} color={plugin.mode === 0 ? 'brand' : 'important'} size="small" shape="rounded">
                 {plugin.modeName}
               </Badge>
-              <Badge appearance="filled" shape="rounded" color={plugin.state === 'Enabled' ? 'success' : 'important'} size="medium">
+              <Badge appearance="filled" shape="rounded" color={plugin.state === 'Enabled' ? 'success' : 'important'} size="small">
                 {plugin.state}
               </Badge>
             </div>

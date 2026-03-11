@@ -18,8 +18,16 @@ import {
   ShieldError24Regular,
   ShieldCheckmark24Regular,
   Warning24Regular,
+  LightbulbFilament20Regular,
 } from '@fluentui/react-icons';
-import type { ExternalEndpoint } from '../core';
+import type { ExternalEndpoint, RiskFactor, ExternalCallSource } from '../core';
+
+/**
+ * Maximum width for the domain cell in the endpoint table.
+ * This is a display truncation cap (overflow: ellipsis), not a spacing value,
+ * so it cannot be expressed with a Fluent UI spacing token.
+ */
+const MAX_DOMAIN_CELL_WIDTH = '250px';
 
 const useStyles = makeStyles({
   container: {
@@ -91,7 +99,7 @@ const useStyles = makeStyles({
   domainCell: {
     fontFamily: 'Consolas, Monaco, monospace',
     fontSize: tokens.fontSizeBase200,
-    maxWidth: '250px',
+    maxWidth: MAX_DOMAIN_CELL_WIDTH,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -235,6 +243,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
         <SearchBox
           className={styles.searchBox}
           placeholder="Search domains or URLs..."
+          aria-label="Search external dependencies"
           value={searchQuery}
           onChange={(_, data) => setSearchQuery(data.value)}
         />
@@ -242,6 +251,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
         <Dropdown
           className={styles.dropdown}
           placeholder="Risk Level"
+          aria-label="Filter by risk level"
           value={
             riskLevelFilter === 'all'
               ? 'All Risk Levels'
@@ -275,11 +285,20 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
         {filteredEndpoints.map((item) => (
           <div key={item.domain} className={styles.rowContainer}>
             {/* Main Row */}
-            <div className={styles.mainRow} onClick={() => toggleRow(item.domain)}>
+            <div
+              className={styles.mainRow}
+              role="button"
+              tabIndex={0}
+              aria-expanded={expandedRows.has(item.domain)}
+              onClick={() => toggleRow(item.domain)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRow(item.domain); } }}
+            >
               {/* Expand Button */}
               <Button
                 appearance="subtle"
                 size="small"
+                aria-expanded={expandedRows.has(item.domain)}
+                aria-label={expandedRows.has(item.domain) ? `Collapse ${item.domain}` : `Expand ${item.domain}`}
                 icon={expandedRows.has(item.domain) ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -311,6 +330,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                   )}
                   <Badge
                     appearance="filled"
+                    shape="rounded"
                     color={
                       item.riskLevel === 'Trusted'
                         ? 'success'
@@ -380,7 +400,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
               {item.riskFactors.length > 0 && (
                 <div className={styles.riskFactorsSection}>
                   <Text weight="semibold">Risk Factors</Text>
-                  {item.riskFactors.map((factor: any, index: number) => (
+                  {item.riskFactors.map((factor: RiskFactor, index: number) => (
                     <Card
                       key={index}
                       className={`${styles.riskFactorCard} ${
@@ -396,6 +416,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                       <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
                         <Badge
                           appearance="filled"
+                          shape="rounded"
                           color={
                             factor.severity === 'Critical' || factor.severity === 'High'
                               ? 'danger'
@@ -417,7 +438,8 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
                           color: tokens.colorNeutralForeground3,
                         }}
                       >
-                        💡 {factor.recommendation}
+                        <LightbulbFilament20Regular style={{ verticalAlign: 'middle', marginRight: tokens.spacingHorizontalXS, color: tokens.colorStatusWarningForeground1 }} />
+                        {factor.recommendation}
                       </Text>
                     </Card>
                   ))}
@@ -428,7 +450,7 @@ export function ExternalDependenciesView({ endpoints }: ExternalDependenciesView
               <div style={{ marginTop: tokens.spacingVerticalL }}>
                 <Text weight="semibold">Called From ({item.detectedIn.length})</Text>
                 <div className={styles.sourcesGrid}>
-                  {item.detectedIn.map((source: any, index: number) => (
+                  {item.detectedIn.map((source: ExternalCallSource, index: number) => (
                     <Card key={index} className={styles.sourceCard}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, marginBottom: tokens.spacingVerticalXXS }}>
                         <Badge appearance="outline" shape="rounded" color="brand">

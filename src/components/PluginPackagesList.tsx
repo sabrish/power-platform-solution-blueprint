@@ -6,7 +6,7 @@ import {
   tokens,
   Checkbox,
 } from '@fluentui/react-components';
-import { FilterBar } from './FilterBar';
+import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular, Box20Regular } from '@fluentui/react-icons';
 import type { PluginStep } from '../core';
 
@@ -26,6 +26,7 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: tokens.borderRadiusMedium,
     cursor: 'pointer',
+    transition: 'all 0.2s ease',
     ':hover': {
       backgroundColor: tokens.colorNeutralBackground1Hover,
       boxShadow: tokens.shadow4,
@@ -196,11 +197,13 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
         totalCount={packages.length}
         itemLabel={packages.length !== 1 ? 'packages' : 'package'}
       >
-        <Checkbox
-          label="Show only packages with disabled steps"
-          checked={showDisabledOnly}
-          onChange={(_, data) => setShowDisabledOnly(data.checked === true)}
-        />
+        <FilterGroup label="Show:">
+          <Checkbox
+            label="Show only packages with disabled steps"
+            checked={showDisabledOnly}
+            onChange={(_, data) => setShowDisabledOnly(data.checked === true)}
+          />
+        </FilterGroup>
       </FilterBar>
 
       {filteredPackages.length === 0 && packages.length > 0 ? (
@@ -215,7 +218,11 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
           <div key={pkg.assemblyName}>
             <div
               className={`${styles.row} ${isExpanded ? styles.rowExpanded : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
               onClick={() => toggleExpand(pkg.assemblyName)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(pkg.assemblyName); } }}
             >
               <div className={styles.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}

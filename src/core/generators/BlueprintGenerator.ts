@@ -1,4 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
+import { FetchLogger } from '../utils/FetchLogger.js';
+import { withConcurrencyLimit } from '../utils/withConcurrencyLimit.js';
 import { EntityDiscovery } from '../discovery/EntityDiscovery.js';
 import { SolutionComponentDiscovery } from '../discovery/SolutionComponentDiscovery.js';
 import { SolutionDiscovery } from '../discovery/SolutionDiscovery.js';
@@ -10,13 +12,21 @@ import { BusinessRuleDiscovery } from '../discovery/BusinessRuleDiscovery.js';
 import { ClassicWorkflowDiscovery } from '../discovery/ClassicWorkflowDiscovery.js';
 import { FormDiscovery } from '../discovery/FormDiscovery.js';
 import { WebResourceDiscovery } from '../discovery/WebResourceDiscovery.js';
+import { CustomAPIDiscovery } from '../discovery/CustomAPIDiscovery.js';
 import { WorkflowMigrationAnalyzer } from '../analyzers/WorkflowMigrationAnalyzer.js';
 import { ERDGenerator } from '../generators/ERDGenerator.js';
-import { CrossEntityMapper } from '../analyzers/CrossEntityMapper.js';
+import { CrossEntityAnalyzer } from '../analyzers/CrossEntityAnalyzer.js';
 import { ExternalDependencyAggregator } from '../analyzers/ExternalDependencyAggregator.js';
 import { SolutionDistributionAnalyzer } from '../analyzers/SolutionDistributionAnalyzer.js';
 import { SecurityRoleDiscovery } from '../discovery/SecurityRoleDiscovery.js';
 import { FieldSecurityProfileDiscovery } from '../discovery/FieldSecurityProfileDiscovery.js';
+import { BusinessProcessFlowDiscovery } from '../discovery/BusinessProcessFlowDiscovery.js';
+import { EnvironmentVariableDiscovery } from '../discovery/EnvironmentVariableDiscovery.js';
+import { ConnectionReferenceDiscovery } from '../discovery/ConnectionReferenceDiscovery.js';
+import { GlobalChoiceDiscovery } from '../discovery/GlobalChoiceDiscovery.js';
+import { CustomConnectorDiscovery } from '../discovery/CustomConnectorDiscovery.js';
+import { ColumnSecurityDiscovery } from '../discovery/ColumnSecurityDiscovery.js';
+import { AppDiscovery } from '../discovery/AppDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import { JsonReporter } from '../reporters/JsonReporter.js';
 import { MarkdownReporter } from '../reporters/MarkdownReporter.js';
@@ -24,6 +34,9 @@ import { HtmlReporter } from '../reporters/HtmlReporter.js';
 import { ZipPackager } from '../exporters/ZipPackager.js';
 import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
 import type { ComponentInventory, ComponentInventoryWithSolutions, WorkflowInventory } from '../types/components.js';
+import type { CanvasApp } from '../types/canvasApp.js';
+import type { CustomPage } from '../types/customPage.js';
+import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
 import type {
   GeneratorOptions,
   BlueprintResult,
@@ -32,6 +45,7 @@ import type {
   Flow,
   BusinessRule,
   WebResource,
+  StepWarning,
 } from '../types/blueprint.js';
 
 /**
@@ -56,6 +70,16 @@ export class BlueprintGenerator {
   private publishers: Publisher[] = [];
   private solutions: Solution[] = [];
   private latestResult: BlueprintResult | null = null;
+  private logger: FetchLogger = new FetchLogger();
+  private stepWarnings: StepWarning[] = [];
+
+  /** Scale tier based on entity count — controls concurrency and retry aggressiveness */
+  private getScaleTier(entityCount: number): { concurrency: number; initialBatchSize: number; maxAttempts: number; baseDelayMs: number } {
+    if (entityCount >= 500) return { concurrency: 2, initialBatchSize: 8,  maxAttempts: 5, baseDelayMs: 2000 };
+    if (entityCount >= 200) return { concurrency: 3, initialBatchSize: 10, maxAttempts: 5, baseDelayMs: 1500 };
+    if (entityCount >= 50)  return { concurrency: 4, initialBatchSize: 15, maxAttempts: 4, baseDelayMs: 1000 };
+    return                         { concurrency: 5, initialBatchSize: 20, maxAttempts: 4, baseDelayMs: 1000 };
+  }
 
   constructor(client: IDataverseClient, scope: ScopeSelection, options: GeneratorOptions) {
     this.client = client;
@@ -69,6 +93,13 @@ export class BlueprintGenerator {
   async generate(): Promise<BlueprintResult> {
     const startTime = new Date();
     const warnings: string[] = [];
+    this.logger = new FetchLogger();
+    this.stepWarnings = [];
+
+    // Forward live fetch entries to the caller if they subscribed
+    const unsubscribeFetchLogger = this.options.onFetchEntry
+      ? this.logger.subscribe(this.options.onFetchEntry)
+      : undefined;
 
     try {
       // STEP 1: Discover Components
@@ -81,6 +112,7 @@ export class BlueprintGenerator {
       });
 
       const { inventory, workflowInventory, entities } = await this.discoverComponents();
+      const scaleTier = this.getScaleTier(entities.length);
 
       // Check if solution is empty
       if (this.isInventoryEmpty(inventory)) {
@@ -98,10 +130,12 @@ export class BlueprintGenerator {
       });
 
       // STEP 2: Process Entities
-      const entityBlueprints = await this.processEntities(entities, inventory.attributeIds);
+      const entityBlueprints = await this.processEntities(entities, inventory.attributeIds, scaleTier.concurrency);
       if (entities.length === 0) {
         warnings.push('No entities found in selected scope');
       }
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 3: Process Plugins
       const plugins = await this.processPlugins(inventory.pluginIds);
@@ -111,6 +145,8 @@ export class BlueprintGenerator {
         warnings.push('No plugins found');
       }
 
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
       // STEP 4: Process Flows
       const flows = await this.processFlows(workflowInventory.flowIds);
       const flowsByEntity = this.groupFlowsByEntity(flows);
@@ -118,6 +154,8 @@ export class BlueprintGenerator {
       if (workflowInventory.flowIds.length === 0) {
         warnings.push('No flows found');
       }
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 5: Process Business Rules
       const businessRules = await this.processBusinessRules(workflowInventory.businessRuleIds);
@@ -127,17 +165,23 @@ export class BlueprintGenerator {
         warnings.push('No business rules found');
       }
 
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
       // STEP 5.5: Process Classic Workflows (deprecated, requires migration)
       const classicWorkflows = await this.processClassicWorkflows(workflowInventory.classicWorkflowIds);
       const classicWorkflowsByEntity = this.groupClassicWorkflowsByEntity(classicWorkflows);
 
       if (workflowInventory.classicWorkflowIds.length > 0) {
-        warnings.push(`⚠️ ${workflowInventory.classicWorkflowIds.length} classic workflow(s) detected - migration to Power Automate recommended`);
+        warnings.push(`${workflowInventory.classicWorkflowIds.length} classic workflow(s) detected - migration to Power Automate recommended`);
       }
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 5.6: Process Business Process Flows
       const businessProcessFlows = await this.processBusinessProcessFlows(workflowInventory.businessProcessFlowIds);
       const businessProcessFlowsByEntity = this.groupBusinessProcessFlowsByEntity(businessProcessFlows);
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6: Process Web Resources
       const webResources = await this.processWebResources(inventory.webResourceIds);
@@ -147,23 +191,37 @@ export class BlueprintGenerator {
         warnings.push('No web resources found');
       }
 
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
       // STEP 6.5: Process Custom APIs
       const customAPIs = await this.processCustomAPIs(inventory.customApiIds);
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.6: Process Environment Variables
       const environmentVariables = await this.processEnvironmentVariables(inventory.environmentVariableIds);
 
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
       // STEP 6.7: Process Connection References
       const connectionReferences = await this.processConnectionReferences(inventory.connectionReferenceIds);
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.8: Process Global Choices (Option Sets)
       const globalChoices = await this.processGlobalChoices(inventory.globalChoiceIds);
 
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
       // STEP 6.9: Process Custom Connectors
       const customConnectors = await this.processCustomConnectors(inventory.customConnectorIds);
 
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
       // STEP 6.10: Process Security Roles
       const securityRoles = await this.processSecurityRoles(inventory.securityRoleIds);
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.11: Process Field Security Profiles
       const { profiles: fieldSecurityProfiles, fieldSecurityByEntity } = await this.processFieldSecurityProfiles(
@@ -171,8 +229,52 @@ export class BlueprintGenerator {
         entities.map((e) => e.LogicalName)
       );
 
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
       // STEP 6.12: Process Column Security (Attribute Masking & Column Security Profiles)
       const { attributeMaskingRules, columnSecurityProfiles } = await this.processColumnSecurity();
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+
+      // STEP 6.13: Process Canvas Apps, Custom Pages, and Model-Driven Apps
+      // Canvas Apps and Custom Pages both use component type 300 in solutioncomponents
+      // and are split post-retrieval by canvasapptype (0 = Canvas App, 2 = Custom Page; 1 = Component Library, skipped).
+      this.reportProgress({
+        phase: 'apps',
+        entityName: '',
+        current: 0,
+        total: inventory.canvasAppIds.length + inventory.appModuleIds.length,
+        message: 'Discovering Canvas Apps, Custom Pages, and Model-Driven Apps...',
+      });
+      let canvasApps: CanvasApp[] = [];
+      let customPages: CustomPage[] = [];
+      let modelDrivenApps: ModelDrivenApp[] = [];
+      try {
+        const appDiscovery = new AppDiscovery(
+          this.client,
+          (current, total) => this.reportProgress({ phase: 'apps', entityName: '', current, total, message: 'Fetching app records...' }),
+          this.logger
+        );
+        const [appsResult, mdApps] = await Promise.all([
+          inventory.canvasAppIds.length > 0
+            ? appDiscovery.getAppsAndPagesByIds(inventory.canvasAppIds)
+            : Promise.resolve({ canvasApps: [], customPages: [] }),
+          inventory.appModuleIds.length > 0
+            ? appDiscovery.getModelDrivenAppsByIds(inventory.appModuleIds)
+            : Promise.resolve([]),
+        ]);
+        canvasApps = appsResult.canvasApps;
+        customPages = appsResult.customPages;
+        modelDrivenApps = mdApps;
+      } catch (err) {
+        this.stepWarnings.push({
+          step: 'Apps',
+          message: err instanceof Error ? err.message : 'Unknown error fetching app records',
+          partial: false,
+        });
+      }
+
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 7: Process Forms and JavaScript Event Handlers
       // Pass entities with rootcomponentbehavior info to determine form inclusion
@@ -205,7 +307,8 @@ export class BlueprintGenerator {
 
       // 10.1: Generate ERD
       const erdGenerator = new ERDGenerator();
-      const erd = erdGenerator.generateMermaidERD(entityBlueprints, this.publishers);
+      const bpfEntityNames = new Set(businessProcessFlows.map(b => b.uniqueName.toLowerCase()));
+      const erd = erdGenerator.generateMermaidERD(entityBlueprints, this.publishers, bpfEntityNames);
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
@@ -214,15 +317,15 @@ export class BlueprintGenerator {
         message: 'ERD generated',
       });
 
-      // 10.2: Map cross-entity automation
-      const crossEntityMapper = new CrossEntityMapper();
-      const crossEntityLinks = crossEntityMapper.mapCrossEntityAutomation(entityBlueprints);
+      // 10.2: Analyze cross-entity automation
+      const crossEntityAnalyzer = new CrossEntityAnalyzer();
+      const crossEntityAnalysis = crossEntityAnalyzer.analyze(entityBlueprints, classicWorkflows, flows);
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
         current: 2,
         total: 4,
-        message: 'Cross-entity automation mapped',
+        message: 'Cross-entity automation analyzed',
       });
 
       // 10.3: Aggregate external dependencies
@@ -257,6 +360,7 @@ export class BlueprintGenerator {
           totalWebResources: 0,
           totalCanvasApps: 0,
           totalCustomPages: 0,
+          totalModelDrivenApps: 0,
         },
         plugins,
         pluginsByEntity,
@@ -273,6 +377,9 @@ export class BlueprintGenerator {
         connectionReferences,
         globalChoices,
         customConnectors,
+        canvasApps,
+        customPages,
+        modelDrivenApps,
         webResources,
         webResourcesByType,
       };
@@ -323,8 +430,9 @@ export class BlueprintGenerator {
         totalCustomConnectors: inventory.customConnectorIds.length,
         totalAttributes: entityBlueprints.reduce((sum, bp) => sum + (bp.entity.Attributes?.length || 0), 0),
         totalWebResources: inventory.webResourceIds.length,
-        totalCanvasApps: inventory.canvasAppIds.length,
-        totalCustomPages: inventory.customPageIds.length,
+        totalCanvasApps: canvasApps.length,
+        totalCustomPages: customPages.length,
+        totalModelDrivenApps: modelDrivenApps.length,
       };
 
       // Complete
@@ -365,16 +473,21 @@ export class BlueprintGenerator {
         connectionReferences,
         globalChoices,
         customConnectors,
+        canvasApps,
+        customPages,
+        modelDrivenApps,
         webResources,
         webResourcesByType,
         erd,
-        crossEntityLinks,
+        crossEntityAnalysis: crossEntityAnalysis.totalEntryPoints > 0 ? crossEntityAnalysis : undefined,
         externalEndpoints,
         solutionDistribution,
         securityRoles: securityRoles.length > 0 ? securityRoles : undefined,
         fieldSecurityProfiles: fieldSecurityProfiles.length > 0 ? fieldSecurityProfiles : undefined,
         attributeMaskingRules: attributeMaskingRules.length > 0 ? attributeMaskingRules : undefined,
         columnSecurityProfiles: columnSecurityProfiles.length > 0 ? columnSecurityProfiles : undefined,
+        stepWarnings: this.stepWarnings.length > 0 ? this.stepWarnings : undefined,
+        fetchLog: this.logger.getEntries(),
       };
 
       // Store for export
@@ -385,6 +498,8 @@ export class BlueprintGenerator {
       throw new Error(
         `Blueprint generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+    } finally {
+      unsubscribeFetchLogger?.();
     }
   }
 
@@ -404,13 +519,16 @@ export class BlueprintGenerator {
 
     if (this.scope.type === 'solution' && this.scope.solutionIds) {
       // Solution-based discovery
-      const componentDiscovery = new SolutionComponentDiscovery(this.client);
+      const componentDiscovery = new SolutionComponentDiscovery(this.client, this.logger);
 
       // Get solution unique names to detect Default solution
       const solutionDiscovery = new SolutionDiscovery(this.client);
       const allSolutions = await solutionDiscovery.getSolutions();
       const selectedSolutions = allSolutions.filter(s => this.scope.solutionIds?.includes(s.solutionid));
-      const solutionUniqueNames = selectedSolutions.map(s => s.uniquename);
+      // Build uniqueNames in the SAME ORDER as this.scope.solutionIds (not alphabetical order from allSolutions)
+      // so index-based alignment in discoverComponents remains correct.
+      const solutionIdToUniquename = new Map(allSolutions.map(s => [s.solutionid, s.uniquename]));
+      const solutionUniqueNames = (this.scope.solutionIds ?? []).map(id => solutionIdToUniquename.get(id) ?? '');
 
       // Store solutions for distribution analysis
       this.solutions = selectedSolutions;
@@ -441,21 +559,16 @@ export class BlueprintGenerator {
   /**
    * Process all entities - fetch detailed schema and filter attributes by solution
    */
-  private async processEntities(entities: EntityMetadata[], attributeIds: string[]): Promise<EntityBlueprint[]> {
-    const blueprints: EntityBlueprint[] = [];
+  private async processEntities(entities: EntityMetadata[], attributeIds: string[], concurrency = 5): Promise<EntityBlueprint[]> {
     const total = entities.length;
+    let completed = 0;
 
-    for (let i = 0; i < entities.length; i++) {
-      // Check if cancelled
-      if (this.options.signal?.aborted) {
-        throw new Error('Blueprint generation cancelled');
-      }
+    const tasks = entities.map(entity => async () => {
+      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
-      const entity = entities[i];
-      const current = i + 1;
       const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName;
+      const current = ++completed;
 
-      // Fetch schema
       this.reportProgress({
         phase: 'schema',
         entityName: entity.LogicalName,
@@ -465,7 +578,21 @@ export class BlueprintGenerator {
       });
 
       const schemaDiscovery = new SchemaDiscovery(this.client);
+      const schemaStart = Date.now();
       const detailedEntity = await schemaDiscovery.getEntitySchema(entity.LogicalName);
+      this.logger.log({
+        timestamp: new Date(schemaStart),
+        step: 'Entity Schema',
+        entitySet: 'EntityDefinitions',
+        filterSummary: displayName,
+        batchIndex: current - 1,
+        batchTotal: total,
+        batchSize: 1,
+        status: 'success',
+        attempts: 1,
+        durationMs: Date.now() - schemaStart,
+        resultCount: detailedEntity.Attributes?.length,
+      });
 
       // For custom entities, all attributes are implicitly included
       // Only filter attributes for system entities
@@ -492,18 +619,33 @@ export class BlueprintGenerator {
         detailedEntity.Attributes = filterSystemFields(detailedEntity.Attributes, true);
       }
 
-      blueprints.push({
+      return {
         entity: detailedEntity,
         plugins: [],
         flows: [],
         businessRules: [],
         forms: [],
-      });
+      } as EntityBlueprint;
+    });
 
-      // Small delay to be respectful to API
-      await this.delay(100);
+    const settled = await withConcurrencyLimit(concurrency, tasks);
+    const blueprints: EntityBlueprint[] = [];
+    let entityFailCount = 0;
+    for (const r of settled) {
+      if (r.status === 'fulfilled') {
+        blueprints.push(r.value);
+      } else {
+        entityFailCount++;
+      }
     }
-
+    if (entityFailCount > 0) {
+      this.stepWarnings.push({
+        step: 'Entity Schema',
+        message: `${entityFailCount} of ${entities.length} entity schema(s) could not be fetched — results may be incomplete. See Fetch Log for details.`,
+        partial: true,
+        failedCount: entityFailCount,
+      });
+    }
     return blueprints;
   }
 
@@ -576,6 +718,24 @@ export class BlueprintGenerator {
   }
 
   /**
+   * After a process* step completes, check the fetch log for any new failed entries
+   * and push a partial StepWarning so the dashboard can surface them.
+   */
+  private checkForPartialFailures(stepName: string, logWatermark: number): void {
+    const newFailures = this.logger.getEntries()
+      .slice(logWatermark)
+      .filter(e => e.status === 'failed');
+    if (newFailures.length > 0) {
+      this.stepWarnings.push({
+        step: stepName,
+        message: `${newFailures.length} API request(s) failed — results may be incomplete. See Fetch Log for details.`,
+        partial: true,
+        failedCount: newFailures.length,
+      });
+    }
+  }
+
+  /**
    * Process plugins - fetch detailed plugin metadata
    */
   private async processPlugins(pluginIds: string[]): Promise<PluginStep[]> {
@@ -601,10 +761,11 @@ export class BlueprintGenerator {
           total,
           message: `Documenting plugins (${current}/${total})...`,
         });
-      });
+      }, this.logger);
+      const logWatermark = this.logger.getEntries().length;
       const plugins = await pluginDiscovery.getPluginsByIds(pluginIds);
+      this.checkForPartialFailures('Plugins', logWatermark);
 
-      // Report completion
       this.reportProgress({
         phase: 'plugins',
         entityName: '',
@@ -615,8 +776,9 @@ export class BlueprintGenerator {
 
       return plugins;
     } catch (error) {
-      console.error('Error processing plugins:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Plugins', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -646,10 +808,11 @@ export class BlueprintGenerator {
           total,
           message: `Documenting flows (${current}/${total})...`,
         });
-      });
+      }, this.logger);
+      const flowLogWatermark = this.logger.getEntries().length;
       const flows = await flowDiscovery.getFlowsByIds(flowIds);
+      this.checkForPartialFailures('Flows', flowLogWatermark);
 
-      // Report completion
       this.reportProgress({
         phase: 'flows',
         entityName: '',
@@ -660,8 +823,9 @@ export class BlueprintGenerator {
 
       return flows;
     } catch (error) {
-      console.error('Error processing flows:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Flows', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -672,8 +836,8 @@ export class BlueprintGenerator {
     const flowsByEntity = new Map<string, Flow[]>();
 
     for (const flow of flows) {
-      if (!flow.entity) {
-        // Flows without an entity go in a special "global" bucket
+      if (!flow.entity || flow.entity === 'none') {
+        // Flows without an entity (or with the literal "none" from Dataverse) are skipped
         continue;
       }
 
@@ -743,8 +907,10 @@ export class BlueprintGenerator {
           total,
           message: `Documenting business rules (${current}/${total})...`,
         });
-      });
+      }, this.logger);
+      const brLogWatermark = this.logger.getEntries().length;
       const businessRules = await businessRuleDiscovery.getBusinessRulesByIds(businessRuleIds);
+      this.checkForPartialFailures('Business Rules', brLogWatermark);
 
       // Report completion
       this.reportProgress({
@@ -757,8 +923,9 @@ export class BlueprintGenerator {
 
       return businessRules;
     } catch (error) {
-      console.error('Error processing business rules:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Business Rules', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -786,12 +953,16 @@ export class BlueprintGenerator {
           entityName: '',
           current,
           total,
-          message: `Analyzing web resources (${current}/${total})...`,
+          // When current === total, Pass 1 is done but Pass 2 (JS content fetch) may still be running
+          message: current < total
+            ? `Analyzing web resources (${current}/${total})...`
+            : 'Fetching JavaScript web resource content...',
         });
-      });
+      }, this.logger);
+      const wrLogWatermark = this.logger.getEntries().length;
       const webResources = await webResourceDiscovery.getWebResourcesByIds(webResourceIds);
+      this.checkForPartialFailures('Web Resources', wrLogWatermark);
 
-      // Report completion
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
@@ -802,8 +973,8 @@ export class BlueprintGenerator {
 
       return webResources;
     } catch (error) {
-      console.error('Error processing web resources:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      this.stepWarnings.push({ step: 'Web Resources', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
+      return [];
     }
   }
 
@@ -844,7 +1015,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: workflowIds.length,
-        message: `⚠️ Documenting ${workflowIds.length} classic workflow(s) (migration recommended)...`,
+        message: `Documenting ${workflowIds.length} classic workflow(s) (migration recommended)...`,
       });
 
       const classicWorkflowDiscovery = new ClassicWorkflowDiscovery(this.client, (current, total) => {
@@ -853,10 +1024,12 @@ export class BlueprintGenerator {
           entityName: '',
           current,
           total,
-          message: `⚠️ Documenting classic workflows (${current}/${total})...`,
+          message: `Documenting classic workflows (${current}/${total})...`,
         });
-      });
+      }, this.logger);
+      const cwLogWatermark = this.logger.getEntries().length;
       const workflows = await classicWorkflowDiscovery.getClassicWorkflowsByIds(workflowIds);
+      this.checkForPartialFailures('Classic Workflows', cwLogWatermark);
 
       // Analyze each workflow for migration
       const analyzer = new WorkflowMigrationAnalyzer();
@@ -875,7 +1048,6 @@ export class BlueprintGenerator {
 
       return workflows;
     } catch (error) {
-      console.error('Error processing classic workflows:', error instanceof Error ? error.message : 'Unknown error');
       // Don't fail the entire generation if classic workflows fail
       return [];
     }
@@ -918,20 +1090,21 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: workflowIds.length,
-        message: `📊 Documenting ${workflowIds.length} Business Process Flow(s)...`,
+        message: `Documenting ${workflowIds.length} Business Process Flow(s)...`,
       });
 
-      const { BusinessProcessFlowDiscovery } = await import('../discovery/BusinessProcessFlowDiscovery.js');
       const bpfDiscovery = new BusinessProcessFlowDiscovery(this.client, (current, total) => {
         this.reportProgress({
           phase: 'discovering',
           entityName: '',
           current,
           total,
-          message: `📊 Documenting Business Process Flows (${current}/${total})...`,
+          message: `Documenting Business Process Flows (${current}/${total})...`,
         });
-      });
+      }, this.logger);
+      const bpfLogWatermark = this.logger.getEntries().length;
       const bpfs = await bpfDiscovery.getBusinessProcessFlowsByIds(workflowIds);
+      this.checkForPartialFailures('Business Process Flows', bpfLogWatermark);
 
       // Report completion
       this.reportProgress({
@@ -939,13 +1112,14 @@ export class BlueprintGenerator {
         entityName: '',
         current: workflowIds.length,
         total: workflowIds.length,
-        message: `📊 Documented ${bpfs.length} Business Process Flow(s)`,
+        message: `Documented ${bpfs.length} Business Process Flow(s)`,
       });
 
       return bpfs;
     } catch (error) {
-      console.error('Error processing Business Process Flows:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Business Process Flows', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -986,19 +1160,21 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: customApiIds.length,
-        message: `🔧 Documenting ${customApiIds.length} Custom API(s)...`,
+        message: `Documenting ${customApiIds.length} Custom API(s)...`,
       });
 
-      const { CustomAPIDiscovery } = await import('../discovery/CustomAPIDiscovery.js');
       const customApiDiscovery = new CustomAPIDiscovery(this.client, (current, total) => {
         this.reportProgress({
           phase: 'discovering',
           entityName: '',
           current,
           total,
-          message: `🔧 Documenting Custom APIs (${current}/${total})...`,
+          // When current === total, Pass 1 is done but request param + response property fetches may still be running
+          message: current < total
+            ? `Documenting Custom APIs (${current}/${total})...`
+            : 'Fetching Custom API parameters and response properties...',
         });
-      });
+      }, this.logger);
       const customAPIs = await customApiDiscovery.getCustomAPIsByIds(customApiIds);
 
       // Report completion
@@ -1007,13 +1183,13 @@ export class BlueprintGenerator {
         entityName: '',
         current: customApiIds.length,
         total: customApiIds.length,
-        message: `🔧 Documented ${customAPIs.length} Custom API(s)`,
+        message: `Documented ${customAPIs.length} Custom API(s)`,
       });
 
       return customAPIs;
     } catch (error) {
-      console.error('Error processing Custom APIs:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      this.stepWarnings.push({ step: 'Custom APIs', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
+      return [];
     }
   }
 
@@ -1031,33 +1207,35 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: envVarIds.length,
-        message: `🌍 Documenting ${envVarIds.length} Environment Variable(s)...`,
+        message: `Documenting ${envVarIds.length} Environment Variable(s)...`,
       });
 
-      const { EnvironmentVariableDiscovery } = await import('../discovery/EnvironmentVariableDiscovery.js');
       const envVarDiscovery = new EnvironmentVariableDiscovery(this.client, (current, total) => {
         this.reportProgress({
           phase: 'discovering',
           entityName: '',
           current,
           total,
-          message: `🌍 Documenting Environment Variables (${current}/${total})...`,
+          message: `Documenting Environment Variables (${current}/${total})...`,
         });
-      });
+      }, this.logger);
+      const evLogWatermark = this.logger.getEntries().length;
       const envVars = await envVarDiscovery.getEnvironmentVariablesByIds(envVarIds);
+      this.checkForPartialFailures('Environment Variables', evLogWatermark);
 
       this.reportProgress({
         phase: 'discovering',
         entityName: '',
         current: envVarIds.length,
         total: envVarIds.length,
-        message: `🌍 Documented ${envVars.length} Environment Variable(s)`,
+        message: `Documented ${envVars.length} Environment Variable(s)`,
       });
 
       return envVars;
     } catch (error) {
-      console.error('Error processing Environment Variables:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Environment Variables', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -1065,22 +1243,24 @@ export class BlueprintGenerator {
     if (connRefIds.length === 0) return [];
     try {
       this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connRefIds.length,
-        message: `🔗 Documenting ${connRefIds.length} Connection Reference(s)...` });
-      const { ConnectionReferenceDiscovery } = await import('../discovery/ConnectionReferenceDiscovery.js');
-      const discovery = new ConnectionReferenceDiscovery(this.client, (current, total) => {
+        message: `Documenting ${connRefIds.length} Connection Reference(s)...` });
+      const connRefDiscovery = new ConnectionReferenceDiscovery(this.client, (current, total) => {
         this.reportProgress({
           phase: 'discovering',
           entityName: '',
           current,
           total,
-          message: `🔗 Documenting Connection References (${current}/${total})...`,
+          message: `Documenting Connection References (${current}/${total})...`,
         });
-      });
-      const refs = await discovery.getConnectionReferencesByIds(connRefIds);
+      }, this.logger);
+      const crLogWatermark = this.logger.getEntries().length;
+      const refs = await connRefDiscovery.getConnectionReferencesByIds(connRefIds);
+      this.checkForPartialFailures('Connection References', crLogWatermark);
       return refs;
     } catch (error) {
-      console.error('Error processing Connection References:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Connection References', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -1088,14 +1268,20 @@ export class BlueprintGenerator {
     if (globalChoiceIds.length === 0) return [];
     try {
       this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: globalChoiceIds.length,
-        message: `📋 Documenting ${globalChoiceIds.length} Global Choice(s)...` });
-      const { GlobalChoiceDiscovery } = await import('../discovery/GlobalChoiceDiscovery.js');
-      const discovery = new GlobalChoiceDiscovery(this.client);
-      const choices = await discovery.discoverGlobalChoices(globalChoiceIds);
+        message: `Documenting ${globalChoiceIds.length} Global Choice(s)...` });
+      const gcDiscovery = new GlobalChoiceDiscovery(
+        this.client,
+        undefined,
+        this.logger
+      );
+      const gcLogWatermark = this.logger.getEntries().length;
+      const choices = await gcDiscovery.discoverGlobalChoices(globalChoiceIds);
+      this.checkForPartialFailures('Global Choices', gcLogWatermark);
       return choices;
     } catch (error) {
-      console.error('Error processing Global Choices:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Global Choices', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -1103,22 +1289,24 @@ export class BlueprintGenerator {
     if (connectorIds.length === 0) return [];
     try {
       this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connectorIds.length,
-        message: `🔌 Documenting ${connectorIds.length} Custom Connector(s)...` });
-      const { CustomConnectorDiscovery } = await import('../discovery/CustomConnectorDiscovery.js');
-      const discovery = new CustomConnectorDiscovery(this.client, (current, total) => {
+        message: `Documenting ${connectorIds.length} Custom Connector(s)...` });
+      const ccDiscovery = new CustomConnectorDiscovery(this.client, (current, total) => {
         this.reportProgress({
           phase: 'discovering',
           entityName: '',
           current,
           total,
-          message: `🔌 Documenting Custom Connectors (${current}/${total})...`,
+          message: `Documenting Custom Connectors (${current}/${total})...`,
         });
-      });
-      const connectors = await discovery.getConnectorsByIds(connectorIds);
+      }, this.logger);
+      const ccLogWatermark = this.logger.getEntries().length;
+      const connectors = await ccDiscovery.getConnectorsByIds(connectorIds);
+      this.checkForPartialFailures('Custom Connectors', ccLogWatermark);
       return connectors;
     } catch (error) {
-      console.error('Error processing Custom Connectors:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Custom Connectors', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -1131,53 +1319,29 @@ export class BlueprintGenerator {
     }
 
     try {
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: securityRoleIds.length,
-        message: `🔒 Documenting ${securityRoleIds.length} security role(s)...`,
-      });
-
       const securityRoleDiscovery = new SecurityRoleDiscovery(this.client, (current, total) => {
         this.reportProgress({
           phase: 'discovering',
           entityName: '',
           current,
           total,
-          message: `🔒 Documenting security roles (${current}/${total})...`,
+          message: `Documenting security roles (${current}/${total})...`,
         });
-      });
+      }, this.logger);
 
-      // Get all roles first
-      const allRoles = await securityRoleDiscovery.getSecurityRoles();
+      // Batch-fetch only the solution-scoped roles by ID
+      const srLogWatermark = this.logger.getEntries().length;
+      const rolesInSolution = await securityRoleDiscovery.getSecurityRoles(securityRoleIds);
 
-      // Filter to only roles in the solution
-      const rolesInSolution = allRoles.filter(role =>
-        securityRoleIds.some(id =>
-          this.normalizeGuid(id) === this.normalizeGuid(role.roleid)
-        )
-      );
-
-      // Get detailed permissions for each role
-      const roleDetails: import('../discovery/SecurityRoleDiscovery.js').SecurityRoleDetail[] = [];
-      for (let i = 0; i < rolesInSolution.length; i++) {
-        const detail = await securityRoleDiscovery.getSecurityRoleDetail(rolesInSolution[i]);
-        roleDetails.push(detail);
-
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current: i + 1,
-          total: rolesInSolution.length,
-          message: `🔒 Processing security role: ${rolesInSolution[i].name}`,
-        });
-      }
+      // Bulk 2-pass fetch: roleprivilegescollection → privileges table
+      const roleDetails = await securityRoleDiscovery.getRoleDetailsForRoles(rolesInSolution);
+      this.checkForPartialFailures('Security Roles', srLogWatermark);
 
       return roleDetails;
     } catch (error) {
-      console.error('Error processing security roles:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Security Roles', message: msg, partial: false });
+      return [];
     }
   }
 
@@ -1204,10 +1368,10 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: profileIds.length,
-        message: `🛡️ Documenting ${profileIds.length} field security profile(s)...`,
+        message: `Documenting ${profileIds.length} field security profile(s)...`,
       });
 
-      const fieldSecurityDiscovery = new FieldSecurityProfileDiscovery(this.client);
+      const fieldSecurityDiscovery = new FieldSecurityProfileDiscovery(this.client, this.logger);
 
       // Get all profiles
       const allProfiles = await fieldSecurityDiscovery.getFieldSecurityProfiles();
@@ -1227,7 +1391,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: profileIds.length,
         total: profileIds.length,
-        message: `🛡️ Documented ${profilesInSolution.length} field security profile(s)`,
+        message: `Documented ${profilesInSolution.length} field security profile(s)`,
       });
 
       return {
@@ -1235,8 +1399,9 @@ export class BlueprintGenerator {
         fieldSecurityByEntity,
       };
     } catch (error) {
-      console.error('Error processing field security profiles:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.stepWarnings.push({ step: 'Field Security Profiles', message: msg, partial: false });
+      return { profiles: [], fieldSecurityByEntity: new Map() };
     }
   }
 
@@ -1253,10 +1418,9 @@ export class BlueprintGenerator {
         entityName: '',
         current: 0,
         total: 2,
-        message: `🎭 Discovering attribute masking and column security...`,
+        message: `Discovering attribute masking and column security...`,
       });
 
-      const { ColumnSecurityDiscovery } = await import('../discovery/ColumnSecurityDiscovery.js');
       const columnSecurityDiscovery = new ColumnSecurityDiscovery(this.client);
 
       // Get attribute masking rules
@@ -1267,7 +1431,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 1,
         total: 2,
-        message: `🎭 Found ${attributeMaskingRules.length} attribute masking rule(s)`,
+        message: `Found ${attributeMaskingRules.length} attribute masking rule(s)`,
       });
 
       // Get column security profiles
@@ -1278,7 +1442,7 @@ export class BlueprintGenerator {
         entityName: '',
         current: 2,
         total: 2,
-        message: `🎭 Column security discovery complete`,
+        message: `Column security discovery complete`,
       });
 
       return {
@@ -1286,8 +1450,11 @@ export class BlueprintGenerator {
         columnSecurityProfiles,
       };
     } catch (error) {
-      console.error('Error processing column security:', error instanceof Error ? error.message : 'Unknown error');
-      // Return empty arrays on error instead of failing the entire blueprint
+      this.stepWarnings.push({
+        step: 'Column Security',
+        message: `Column security discovery failed: ${error instanceof Error ? error.message : 'Unknown error'}. Results may be incomplete.`,
+        partial: true,
+      });
       return {
         attributeMaskingRules: [],
         columnSecurityProfiles: [],
@@ -1307,17 +1474,19 @@ export class BlueprintGenerator {
     }
 
     try {
-      // Report progress
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: entities.length,
-        message: `Discovering forms and JavaScript handlers...`,
-      });
-
       const entityNames = entities.map(e => e.LogicalName);
-      const formDiscovery = new FormDiscovery(this.client);
+      const formDiscovery = new FormDiscovery(this.client, this.logger, (current, total) => {
+        this.reportProgress({
+          phase: 'discovering',
+          entityName: '',
+          current,
+          total,
+          // When current === total, Pass 1 is done but form XML content fetch may still be running
+          message: current < total
+            ? `Discovering forms (${current}/${total} entities)...`
+            : 'Fetching form XML definitions...',
+        });
+      });
       const allForms = await formDiscovery.getFormsForEntities(entityNames);
 
       // Build map of entity logical name to metadata ID
@@ -1361,8 +1530,7 @@ export class BlueprintGenerator {
 
       return forms;
     } catch (error) {
-      console.error('Error processing forms:', error instanceof Error ? error.message : 'Unknown error');
-      // Don't fail the entire generation if forms fail
+      this.stepWarnings.push({ step: 'Forms', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
       return [];
     }
   }
@@ -1416,13 +1584,6 @@ export class BlueprintGenerator {
    */
   private normalizeGuid(guid: string): string {
     return guid.toLowerCase().replace(/[{}]/g, '');
-  }
-
-  /**
-   * Delay helper
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

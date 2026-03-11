@@ -128,7 +128,7 @@ export function AlternateKeysView({ keys, primaryIdAttribute }: AlternateKeysVie
                   </Text>
                   <div className={styles.keyAttributes} style={{ marginTop: tokens.spacingVerticalXXS }}>
                     {key.KeyAttributes.map((attr, attrIdx) => (
-                      <Badge key={attrIdx} appearance="tint" color="brand">
+                      <Badge key={attrIdx} appearance="tint" shape="rounded" color="brand">
                         {attr}
                       </Badge>
                     ))}

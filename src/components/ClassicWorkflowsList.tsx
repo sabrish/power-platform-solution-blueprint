@@ -10,7 +10,6 @@ import {
   MessageBar,
   MessageBarBody,
   ToggleButton,
-  Button,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import {
@@ -22,24 +21,19 @@ import {
 } from '@fluentui/react-icons';
 import type { ClassicWorkflow } from '../core';
 import { formatDate } from '../utils/dateFormat';
-import { TruncatedText } from './TruncatedText';
+import { EmptyState } from './EmptyState';
+import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 const WORKFLOW_MODE_VALUES = ['Background', 'RealTime'];
 const WORKFLOW_STATE_VALUES = ['Active', 'Draft'];
 
+const WORKFLOWS_FILTER_SPECS: readonly FilterSpec<ClassicWorkflow>[] = [
+  { name: 'mode',  getKey: (w) => w.modeName },
+  { name: 'state', getKey: (w) => w.state },
+];
+
 const useStyles = makeStyles({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-  },
-  filterButton: {
-    minWidth: 'unset',
-    paddingLeft: tokens.spacingHorizontalS,
-    paddingRight: tokens.spacingHorizontalS,
-    height: '22px',
-    fontSize: tokens.fontSizeBase100,
-  },
   warning: {
     padding: tokens.spacingVerticalM,
     backgroundColor: tokens.colorPaletteYellowBackground1,
@@ -47,78 +41,9 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalM,
     borderRadius: tokens.borderRadiusMedium,
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   row: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto',
-    gap: tokens.spacingHorizontalM,
-    alignItems: 'start',
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: tokens.colorNeutralBackground1Hover,
-      boxShadow: tokens.shadow4,
-    },
-  },
-  rowExpanded: {
-    backgroundColor: tokens.colorBrandBackground2,
-  },
-  chevron: {
-    display: 'flex',
-    alignItems: 'center',
-    color: tokens.colorNeutralForeground3,
-  },
-  nameColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    wordBreak: 'break-word',
-  },
-  codeText: {
-    fontFamily: 'Consolas, Monaco, monospace',
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  expandedDetails: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    padding: tokens.spacingVerticalL,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderTop: 'none',
-    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
-    marginTop: '-4px',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: tokens.spacingHorizontalM,
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalXXS,
-  },
-  detailLabel: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-  },
-  detailValue: {
-    fontWeight: tokens.fontWeightSemibold,
-  },
-  section: {
-    marginTop: tokens.spacingVerticalM,
   },
   featureItem: {
     padding: tokens.spacingVerticalS,
@@ -152,10 +77,8 @@ const complexityColor = (c: string | undefined): 'success' | 'warning' | 'danger
 
 export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   const styles = useStyles();
+  const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeModeFilters, setActiveModeFilters] = useState<Set<string>>(new Set());
-  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     const order: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
@@ -178,51 +101,21 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
     return counts;
   }, [sorted]);
 
-  // Apply ToggleButton filters
-  const toggleFilteredWorkflows = useMemo(() => {
-    let filtered = sorted;
-    if (activeModeFilters.size > 0) {
-      filtered = filtered.filter((w) => activeModeFilters.has(w.modeName));
-    }
-    if (activeStateFilters.size > 0) {
-      filtered = filtered.filter((w) => activeStateFilters.has(w.state));
-    }
-    return filtered;
-  }, [sorted, activeModeFilters, activeStateFilters]);
-
-  const searchedWorkflows = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return toggleFilteredWorkflows;
-    return toggleFilteredWorkflows.filter((w) =>
+  const {
+    filteredItems: searchedWorkflows,
+    searchQuery,
+    setSearchQuery,
+    toggleKey,
+    clearFilter,
+    activeFilters,
+  } = useListFilter(
+    sorted,
+    (w, q) =>
       w.name.toLowerCase().includes(q) ||
-      (w.entity && w.entity.toLowerCase().includes(q)) ||
-      (w.entityDisplayName && w.entityDisplayName.toLowerCase().includes(q))
-    );
-  }, [toggleFilteredWorkflows, searchQuery]);
-
-  const toggleModeFilter = (mode: string) => {
-    setActiveModeFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(mode)) {
-        next.delete(mode);
-      } else {
-        next.add(mode);
-      }
-      return next;
-    });
-  };
-
-  const toggleStateFilter = (state: string) => {
-    setActiveStateFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(state)) {
-        next.delete(state);
-      } else {
-        next.add(state);
-      }
-      return next;
-    });
-  };
+      (w.entity?.toLowerCase().includes(q) ?? false) ||
+      (w.entityDisplayName?.toLowerCase().includes(q) ?? false),
+    WORKFLOWS_FILTER_SPECS,
+  );
 
   const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -238,42 +131,42 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
   const renderDetail = (workflow: ClassicWorkflow) => {
     const rec = workflow.migrationRecommendation;
     return (
-      <div className={styles.expandedDetails}>
+      <div className={shared.expandedDetails}>
         <Card>
           <Title3>Classic Workflow Details</Title3>
 
           {rec?.advisory && (
-            <div className={styles.section}>
+            <div className={shared.section}>
               <MessageBar intent={workflow.mode === 1 ? 'warning' : 'info'}>
                 <MessageBarBody>{rec.advisory}</MessageBarBody>
               </MessageBar>
             </div>
           )}
 
-          <div className={`${styles.detailsGrid} ${styles.section}`}>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Entity</Text>
-              <Text className={styles.detailValue}>{workflow.entityDisplayName || workflow.entity}</Text>
+          <div className={`${shared.detailsGrid} ${shared.section}`}>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Entity</Text>
+              <Text className={shared.detailValue}>{workflow.entityDisplayName || workflow.entity}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Type</Text>
-              <Text className={styles.detailValue}>{workflow.typeName}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Type</Text>
+              <Text className={shared.detailValue}>{workflow.typeName}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Scope</Text>
-              <Text className={styles.detailValue}>{workflow.scopeName}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Scope</Text>
+              <Text className={shared.detailValue}>{workflow.scopeName}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Triggers</Text>
-              <Text className={styles.detailValue}>{getTriggers(workflow)}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Triggers</Text>
+              <Text className={shared.detailValue}>{getTriggers(workflow)}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Owner</Text>
-              <Text className={styles.detailValue}>{workflow.owner}</Text>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Owner</Text>
+              <Text className={shared.detailValue}>{workflow.owner}</Text>
             </div>
-            <div className={styles.detailItem}>
-              <Text className={styles.detailLabel}>Last Modified</Text>
-              <Text className={styles.detailValue}>
+            <div className={shared.detailItem}>
+              <Text className={shared.detailLabel}>Last Modified</Text>
+              <Text className={shared.detailValue}>
                 {formatDate(workflow.modifiedOn)} by {workflow.modifiedBy}
               </Text>
             </div>
@@ -286,18 +179,17 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
 
   if (workflows.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Warning20Regular style={{ fontSize: '48px' }} />
-        <Text size={500} weight="semibold">No Classic Workflows Found</Text>
-        <Text>No classic workflows were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="workflows"
+        message="No classic workflows were found in the selected solution(s)."
+      />
     );
   }
 
   return (
-    <div style={{ marginTop: '16px' }}>
+    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
       <div className={styles.warning}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, marginBottom: tokens.spacingVerticalXXS }}>
           <Warning20Regular style={{ color: tokens.colorPaletteYellowForeground1 }} />
           <Text weight="semibold">Classic Workflows Detected</Text>
         </div>
@@ -318,51 +210,49 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
         totalCount={sorted.length}
         itemLabel="workflows"
       >
-        <FilterGroup label="Mode:">
+        <FilterGroup
+          label="Mode:"
+          hasActiveFilters={(activeFilters['mode']?.size ?? 0) > 0}
+          onClear={() => clearFilter('mode')}
+        >
           {WORKFLOW_MODE_VALUES.map((mode) => (
             <ToggleButton
               key={mode}
-              className={styles.filterButton}
+              appearance="outline"
+              className={shared.filterButton}
               size="small"
-              checked={activeModeFilters.has(mode)}
+              checked={activeFilters['mode']?.has(mode) ?? false}
               disabled={modeCounts[mode] === 0}
-              onClick={() => toggleModeFilter(mode)}
+              onClick={() => toggleKey('mode', mode)}
             >
               {mode}
             </ToggleButton>
           ))}
-          {activeModeFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveModeFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
-        <FilterGroup label="State:">
+        <FilterGroup
+          label="State:"
+          hasActiveFilters={(activeFilters['state']?.size ?? 0) > 0}
+          onClear={() => clearFilter('state')}
+        >
           {WORKFLOW_STATE_VALUES.map((state) => (
             <ToggleButton
               key={state}
-              className={styles.filterButton}
+              appearance="outline"
+              className={shared.filterButton}
               size="small"
-              checked={activeStateFilters.has(state)}
+              checked={activeFilters['state']?.has(state) ?? false}
               disabled={stateCounts[state] === 0}
-              onClick={() => toggleStateFilter(state)}
+              onClick={() => toggleKey('state', state)}
             >
               {state}
             </ToggleButton>
           ))}
-          {activeStateFilters.size > 0 && (
-            <Button appearance="transparent" size="small" onClick={() => setActiveStateFilters(new Set())}>
-              Clear
-            </Button>
-          )}
         </FilterGroup>
       </FilterBar>
 
-      <div className={styles.container}>
+      <div className={shared.container}>
         {searchedWorkflows.length === 0 && sorted.length > 0 && (
-          <div className={styles.emptyState}>
-            <Text>No workflows match your search.</Text>
-          </div>
+          <EmptyState type="search" />
         )}
         {searchedWorkflows.map((workflow) => {
           const isExpanded = expandedId === workflow.id;
@@ -370,24 +260,24 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
           return (
             <div key={workflow.id}>
               <div
-                className={`${styles.row} ${isExpanded ? styles.rowExpanded : ''}`}
+                className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
                 onClick={() => toggleExpand(workflow.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(workflow.id); } }}
               >
-                <div className={styles.chevron}>
+                <div className={shared.chevron}>
                   {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
                 </div>
-                <div className={styles.nameColumn}>
-                  <Text weight="semibold">
-                    <TruncatedText text={workflow.name} />
-                  </Text>
+                <div className={shared.nameColumn}>
+                  <Text weight="semibold">{workflow.name}</Text>
                   {workflow.description && (
-                    <Text className={styles.codeText}>
-                      <TruncatedText text={workflow.description} />
-                    </Text>
+                    <Text className={shared.codeText}>{workflow.description}</Text>
                   )}
                 </div>
-                <Text className={styles.codeText}>
-                  <TruncatedText text={workflow.entityDisplayName || workflow.entity} />
+                <Text className={shared.codeText}>
+                  {workflow.entityDisplayName || workflow.entity}
                 </Text>
                 <Badge appearance="tint" shape="rounded" color={workflow.mode === 1 ? 'warning' : 'informative'} size="small">
                   {workflow.mode === 1 ? <><FlashFlow20Regular /> RealTime</> : <><Cloud20Regular /> Background</>}

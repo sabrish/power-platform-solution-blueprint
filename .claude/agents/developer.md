@@ -24,22 +24,16 @@ Your expertise spans:
 
 ## Mandatory Startup Sequence
 
-Before ANY implementation work, read:
+Follow the Mandatory Startup Sequence in `CLAUDE.md` before responding.
 
-1. `CLAUDE.md`
-2. `.claude/memory/project.md` — current version, blockers, in-progress work
-3. `.claude/memory/learnings.md` — **read every entry carefully; these are non-negotiable rules**
-4. `.claude/memory/decisions.md` — implement according to decisions already made; do not re-interpret them
-5. Pattern files — load based on task:
-   - Dataverse/API/export/build work → `.claude/memory/patterns-dataverse.md`
-   - UI component/React/Fluent UI work → `.claude/memory/patterns-ui.md`
-   - Full-stack task → load both
-6. Guide files — load based on task (same domain logic as pattern files):
-   - UI component/React/Fluent UI work → `UI_PATTERNS.md`
-   - Dataverse/API/export/build work → `DATAVERSE_OPTIMIZATION_GUIDE.md`
-   - Full-stack task → load both
-   - Documentation-only task → skip both
-7. The specific source files relevant to the task
+Agent-specific loading rules:
+- Pattern files — load based on task domain (as specified in CLAUDE.md step 4)
+- Guide files — load based on same domain logic:
+  - UI component/React/Fluent UI work → `UI_PATTERNS.md`
+  - Dataverse/API/export/build work → `DATAVERSE_OPTIMIZATION_GUIDE.md`
+  - Full-stack task → load both
+  - Documentation-only task → skip both
+- After memory files and guides, read the specific source files relevant to the task
 
 Report: **"Implementation context loaded: [files read]"**
 
@@ -91,6 +85,20 @@ power-platform-solution-blueprint/
 - Use `makeStyles` and `tokens` — see `UI_PATTERNS.md` for established patterns
 - Never install or use Fluent UI v8 components
 - Tokens for spacing, colour, typography — no hardcoded pixel values or hex codes
+- **Audit rules (AUDIT-001 – AUDIT-013) in `.claude/memory/patterns-ui.md` are non-negotiable:**
+  - AUDIT-001: `colorPalette*Background*` tokens NEVER as raw `backgroundColor` — use `<Badge>` or left-border
+  - AUDIT-002: Every `<Badge>` must have explicit `shape` prop (`"rounded"` for labels, `"circular"` for counts)
+  - AUDIT-003: Hex colours (`#RRGGBB`) strictly forbidden in makeStyles and inline styles
+  - AUDIT-004: Raw pixel values forbidden — use spacing/typography tokens only
+  - AUDIT-005: `nameColumn` must have `minWidth: 0` AND `wordBreak: 'break-word'`
+  - AUDIT-006: `detailValue` must have `minWidth: 0`, `wordBreak: 'break-word'`, `overflowWrap: 'anywhere'`
+  - AUDIT-007: Card-row grids MUST use `alignItems: 'start'` — never `'center'`
+  - AUDIT-008: `FilterBar` + `FilterGroup` mandatory for ALL search/filter UIs — no bare `SearchBox`/`Input`
+  - AUDIT-009: `<EmptyState type="..." />` mandatory — no inline emoji/text empty states
+  - AUDIT-010: Native `<button>`, `<input>`, `<select>` forbidden — use Fluent UI equivalents
+  - AUDIT-011: Card-row rows MUST have `transition: 'all 0.2s ease'` + `:hover` styles
+  - AUDIT-012: `detailsGrid` must use `minmax(200px, 1fr)` — not 250px or 150px
+  - AUDIT-013: `DataGrid` is forbidden in component browser views — use card-row accordion (PATTERN-001)
 
 **Dataverse API:**
 - Always implement batching for bulk requests — see `DATAVERSE_OPTIMIZATION_GUIDE.md`
@@ -120,6 +128,10 @@ power-platform-solution-blueprint/
     the orchestrator so the document-updater can update `docs/architecture.md`
     accordingly.
 5. Run type-check mentally — would `pnpm typecheck` pass?
+5b. Self-check against AUDIT-001–013 before declaring done:
+    - No `colorPalette*Background*` on raw elements; no hex colours; no raw pixels
+    - Every `<Badge>` has `shape` prop; every nameColumn has `wordBreak`; every card-row has hover transition
+    - FilterBar used for all search/filter; EmptyState used for all empty states; no DataGrid; no native buttons
 6. List what you implemented, any deviations from spec (with reasoning), and what still needs doing
 
 ## When to Escalate

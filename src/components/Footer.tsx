@@ -31,6 +31,10 @@ const useStyles = makeStyles({
   },
 });
 
+function openExternal(url: string): void {
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 export function Footer() {
   const styles = useStyles();
 
@@ -41,9 +45,8 @@ export function Footer() {
       <Text className={styles.text}>
         by{' '}
         <Link
+          onClick={(e) => { e.preventDefault(); openExternal('https://github.com/sabrish'); }}
           href="https://github.com/sabrish"
-          target="_blank"
-          rel="noopener noreferrer"
           style={{ color: tokens.colorNeutralForeground3, textDecoration: 'none' }}
         >
           SAB
@@ -51,9 +54,8 @@ export function Footer() {
       </Text>
       <Text className={styles.text}>•</Text>
       <Link
+        onClick={(e) => { e.preventDefault(); openExternal('https://github.com/sabrish/power-platform-solution-blueprint'); }}
         href="https://github.com/sabrish/power-platform-solution-blueprint"
-        target="_blank"
-        rel="noopener noreferrer"
         className={styles.iconLink}
       >
         <Open20Regular />

@@ -36,6 +36,9 @@ export class FlowDefinitionParser {
       // Extract Dataverse actions
       const dataverseActions = this.extractDataverseActions(data);
 
+      // Extract child flow IDs
+      const childFlowIds = this.extractChildFlowIds(data);
+
       // Extract scope/run as information
       const scopeType = this.extractScopeType(data);
 
@@ -49,6 +52,7 @@ export class FlowDefinitionParser {
         externalCalls,
         connectionReferences,
         dataverseActions,
+        ...(childFlowIds.length > 0 ? { childFlowIds } : {}),
       };
     } catch (error) {
       return defaultDefinition;
@@ -306,17 +310,33 @@ export class FlowDefinitionParser {
         }
       }
 
-      // Process nested actions recursively
+      // Process nested actions recursively (Condition true branch, Scope, Apply to each, Switch)
       if (action.actions) {
         Object.keys(action.actions).forEach((key) => {
           processAction(action.actions[key], key);
         });
       }
 
-      // Process actions in 'else' branch (for conditions)
+      // Process actions in 'else' branch (Condition false branch)
       if (action.else?.actions) {
         Object.keys(action.else.actions).forEach((key) => {
           processAction(action.else.actions[key], key);
+        });
+      }
+
+      // Process Switch/Select cases
+      if (action.cases) {
+        Object.values(action.cases).forEach((c: any) => {
+          if (c?.actions) {
+            Object.keys(c.actions).forEach((key) => processAction(c.actions[key], key));
+          }
+        });
+      }
+
+      // Process default case of Switch
+      if (action.default?.actions) {
+        Object.keys(action.default.actions).forEach((key) => {
+          processAction(action.default.actions[key], key);
         });
       }
     };
@@ -336,9 +356,29 @@ export class FlowDefinitionParser {
     const inputs = action.inputs;
     if (!inputs) return null;
 
-    // Try to detect operation from action metadata
-    const operationId = inputs.operationId?.toLowerCase() || '';
+    // For OpenApiConnection actions the operationId lives in inputs.host.operationId.
+    // Older/direct formats put it in inputs.operationId directly. Check both.
+    const operationId = (
+      inputs.host?.operationId ||
+      inputs.operationId ||
+      ''
+    ).toLowerCase();
     const actionNameLower = actionName.toLowerCase();
+    const apiId = (inputs.host?.apiId || '').toLowerCase();
+
+    // If this is an OpenApiConnection, verify it targets a Dataverse/CDS connector.
+    // Non-Dataverse connectors (SharePoint, OneDrive, etc.) also use OpenApiConnection
+    // and may have similar operation names — skip them early.
+    if (action.type?.toLowerCase() === 'openapiconnection') {
+      const isDataverseConnector =
+        apiId.includes('commondataservice') ||
+        apiId.includes('dynamicscrm') ||
+        // No apiId → fall through to operationId-based detection (some internal formats)
+        apiId === '';
+      if (!isDataverseConnector) {
+        return null;
+      }
+    }
 
     let operation: DataverseAction['operation'] | null = null;
     let targetEntity: string | null = null;
@@ -369,20 +409,38 @@ export class FlowDefinitionParser {
     // Try to extract target entity
     // Method 1: From entityName parameter
     if (inputs.parameters?.entityName) {
-      targetEntity = inputs.parameters.entityName;
-      confidence = 'High';
+      const rawEntity = String(inputs.parameters.entityName);
+      if (this.isDynamicExpression(rawEntity)) {
+        targetEntity = '[dynamic]';
+        confidence = 'Low';
+      } else {
+        targetEntity = rawEntity;
+        confidence = 'High';
+      }
     }
     // Method 2: From entityLogicalName (classic CDS connector)
     else if (inputs.parameters?.entityLogicalName) {
-      targetEntity = inputs.parameters.entityLogicalName;
-      confidence = 'High';
+      const rawEntity = String(inputs.parameters.entityLogicalName);
+      if (this.isDynamicExpression(rawEntity)) {
+        targetEntity = '[dynamic]';
+        confidence = 'Low';
+      } else {
+        targetEntity = rawEntity;
+        confidence = 'High';
+      }
     }
     // Method 3: From path (OpenAPI style)
     else if (inputs.path) {
-      const pathMatch = inputs.path.match(/\/([a-z_]+)\(/i);
-      if (pathMatch) {
-        targetEntity = pathMatch[1];
-        confidence = 'Medium';
+      const rawPath = String(inputs.path);
+      if (this.isDynamicExpression(rawPath)) {
+        targetEntity = '[dynamic]';
+        confidence = 'Low';
+      } else {
+        const pathMatch = rawPath.match(/\/([a-z_]+)\(/i);
+        if (pathMatch) {
+          targetEntity = pathMatch[1];
+          confidence = 'Medium';
+        }
       }
     }
     // Method 4: From action name (low confidence)
@@ -399,11 +457,87 @@ export class FlowDefinitionParser {
       return null;
     }
 
+    // Extract fields being set for Create/Update operations
+    let fields: string[] = [];
+    if (operation === 'Create' || operation === 'Update') {
+      // New Dataverse connector: record body is in inputs.parameters.item
+      // Classic CDS connector: record body is in inputs.body
+      const body = inputs.parameters?.item ?? inputs.body ?? {};
+      if (body && typeof body === 'object') {
+        fields = Object.keys(body)
+          .filter(k => !k.startsWith('@') && k !== 'entityName' && k !== 'entityLogicalName')
+          .map(k => k.toLowerCase());
+      }
+    }
+
     return {
       operation,
       targetEntity,
       actionName,
       confidence,
+      ...(fields.length > 0 ? { fields } : {}),
     };
+  }
+
+  /**
+   * Check if a value contains a Power Automate dynamic expression (@{...})
+   */
+  private static isDynamicExpression(value: string): boolean {
+    return typeof value === 'string' && (value.startsWith('@') || value.includes('@{'));
+  }
+
+  /**
+   * Extract child flow IDs referenced by "Run a Child Flow" or similar actions.
+   * Detects:
+   * - OpenApiConnection actions with apiId containing 'logicflows'
+   * - Actions with operationId containing 'InvokeFlow' or 'Run_Child_Flow'
+   * - HTTP actions pointing to flow invoke endpoints
+   */
+  private static extractChildFlowIds(data: any): string[] {
+    const definition = data?.properties?.definition;
+    const childFlowIds: string[] = [];
+
+    if (!definition || !definition.actions) {
+      return childFlowIds;
+    }
+
+    const processAction = (action: any) => {
+      const apiId = (action.inputs?.host?.apiId || '').toLowerCase();
+      const operationId = (action.inputs?.host?.operationId || action.inputs?.operationId || '').toLowerCase();
+
+      // Detect "Run a Child Flow" connector
+      const isChildFlowAction =
+        apiId.includes('logicflows') ||
+        operationId.includes('invokeflow') ||
+        operationId.includes('run_child_flow') ||
+        operationId.includes('childflow');
+
+      if (isChildFlowAction) {
+        // Extract flow ID from definition path or parameters
+        const definitionPath: string =
+          action.inputs?.parameters?.definition ||
+          action.inputs?.parameters?.flowId ||
+          action.inputs?.path ||
+          '';
+        // Extract GUID from path like /providers/Microsoft.Logic/workflows/{GUID}
+        const guidMatch = definitionPath.match(
+          /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+        );
+        if (guidMatch && !childFlowIds.includes(guidMatch[1].toLowerCase())) {
+          childFlowIds.push(guidMatch[1].toLowerCase());
+        }
+      }
+
+      // Recurse into nested actions
+      if (action.actions) {
+        Object.values(action.actions).forEach((a: any) => processAction(a));
+      }
+      if (action.else?.actions) {
+        Object.values(action.else.actions).forEach((a: any) => processAction(a));
+      }
+    };
+
+    Object.values(definition.actions).forEach((action: any) => processAction(action));
+    return childFlowIds;
   }
 }

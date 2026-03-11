@@ -112,7 +112,7 @@ export function FormsTable({ forms }: FormsTableProps) {
           </Text>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: tokens.spacingHorizontalS, marginTop: tokens.spacingVerticalXS }}>
             {form.libraries.map((lib, idx) => (
-              <Badge key={idx} appearance="outline" color="important" size="small" className={styles.monospace}>
+              <Badge key={idx} appearance="outline" shape="rounded" color="important" size="small" className={styles.monospace}>
                 {lib}
               </Badge>
             ))}
@@ -155,6 +155,7 @@ export function FormsTable({ forms }: FormsTableProps) {
               </Text>
               <Badge
                 appearance={handler.enabled ? 'tint' : 'outline'}
+                shape="rounded"
                 color={handler.enabled ? 'success' : 'warning'}
                 size="small"
               >
@@ -197,7 +198,11 @@ export function FormsTable({ forms }: FormsTableProps) {
           <div key={form.id}>
             <div
               className={`${styles.tableRow} ${isExpanded ? styles.tableRowExpanded : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
               onClick={() => toggleExpand(form.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(form.id); } }}
             >
               {/* Chevron */}
               <div className={styles.cellContent}>
@@ -228,6 +233,7 @@ export function FormsTable({ forms }: FormsTableProps) {
               <div className={styles.cellContent}>
                 <Badge
                   appearance={form.libraries.length > 0 ? 'filled' : 'outline'}
+                  shape="rounded"
                   color={form.libraries.length > 0 ? 'important' : 'subtle'}
                   size="small"
                 >

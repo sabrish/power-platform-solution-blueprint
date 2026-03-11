@@ -1,4 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
+import type { FetchLogger } from '../utils/FetchLogger.js';
+import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import type { CustomAPI, CustomAPIParameter } from '../types/customApi.js';
 
 /**
@@ -24,16 +26,18 @@ interface RawCustomAPI {
 }
 
 /**
- * Raw Custom API parameter data
+ * Raw Custom API parameter data.
+ * Note: `isoptional` only exists on customapirequestparameters, NOT on customapiresponseproperties.
  */
 interface RawCustomAPIParameter {
   customapirequestparameterid?: string;
   customapiresponsepropertyid?: string;
+  _customapiid_value?: string;
   uniquename: string;
   displayname: string | null;
   description: string | null;
   type: number;
-  isoptional: boolean;
+  isoptional?: boolean;
   logicalentityname: string | null;
 }
 
@@ -43,10 +47,12 @@ interface RawCustomAPIParameter {
 export class CustomAPIDiscovery {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
+  private logger?: FetchLogger;
 
-  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void) {
+  constructor(client: IDataverseClient, onProgress?: (current: number, total: number) => void, logger?: FetchLogger) {
     this.client = client;
     this.onProgress = onProgress;
+    this.logger = logger;
   }
 
   /**
@@ -60,118 +66,130 @@ export class CustomAPIDiscovery {
     }
 
     try {
-      const batchSize = 20;
-      const allResults: RawCustomAPI[] = [];
-
-      for (let i = 0; i < customApiIds.length; i += batchSize) {
-        const batch = customApiIds.slice(i, i + batchSize);
-        const filterClauses = batch.map((id) => {
-          const cleanGuid = id.replace(/[{}]/g, '');
-          return `customapiid eq ${cleanGuid}`;
-        });
-        const filter = filterClauses.join(' or ');
-
-        const result = await this.client.query<RawCustomAPI>('customapis', {
-          select: [
-            'customapiid',
-            'uniquename',
-            'displayname',
-            'description',
-            'bindingtype',
-            'boundentitylogicalname',
-            'isfunction',
-            'isprivate',
-            'ismanaged',
-            'allowedcustomprocessingsteptype',
-            'executeprivilegename',
-            'createdon',
-            'modifiedon',
-            '_ownerid_value',
-          ],
-          filter,
-          orderBy: ['uniquename asc'],
-        });
-
-        allResults.push(...result.value);
-
-        // Report progress after each batch
-        if (this.onProgress) {
-          this.onProgress(allResults.length, customApiIds.length);
+      // Fetch all Custom API records in adaptive batches
+      const { results: allResults } = await withAdaptiveBatch<string, RawCustomAPI>(
+        customApiIds,
+        async (batch) => {
+          const filter = batch.map((id) => `customapiid eq ${id.replace(/[{}]/g, '')}`).join(' or ');
+          const result = await this.client.query<RawCustomAPI>('customapis', {
+            select: [
+              'customapiid',
+              'uniquename',
+              'displayname',
+              'description',
+              'bindingtype',
+              'boundentitylogicalname',
+              'isfunction',
+              'isprivate',
+              'ismanaged',
+              'allowedcustomprocessingsteptype',
+              'executeprivilegename',
+              'createdon',
+              'modifiedon',
+              '_ownerid_value',
+            ],
+            filter,
+            orderBy: ['uniquename asc'],
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Custom API Discovery',
+          entitySet: 'customapis',
+          logger: this.logger,
+          onProgress: this.onProgress,
         }
+      );
+
+      // Collect all API IDs for batched parameter fetching
+      const allApiIds = allResults.map(r => r.customapiid);
+
+      // Fetch ALL request parameters in one batched query
+      const { results: allRequestParams } = await withAdaptiveBatch<string, RawCustomAPIParameter>(
+        allApiIds,
+        async (batch) => {
+          const filter = batch.map(id => `_customapiid_value eq ${id.replace(/[{}]/g, '')}`).join(' or ');
+          const result = await this.client.query<RawCustomAPIParameter>('customapirequestparameters', {
+            select: [
+              'customapirequestparameterid',
+              '_customapiid_value',
+              'uniquename',
+              'displayname',
+              'description',
+              'type',
+              'isoptional',
+              'logicalentityname',
+            ],
+            filter,
+            orderBy: ['uniquename asc'],
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Custom API Parameters',
+          entitySet: 'customapirequestparameters',
+          logger: this.logger,
+        }
+      );
+
+      // Fetch ALL response properties in one batched query
+      const { results: allResponseProps } = await withAdaptiveBatch<string, RawCustomAPIParameter>(
+        allApiIds,
+        async (batch) => {
+          const filter = batch.map(id => `_customapiid_value eq ${id.replace(/[{}]/g, '')}`).join(' or ');
+          const result = await this.client.query<RawCustomAPIParameter>('customapiresponseproperties', {
+            select: [
+              'customapiresponsepropertyid',
+              '_customapiid_value',
+              'uniquename',
+              'displayname',
+              'description',
+              'type',
+              'logicalentityname',
+            ],
+            filter,
+            orderBy: ['uniquename asc'],
+          });
+          return result.value;
+        },
+        {
+          initialBatchSize: 20,
+          step: 'Custom API Parameters',
+          entitySet: 'customapiresponseproperties',
+          logger: this.logger,
+        }
+      );
+
+      // Group parameters by customapiid
+      const requestParamsByApiId = new Map<string, RawCustomAPIParameter[]>();
+      for (const param of allRequestParams) {
+        const apiId = (param._customapiid_value ?? '').toLowerCase().replace(/[{}]/g, '');
+        if (!requestParamsByApiId.has(apiId)) requestParamsByApiId.set(apiId, []);
+        requestParamsByApiId.get(apiId)!.push(param);
       }
 
-      // For each Custom API, fetch its request parameters and response properties
-      const customAPIs: CustomAPI[] = [];
-      for (const rawApi of allResults) {
-        const [requestParams, responseProps] = await Promise.all([
-          this.getRequestParameters(rawApi.customapiid),
-          this.getResponseProperties(rawApi.customapiid),
-        ]);
-
-        customAPIs.push(this.mapToCustomAPI(rawApi, requestParams, responseProps));
+      const responsePropsByApiId = new Map<string, RawCustomAPIParameter[]>();
+      for (const prop of allResponseProps) {
+        const apiId = (prop._customapiid_value ?? '').toLowerCase().replace(/[{}]/g, '');
+        if (!responsePropsByApiId.has(apiId)) responsePropsByApiId.set(apiId, []);
+        responsePropsByApiId.get(apiId)!.push(prop);
       }
+
+      // Build each CustomAPI using grouped parameter maps
+      const customAPIs: CustomAPI[] = allResults.map(rawApi => {
+        const normalizedId = rawApi.customapiid.toLowerCase().replace(/[{}]/g, '');
+        const requestParams = (requestParamsByApiId.get(normalizedId) ?? []).map(p => this.mapToParameter(p, true));
+        const responseProps = (responsePropsByApiId.get(normalizedId) ?? []).map(p => this.mapToParameter(p, false));
+        return this.mapToCustomAPI(rawApi, requestParams, responseProps);
+      });
 
       return customAPIs;
     } catch (error) {
       throw new Error(
         `Failed to retrieve Custom APIs: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
-    }
-  }
-
-  /**
-   * Get request parameters for a Custom API
-   */
-  private async getRequestParameters(customApiId: string): Promise<CustomAPIParameter[]> {
-    try {
-      const result = await this.client.query<RawCustomAPIParameter>(
-        'customapirequestparameters',
-        {
-          select: [
-            'customapirequestparameterid',
-            'uniquename',
-            'displayname',
-            'description',
-            'type',
-            'isoptional',
-            'logicalentityname',
-          ],
-          filter: `_customapiid_value eq ${customApiId.replace(/[{}]/g, '')}`,
-          orderBy: ['uniquename asc'],
-        }
-      );
-
-      return result.value.map((raw) => this.mapToParameter(raw, true));
-    } catch (error) {
-      return [];
-    }
-  }
-
-  /**
-   * Get response properties for a Custom API
-   */
-  private async getResponseProperties(customApiId: string): Promise<CustomAPIParameter[]> {
-    try {
-      const result = await this.client.query<RawCustomAPIParameter>(
-        'customapiresponseproperties',
-        {
-          select: [
-            'customapiresponsepropertyid',
-            'uniquename',
-            'displayname',
-            'description',
-            'type',
-            'isoptional',
-            'logicalentityname',
-          ],
-          filter: `_customapiid_value eq ${customApiId.replace(/[{}]/g, '')}`,
-          orderBy: ['uniquename asc'],
-        }
-      );
-
-      return result.value.map((raw) => this.mapToParameter(raw, false));
-    } catch (error) {
-      return [];
     }
   }
 
@@ -218,7 +236,7 @@ export class CustomAPIDiscovery {
       description: raw.description,
       type: this.getParameterType(raw.type),
       typeName: this.getParameterTypeName(raw.type),
-      isOptional: raw.isoptional,
+      isOptional: raw.isoptional ?? false,
       logicalEntityName: raw.logicalentityname,
     };
   }
