@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Text,
   Badge,
@@ -34,6 +34,13 @@ const useStyles = makeStyles({
     borderRadius: tokens.borderRadiusSmall,
     wordBreak: 'break-all',
   },
+  mutedLabel: {
+    color: tokens.colorNeutralForeground3,
+  },
+  mutedText: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase200,
+  },
 });
 
 interface EnvironmentVariablesListProps {
@@ -66,6 +73,14 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     return counts;
   }, [sorted]);
 
+  const searchPredicate = useCallback(
+    (v: EnvironmentVariable, q: string) =>
+      v.displayName.toLowerCase().includes(q) ||
+      v.schemaName.toLowerCase().includes(q) ||
+      v.typeName.toLowerCase().includes(q),
+    [],
+  );
+
   const {
     filteredItems: baseFiltered,
     searchQuery,
@@ -73,18 +88,11 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     toggleKey,
     clearFilter,
     activeFilters,
-  } = useListFilter(
-    sorted,
-    (v, q) =>
-      v.displayName.toLowerCase().includes(q) ||
-      v.schemaName.toLowerCase().includes(q) ||
-      v.typeName.toLowerCase().includes(q),
-    ENV_FILTER_SPECS,
-  );
+  } = useListFilter(sorted, searchPredicate, ENV_FILTER_SPECS);
 
   const [showHasDefaultOnly, setShowHasDefaultOnly] = useState(false);
 
-  const searchedVars = useMemo(
+  const displayedVars = useMemo(
     () => (showHasDefaultOnly ? baseFiltered.filter((v) => !!v.defaultValue) : baseFiltered),
     [baseFiltered, showHasDefaultOnly],
   );
@@ -101,14 +109,14 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
         <div className={shared.section}>
           <Text className={shared.detailLabel}>Current Value</Text>
           <div className={styles.valueBox}>
-            {envVar.currentValue ?? <span style={{ color: tokens.colorNeutralForeground3 }}>Not set</span>}
+            {envVar.currentValue ?? <span className={styles.mutedLabel}>Not set</span>}
           </div>
         </div>
 
         <div className={shared.section}>
           <Text className={shared.detailLabel}>Default Value</Text>
           <div className={styles.valueBox}>
-            {envVar.defaultValue ?? <span style={{ color: tokens.colorNeutralForeground3 }}>None</span>}
+            {envVar.defaultValue ?? <span className={styles.mutedLabel}>None</span>}
           </div>
         </div>
 
@@ -172,7 +180,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search environment variables..."
-        filteredCount={searchedVars.length}
+        filteredCount={displayedVars.length}
         totalCount={sorted.length}
         itemLabel="variables"
       >
@@ -211,10 +219,10 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
           </ToggleButton>
         </FilterGroup>
       </FilterBar>
-      {searchedVars.length === 0 && sorted.length > 0 && (
+      {displayedVars.length === 0 && sorted.length > 0 && (
         <EmptyState type="search" />
       )}
-      {searchedVars.map((envVar) => {
+      {displayedVars.map((envVar) => {
         const isExpanded = expandedId === envVar.id;
         return (
           <div key={envVar.id}>
@@ -238,7 +246,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
                   ? <Text className={shared.codeText}>{envVar.currentValue}</Text>
                   : envVar.defaultValue
                     ? <Text className={shared.codeText}>{envVar.defaultValue}</Text>
-                    : <Text style={{ color: tokens.colorNeutralForeground3, fontSize: tokens.fontSizeBase200 }}>Not set</Text>
+                    : <Text className={styles.mutedText}>Not set</Text>
                 }
               </div>
               <Badge appearance="filled" shape="rounded" size="small" color={getTypeColor(envVar.typeName)}>
