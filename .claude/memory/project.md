@@ -18,6 +18,7 @@
 
 ## Current Version
 
+**v1.0.1** (released 2026-03-11) — patch: discovery pagination fix + OData injection guards
 **v1.0.0** (released 2026-03-11)
 **v0.9.0** (released 2026-03-07)
 
@@ -126,6 +127,16 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
+### Released in v1.0.1 (2026-03-11)
+
+Patch release from the `fix/bug-in-component-discovery` branch. Key fixes:
+- `queryAll()` now uses `@odata.nextLink` cursor pagination; `$skip` removed (error 0x80060888 on customapis and other entity types)
+- Custom API, Connection Reference, and Custom Connector objectid-intersection queries isolated per PATTERN-012; each failure is contained
+- `PublisherDiscovery` derives publishers via `$expand` on solutions — fixes missing publishers in managed-only environments
+- OData injection guards added to `BusinessRuleDiscovery`, `SchemaDiscovery`, and `FieldSecurityProfileDiscovery`
+- Workflow GUIDs normalised before batching in `getBusinessRulesByIds`
+- `FieldSecurityProfileDiscovery` refactored to structured `QueryOptions`
+
 ### Released in v1.0.0 (2026-03-11)
 
 All work from the `feat/cross-entity-automation` branch has been released. The branch was merged to `main` as part of the v1.0.0 release.
@@ -141,6 +152,11 @@ All work from the `feat/cross-entity-automation` branch has been released. The b
 - BPF stages rendered as accordion in HTML export; excluded from JSON/ZIP
 - Classic Workflow deduplication and activation-record-only filtering
 - System Admin role detection fix
+- Carry-forward reviewer fixes across all component lists:
+  - ConnectionReferencesList: mutedText moved to makeStyles, Connection ID conditional lifted out of Text, redundant display:grid removed, toggleExpand in useCallback
+  - PluginsList: toggleExpand/toggleStageFilter/toggleStateFilter wrapped in useCallback, size="medium" on filteringAttributes Badge, explicit React.ReactElement return type on renderPluginDetails
+  - FlowDiscovery: OData injection guard added to getFlowsForEntity
+  - EnvironmentVariablesList: Checkbox replaces ToggleButton for "Has Default" binary filter, mergeClasses replaces string concatenation, toggleExpand in useCallback, listContainer marginTop moved to makeStyles, Default filter logic fixed (!!v.defaultValue && !v.currentValue), Default badge changed to appearance="tint" color="subtle" for light-theme visibility, explicit JSX.Element return types added
 
 ### Known Limitations
 

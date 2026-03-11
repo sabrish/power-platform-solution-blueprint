@@ -97,12 +97,20 @@ export class FieldSecurityProfileDiscovery {
   async getFieldPermissions(entityLogicalNames: string[]): Promise<FieldPermission[]> {
     if (entityLogicalNames.length === 0) return [];
 
+    const invalidName = entityLogicalNames.find(name => !/^[a-z][a-z0-9_]*$/.test(name));
+    if (invalidName !== undefined) {
+      throw new TypeError(`Invalid entity logical name: ${invalidName}`);
+    }
+
     const { results: allPermissions } = await withAdaptiveBatch<string, RawFieldPermission>(
       entityLogicalNames,
       async (batch) => {
-        const entityFilters = batch.map(name => `entityname eq '${name}'`).join(' or ');
-        const query = `fieldpermissions?$select=fieldpermissionid,entityname,attributelogicalname,canread,cancreate,canupdate,_fieldsecurityprofileid_value&$expand=fieldsecurityprofileid($select=name)&$filter=${entityFilters}`;
-        const result = await this.client.query<RawFieldPermission>(query);
+        const filter = batch.map(name => `entityname eq '${name}'`).join(' or ');
+        const result = await this.client.query<RawFieldPermission>('fieldpermissions', {
+          select: ['fieldpermissionid', 'entityname', 'attributelogicalname', 'canread', 'cancreate', 'canupdate', '_fieldsecurityprofileid_value'],
+          expand: 'fieldsecurityprofileid($select=name)',
+          filter,
+        });
         return result.value;
       },
       {
