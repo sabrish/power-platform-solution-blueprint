@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
   makeStyles,
+  mergeClasses,
   tokens,
   Card,
   Title3,
@@ -18,6 +19,7 @@ import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 // These must exactly match PluginDiscovery.getStageName() output (no hyphens)
 const STAGE_VALUES = ['PreValidation', 'PreOperation', 'PostOperation', 'Asynchronous'];
+const PLUGIN_TYPE_DROPDOWN_MIN_WIDTH = '130px'; // fixed dropdown width — no token equivalent
 const STATE_VALUES = ['Enabled', 'Disabled'];
 
 /** Convert internal stageName to a human-readable display label */
@@ -39,6 +41,9 @@ const useStyles = makeStyles({
   rank: {
     fontWeight: tokens.fontWeightSemibold,
     textAlign: 'center',
+  },
+  typeDropdown: {
+    minWidth: PLUGIN_TYPE_DROPDOWN_MIN_WIDTH, // fixed dropdown width — no token equivalent
   },
 });
 
@@ -122,7 +127,7 @@ export function PluginsList({
     );
   }, [toggleFilteredPlugins, searchQuery]);
 
-  const toggleStageFilter = (stage: string) => {
+  const toggleStageFilter = useCallback((stage: string) => {
     setActiveStageFilters((prev) => {
       const next = new Set(prev);
       if (next.has(stage)) {
@@ -132,9 +137,9 @@ export function PluginsList({
       }
       return next;
     });
-  };
+  }, []);
 
-  const toggleStateFilter = (state: string) => {
+  const toggleStateFilter = useCallback((state: string) => {
     setActiveStateFilters((prev) => {
       const next = new Set(prev);
       if (next.has(state)) {
@@ -144,7 +149,7 @@ export function PluginsList({
       }
       return next;
     });
-  };
+  }, []);
 
   const getStageBadgeColor = (stageName: string): 'brand' | 'informative' | 'success' | 'severe' => {
     switch (stageName) {
@@ -156,11 +161,11 @@ export function PluginsList({
     }
   };
 
-  const toggleExpand = (pluginId: string) => {
-    setExpandedPluginId(expandedPluginId === pluginId ? null : pluginId);
-  };
+  const toggleExpand = useCallback((pluginId: string) => {
+    setExpandedPluginId(prev => prev === pluginId ? null : pluginId);
+  }, []);
 
-  const renderPluginDetails = (plugin: PluginStep) => (
+  const renderPluginDetails = (plugin: PluginStep): React.ReactElement => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>Plugin Step Details</Title3>
@@ -168,7 +173,7 @@ export function PluginsList({
         <div className={shared.detailsGrid}>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Step ID</Text>
-            <Text className={`${shared.detailValue} ${shared.codeText}`}>{plugin.id}</Text>
+            <Text className={mergeClasses(shared.detailValue, shared.codeText)}>{plugin.id}</Text>
           </div>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Plugin Type</Text>
@@ -180,7 +185,7 @@ export function PluginsList({
           </div>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Entity</Text>
-            <Text className={`${shared.detailValue} ${shared.codeText}`}>{plugin.entity}</Text>
+            <Text className={mergeClasses(shared.detailValue, shared.codeText)}>{plugin.entity}</Text>
           </div>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Message</Text>
@@ -212,7 +217,7 @@ export function PluginsList({
             <Title3>Filtering Attributes ({plugin.filteringAttributes.length})</Title3>
             <div className={shared.badgeGroup}>
               {plugin.filteringAttributes.map((attr, idx) => (
-                <Badge key={idx} appearance="tint" shape="rounded" color="warning">
+                <Badge key={idx} appearance="tint" shape="rounded" size="medium" color="warning">
                   {attr}
                 </Badge>
               ))}
@@ -282,7 +287,7 @@ export function PluginsList({
         >
           <Dropdown
             size="small"
-            style={{ minWidth: '130px' }}
+            className={styles.typeDropdown}
             aria-label="Filter by message"
             value={selectedMessage || 'All'}
             selectedOptions={selectedMessage ? [selectedMessage] : []}
@@ -341,7 +346,7 @@ export function PluginsList({
         return (
           <div key={plugin.id}>
             <div
-              className={`${shared.cardRow} ${styles.pluginRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
+              className={mergeClasses(shared.cardRow, styles.pluginRow, isExpanded && shared.cardRowExpanded)}
               role="button"
               tabIndex={0}
               aria-expanded={isExpanded}
