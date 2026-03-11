@@ -178,11 +178,6 @@ export class SolutionComponentDiscovery {
               inventory.pluginIds.push(objectId);
             }
             break;
-          case ComponentType.PluginPackage:
-            if (!inventory.pluginPackageIds.includes(objectId)) {
-              inventory.pluginPackageIds.push(objectId);
-            }
-            break;
           case ComponentType.Workflow:
             if (!inventory.workflowIds.includes(objectId)) {
               inventory.workflowIds.push(objectId);
@@ -208,6 +203,11 @@ export class SolutionComponentDiscovery {
               inventory.appModuleIds.push(objectId);
             }
             break;
+          case ComponentType.EnvironmentVariableDefinition:
+            if (!inventory.environmentVariableIds.includes(objectId)) {
+              inventory.environmentVariableIds.push(objectId);
+            }
+            break;
           case ComponentType.ConnectionReference:
             if (!inventory.connectionReferenceIds.includes(objectId)) {
               inventory.connectionReferenceIds.push(objectId);
@@ -218,18 +218,56 @@ export class SolutionComponentDiscovery {
               inventory.customConnectorIds.push(objectId);
             }
             break;
-          case ComponentType.CustomAPI:
-            if (!inventory.customApiIds.includes(objectId)) {
-              inventory.customApiIds.push(objectId);
-            }
-            break;
-          case ComponentType.EnvironmentVariableDefinition:
-            if (!inventory.environmentVariableIds.includes(objectId)) {
-              inventory.environmentVariableIds.push(objectId);
+          case ComponentType.PluginPackage:
+            if (!inventory.pluginPackageIds.includes(objectId)) {
+              inventory.pluginPackageIds.push(objectId);
             }
             break;
         }
+      }
+
+      // Custom APIs (type 10076) and Connection References (type 371) do not appear in
+      // solutioncomponents under their expected type codes. Their objectids DO appear in
+      // solutioncomponents under undocumented type codes. Use objectid intersection:
+      // query all records, keep only those whose ID appears in the solutioncomponents objectid set.
+      // The tracking maps (componentToSolutions, solutionComponentMap) are already populated
+      // for these objectids by the pre-switch tracking code above.
+      const scObjectIds = new Set(result.value.map(c => c.objectid.toLowerCase().replace(/[{}]/g, '')));
+
+      const allCustomApis = await this.client.query<{ customapiid: string }>(
+        'customapis', { select: ['customapiid'] }
+      );
+      for (const api of allCustomApis.value) {
+        const id = api.customapiid.toLowerCase().replace(/[{}]/g, '');
+        if (scObjectIds.has(id) && !inventory.customApiIds.includes(id)) {
+          inventory.customApiIds.push(id);
+          componentTypes.set(id, ComponentType.CustomAPI);
         }
+      }
+
+      const allConnRefs = await this.client.query<{ connectionreferenceid: string }>(
+        'connectionreferences', { select: ['connectionreferenceid'] }
+      );
+      for (const ref of allConnRefs.value) {
+        const id = ref.connectionreferenceid.toLowerCase().replace(/[{}]/g, '');
+        if (scObjectIds.has(id) && !inventory.connectionReferenceIds.includes(id)) {
+          inventory.connectionReferenceIds.push(id);
+          componentTypes.set(id, ComponentType.ConnectionReference);
+        }
+      }
+
+      // Custom Connectors: same pattern as Custom APIs and Connection References —
+      // solutionid points to Default Solution; use objectid intersection instead.
+      const allConnectors = await this.client.query<{ connectorid: string }>(
+        'connectors', { select: ['connectorid'] }
+      );
+      for (const connector of allConnectors.value) {
+        const id = connector.connectorid.toLowerCase().replace(/[{}]/g, '');
+        if (scObjectIds.has(id) && !inventory.customConnectorIds.includes(id)) {
+          inventory.customConnectorIds.push(id);
+          componentTypes.set(id, ComponentType.CustomConnector);
+        }
+      }
 
       return {
         ...inventory,
@@ -406,6 +444,14 @@ export class SolutionComponentDiscovery {
         'Solution Component Discovery'
       );
       inventory.customConnectorIds = customConnectorsResult.value.map(c => c.connectorid.toLowerCase().replace(/[{}]/g, ''));
+
+      // Query plugin packages - all
+      const pluginPackagesResult = await logQuery<{ pluginpackageid: string }>(
+        'pluginpackages',
+        { select: ['pluginpackageid'] },
+        'Solution Component Discovery'
+      );
+      inventory.pluginPackageIds = pluginPackagesResult.value.map(p => p.pluginpackageid.toLowerCase().replace(/[{}]/g, ''));
 
       // Query security roles - all
       const securityRolesResult = await logQuery<{ roleid: string }>(
