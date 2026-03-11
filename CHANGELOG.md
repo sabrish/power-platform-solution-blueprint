@@ -30,11 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Solutions section in HTML export** — Solutions section added to HTML export; Preview badges on
   Canvas Apps, Custom Pages, and Model-Driven Apps in HTML; additional XSS fixes via `htmlEscape()`
 - **`componentIcons.ts`** — new single source of truth for all component/tab icons; inline emoji
-  replaced with coloured Fluent UI icons across all views; `BracesVariable24Regular` for Plugins;
-  `ArrowUpRight20/24Regular` for external calls; SecurityRolesView dark mode and sticky column fixes;
-  ProcessingScreen cleanup
-- **Environment Variables and Plugins icon updates** — Environment Variables icon changed to
-  `TextBulletListSquareSettingsRegular`; Plugins HTML nav icon redrawn as `{x}` pattern
+  replaced with coloured Fluent UI icons across all views; `PuzzlePiece24Regular` for Plugins
+  (matches Microsoft's solution explorer icon); `ArrowUpRight20/24Regular` for external calls;
+  SecurityRolesView dark mode and sticky column fixes; ProcessingScreen cleanup
+- **Environment Variables icon update** — Environment Variables icon changed to
+  `BracesVariable24Regular` ({x} notation matching Power Platform variable syntax)
 
 ### Changed
 - **N+1 query patterns eliminated** — EnvironmentVariableDiscovery (values per definition) and
