@@ -29,7 +29,7 @@ const FLOWS_FILTER_SPECS: readonly FilterSpec<Flow>[] = [
 const useStyles = makeStyles({
   flowRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto`,
   },
   externalCallItem: {
     padding: tokens.spacingVerticalS,

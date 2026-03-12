@@ -102,6 +102,10 @@ export interface PipelineStep {
   downstream?: CrossEntityBranch;
   /** True if this flow makes any external HTTP/connector calls */
   hasExternalCalls?: boolean;
+  /** Connector display names used by this flow step */
+  connectionReferences?: string[];
+  /** External HTTP calls detected by static analysis */
+  externalCallSummaries?: Array<{ url: string; domain: string; method: string | null }>;
 }
 
 /** All steps for one Dataverse message (Create / Update / Delete / Manual) on an entity */

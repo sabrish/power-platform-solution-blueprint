@@ -47,7 +47,7 @@ export class HtmlTemplates {
   <meta name="generator" content="Power Platform Solution Blueprint (PPSB)">
   <meta name="description" content="Complete architectural blueprint for Power Platform solutions">
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; default-src 'self' 'unsafe-inline' data:">
-  <title>${this.escapeHtml(title)}</title>
+  <title>${this.htmlEscape(title)}</title>
   <script>
     // Prevent CDN library storage errors from blocking render in Edge
     // when opened as a local file (file:// protocol).
@@ -120,8 +120,8 @@ ${this.embeddedCSS()}
     return `<header class="report-header" role="banner">
   <h1>Power Platform Solution Blueprint</h1>
   <div class="metadata-item" style="display:flex;flex-direction:column;gap:4px;">
-    <div><span class="metadata-label">Environment:</span> <span class="metadata-value">${this.escapeHtml(metadata.environment)}</span></div>
-    <div><span class="metadata-label">Generated:</span> <span class="metadata-value">${this.escapeHtml(generatedDate)}</span></div>
+    <div><span class="metadata-label">Environment:</span> <span class="metadata-value">${this.htmlEscape(metadata.environment)}</span></div>
+    <div><span class="metadata-label">Generated:</span> <span class="metadata-value">${this.htmlEscape(generatedDate)}</span></div>
   </div>
 </header>`;
   }
@@ -203,8 +203,8 @@ ${safeJson}
     // Fallback: Mermaid diagram
     const diagram = erd.diagrams[0];
     const diagramHtml = `<div class="erd-diagram">
-  <h3>${this.escapeHtml(diagram.title)}</h3>
-  <p class="diagram-description">${this.escapeHtml(diagram.description)}</p>
+  <h3>${this.htmlEscape(diagram.title)}</h3>
+  <p class="diagram-description">${this.htmlEscape(diagram.description)}</p>
   <div class="mermaid" id="diagram-0">
 ${diagram.mermaidDiagram}
   </div>
@@ -230,7 +230,7 @@ ${diagram.mermaidDiagram}
     const items = legend.map(item => {
       return `<div class="legend-item">
   <span class="legend-color" style="background-color: ${sanitizeColor(item.color)}"></span>
-  <span class="legend-label">${this.escapeHtml(item.publisherName)} (${item.entityCount})</span>
+  <span class="legend-label">${this.htmlEscape(item.publisherName)} (${item.entityCount})</span>
 </div>`;
     }).join('\n');
 
@@ -347,7 +347,7 @@ ${items}
       return `<div class="accordion-item">
   <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="entity-${index}" onclick="toggleAccordion('entity-${index}')" onkeydown="accordionKeydown(event,'entity-${index}')">
     <span class="accordion-icon" id="icon-entity-${index}">+</span>
-    <h3>${this.escapeHtml(displayName)}</h3>
+    <h3>${this.htmlEscape(displayName)}</h3>
     <span class="entity-badges">
       ${attributeCount > 0 ? `<span class="badge badge-info">${attributeCount} fields</span>` : ''}
       ${formsCount > 0 ? `<span class="badge badge-secondary">${formsCount} forms</span>` : ''}
@@ -417,11 +417,11 @@ ${accordionItems}
       const type = attr.AttributeType || 'Unknown';
 
       return `<tr>
-  <td>${this.escapeHtml(attr.LogicalName)}</td>
-  <td>${this.escapeHtml(displayName)}</td>
-  <td>${this.escapeHtml(type)}</td>
-  <td><span class="badge badge-${required === 'SystemRequired' ? 'error' : required === 'ApplicationRequired' ? 'warning' : 'info'}">${required}</span></td>
-  <td style="word-break: break-word;">${this.escapeHtml(description)}</td>
+  <td>${this.htmlEscape(attr.LogicalName)}</td>
+  <td>${this.htmlEscape(displayName)}</td>
+  <td>${this.htmlEscape(type)}</td>
+  <td><span class="badge badge-${required === 'SystemRequired' ? 'error' : required === 'ApplicationRequired' ? 'warning' : 'info'}">${this.htmlEscape(required)}</span></td>
+  <td style="word-break: break-word;">${this.htmlEscape(description)}</td>
 </tr>`;
     }).join('\n');
 
@@ -455,11 +455,11 @@ ${rows}
 
     const rows = plugins.map(plugin => {
       return `<tr>
-  <td>${this.escapeHtml(plugin.name)}</td>
-  <td>${this.escapeHtml(plugin.message || '')}</td>
-  <td>${this.escapeHtml(plugin.stageName || '')}</td>
-  <td>${this.escapeHtml(plugin.modeName || '')}</td>
-  <td style="word-break: break-word;">${this.escapeHtml(plugin.description || '')}</td>
+  <td>${this.htmlEscape(plugin.name)}</td>
+  <td>${this.htmlEscape(plugin.message || '')}</td>
+  <td>${this.htmlEscape(plugin.stageName || '')}</td>
+  <td>${this.htmlEscape(plugin.modeName || '')}</td>
+  <td style="word-break: break-word;">${this.htmlEscape(plugin.description || '')}</td>
 </tr>`;
     }).join('\n');
 
@@ -490,10 +490,10 @@ ${rows}
 
     const rows = flows.map(flow => {
       return `<tr>
-  <td>${this.escapeHtml(flow.name)}</td>
-  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(flow.state)}</span></td>
-  <td>${this.escapeHtml(flow.definition.triggerEvent)}</td>
-  <td style="word-break: break-word;">${this.escapeHtml(flow.description || '')}</td>
+  <td>${this.htmlEscape(flow.name)}</td>
+  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${this.htmlEscape(flow.state)}</span></td>
+  <td>${this.htmlEscape(flow.definition.triggerEvent)}</td>
+  <td style="word-break: break-word;">${this.htmlEscape(flow.description || '')}</td>
 </tr>`;
     }).join('\n');
 
@@ -580,11 +580,11 @@ ${rows}
     `;
 
     return `
-      ${description ? `<div class="entity-description">${this.escapeHtml(description)}</div>` : ''}
+      ${description ? `<div class="entity-description">${this.htmlEscape(description)}</div>` : ''}
       <div class="entity-metadata">
         <h4>Entity Information</h4>
         <table class="metadata-table">
-          ${metadata.map(([key, value]) => `<tr><th>${key}</th><td>${this.escapeHtml(value)}</td></tr>`).join('\n')}
+          ${metadata.map(([key, value]) => `<tr><th>${key}</th><td>${this.htmlEscape(value)}</td></tr>`).join('\n')}
         </table>
       </div>
       ${automationSummary}
@@ -642,7 +642,7 @@ ${rows}
         <div class="entity-subsection" style="margin-top: 12px;">
           <h5 style="font-size: 0.9em; margin-bottom: 8px;">Web Resources (${form.libraries.length})</h5>
           <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-            ${form.libraries.map(lib => `<span class="badge badge-info" style="font-family: monospace; font-size: 0.85em;">${this.escapeHtml(lib)}</span>`).join('')}
+            ${form.libraries.map(lib => `<span class="badge badge-info" style="font-family: monospace; font-size: 0.85em;">${this.htmlEscape(lib)}</span>`).join('')}
           </div>
         </div>` : '';
 
@@ -661,9 +661,9 @@ ${rows}
             <tbody>
               ${form.eventHandlers.map(handler => `
                 <tr>
-                  <td>${this.escapeHtml(handler.event)}${handler.attribute ? ` <span class="badge badge-secondary" style="font-size: 0.8em;">${this.escapeHtml(handler.attribute)}</span>` : ''}</td>
-                  <td style="font-family: monospace;">${this.escapeHtml(handler.libraryName)}</td>
-                  <td style="font-family: monospace;">${this.escapeHtml(handler.functionName)}${handler.parameters ? ` <span style="color: #666; font-size: 0.85em;">(${this.escapeHtml(handler.parameters)})</span>` : ''}</td>
+                  <td>${this.htmlEscape(handler.event)}${handler.attribute ? ` <span class="badge badge-secondary" style="font-size: 0.8em;">${this.htmlEscape(handler.attribute)}</span>` : ''}</td>
+                  <td style="font-family: monospace;">${this.htmlEscape(handler.libraryName)}</td>
+                  <td style="font-family: monospace;">${this.htmlEscape(handler.functionName)}${handler.parameters ? ` <span style="color: #666; font-size: 0.85em;">(${this.htmlEscape(handler.parameters)})</span>` : ''}</td>
                   <td><span class="badge ${handler.enabled ? 'badge-success' : 'badge-warning'}">${handler.enabled ? 'Enabled' : 'Disabled'}</span></td>
                 </tr>
               `).join('')}
@@ -677,8 +677,8 @@ ${rows}
       return `
         <div style="border: 1px solid #e0e0e0; border-radius: 4px; padding: 16px; margin-bottom: 16px;">
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-            <h4 style="margin: 0; flex: 1;">${this.escapeHtml(form.name)}</h4>
-            <span class="badge badge-primary">${this.escapeHtml(form.typeName)}</span>
+            <h4 style="margin: 0; flex: 1;">${this.htmlEscape(form.name)}</h4>
+            <span class="badge badge-primary">${this.htmlEscape(form.typeName)}</span>
           </div>
           ${webResourcesHtml}
           ${eventHandlersHtml}
@@ -728,7 +728,7 @@ ${rows}
     const displayName = entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName;
 
     let content = `<div class="pipeline-intro">
-      <p>This shows the execution order of server-side automation on <strong>${this.escapeHtml(displayName)}</strong>.</p>
+      <p>This shows the execution order of server-side automation on <strong>${this.htmlEscape(displayName)}</strong>.</p>
     </div>`;
 
     // Group plugins by message
@@ -769,7 +769,7 @@ ${rows}
     // Generate execution order for each message
     for (const [message, plugins] of pluginsByMessage) {
       content += `<div class="pipeline-message">
-        <h4>${this.escapeHtml(message)} Event</h4>`;
+        <h4>${this.htmlEscape(message)} Event</h4>`;
 
       // Sort plugins by stage then rank
       const sortedPlugins = [...plugins].sort((a, b) => {
@@ -832,7 +832,7 @@ ${rows}
       businessRules.forEach((br, idx) => {
         const state = br.state === 'Active' ? 'active' : 'draft';
         html += `<div class="pipeline-step step-${state}">
-          ${idx + 1}. ${this.escapeHtml(br.name)} <span class="step-badge badge-${state}">[${state.toUpperCase()}]</span>
+          ${idx + 1}. ${this.htmlEscape(br.name)} <span class="step-badge badge-${state}">[${state.toUpperCase()}]</span>
         </div>`;
       });
 
@@ -845,13 +845,13 @@ ${rows}
       const stageClass = this.getStageClass(stage);
 
       html += `<div class="pipeline-stage ${stageClass}">
-        <div class="stage-header">Stage ${stage}: ${this.escapeHtml(stageName)}</div>
+        <div class="stage-header">Stage ${stage}: ${this.htmlEscape(stageName)}</div>
         <div class="stage-steps">`;
 
       plugins.forEach((plugin, idx) => {
         const mode = plugin.mode === 0 ? 'sync' : 'async';
         html += `<div class="pipeline-step step-${mode}">
-          ${idx + 1}. ${this.escapeHtml(plugin.name)} <span class="step-badge badge-${mode}">[${mode.toUpperCase()}]</span>
+          ${idx + 1}. ${this.htmlEscape(plugin.name)} <span class="step-badge badge-${mode}">[${mode.toUpperCase()}]</span>
           <span class="step-rank">Rank: ${plugin.rank}</span>
         </div>`;
       });
@@ -890,7 +890,7 @@ ${rows}
       rows.push(`<tr>
         <td>${idx + 1}</td>
         <td>Business Rule</td>
-        <td>${this.escapeHtml(br.name)}</td>
+        <td>${this.htmlEscape(br.name)}</td>
         <td>Server-side (Entity scope)</td>
         <td>${stateBadge}</td>
         <td>-</td>
@@ -905,8 +905,8 @@ ${rows}
       rows.push(`<tr>
         <td>${businessRules.length + idx + 1}</td>
         <td>Plugin</td>
-        <td>${this.escapeHtml(plugin.name)}</td>
-        <td>${this.escapeHtml(plugin.stageName)}</td>
+        <td>${this.htmlEscape(plugin.name)}</td>
+        <td>${this.htmlEscape(plugin.stageName)}</td>
         <td>${modeBadge}</td>
         <td>${plugin.rank}</td>
       </tr>`);
@@ -940,9 +940,9 @@ ${rows}
         ? '<span class="badge badge-success">Active</span>'
         : '<span class="badge badge-warning">Draft</span>';
       return `<tr>
-        <td>${this.escapeHtml(br.name)}</td>
-        <td>${this.escapeHtml(br.scopeName)}</td>
-        <td>${this.escapeHtml(br.definition.executionContext)}</td>
+        <td>${this.htmlEscape(br.name)}</td>
+        <td>${this.htmlEscape(br.scopeName)}</td>
+        <td>${this.htmlEscape(br.definition.executionContext)}</td>
         <td>${stateBadge}</td>
         <td>${br.definition.conditions.length}</td>
         <td>${br.definition.actions.length}</td>
@@ -984,9 +984,9 @@ ${rows}
       const referencedAttribute = r.ReferencedAttribute || r.ReferencingAttribute || 'N/A';
 
       return `<tr>
-        <td>${this.escapeHtml(schemaName)}</td>
-        <td>${this.escapeHtml(referencingEntity)}</td>
-        <td>${this.escapeHtml(referencedAttribute)}</td>
+        <td>${this.htmlEscape(schemaName)}</td>
+        <td>${this.htmlEscape(referencingEntity)}</td>
+        <td>${this.htmlEscape(referencedAttribute)}</td>
       </tr>`;
     }).join('\n');
 
@@ -1028,14 +1028,14 @@ ${rows}
       const imagesText = images.length > 0 ? images.join(', ') : 'None';
 
       return `<tr>
-  <td>${this.escapeHtml(plugin.name)}</td>
-  <td>${this.escapeHtml(plugin.entity || 'N/A')}</td>
-  <td><span class="badge badge-${plugin.state === 'Enabled' ? 'success' : 'error'}">${this.escapeHtml(plugin.state)}</span></td>
-  <td>${this.escapeHtml(plugin.message || 'N/A')}</td>
-  <td>${this.escapeHtml(plugin.stageName || 'N/A')}</td>
-  <td>${this.escapeHtml(plugin.modeName || 'N/A')}</td>
+  <td>${this.htmlEscape(plugin.name)}</td>
+  <td>${this.htmlEscape(plugin.entity || 'N/A')}</td>
+  <td><span class="badge badge-${plugin.state === 'Enabled' ? 'success' : 'error'}">${this.htmlEscape(plugin.state)}</span></td>
+  <td>${this.htmlEscape(plugin.message || 'N/A')}</td>
+  <td>${this.htmlEscape(plugin.stageName || 'N/A')}</td>
+  <td>${this.htmlEscape(plugin.modeName || 'N/A')}</td>
   <td>${String(plugin.rank || 0)}</td>
-  <td>${this.escapeHtml(imagesText)}</td>
+  <td>${this.htmlEscape(imagesText)}</td>
 </tr>`;
     }).join('\n');
 
@@ -1079,11 +1079,11 @@ ${rows}
       const hasExternal = flow.hasExternalCalls;
 
       return `<tr>
-  <td>${this.escapeHtml(flow.name)}</td>
-  <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(flow.state)}</span></td>
-  <td>${this.escapeHtml(flow.definition.triggerEvent)}</td>
-  <td>${this.escapeHtml(flow.definition.scopeType)}</td>
+  <td>${this.htmlEscape(flow.name)}</td>
+  <td>${this.htmlEscape(entityDisplay)}</td>
+  <td><span class="badge badge-${flow.state === 'Active' ? 'success' : flow.state === 'Draft' ? 'warning' : 'error'}">${this.htmlEscape(flow.state)}</span></td>
+  <td>${this.htmlEscape(flow.definition.triggerEvent)}</td>
+  <td>${this.htmlEscape(flow.definition.scopeType)}</td>
   <td>${flow.definition.actionsCount}</td>
   <td>${hasExternal ? '<span class="badge badge-warning">Yes</span>' : '<span class="badge badge-info">No</span>'}</td>
 </tr>`;
@@ -1124,22 +1124,22 @@ ${rows}
     }
 
     const items = businessRules.map((rule, i) => {
-      const entityDisplay = this.escapeHtml(rule.entityDisplayName || rule.entity);
+      const entityDisplay = this.htmlEscape(rule.entityDisplayName || rule.entity);
       const conditions = rule.definition.conditions ?? [];
       const actions = rule.definition.actions ?? [];
       const id = `br-${i}`;
 
       const condRows = conditions.map(c => `<tr>
-        <td><code>${this.escapeHtml(c.field)}</code></td>
-        <td>${this.escapeHtml(c.operator)}</td>
-        <td>${c.value ? this.escapeHtml(c.value) : '—'}</td>
-        <td>${this.escapeHtml(c.logicOperator)}</td>
+        <td><code>${this.htmlEscape(c.field)}</code></td>
+        <td>${this.htmlEscape(c.operator)}</td>
+        <td>${c.value ? this.htmlEscape(c.value) : '—'}</td>
+        <td>${this.htmlEscape(c.logicOperator)}</td>
       </tr>`).join('');
 
       const actRows = actions.map(a => `<tr>
-        <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.escapeHtml(a.type)}</span></td>
-        <td><code>${this.escapeHtml(a.field)}</code></td>
-        <td>${a.value ? this.escapeHtml(a.value) : a.message ? this.escapeHtml(a.message) : '—'}</td>
+        <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
+        <td><code>${this.htmlEscape(a.field)}</code></td>
+        <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
       </tr>`).join('');
 
       return `<div class="accordion-item">
@@ -1147,22 +1147,22 @@ ${rows}
     <span class="accordion-icon" id="icon-${id}">+</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <strong>${this.escapeHtml(rule.name)}</strong>
+        <strong>${this.htmlEscape(rule.name)}</strong>
         <span style="color:#666;font-size:0.9em">${entityDisplay}</span>
-        <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${this.escapeHtml(rule.state)}</span>
-        <span class="badge">${this.escapeHtml(rule.scope)}</span>
-        <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.escapeHtml(rule.definition.executionContext)}</span>
+        <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${this.htmlEscape(rule.state)}</span>
+        <span class="badge">${this.htmlEscape(rule.scope)}</span>
+        <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.htmlEscape(rule.definition.executionContext)}</span>
         ${conditions.length > 0 ? `<span class="badge">${conditions.length} condition${conditions.length !== 1 ? 's' : ''}</span>` : ''}
         ${actions.length > 0 ? `<span class="badge">${actions.length} action${actions.length !== 1 ? 's' : ''}</span>` : ''}
       </div>
-      ${rule.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(rule.description)}</div>` : ''}
+      ${rule.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.htmlEscape(rule.description)}</div>` : ''}
     </div>
   </div>
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
-    ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.escapeHtml(rule.definition.parseError)}</div>` : ''}
+    ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.htmlEscape(rule.definition.parseError)}</div>` : ''}
     <div style="display:grid;grid-template-columns:minmax(200px,1fr) minmax(200px,1fr);gap:16px;">
       <div>
-        <h5 style="margin-bottom:6px">Conditions${rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.escapeHtml(rule.definition.conditionLogic)})</span>` : ''}</h5>
+        <h5 style="margin-bottom:6px">Conditions${rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.htmlEscape(rule.definition.conditionLogic)})</span>` : ''}</h5>
         ${conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Field</th><th scope="col">Operator</th><th scope="col">Value</th><th scope="col">Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
       </div>
       <div>
@@ -1200,11 +1200,11 @@ ${rows}
       const complexity = workflow.migrationRecommendation?.complexity || 'Unknown';
 
       return `<tr>
-  <td>${this.escapeHtml(workflow.name)}</td>
-  <td>${this.escapeHtml(entityDisplay)}</td>
-  <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${this.escapeHtml(workflow.state)}</span></td>
-  <td>${this.escapeHtml(workflow.modeName)}</td>
-  <td><span class="badge badge-${complexity === 'Critical' ? 'error' : complexity === 'High' ? 'warning' : 'info'}">${complexity}</span></td>
+  <td>${this.htmlEscape(workflow.name)}</td>
+  <td>${this.htmlEscape(entityDisplay)}</td>
+  <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${this.htmlEscape(workflow.state)}</span></td>
+  <td>${this.htmlEscape(workflow.modeName)}</td>
+  <td><span class="badge badge-${complexity === 'Critical' ? 'error' : complexity === 'High' ? 'warning' : 'info'}">${this.htmlEscape(complexity)}</span></td>
 </tr>`;
     }).join('\n');
 
@@ -1260,7 +1260,7 @@ ${rows}
     }
 
     const items = bpfs.map((bpf, i) => {
-      const entityDisplay = this.escapeHtml(bpf.primaryEntityDisplayName || bpf.primaryEntity);
+      const entityDisplay = this.htmlEscape(bpf.primaryEntityDisplayName || bpf.primaryEntity);
       const stages = bpf.definition.stages ?? [];
       const id = `bpf-${i}`;
 
@@ -1269,8 +1269,8 @@ ${rows}
         return `<div style="display:flex;flex-direction:column;align-items:flex-start;">
   <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f3f3f3;border-radius:6px;min-width:0;">
     <div style="min-width:26px;height:26px;border-radius:50%;background:#0078d4;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.8em;flex-shrink:0;">${si + 1}</div>
-    <span style="font-weight:600;font-size:0.9em">${this.escapeHtml(stage.name)}</span>
-    <code style="font-size:0.8em;color:#666;">${this.escapeHtml(stage.entity)}</code>
+    <span style="font-weight:600;font-size:0.9em">${this.htmlEscape(stage.name)}</span>
+    <code style="font-size:0.8em;color:#666;">${this.htmlEscape(stage.entity)}</code>
     ${stage.steps.length > 0 ? `<span class="badge">${stage.steps.length} step${stage.steps.length !== 1 ? 's' : ''}</span>` : ''}
   </div>
   ${!isLast ? '<div style="padding:2px 0 2px 12px;color:#999;font-size:1em;">↓</div>' : ''}
@@ -1282,21 +1282,21 @@ ${rows}
     <span class="accordion-icon" id="icon-${id}">+</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <strong>${this.escapeHtml(bpf.name)}</strong>
+        <strong>${this.htmlEscape(bpf.name)}</strong>
         <span style="color:#666;font-size:0.9em">${entityDisplay}</span>
-        <span class="badge badge-${bpf.state === 'Active' ? 'success' : 'warning'}">${this.escapeHtml(bpf.state)}</span>
+        <span class="badge badge-${bpf.state === 'Active' ? 'success' : 'warning'}">${this.htmlEscape(bpf.state)}</span>
         <span class="badge">${stages.length} stage${stages.length !== 1 ? 's' : ''}</span>
         <span class="badge">${bpf.definition.totalSteps} step${bpf.definition.totalSteps !== 1 ? 's' : ''}</span>
         ${bpf.definition.crossEntityFlow ? '<span class="badge badge-info">Cross-entity</span>' : ''}
         ${bpf.isManaged ? '<span class="badge badge-info">Managed</span>' : ''}
       </div>
-      ${bpf.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(bpf.description)}</div>` : ''}
+      ${bpf.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.htmlEscape(bpf.description)}</div>` : ''}
     </div>
   </div>
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
-    ${bpf.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.escapeHtml(bpf.definition.parseError)}</div>` : ''}
+    ${bpf.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.htmlEscape(bpf.definition.parseError)}</div>` : ''}
     ${stages.length > 0 ? stageBlocks : '<p style="color:#666">No stage details available.</p>'}
-    ${bpf.definition.entities.length > 1 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Entities involved:</strong> ${bpf.definition.entities.map(e => this.escapeHtml(e)).join(', ')}</p>` : ''}
+    ${bpf.definition.entities.length > 1 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Entities involved:</strong> ${bpf.definition.entities.map(e => this.htmlEscape(e)).join(', ')}</p>` : ''}
   </div>
 </div>`;
     }).join('\n');
@@ -1324,9 +1324,9 @@ ${rows}
       const deprecated = wr.isDeprecated;
 
       return `<tr>
-  <td>${this.escapeHtml(wr.name)}</td>
-  <td>${this.escapeHtml(wr.displayName)}</td>
-  <td>${this.escapeHtml(wr.typeName)}</td>
+  <td>${this.htmlEscape(wr.name)}</td>
+  <td>${this.htmlEscape(wr.displayName)}</td>
+  <td>${this.htmlEscape(wr.typeName)}</td>
   <td>${sizeKB} KB</td>
   <td>${hasExternal ? '<span class="badge badge-warning">Yes</span>' : 'No'}</td>
   <td>${deprecated ? '<span class="badge badge-error">Yes</span>' : 'No'}</td>
@@ -1371,10 +1371,10 @@ ${rows}
       return `<table class="data-table" style="font-size:0.85em;margin-top:4px;">
   <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead>
   <tbody>${params.map(p => `<tr>
-    <td><code>${this.escapeHtml(p.uniqueName)}</code>${p.displayName && p.displayName !== p.uniqueName ? ` <span style="color:#666;font-size:0.9em">${this.escapeHtml(p.displayName)}</span>` : ''}</td>
-    <td><span class="badge badge-info">${this.escapeHtml(p.typeName || p.type)}</span>${p.logicalEntityName ? ` <span style="font-size:0.8em;color:#666">${this.escapeHtml(p.logicalEntityName)}</span>` : ''}</td>
+    <td><code>${this.htmlEscape(p.uniqueName)}</code>${p.displayName && p.displayName !== p.uniqueName ? ` <span style="color:#666;font-size:0.9em">${this.htmlEscape(p.displayName)}</span>` : ''}</td>
+    <td><span class="badge badge-info">${this.htmlEscape(p.typeName || p.type)}</span>${p.logicalEntityName ? ` <span style="font-size:0.8em;color:#666">${this.htmlEscape(p.logicalEntityName)}</span>` : ''}</td>
     <td>${p.isOptional ? 'Optional' : '<span class="badge badge-warning">Required</span>'}</td>
-    <td style="color:#666;font-size:0.9em">${p.description ? this.escapeHtml(p.description) : '—'}</td>
+    <td style="color:#666;font-size:0.9em">${p.description ? this.htmlEscape(p.description) : '—'}</td>
   </tr>`).join('')}</tbody>
 </table>`;
     };
@@ -1386,7 +1386,7 @@ ${rows}
       const respCount = api.responseProperties?.length || 0;
       const badges = [
         `<span class="badge badge-${api.isFunction ? 'info' : 'primary'}">${type}</span>`,
-        `<span class="badge">${this.escapeHtml(api.bindingType)}</span>`,
+        `<span class="badge">${this.htmlEscape(api.bindingType)}</span>`,
         paramCount > 0 ? `<span class="badge badge-success">${paramCount} param${paramCount !== 1 ? 's' : ''}</span>` : '',
         respCount > 0 ? `<span class="badge badge-success">${respCount} response${respCount !== 1 ? 's' : ''}</span>` : '',
         api.isPrivate ? `<span class="badge badge-warning">Private</span>` : '',
@@ -1398,11 +1398,11 @@ ${rows}
     <span class="accordion-icon" id="icon-${id}">+</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <strong>${this.escapeHtml(api.displayName || api.uniqueName)}</strong>
-        <code style="font-size:0.8em;color:#666">${this.escapeHtml(api.uniqueName)}</code>
+        <strong>${this.htmlEscape(api.displayName || api.uniqueName)}</strong>
+        <code style="font-size:0.8em;color:#666">${this.htmlEscape(api.uniqueName)}</code>
         ${badges}
       </div>
-      ${api.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.escapeHtml(api.description)}</div>` : ''}
+      ${api.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.htmlEscape(api.description)}</div>` : ''}
     </div>
   </div>
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
@@ -1416,7 +1416,7 @@ ${rows}
         ${paramTable(api.responseProperties, 'Response properties')}
       </div>
     </div>
-    ${api.allowedCustomProcessingStepType !== 'None' ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Custom processing steps:</strong> ${this.escapeHtml(api.allowedCustomProcessingStepType)}</p>` : ''}
+    ${api.allowedCustomProcessingStepType !== 'None' ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Custom processing steps:</strong> ${this.htmlEscape(api.allowedCustomProcessingStepType)}</p>` : ''}
   </div>
 </div>`;
     }).join('\n');
@@ -1443,9 +1443,9 @@ ${rows}
       const required = envVar.isRequired;
 
       return `<tr>
-  <td>${this.escapeHtml(envVar.schemaName)}</td>
-  <td>${this.escapeHtml(envVar.displayName)}</td>
-  <td>${this.escapeHtml(envVar.typeName)}</td>
+  <td>${this.htmlEscape(envVar.schemaName)}</td>
+  <td>${this.htmlEscape(envVar.displayName)}</td>
+  <td>${this.htmlEscape(envVar.typeName)}</td>
   <td>${required ? '<span class="badge badge-error">Required</span>' : 'Optional'}</td>
   <td>${hasValue ? '<span class="badge badge-success">Set</span>' : '<span class="badge badge-warning">Not Set</span>'}</td>
 </tr>`;
@@ -1488,9 +1488,9 @@ ${rows}
       const connected = !!connRef.connectionId;
 
       return `<tr>
-  <td>${this.escapeHtml(connRef.name)}</td>
-  <td>${this.escapeHtml(connRef.displayName)}</td>
-  <td>${this.escapeHtml(connector)}</td>
+  <td>${this.htmlEscape(connRef.name)}</td>
+  <td>${this.htmlEscape(connRef.displayName)}</td>
+  <td>${this.htmlEscape(connector)}</td>
   <td>${connected ? '<span class="badge badge-success">Connected</span>' : '<span class="badge badge-error">Not Connected</span>'}</td>
 </tr>`;
     }).join('\n');
@@ -1531,22 +1531,22 @@ ${rows}
         ? '<span class="badge badge-warning">Managed</span>'
         : '<span class="badge badge-success">Unmanaged</span>';
       const optionsHtml = gc.options.slice(0, 5).map(o =>
-        `<span class="badge badge-info">${this.escapeHtml(o.label)} (${String(o.value)})</span>`
+        `<span class="badge badge-info">${this.htmlEscape(o.label)} (${String(o.value)})</span>`
       ).join(' ');
       const moreCount = gc.options.length > 5 ? ` <span class="badge">+${String(gc.options.length - 5)} more</span>` : '';
 
       return `<div class="accordion-item">
   <button class="accordion-header" aria-expanded="false">
-    <span class="accordion-title">${this.escapeHtml(gc.displayName)}</span>
+    <span class="accordion-title">${this.htmlEscape(gc.displayName)}</span>
     <span class="accordion-meta">${managedBadge} <span class="badge">${String(gc.totalOptions)} options</span></span>
     <span class="accordion-toggle">▼</span>
   </button>
   <div class="accordion-content" hidden>
     <div class="details-grid">
-      <div class="detail-item"><span class="detail-label">Schema Name</span><span class="detail-value">${this.escapeHtml(gc.name)}</span></div>
-      ${gc.description ? `<div class="detail-item"><span class="detail-label">Description</span><span class="detail-value">${this.escapeHtml(gc.description)}</span></div>` : ''}
+      <div class="detail-item"><span class="detail-label">Schema Name</span><span class="detail-value">${this.htmlEscape(gc.name)}</span></div>
+      ${gc.description ? `<div class="detail-item"><span class="detail-label">Description</span><span class="detail-value">${this.htmlEscape(gc.description)}</span></div>` : ''}
       <div class="detail-item"><span class="detail-label">Customizable</span><span class="detail-value">${gc.isCustomizable ? 'Yes' : 'No'}</span></div>
-      <div class="detail-item"><span class="detail-label">Modified</span><span class="detail-value">${this.escapeHtml(new Date(gc.modifiedOn).toLocaleDateString())}</span></div>
+      <div class="detail-item"><span class="detail-label">Modified</span><span class="detail-value">${this.htmlEscape(new Date(gc.modifiedOn).toLocaleDateString())}</span></div>
     </div>
     ${gc.options.length > 0 ? `<div class="detail-item"><span class="detail-label">Options</span><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">${optionsHtml}${moreCount}</div></div>` : ''}
   </div>
@@ -1575,11 +1575,11 @@ ${rows}
         ? '<span class="badge badge-warning">Managed</span>'
         : '<span class="badge badge-success">Unmanaged</span>';
       return `<tr>
-  <td>${this.escapeHtml(c.displayName)}</td>
-  <td>${this.escapeHtml(c.name)}</td>
-  ${c.description ? `<td>${this.escapeHtml(c.description)}</td>` : '<td>—</td>'}
+  <td>${this.htmlEscape(c.displayName)}</td>
+  <td>${this.htmlEscape(c.name)}</td>
+  ${c.description ? `<td>${this.htmlEscape(c.description)}</td>` : '<td>—</td>'}
   <td>${managedBadge}</td>
-  <td>${this.escapeHtml(new Date(c.modifiedOn).toLocaleDateString())}</td>
+  <td>${this.htmlEscape(new Date(c.modifiedOn).toLocaleDateString())}</td>
 </tr>`;
     }).join('\n');
 
@@ -1620,9 +1620,9 @@ ${rows}
         ? '<span class="badge badge-warning">Managed</span>'
         : '<span class="badge badge-success">Unmanaged</span>';
       return `<tr>
-  <td>${this.escapeHtml(a.displayName)}</td>
-  <td>${this.escapeHtml(a.name)}</td>
-  ${a.description ? `<td>${this.escapeHtml(a.description)}</td>` : '<td>—</td>'}
+  <td>${this.htmlEscape(a.displayName)}</td>
+  <td>${this.htmlEscape(a.name)}</td>
+  ${a.description ? `<td>${this.htmlEscape(a.description)}</td>` : '<td>—</td>'}
   <td>${managedBadge}</td>
 </tr>`;
     }).join('\n');
@@ -1663,9 +1663,9 @@ ${rows}
         ? '<span class="badge badge-warning">Managed</span>'
         : '<span class="badge badge-success">Unmanaged</span>';
       return `<tr>
-  <td>${this.escapeHtml(p.displayName)}</td>
-  <td>${this.escapeHtml(p.name)}</td>
-  ${p.description ? `<td>${this.escapeHtml(p.description)}</td>` : '<td>—</td>'}
+  <td>${this.htmlEscape(p.displayName)}</td>
+  <td>${this.htmlEscape(p.name)}</td>
+  ${p.description ? `<td>${this.htmlEscape(p.description)}</td>` : '<td>—</td>'}
   <td>${managedBadge}</td>
 </tr>`;
     }).join('\n');
@@ -1706,11 +1706,11 @@ ${rows}
         ? '<span class="badge badge-warning">Managed</span>'
         : '<span class="badge badge-success">Unmanaged</span>';
       return `<tr>
-  <td>${this.escapeHtml(a.displayName)}</td>
-  <td>${this.escapeHtml(a.name)}</td>
-  ${a.description ? `<td>${this.escapeHtml(a.description)}</td>` : '<td>—</td>'}
+  <td>${this.htmlEscape(a.displayName)}</td>
+  <td>${this.htmlEscape(a.name)}</td>
+  ${a.description ? `<td>${this.htmlEscape(a.description)}</td>` : '<td>—</td>'}
   <td>${managedBadge}</td>
-  <td>${a.modifiedOn ? this.escapeHtml(new Date(a.modifiedOn).toLocaleDateString()) : '—'}</td>
+  <td>${a.modifiedOn ? this.htmlEscape(new Date(a.modifiedOn).toLocaleDateString()) : '—'}</td>
 </tr>`;
     }).join('\n');
 
@@ -1751,11 +1751,11 @@ ${rows}
       const riskFactorsText = endpoint.riskFactors.map(rf => rf.factor).join(', ') || 'None';
 
       return `<tr>
-  <td>${this.escapeHtml(endpoint.domain)}</td>
-  <td>${this.escapeHtml(endpoint.protocol.toUpperCase())}</td>
-  <td><span class="badge badge-${riskColor}">${this.escapeHtml(endpoint.riskLevel)}</span></td>
+  <td>${this.htmlEscape(endpoint.domain)}</td>
+  <td>${this.htmlEscape(endpoint.protocol.toUpperCase())}</td>
+  <td><span class="badge badge-${riskColor}">${this.htmlEscape(endpoint.riskLevel)}</span></td>
   <td>${String(endpoint.callCount)}</td>
-  <td>${this.escapeHtml(riskFactorsText)}</td>
+  <td>${this.htmlEscape(riskFactorsText)}</td>
 </tr>`;
     }).join('\n');
 
@@ -1967,14 +1967,15 @@ ${rows}
       return '<span class="badge badge-warning">Yes (no filter)</span>';
     };
 
-    const hasCrossCount = pipelines.filter(([, p]) => p.hasCrossEntityOutput).length;
+    const defaultCount = pipelines.filter(([, p]) => p.hasCrossEntityOutput || p.hasExternalInteraction).length;
     const allCount = pipelines.length;
-    const checkboxHtml = allCount > hasCrossCount ? `<div style="margin-bottom:12px;">
+    const checkboxHtml = allCount > defaultCount ? `<div style="margin-bottom:4px;">
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:0.9em;">
     <input type="checkbox" id="cea-show-all" onchange="toggleCeaAllEntities(this.checked)" style="cursor:pointer">
-    Show all entities with automation (${allCount} total, ${allCount - hasCrossCount} without cross-entity output)
+    Show all entities with automation
   </label>
-</div>` : '';
+</div>
+<p style="font-size:0.8em;color:#666;margin:0 0 12px">Default: entities with cross-entity writes or external API calls.</p>` : '';
 
     const items: string[] = [];
     let idx = 0;
@@ -1982,16 +1983,17 @@ ${rows}
       const entityView = analysis.entityViews.get(logicalName);
       const color = entityColor(logicalName);
       const id = `cea-entity-${idx++}`;
-      const hasCrossOutput = pipeline.hasCrossEntityOutput;
-      const wrapClass = hasCrossOutput ? 'cea-entity' : 'cea-entity cea-entity-no-output';
-      const hiddenAttr = hasCrossOutput ? '' : ' style="display:none"';
+      const showByDefault = pipeline.hasCrossEntityOutput || pipeline.hasExternalInteraction;
+      const wrapClass = showByDefault ? 'cea-entity' : 'cea-entity cea-entity-no-output';
+      const hiddenAttr = showByDefault ? '' : ' style="display:none"';
 
       const opBadges = pipeline.messagePipelines
         .map(mp => {
           const c = mp.message === 'Create' ? 'success' : mp.message === 'Delete' ? 'danger' : 'warning';
-          return `<span class="badge badge-${c}">${mp.message}</span>`;
+          return `<span class="badge badge-${c}">${this.htmlEscape(mp.message)}</span>`;
         }).join(' ');
-      const crossBadge = hasCrossOutput ? `<span class="badge badge-info">→ cross-entity</span>` : '';
+      const crossBadge = pipeline.hasCrossEntityOutput ? `<span class="badge badge-info">→ cross-entity</span>` : '';
+      const externalBadge = pipeline.hasExternalInteraction ? `<span class="badge badge-primary">&#8627; External calls</span>` : '';
 
       let bodyHtml: string;
       let entryCountHtml = '';
@@ -2010,9 +2012,9 @@ ${rows}
               : '';
             return `<tr>
               <td>${this.htmlEscape(act.automationName)}</td>
-              <td><span class="badge badge-${act.automationType === 'Plugin' ? 'warning' : 'success'}">${act.automationType}</span></td>
+              <td><span class="badge badge-${act.automationType === 'Plugin' ? 'warning' : 'success'}">${this.htmlEscape(act.automationType)}</span></td>
               <td>${this.htmlEscape(act.stageName ?? '—')}</td>
-              <td>${act.mode}</td>
+              <td>${this.htmlEscape(act.mode)}</td>
               <td>${firingBadge(act.firingStatus)}</td>
               <td style="font-family:monospace;font-size:0.8em">${act.matchedFields.length > 0 ? this.htmlEscape(act.matchedFields.join(', ')) : '—'}</td>
               <td>${ds}</td>
@@ -2039,7 +2041,40 @@ ${rows}
   </div>
 </div>`;
         }).join('');
-        bodyHtml = `<div class="accordion">${traceBlocks}</div>`;
+        // Also show Manual/On-Demand pipelines (flows with no inbound trigger match)
+        const manualPipelines = pipeline.messagePipelines.filter(mp => mp.message === 'Manual');
+        const manualBlocks = manualPipelines.map(mp => {
+          const stepRows = mp.steps.map((step, si) => {
+            const noFilterHtml = step.firesForAllUpdates ? '<span class="badge badge-danger">No filter</span>' : '';
+            const filters = step.filteringAttributes.length > 0 && !step.firesForAllUpdates
+              ? `<span style="font-size:0.8em;color:#666">filters: ${this.htmlEscape(step.filteringAttributes.slice(0, 3).join(', '))}${step.filteringAttributes.length > 3 ? ` +${step.filteringAttributes.length - 3}` : ''}</span>`
+              : '';
+            const ds = step.downstream
+              ? `→ <strong>${this.htmlEscape(step.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(step.downstream.operation)})`
+              : '';
+            const extBadge = step.hasExternalCalls ? '<span class="badge badge-primary" style="margin-left:4px">&#8627; External calls</span>' : '';
+            const connHtml = step.connectionReferences && step.connectionReferences.length > 0
+              ? `<br><span style="font-size:0.8em;color:#666">${step.connectionReferences.map(r => `<span class="badge" style="background:#eee;color:#333;margin:1px">${this.htmlEscape(r)}</span>`).join(' ')}</span>`
+              : '';
+            const urlHtml = step.externalCallSummaries && step.externalCallSummaries.length > 0
+              ? `<br>${step.externalCallSummaries.map(c => `<span style="font-family:monospace;font-size:0.75em;color:#555">${this.htmlEscape(c.method ? `${c.method} ` : '')}${this.htmlEscape(c.url || c.domain)}</span>`).join('<br>')}`
+              : '';
+            return `<tr>
+              <td>${si + 1}</td>
+              <td>${this.htmlEscape(step.automationName)}${extBadge}${connHtml}${urlHtml}</td>
+              <td><span class="badge badge-${step.automationType === 'Plugin' ? 'warning' : 'success'}">${this.htmlEscape(step.automationType)}</span></td>
+              <td>${this.htmlEscape(step.stageName ?? '—')}</td>
+              <td><span class="badge badge-${step.mode === 'Sync' ? 'warning' : 'success'}">${this.htmlEscape(step.mode)}</span></td>
+              <td>${noFilterHtml}${filters}</td>
+              <td>${ds}</td>
+            </tr>`;
+          }).join('');
+          return `<div style="margin-top:12px"><h5 style="margin:4px 0 6px">On-Demand / Manual Pipeline</h5><table class="data-table" style="font-size:0.85em;">
+  <thead><tr><th scope="col">#</th><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Filter</th><th scope="col">Downstream</th></tr></thead>
+  <tbody>${stepRows}</tbody>
+</table></div>`;
+        }).join('');
+        bodyHtml = `<div class="accordion">${traceBlocks}</div>${manualBlocks}`;
       } else {
         // Entity has outgoing automation but no inbound entry points — show message pipelines
         const msgBlocks = pipeline.messagePipelines.map(mp => {
@@ -2051,17 +2086,24 @@ ${rows}
             const ds = step.downstream
               ? `→ <strong>${this.htmlEscape(step.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(step.downstream.operation)})`
               : '';
+            const extBadge = step.hasExternalCalls ? '<span class="badge badge-primary" style="margin-left:4px">&#8627; External calls</span>' : '';
+            const connHtml = step.connectionReferences && step.connectionReferences.length > 0
+              ? `<br><span style="font-size:0.8em;color:#666">${step.connectionReferences.map(r => `<span class="badge" style="background:#eee;color:#333;margin:1px">${this.htmlEscape(r)}</span>`).join(' ')}</span>`
+              : '';
+            const urlHtml = step.externalCallSummaries && step.externalCallSummaries.length > 0
+              ? `<br>${step.externalCallSummaries.map(c => `<span style="font-family:monospace;font-size:0.75em;color:#555">${this.htmlEscape(c.method ? `${c.method} ` : '')}${this.htmlEscape(c.url || c.domain)}</span>`).join('<br>')}`
+              : '';
             return `<tr>
               <td>${si + 1}</td>
-              <td>${this.htmlEscape(step.automationName)}</td>
-              <td><span class="badge badge-${step.automationType === 'Plugin' ? 'warning' : 'success'}">${step.automationType}</span></td>
+              <td>${this.htmlEscape(step.automationName)}${extBadge}${connHtml}${urlHtml}</td>
+              <td><span class="badge badge-${step.automationType === 'Plugin' ? 'warning' : 'success'}">${this.htmlEscape(step.automationType)}</span></td>
               <td>${this.htmlEscape(step.stageName ?? '—')}</td>
-              <td><span class="badge badge-${step.mode === 'Sync' ? 'warning' : 'success'}">${step.mode}</span></td>
+              <td><span class="badge badge-${step.mode === 'Sync' ? 'warning' : 'success'}">${this.htmlEscape(step.mode)}</span></td>
               <td>${noFilterHtml}${filters}</td>
               <td>${ds}</td>
             </tr>`;
           }).join('');
-          return `${pipeline.messagePipelines.length > 1 ? `<h5 style="margin:4px 0 6px">${mp.message} Pipeline</h5>` : ''}<table class="data-table" style="font-size:0.85em;">
+          return `${pipeline.messagePipelines.length > 1 ? `<h5 style="margin:4px 0 6px">${this.htmlEscape(mp.message)} Pipeline</h5>` : ''}<table class="data-table" style="font-size:0.85em;">
   <thead><tr><th scope="col">#</th><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Filter</th><th scope="col">Downstream</th></tr></thead>
   <tbody>${stepRows}</tbody>
 </table>`;
@@ -2081,7 +2123,7 @@ ${rows}
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <strong>${this.htmlEscape(pipeline.entityDisplayName)}</strong>
         <small style="color:#666;font-family:monospace">${this.htmlEscape(logicalName)}</small>
-        ${opBadges} ${crossBadge} ${entryCountHtml}
+        ${opBadges} ${crossBadge} ${externalBadge} ${entryCountHtml}
       </div>
     </div>
     <span style="font-size:0.85em;color:#666;flex-shrink:0">${stepCount}</span>
@@ -2099,12 +2141,13 @@ ${rows}
    * HTML-escape a string to prevent XSS
    */
   private htmlEscape(str: string): string {
-    return str
+    const s = str || '';
+    return s
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/'/g, '&#039;');
   }
 
   /**
@@ -3671,8 +3714,8 @@ ${this.embeddedJavaScript()}
     for (const role of rolesWithPerms) {
       html += `
           <tr>
-            <td><strong>${this.escapeHtml(role.name)}</strong></td>
-            <td>${this.escapeHtml(role.businessunitname || 'Unknown')}</td>`;
+            <td><strong>${this.htmlEscape(role.name)}</strong></td>
+            <td>${this.htmlEscape(role.businessunitname || 'Unknown')}</td>`;
 
       for (const key of specialPermissionKeys) {
         html += `<td class="center">${role.specialPermissions[key] ? '✓' : ''}</td>`;
@@ -3701,15 +3744,15 @@ ${this.embeddedJavaScript()}
           <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="role-${i}" onclick="toggleAccordion('role-${i}')" onkeydown="accordionKeydown(event,'role-${i}')">
             <span class="accordion-icon" id="icon-role-${i}">+</span>
             <div class="accordion-title">
-              <strong>${this.escapeHtml(role.name)}</strong>
+              <strong>${this.htmlEscape(role.name)}</strong>
               <span class="badge">${role.totalEntities} entities</span>
               ${role.hasSystemAdminPrivileges ? '<span class="badge badge-warning">System Admin</span>' : ''}
               ${role.ismanaged ? '<span class="badge badge-info">Managed</span>' : ''}
             </div>
           </div>
           <div class="accordion-content" id="role-${i}" style="display: none;">
-            <p><strong>Business Unit:</strong> ${this.escapeHtml(role.businessunitname || 'Unknown')}</p>
-            ${role.description ? `<p><strong>Description:</strong> ${this.escapeHtml(role.description)}</p>` : ''}
+            <p><strong>Business Unit:</strong> ${this.htmlEscape(role.businessunitname || 'Unknown')}</p>
+            ${role.description ? `<p><strong>Description:</strong> ${this.htmlEscape(role.description)}</p>` : ''}
 
             <h5>Entity Permissions</h5>
             ${this.generateEntityPermissionsTable(role.entityPermissions)}
@@ -3730,7 +3773,7 @@ ${this.embeddedJavaScript()}
       case 'Local':  return 'BU';
       case 'Deep':   return 'P:CBU';
       case 'Global': return 'Org';
-      default:       return this.escapeHtml(depth);
+      default:       return this.htmlEscape(depth);
     }
   }
 
@@ -3769,7 +3812,7 @@ ${this.embeddedJavaScript()}
 
       html += `
           <tr>
-            <td><strong>${this.escapeHtml(entityPerm.entityLogicalName)}</strong></td>`;
+            <td><strong>${this.htmlEscape(entityPerm.entityLogicalName)}</strong></td>`;
 
       for (const type of ['Create', 'Read', 'Write', 'Delete', 'Append', 'AppendTo', 'Assign', 'Share']) {
         const priv = privMap.get(type as PrivilegeDetail['type']);
@@ -3805,8 +3848,8 @@ ${this.embeddedJavaScript()}
     for (const profile of fieldSecurityProfiles) {
       html += `
           <tr>
-            <td><strong>${this.escapeHtml(profile.name)}</strong></td>
-            <td>${profile.description ? this.escapeHtml(profile.description) : '<em>No description</em>'}</td>
+            <td><strong>${this.htmlEscape(profile.name)}</strong></td>
+            <td>${profile.description ? this.htmlEscape(profile.description) : '<em>No description</em>'}</td>
           </tr>`;
     }
 
@@ -3836,9 +3879,9 @@ ${this.embeddedJavaScript()}
     for (const rule of attributeMaskingRules) {
       html += `
           <tr>
-            <td><strong>${this.escapeHtml(rule.entitylogicalname)}</strong></td>
-            <td>${this.escapeHtml(rule.attributelogicalname)}</td>
-            <td><span class="badge">${this.escapeHtml(rule.maskingRuleName)}</span></td>
+            <td><strong>${this.htmlEscape(rule.entitylogicalname)}</strong></td>
+            <td>${this.htmlEscape(rule.attributelogicalname)}</td>
+            <td><span class="badge">${this.htmlEscape(rule.maskingRuleName)}</span></td>
             <td>${rule.ismanaged ? '<span class="badge">Managed</span>' : ''}</td>
           </tr>`;
     }
@@ -3868,8 +3911,8 @@ ${this.embeddedJavaScript()}
     for (const profile of columnSecurityProfiles) {
       html += `
           <tr>
-            <td><strong>${this.escapeHtml(profile.name)}</strong></td>
-            <td>${profile.description ? this.escapeHtml(profile.description) : '<em>No description</em>'}</td>
+            <td><strong>${this.htmlEscape(profile.name)}</strong></td>
+            <td>${profile.description ? this.htmlEscape(profile.description) : '<em>No description</em>'}</td>
             <td>${profile.ismanaged ? '<span class="badge">Managed</span>' : ''}</td>
           </tr>`;
     }
@@ -3919,12 +3962,12 @@ ${this.embeddedJavaScript()}
         if (p.canRead) permissions.push('R');
         if (p.canCreate) permissions.push('C');
         if (p.canUpdate) permissions.push('U');
-        return `<div class="profile-badge">${this.escapeHtml(p.profileName)} <span class="permissions">(${permissions.join(', ')})</span></div>`;
+        return `<div class="profile-badge">${this.htmlEscape(p.profileName)} <span class="permissions">(${permissions.join(', ')})</span></div>`;
       }).join('');
 
       html += `
             <tr>
-              <td><strong>${this.escapeHtml(securedField.attributeLogicalName)}</strong></td>
+              <td><strong>${this.htmlEscape(securedField.attributeLogicalName)}</strong></td>
               <td>${profileDetails}</td>
             </tr>`;
     }
@@ -3938,16 +3981,4 @@ ${this.embeddedJavaScript()}
     return html;
   }
 
-  /**
-   * Escape HTML special characters
-   */
-  private escapeHtml(text: string): string {
-    const textNode = text || '';
-    return textNode
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
 }

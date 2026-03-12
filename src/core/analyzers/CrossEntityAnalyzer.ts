@@ -176,6 +176,13 @@ export class CrossEntityAnalyzer {
             firesForAllUpdates,
             ...(downstream ? { downstream } : {}),
             hasExternalCalls: (flow.definition.externalCalls?.length ?? 0) > 0,
+            ...((() => {
+              const nonDataverseRefs = flow.definition.connectionReferences.filter(
+                r => !r.toLowerCase().includes('commondataservice') && !r.toLowerCase().includes('dynamicscrm')
+              );
+              return nonDataverseRefs.length > 0 ? { connectionReferences: nonDataverseRefs } : {};
+            })()),
+            ...(flow.definition.externalCalls?.length > 0 ? { externalCallSummaries: flow.definition.externalCalls.map(c => ({ url: c.url, domain: c.domain, method: c.method })) } : {}),
           });
         }
 
@@ -306,10 +313,15 @@ export class CrossEntityAnalyzer {
         mode: 'Async',
         filteringAttributes: conditionFields,
         firesForAllUpdates: false,
-        hasExternalCalls:
-          (flow.definition.externalCalls?.length ?? 0) > 0 ||
-          flow.definition.connectionReferences.length > 0,
+        hasExternalCalls: (flow.definition.externalCalls?.length ?? 0) > 0,
         ...(downstream ? { downstream } : {}),
+        ...((() => {
+          const nonDataverseRefs = flow.definition.connectionReferences.filter(
+            r => !r.toLowerCase().includes('commondataservice') && !r.toLowerCase().includes('dynamicscrm')
+          );
+          return nonDataverseRefs.length > 0 ? { connectionReferences: nonDataverseRefs } : {};
+        })()),
+        ...(flow.definition.externalCalls?.length > 0 ? { externalCallSummaries: flow.definition.externalCalls.map(c => ({ url: c.url, domain: c.domain, method: c.method })) } : {}),
       };
 
       const existing = allEntityPipelines.get(entityKey);

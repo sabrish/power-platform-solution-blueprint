@@ -10,6 +10,7 @@ import {
   Checkbox,
   Dropdown,
   Option,
+  OptionGroup,
   Tag,
   MessageBar,
   MessageBarBody,
@@ -128,6 +129,9 @@ const useStyles = makeStyles({
   },
   retryButton: {
     marginTop: tokens.spacingVerticalS,
+  },
+  checkboxesSubSection: {
+    marginTop: tokens.spacingVerticalM,
   },
   loadingContainer: {
     display: 'flex',
@@ -397,26 +401,37 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
                     }}
                     disabled={loading}
                   >
-                    {publishers.map((publisher) => {
-                      const isDefault = isDefaultPublisher(publisher);
-                      return (
-                        <Option
-                          key={publisher.publisherid}
-                          value={publisher.publisherid}
-                          text={publisher.friendlyname}
-                          disabled={isDefault}
-                        >
-                          <div className={styles.solutionInfo}>
-                            <Text>{publisher.friendlyname}</Text>
-                            <Text className={isDefault ? styles.disabledOptionText : styles.secondaryText}>
-                              {isDefault
-                                ? 'Default Publisher — not recommended. Contains all direct environment customisations.'
-                                : `Prefix: ${publisher.customizationprefix}`}
-                            </Text>
-                          </div>
-                        </Option>
-                      );
-                    })}
+                    {publishers.filter(p => !isDefaultPublisher(p)).map((publisher) => (
+                      <Option
+                        key={publisher.publisherid}
+                        value={publisher.publisherid}
+                        text={publisher.friendlyname}
+                      >
+                        <div className={styles.solutionInfo}>
+                          <Text>{publisher.friendlyname}</Text>
+                          <Text className={styles.secondaryText}>Prefix: {publisher.customizationprefix}</Text>
+                        </div>
+                      </Option>
+                    ))}
+                    {publishers.some(p => isDefaultPublisher(p)) && (
+                      <OptionGroup label="Not Recommended">
+                        {publishers.filter(p => isDefaultPublisher(p)).map((publisher) => (
+                          <Option
+                            key={publisher.publisherid}
+                            value={publisher.publisherid}
+                            text={publisher.friendlyname}
+                            disabled
+                          >
+                            <div className={styles.solutionInfo}>
+                              <Text>{publisher.friendlyname}</Text>
+                              <Text className={styles.disabledOptionText}>
+                                Default Publisher — contains all direct environment customisations.
+                              </Text>
+                            </div>
+                          </Option>
+                        ))}
+                      </OptionGroup>
+                    )}
                   </Dropdown>
                 </Field>
 
@@ -477,26 +492,37 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
                             }}
                             disabled={loading || filteredSolutions.length === 0}
                           >
-                            {filteredSolutions.map((solution) => {
-                              const isDefault = isDefaultSolution(solution);
-                              return (
-                                <Option
-                                  key={solution.solutionid}
-                                  value={solution.solutionid}
-                                  text={solution.friendlyname}
-                                  disabled={isDefault}
-                                >
-                                  <div className={styles.solutionInfo}>
-                                    <Text>{solution.friendlyname}</Text>
-                                    <Text className={isDefault ? styles.disabledOptionText : styles.secondaryText}>
-                                      {isDefault
-                                        ? 'Default Solution — not recommended. Contains all direct environment customisations.'
-                                        : `v${solution.version} | ${solution.publisherid.friendlyname}`}
-                                    </Text>
-                                  </div>
-                                </Option>
-                              );
-                            })}
+                            {filteredSolutions.filter(s => !isDefaultSolution(s)).map((solution) => (
+                              <Option
+                                key={solution.solutionid}
+                                value={solution.solutionid}
+                                text={solution.friendlyname}
+                              >
+                                <div className={styles.solutionInfo}>
+                                  <Text>{solution.friendlyname}</Text>
+                                  <Text className={styles.secondaryText}>v{solution.version} | {solution.publisherid.friendlyname}</Text>
+                                </div>
+                              </Option>
+                            ))}
+                            {filteredSolutions.some(s => isDefaultSolution(s)) && (
+                              <OptionGroup label="Not Recommended">
+                                {filteredSolutions.filter(s => isDefaultSolution(s)).map((solution) => (
+                                  <Option
+                                    key={solution.solutionid}
+                                    value={solution.solutionid}
+                                    text={solution.friendlyname}
+                                    disabled
+                                  >
+                                    <div className={styles.solutionInfo}>
+                                      <Text>{solution.friendlyname}</Text>
+                                      <Text className={styles.disabledOptionText}>
+                                        Default Solution — contains all direct environment customisations.
+                                      </Text>
+                                    </div>
+                                  </Option>
+                                ))}
+                              </OptionGroup>
+                            )}
                           </Dropdown>
                         </Field>
 
@@ -549,26 +575,37 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
                     }}
                     disabled={loading}
                   >
-                    {solutions.map((solution) => {
-                      const isDefault = isDefaultSolution(solution);
-                      return (
-                        <Option
-                          key={solution.solutionid}
-                          value={solution.solutionid}
-                          text={solution.friendlyname}
-                          disabled={isDefault}
-                        >
-                          <div className={styles.solutionInfo}>
-                            <Text>{solution.friendlyname}</Text>
-                            <Text className={isDefault ? styles.disabledOptionText : styles.secondaryText}>
-              {isDefault
-                                ? 'Default Solution — not recommended. Contains all direct environment customisations.'
-                                : `v${solution.version} | ${solution.publisherid.friendlyname}`}
-                            </Text>
-                          </div>
-                        </Option>
-                      );
-                    })}
+                    {solutions.filter(s => !isDefaultSolution(s)).map((solution) => (
+                      <Option
+                        key={solution.solutionid}
+                        value={solution.solutionid}
+                        text={solution.friendlyname}
+                      >
+                        <div className={styles.solutionInfo}>
+                          <Text>{solution.friendlyname}</Text>
+                          <Text className={styles.secondaryText}>v{solution.version} | {solution.publisherid.friendlyname}</Text>
+                        </div>
+                      </Option>
+                    ))}
+                    {solutions.some(s => isDefaultSolution(s)) && (
+                      <OptionGroup label="Not Recommended">
+                        {solutions.filter(s => isDefaultSolution(s)).map((solution) => (
+                          <Option
+                            key={solution.solutionid}
+                            value={solution.solutionid}
+                            text={solution.friendlyname}
+                            disabled
+                          >
+                            <div className={styles.solutionInfo}>
+                              <Text>{solution.friendlyname}</Text>
+                              <Text className={styles.disabledOptionText}>
+                                Default Solution — contains all direct environment customisations.
+                              </Text>
+                            </div>
+                          </Option>
+                        ))}
+                      </OptionGroup>
+                    )}
                   </Dropdown>
                 </Field>
 
@@ -612,7 +649,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
           </Tooltip>
         </div>
 
-        <div style={{ marginTop: tokens.spacingVerticalM }}>
+        <div className={styles.checkboxesSubSection}>
           <Tooltip
             content="Include common system fields like createdon, createdby, modifiedon, modifiedby, ownerid, statecode, statuscode, etc."
             relationship="description"

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -27,7 +27,7 @@ const RULES_FILTER_SPECS: readonly FilterSpec<BusinessRule>[] = [
 const useStyles = makeStyles({
   ruleRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto`,
   },
   conditionItem: {
     padding: tokens.spacingVerticalS,
@@ -109,9 +109,9 @@ export function BusinessRulesList({
     RULES_FILTER_SPECS,
   );
 
-  const toggleExpand = (ruleId: string) => {
-    setExpandedRuleId(expandedRuleId === ruleId ? null : ruleId);
-  };
+  const toggleExpand = useCallback((ruleId: string) => {
+    setExpandedRuleId((prev) => (prev === ruleId ? null : ruleId));
+  }, []);
 
   const getStateBadgeProps = (state: BusinessRule['state']) => {
     return state === 'Active'
@@ -138,7 +138,7 @@ export function BusinessRulesList({
     return colors[actionType] ?? tokens.colorNeutralStroke1;
   };
 
-  const renderRuleDetails = (rule: BusinessRule) => (
+  const renderRuleDetails = (rule: BusinessRule): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>{rule.name}</Title3>

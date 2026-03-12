@@ -20,8 +20,8 @@ const useStyles = makeStyles({
     marginTop: tokens.spacingVerticalL,
   },
   row: {
-    // display: 'grid' is inherited from shared.cardRow — only override the column template here
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(120px, 1fr) auto',
+    display: 'grid',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(120px, 1fr) auto`,
   },
   /** Connector display name column — AUDIT-006: full overflow protection required */
   connectorColumn: {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -24,7 +24,7 @@ const useStyles = makeStyles({
   },
   resourceRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto auto auto auto auto`,
   },
   warningBox: {
     padding: tokens.spacingVerticalM,
@@ -111,17 +111,17 @@ export function WebResourcesList({ webResources }: WebResourcesListProps) {
     });
   }, [webResources, searchQuery, activeTypeFilters, showExternalOnly, showDeprecatedOnly]);
 
-  const toggleTypeFilter = (type: string) => {
+  const toggleTypeFilter = useCallback((type: string) => {
     setActiveTypeFilters((prev) => {
       const next = new Set(prev);
       if (next.has(type)) next.delete(type); else next.add(type);
       return next;
     });
-  };
+  }, []);
 
-  const toggleExpand = (resourceId: string) => {
-    setExpandedResourceId(expandedResourceId === resourceId ? null : resourceId);
-  };
+  const toggleExpand = useCallback((resourceId: string) => {
+    setExpandedResourceId((prev) => (prev === resourceId ? null : resourceId));
+  }, []);
 
   const getTypeBadgeColor = (type: string): 'brand' | 'success' | 'warning' | 'important' => {
     if (type === 'JavaScript') return 'brand';

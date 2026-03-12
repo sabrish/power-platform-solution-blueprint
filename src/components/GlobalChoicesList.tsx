@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
   makeStyles,
+  mergeClasses,
   tokens,
   Card,
   Title3,
@@ -29,7 +30,7 @@ const useStyles = makeStyles({
   },
   choiceRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) auto auto`,
   },
 });
 
@@ -76,11 +77,11 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
     return filtered.sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [globalChoices, searchQuery, showManagedOnly]);
 
-  const toggleExpand = (choiceId: string) => {
-    setExpandedChoiceId(expandedChoiceId === choiceId ? null : choiceId);
-  };
+  const toggleExpand = useCallback((choiceId: string) => {
+    setExpandedChoiceId((prev) => (prev === choiceId ? null : choiceId));
+  }, []);
 
-  const renderChoiceDetails = (choice: GlobalChoice) => (
+  const renderChoiceDetails = (choice: GlobalChoice): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>{choice.displayName}</Title3>
@@ -88,7 +89,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
         <div className={shared.detailsGrid}>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Logical Name</Text>
-            <Text className={`${shared.detailValue} ${shared.codeText}`}>{choice.name}</Text>
+            <Text className={mergeClasses(shared.detailValue, shared.codeText)}>{choice.name}</Text>
           </div>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Options</Text>
@@ -205,7 +206,11 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
         totalCount={globalChoices.length}
         itemLabel="global choices"
       >
-        <FilterGroup label="Show:">
+        <FilterGroup
+          label="Show:"
+          hasActiveFilters={showManagedOnly}
+          onClear={() => setShowManagedOnly(false)}
+        >
           <Checkbox
             label="Show managed only"
             checked={showManagedOnly}
@@ -225,7 +230,7 @@ export function GlobalChoicesList({ globalChoices }: GlobalChoicesListProps) {
             return (
               <div key={choice.id}>
                 <div
-                  className={`${shared.cardRow} ${styles.choiceRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
+                  className={mergeClasses(shared.cardRow, styles.choiceRow, isExpanded && shared.cardRowExpanded)}
                   role="button"
                   tabIndex={0}
                   aria-expanded={isExpanded}

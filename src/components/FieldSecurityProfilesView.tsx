@@ -1,8 +1,9 @@
-import { useMemo, memo, useState } from 'react';
+import { useMemo, memo, useState, useCallback } from 'react';
 import {
   Title3,
   Text,
   makeStyles,
+  mergeClasses,
   tokens,
   Badge,
   Table,
@@ -14,6 +15,7 @@ import {
 } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
 import { FilterBar } from './FilterBar';
+import { EmptyState } from './EmptyState';
 import type {
   FieldSecurityProfile,
   AttributeMaskingRule,
@@ -49,7 +51,7 @@ const useStyles = makeStyles({
   // Card-row (PATTERN-001)
   profileRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto`,
     gap: tokens.spacingHorizontalM,
     alignItems: 'start',
     padding: tokens.spacingVerticalM,
@@ -57,6 +59,7 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: tokens.borderRadiusMedium,
     cursor: 'pointer',
+    transition: 'all 0.2s ease',
     ':hover': {
       backgroundColor: tokens.colorNeutralBackground1Hover,
       boxShadow: tokens.shadow4,
@@ -105,15 +108,6 @@ const useStyles = makeStyles({
     wordBreak: 'break-word',
     overflowWrap: 'anywhere',
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
   // Fluent UI Table (for masking rules — dense tabular data)
   tableWrapper: {
     overflowX: 'auto',
@@ -159,13 +153,13 @@ function FieldSecurityProfilesViewComponent({
     );
   }, [columnSecurityProfiles, colProfileSearch]);
 
-  const toggleProfile = (id: string): void => {
-    setExpandedProfileId(expandedProfileId === id ? null : id);
-  };
+  const toggleProfile = useCallback((id: string): void => {
+    setExpandedProfileId((prev) => (prev === id ? null : id));
+  }, []);
 
-  const toggleColProfile = (id: string): void => {
-    setExpandedColProfileId(expandedColProfileId === id ? null : id);
-  };
+  const toggleColProfile = useCallback((id: string): void => {
+    setExpandedColProfileId((prev) => (prev === id ? null : id));
+  }, []);
 
   const allEmpty =
     profiles.length === 0 &&
@@ -174,10 +168,11 @@ function FieldSecurityProfilesViewComponent({
 
   if (allEmpty) {
     return (
-      <div className={styles.emptyState}>
-        <Text size={500} weight="semibold">No Field Security Profiles Found</Text>
-        <Text>No field security profiles were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="security"
+        title="No Field Security Profiles Found"
+        message="No field security profiles were found in the selected solution(s)."
+      />
     );
   }
 
@@ -197,9 +192,7 @@ function FieldSecurityProfilesViewComponent({
           />
 
           {filteredProfiles.length === 0 && (
-            <div className={styles.emptyState}>
-              <Text>No profiles match your search.</Text>
-            </div>
+            <EmptyState type="search" />
           )}
 
           {filteredProfiles.map((profile) => {
@@ -207,7 +200,7 @@ function FieldSecurityProfilesViewComponent({
             return (
               <div key={profile.fieldsecurityprofileid}>
                 <div
-                  className={`${styles.profileRow} ${isExpanded ? styles.profileRowExpanded : ''}`}
+                  className={mergeClasses(styles.profileRow, isExpanded && styles.profileRowExpanded)}
                   onClick={() => toggleProfile(profile.fieldsecurityprofileid)}
                 >
                   <div className={styles.chevron}>
@@ -310,9 +303,7 @@ function FieldSecurityProfilesViewComponent({
           />
 
           {filteredColProfiles.length === 0 && (
-            <div className={styles.emptyState}>
-              <Text>No profiles match your search.</Text>
-            </div>
+            <EmptyState type="search" />
           )}
 
           {filteredColProfiles.map((profile) => {
@@ -320,7 +311,7 @@ function FieldSecurityProfilesViewComponent({
             return (
               <div key={profile.columnsecurityprofileid}>
                 <div
-                  className={`${styles.profileRow} ${isExpanded ? styles.profileRowExpanded : ''}`}
+                  className={mergeClasses(styles.profileRow, isExpanded && styles.profileRowExpanded)}
                   onClick={() => toggleColProfile(profile.columnsecurityprofileid)}
                 >
                   <div className={styles.chevron}>

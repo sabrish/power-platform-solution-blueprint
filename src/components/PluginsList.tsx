@@ -37,7 +37,7 @@ const formatStageLabel = (stageName: string): string => {
 const useStyles = makeStyles({
   pluginRow: {
     display: 'grid',
-    gridTemplateColumns: '24px 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto`,
   },
   rank: {
     fontWeight: tokens.fontWeightSemibold,

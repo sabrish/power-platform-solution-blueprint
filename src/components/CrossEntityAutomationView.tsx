@@ -405,7 +405,7 @@ const useStyles = makeStyles({
   },
 
   /* ── Entity header: entry point preview line ── */
-  entityEntryPreview: { fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 },
+  entityEntryPreview: { fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 },
 
   /* ── Entity header: right-side count + chevron text ── */
   entityHeaderCount: {
@@ -607,7 +607,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             searchPlaceholder="Search entities..."
             filteredCount={
               Array.from(analysis.allEntityPipelines.entries()).filter(([logicalName, p]) => {
-                const visible = showAllEntities || p.hasCrossEntityOutput || p.hasCrossEntityInput || p.hasExternalInteraction;
+                const visible = showAllEntities || p.hasCrossEntityOutput || p.hasExternalInteraction;
                 if (!visible) return false;
                 if (!pipelineSearch.trim()) return true;
                 const q = pipelineSearch.toLowerCase();
@@ -616,7 +616,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             }
             totalCount={showAllEntities
               ? analysis.allEntityPipelines.size
-              : Array.from(analysis.allEntityPipelines.values()).filter(p => p.hasCrossEntityOutput || p.hasCrossEntityInput || p.hasExternalInteraction).length
+              : Array.from(analysis.allEntityPipelines.values()).filter(p => p.hasCrossEntityOutput || p.hasExternalInteraction).length
             }
             itemLabel="entities"
           >
@@ -632,6 +632,11 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
               />
             </FilterGroup>
           </FilterBar>
+          {!showAllEntities && (
+            <Text className={styles.entityEntryPreview} style={{ display: 'block', marginTop: tokens.spacingVerticalXS }}>
+              Default: entities with cross-entity writes or external API calls.
+            </Text>
+          )}
 
           {/* Empty state: no cross-entity links at all and filter is on */}
           {analysis.entityViews.size === 0 && !showAllEntities && (
@@ -654,9 +659,10 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             const visibleEntries = Array.from(analysis.allEntityPipelines.entries())
               // Sort alphabetically by display name
               .sort(([, a], [, b]) => a.entityDisplayName.localeCompare(b.entityDisplayName))
-              // Filter: show entities with cross-entity output, inbound entry points, or external interaction
-              // unless showAllEntities is toggled (which shows all entities with any automation)
-              .filter(([, p]) => showAllEntities || p.hasCrossEntityOutput || p.hasCrossEntityInput || p.hasExternalInteraction)
+              // Filter: show entities with cross-entity output or external interaction by default.
+              // Entities that are purely inbound targets (hasCrossEntityInput only) are hidden
+              // unless showAllEntities is toggled — they appear correctly as nested children already.
+              .filter(([, p]) => showAllEntities || p.hasCrossEntityOutput || p.hasExternalInteraction)
               // Filter: search
               .filter(([logicalName, p]) => {
                 if (!pipelineSearch.trim()) return true;
@@ -678,6 +684,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                       key={logicalName}
                       logicalName={logicalName}
                       view={entityView}
+                      pipeline={pipeline}
                       color={color}
                       expanded={expandedEntities.has(logicalName)}
                       onToggle={() => toggleEntity(logicalName)}
@@ -824,20 +831,18 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
    EntityPipelineRow — one collapsible row per target entity (with entry points)
 ───────────────────────────────────────────────────────────────────────── */
 function EntityPipelineRow({
-  logicalName, view, color, expanded, onToggle, analysis,
+  logicalName, view, pipeline, color, expanded, onToggle, analysis,
 }: {
   logicalName: string;
   view: CrossEntityEntityView;
+  pipeline: EntityAutomationPipeline;
   color: string;
   expanded: boolean;
   onToggle: () => void;
   analysis: CrossEntityAnalysisResult;
 }) {
   const styles = useStyles();
-  const firstTrace = view.traces[0];
-  const willFireCount = view.traces.reduce(
-    (sum, t) => sum + t.activations.filter(a => a.firingStatus !== 'WontFire').length, 0
-  );
+  const totalSteps = pipeline.messagePipelines.reduce((sum, mp) => sum + mp.steps.length, 0);
 
   return (
     <div className={styles.entityRow}>
@@ -857,62 +862,59 @@ function EntityPipelineRow({
             <Text className={styles.entityLogicalName}>
               {logicalName}
             </Text>
-            {firstTrace && <OperationBadge operation={firstTrace.entryPoint.operation} />}
+            {pipeline.messagePipelines.map(mp => (
+              <OperationBadge key={mp.message} operation={mp.message} />
+            ))}
+            {pipeline.hasCrossEntityOutput && (
+              <Badge appearance="tint" shape="rounded" color="informative">&rarr; cross-entity</Badge>
+            )}
+            {pipeline.hasExternalInteraction && (
+              <Badge appearance="tint" shape="rounded" color="brand">&#8627; External calls</Badge>
+            )}
             {view.traces.length > 1 && (
               <Badge appearance="tint" shape="rounded" color="informative">{view.traces.length} entry points</Badge>
             )}
           </div>
 
-          {firstTrace && (
-            <Text className={styles.entityEntryPreview}>
-              &larr; {typeIcon(firstTrace.entryPoint.automationType === 'ClassicWorkflow' ? 'ClassicWorkflow' : 'Flow')}{' '}
-              {firstTrace.entryPoint.automationName}
-              {' '}(from {firstTrace.entryPoint.sourceEntityDisplayName})
-            </Text>
-          )}
 
         </div>
 
         <Text className={styles.entityHeaderCount}>
-          {expanded ? '▲' : '▼'} {willFireCount}
+          {expanded ? '▲' : '▼'} {totalSteps}
         </Text>
       </div>
 
-      {/* Expanded body */}
+      {/* Expanded body — pipeline-first: one section per message pipeline, inbound triggers as context */}
       {expanded && (
         <div className={styles.entityBody} style={{ borderLeft: `4px solid ${color}40` }}>
-          {view.traces.map((trace, ti) => (
-            <div key={ti}>
-              {view.traces.length > 1 && (
+          {pipeline.messagePipelines.map((mp, mpi) => {
+            // Inbound entry points from other entities that trigger this message on this entity
+            const inboundTraces = view.traces.filter(t => t.entryPoint.operation === mp.message);
+            // IDs of steps activated by at least one inbound entry point (WillFire or WillFireNoFilter)
+            const triggeredStepIds = new Set(
+              inboundTraces.flatMap(t =>
+                t.activations
+                  .filter(a => a.firingStatus !== 'WontFire')
+                  .map(a => a.automationId)
+              )
+            );
+            return (
+              <div key={mp.message}>
+                {mpi > 0 && <div className={styles.traceDivider} />}
                 <div className={styles.traceSubHeader}>
-                  {typeIcon(trace.entryPoint.automationType === 'ClassicWorkflow' ? 'ClassicWorkflow' : 'Flow')}{' '}
-                  <strong>{trace.entryPoint.automationName}</strong>
-                  {' '}— {trace.entryPoint.sourceEntityDisplayName} &rarr;{' '}
-                  <strong>
-                    {trace.entryPoint.operation === 'Action' && trace.entryPoint.customActionApiName
-                      ? `Calls: ${trace.entryPoint.customActionApiName}`
-                      : trace.entryPoint.operation}
-                  </strong>
-                  {' '}
-                  <Badge appearance="tint" shape="rounded" color="informative" className={styles.tinyBadge}>
-                    {trace.entryPoint.confidence}
-                  </Badge>
-                  {ti < view.traces.length - 1 && (
-                    <span style={{ color: tokens.colorNeutralForeground3 }}> (entry point {ti + 1} of {view.traces.length})</span>
-                  )}
+                  <OperationBadge operation={mp.message} /> pipeline
                 </div>
-              )}
-              <TracePipeline
-                trace={trace}
-                analysis={analysis}
-                depth={0}
-                parentEntityDisplayName={view.entityDisplayName}
-              />
-              {ti < view.traces.length - 1 && (
-                <div className={styles.traceDivider} />
-              )}
-            </div>
-          ))}
+                <MessagePipelineSteps
+                  mp={mp}
+                  analysis={analysis}
+                  color={color}
+                  entityDisplayName={view.entityDisplayName}
+                  triggeredStepIds={triggeredStepIds.size > 0 ? triggeredStepIds : undefined}
+                  inboundTraces={inboundTraces.length > 0 ? inboundTraces : undefined}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -957,6 +959,9 @@ function EntityMessagePipelineRow({
             {pipeline.hasCrossEntityOutput && (
               <Badge appearance="tint" shape="rounded" color="informative">&rarr; cross-entity</Badge>
             )}
+            {pipeline.hasExternalInteraction && (
+              <Badge appearance="tint" shape="rounded" color="brand">&#8627; External calls</Badge>
+            )}
           </div>
 
         </div>
@@ -991,12 +996,16 @@ function EntityMessagePipelineRow({
    MessagePipelineSteps — steps for a message pipeline without entry-point context
 ───────────────────────────────────────────────────────────────────────── */
 function MessagePipelineSteps({
-  mp, analysis, color, entityDisplayName,
+  mp, analysis, color, entityDisplayName, triggeredStepIds, inboundTraces,
 }: {
   mp: MessagePipeline;
   analysis: CrossEntityAnalysisResult;
   color: string;
   entityDisplayName: string;
+  /** IDs of steps activated by an inbound cross-entity entry point — shown with ← inbound badge */
+  triggeredStepIds?: Set<string>;
+  /** Inbound traces for this pipeline — used in tooltip on the ← inbound badge */
+  inboundTraces?: CrossEntityTrace[];
 }) {
   const styles = useStyles();
 
@@ -1016,6 +1025,16 @@ function MessagePipelineSteps({
             <div className={styles.pipelineStepRow}>
               <div className={mergeClasses(styles.stepMain, hasDownstream ? styles.stepMainHasBranch : undefined)}>
                 <span className={styles.stepNum}>{i + 1}</span>
+                {triggeredStepIds?.has(step.automationId) && (
+                  <Tooltip
+                    content={(inboundTraces ?? []).map(t => `← ${t.entryPoint.automationName} (from ${t.entryPoint.sourceEntityDisplayName})`).join(' · ')}
+                    relationship="description"
+                  >
+                    <Badge appearance="filled" shape="rounded" color="informative" className={styles.stepBadge}>
+                      &larr; inbound
+                    </Badge>
+                  </Tooltip>
+                )}
                 <TypeBadge type={step.automationType} />
                 <span className={styles.stepName}>{step.automationName}</span>
                 {step.stageName && <span className={styles.stepStage}>{step.stageName}</span>}
@@ -1027,6 +1046,11 @@ function MessagePipelineSteps({
                   <Tooltip content="No filtering attributes — fires on ALL updates" relationship="description">
                     <Badge appearance="filled" shape="rounded" color="danger" className={styles.stepBadge}>&#9888; No filter</Badge>
                   </Tooltip>
+                )}
+                {step.hasExternalCalls && (
+                  <Badge appearance="tint" shape="rounded" color="brand" className={styles.stepBadge}>
+                    External calls
+                  </Badge>
                 )}
                 {step.filteringAttributes.length > 0 && !step.firesForAllUpdates && mp.message === 'Update' && (
                   <Text className={styles.stepFilterText}>
@@ -1055,6 +1079,26 @@ function MessagePipelineSteps({
                 </div>
               )}
             </div>
+
+            {/* Connectors and external calls for flow steps */}
+            {step.connectionReferences && step.connectionReferences.length > 0 && (
+              <div className={styles.branchFields} style={{ marginTop: tokens.spacingVerticalXS }}>
+                {step.connectionReferences.map((ref, ri) => (
+                  <Badge key={ri} appearance="tint" shape="rounded" size="small" color="subtle">
+                    {ref}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {step.externalCallSummaries && step.externalCallSummaries.length > 0 && (
+              <div style={{ marginTop: tokens.spacingVerticalXS, display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXXS }}>
+                {step.externalCallSummaries.map((call, ci) => (
+                  <Text key={ci} className={styles.stepFilterText} style={{ wordBreak: 'break-all' }}>
+                    {call.method ? `${call.method} ` : ''}{call.url || call.domain}
+                  </Text>
+                ))}
+              </div>
+            )}
 
             {/* Inline child pipeline (depth 0 only for message pipeline rows) */}
             {downstreamView && (
