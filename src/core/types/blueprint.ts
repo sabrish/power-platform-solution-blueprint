@@ -671,6 +671,11 @@ export interface DataverseAction {
    * (e.g. "new_SendWelcomeEmail"). Internal effects on the target entity are unknown.
    */
   customActionApiName?: string;
+  /**
+   * True for PerformUnboundAction calls — no entity target, effects not traceable.
+   * These surface in the Global Chain Map only, never in per-entity pipeline views.
+   */
+  isUnbound?: boolean;
 }
 
 /**

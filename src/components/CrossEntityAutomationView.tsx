@@ -47,9 +47,9 @@ import type { EntityBlueprint } from '../core';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Entity accent colour palette — cycles per entity in display order.
-   Intentional hardcoded values: Fluent UI tokens do not provide a cycling
-   multi-entity palette. Values match Fluent UI brand colours:
-   blue=colorBrandBackground, green=colorPaletteGreenBackground2,
+   AUDIT-003 exception: intentional hardcoded hex values — Fluent UI tokens
+   do not provide a cycling multi-entity palette. Values match Fluent UI brand
+   colours: blue=colorBrandBackground, green=colorPaletteGreenBackground2,
    orange=colorPaletteMarigoldBackground2, purple=colorPaletteVioletBackground2,
    teal=colorPaletteTealBackground2, pink=colorPaletteMagentaBackground2,
    hot pink=colorPaletteHotPinkBackground2, dark teal=colorPaletteDarkGreenBackground2
@@ -63,7 +63,8 @@ function entityColor(index: number) { return ENTITY_COLORS[index % ENTITY_COLORS
 /* ─────────────────────────────────────────────────────────────────────────
    Type helpers
 ───────────────────────────────────────────────────────────────────────── */
-const TYPE_ICON_STYLE = { width: '12px', height: '12px', flexShrink: 0, verticalAlign: 'middle' } as const;
+// tokens.fontSizeBase200 = 12px — used for inline type icon sizing (AUDIT-004 compliant)
+const TYPE_ICON_STYLE = { width: tokens.fontSizeBase200, height: tokens.fontSizeBase200, flexShrink: 0, verticalAlign: 'middle' } as const;
 function typeIcon(type: AutomationActivation['automationType'] | PipelineStep['automationType']): ReactElement {
   switch (type) {
     case 'Plugin': return <BracesVariable24Regular style={TYPE_ICON_STYLE} />;
@@ -113,7 +114,7 @@ const useStyles = makeStyles({
   /* ── Pipeline (accordion) list ── */
   pipelineList: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS },
 
-  entityRow: { display: 'flex', flexDirection: 'column', marginBottom: '2px' },
+  entityRow: { display: 'flex', flexDirection: 'column', marginBottom: '2px' /* structural micro-spacing — no token equivalent */ },
 
   entityHeader: {
     display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS,
@@ -151,7 +152,7 @@ const useStyles = makeStyles({
   /* Step rows */
   pipelineStepRow: {
     display: 'flex', gap: 0, alignItems: 'stretch',
-    marginBottom: '1px',
+    marginBottom: '1px', /* structural 1px separator — no token equivalent */
   },
   stepMain: {
     flex: 1, padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
@@ -203,7 +204,13 @@ const useStyles = makeStyles({
 
   /* Field match verdict block */
   fieldMatchBase: {
-    margin: '2px 0 4px 26px', padding: '4px 8px',
+    marginTop: tokens.spacingVerticalXXS,
+    marginBottom: tokens.spacingVerticalXS,
+    marginLeft: tokens.spacingHorizontalXXL,
+    paddingTop: tokens.spacingVerticalXS,
+    paddingBottom: tokens.spacingVerticalXS,
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
     borderRadius: tokens.borderRadiusMedium,
     fontSize: tokens.fontSizeBase100,
     lineHeight: '1.5',
@@ -237,8 +244,8 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke2}`,
   },
 
-  /* Child entity inline section */
-  childSection: { marginLeft: '24px', marginTop: '3px', marginBottom: '4px' },
+  /* Child entity inline section — structural micro-spacing; no token equivalent for 3px */
+  childSection: { marginLeft: '24px', marginTop: '3px', marginBottom: tokens.spacingVerticalXS },
   childHeader: {
     display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS,
     padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
@@ -268,7 +275,11 @@ const useStyles = makeStyles({
   },
   wontFireItem: {
     display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS,
-    padding: '3px 10px', marginTop: '2px',
+    paddingTop: tokens.spacingVerticalXXS,
+    paddingBottom: tokens.spacingVerticalXXS,
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    marginTop: tokens.spacingVerticalXXS,
     borderRadius: tokens.borderRadiusMedium,
     borderLeft: `3px solid ${tokens.colorNeutralStroke2}`,
     backgroundColor: tokens.colorNeutralBackground3,
@@ -404,6 +415,19 @@ const useStyles = makeStyles({
     marginLeft: tokens.spacingHorizontalS,
   },
 
+  /* ── Banner coverage list rows ── */
+  bannerListRow: {
+    margin: 0, display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS,
+  },
+  bannerListRowSpaced: {
+    margin: 0, display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS,
+    marginTop: tokens.spacingVerticalXXS,
+  },
+  bannerListIcon: {
+    // tokens.fontSizeBase300 = 14px — banner inline icon sizing (AUDIT-004 compliant)
+    width: tokens.fontSizeBase300, height: tokens.fontSizeBase300, flexShrink: 0,
+  },
+
   /* ── Empty-state icons ── */
   emptyStateIconLarge: { fontSize: tokens.fontSizeHero900 },
   emptyStateIconMedium: { fontSize: tokens.fontSizeHero800 },
@@ -443,26 +467,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
   if (!analysis || (analysis.allEntityPipelines.size === 0 && analysis.totalEntryPoints === 0)) {
     return (
       <div className={styles.container}>
-        <div className={styles.banner}>
-          <Lightbulb24Regular className={styles.bannerIcon} />
-          <div className={styles.bannerContent}>
-            <div className={styles.bannerTitleRow}>
-            <Text weight="semibold">Detection Coverage Notice</Text>
-            <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
-          </div>
-            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><CloudFlow24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></Text>
-            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ClipboardSettings24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
-            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ClipboardTaskListLtr24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Business Rules (server-scoped)</strong> — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.</span></Text>
-            <div style={{ marginTop: tokens.spacingVerticalS, paddingTop: tokens.spacingVerticalS, borderTop: `1px solid ${tokens.colorNeutralStroke2}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS, marginBottom: tokens.spacingVerticalXXS }}>
-                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Coming soon</Text>
-                <Badge appearance="tint" shape="rounded" color="informative" size="small">Planned</Badge>
-              </div>
-              <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><BracesVariable24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Plugins (deep detection)</strong> — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.</span></Text>
-              <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}><DocumentGlobe24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>JavaScript Web Resources (static analysis)</strong> — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.</span></Text>
-            </div>
-          </div>
-        </div>
+        <DetectionCoverageBanner />
         <div className={styles.emptyState}>
           <Info16Regular className={styles.emptyStateIconLarge} />
           <Title3>No Cross-Entity Automation Detected</Title3>
@@ -509,26 +514,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
   return (
     <div className={styles.container}>
       {/* Banner */}
-      <div className={styles.banner}>
-        <Lightbulb24Regular className={styles.bannerIcon} />
-        <div className={styles.bannerContent}>
-          <div className={styles.bannerTitleRow}>
-            <Text weight="semibold">Detection Coverage Notice</Text>
-            <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
-          </div>
-          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><CloudFlow24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></Text>
-          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ClipboardSettings24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
-          <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><ClipboardTaskListLtr24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Business Rules (server-scoped)</strong> — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.</span></Text>
-          <div style={{ marginTop: tokens.spacingVerticalS, paddingTop: tokens.spacingVerticalS, borderTop: `1px solid ${tokens.colorNeutralStroke2}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS, marginBottom: tokens.spacingVerticalXXS }}>
-              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Coming soon</Text>
-              <Badge appearance="tint" shape="rounded" color="informative" size="small">Planned</Badge>
-            </div>
-            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}><BracesVariable24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>Plugins (deep detection)</strong> — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.</span></Text>
-            <Text as="p" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}><DocumentGlobe24Regular style={{ width: '14px', height: '14px', flexShrink: 0 }} /> <span><strong>JavaScript Web Resources (static analysis)</strong> — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.</span></Text>
-          </div>
-        </div>
-      </div>
+      <DetectionCoverageBanner />
 
       {/* Summary stats */}
       <div className={styles.statsGrid}>
@@ -791,8 +777,20 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                     <ArrowRight24Regular style={{ color: tokens.colorNeutralForeground3 }} />
                     <div>
                       <Text weight="semibold">{link.targetEntityDisplayName}</Text>
-                      <br />
-                      <Text className={styles.monoText} style={{ color: tokens.colorNeutralForeground3 }}>{link.targetEntity}</Text>
+                      {link.targetEntity !== '(unbound)' && (
+                        <>
+                          <br />
+                          <Text className={styles.monoText} style={{ color: tokens.colorNeutralForeground3 }}>{link.targetEntity}</Text>
+                        </>
+                      )}
+                      {link.targetEntity === '(unbound)' && (
+                        <>
+                          <br />
+                          <Text className={styles.monoText} style={{ color: tokens.colorNeutralForeground3, fontStyle: 'italic' }}>
+                            No entity target — effects not traceable
+                          </Text>
+                        </>
+                      )}
                     </div>
                     <div className={styles.chainAutoCell}>
                       <Text style={{ wordBreak: 'break-word' }}>{link.automationName}</Text>
@@ -1449,7 +1447,33 @@ function FieldPills({
 /* ─────────────────────────────────────────────────────────────────────────
    Shared small components
 ───────────────────────────────────────────────────────────────────────── */
-function TypeBadge({ type }: { type: AutomationActivation['automationType'] | PipelineStep['automationType'] }) {
+function DetectionCoverageBanner(): JSX.Element {
+  const styles = useStyles();
+  return (
+    <div className={styles.banner}>
+      <Lightbulb24Regular className={styles.bannerIcon} />
+      <div className={styles.bannerContent}>
+        <div className={styles.bannerTitleRow}>
+          <Text weight="semibold">Detection Coverage Notice</Text>
+          <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
+        </div>
+        <Text as="p" className={styles.bannerListRow}><CloudFlow24Regular className={styles.bannerListIcon} /> <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></Text>
+        <Text as="p" className={styles.bannerListRow}><ClipboardSettings24Regular className={styles.bannerListIcon} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>
+        <Text as="p" className={styles.bannerListRow}><ClipboardTaskListLtr24Regular className={styles.bannerListIcon} /> <span><strong>Business Rules (server-scoped)</strong> — server-side rules detected from Dataverse workflow records. Form-scoped (client-only) rules are excluded.</span></Text>
+        <div style={{ marginTop: tokens.spacingVerticalS, paddingTop: tokens.spacingVerticalS, borderTop: `1px solid ${tokens.colorNeutralStroke2}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS, marginBottom: tokens.spacingVerticalXXS }}>
+            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Coming soon</Text>
+            <Badge appearance="tint" shape="rounded" color="informative" size="small">Planned</Badge>
+          </div>
+          <Text as="p" className={styles.bannerListRow}><BracesVariable24Regular className={styles.bannerListIcon} /> <span><strong>Plugins (deep detection)</strong> — currently shows that a plugin fires (stage, filter attributes, firing status), but cannot identify what the plugin code itself writes to other entities. Plugin assembly decompilation is planned.</span></Text>
+          <Text as="p" className={styles.bannerListRowSpaced}><DocumentGlobe24Regular className={styles.bannerListIcon} /> <span><strong>JavaScript Web Resources (static analysis)</strong> — currently cannot detect cross-entity Dataverse API calls embedded in custom JavaScript. JS static analysis is planned.</span></Text>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TypeBadge({ type }: { type: AutomationActivation['automationType'] | PipelineStep['automationType'] }): JSX.Element {
   const color = type === 'Plugin' ? 'important'
     : type === 'Flow' ? 'success'
     : type === 'BusinessRule' ? 'brand'
@@ -1462,7 +1486,7 @@ function TypeBadge({ type }: { type: AutomationActivation['automationType'] | Pi
   );
 }
 
-function OperationBadge({ operation }: { operation: string }) {
+function OperationBadge({ operation }: { operation: string }): JSX.Element {
   const styles = useStyles();
   const label = operation === 'Manual' ? 'On-Demand / Manual Trigger'
     : operation === 'Action' ? 'Custom Action'

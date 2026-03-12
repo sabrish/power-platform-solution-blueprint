@@ -411,7 +411,7 @@ export class FlowDefinitionParser {
       operation = 'Action';
       confidence = 'High';
     } else if (operationId.includes('performunboundaction')) {
-      // Unbound actions have no entity target — cannot determine cross-entity relationship
+      // Unbound custom actions — no entity target; flagged with isUnbound for chain map display
       operation = 'Action';
       confidence = 'Low';
     }
@@ -481,7 +481,19 @@ export class FlowDefinitionParser {
     }
 
     if (!targetEntity) {
-      // Unbound actions have no entity — cannot classify as cross-entity; skip
+      // Unbound actions have no entity target.
+      // Return with isUnbound flag so the analyzer can create a chain link
+      // without treating them as a real entity entry point.
+      if (operation === 'Action') {
+        return {
+          operation,
+          targetEntity: '',
+          actionName,
+          confidence,
+          isUnbound: true,
+          ...(customActionApiName ? { customActionApiName } : {}),
+        };
+      }
       return null;
     }
 

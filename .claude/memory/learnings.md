@@ -535,15 +535,15 @@ Using flat tables with only counts (e.g. "5 conditions") was insufficient — us
 
 ---
 
-## [2026-03-09] — ArrowUpRight20Regular for external calls; Globe24Regular for External Dependencies tab
+## [2026-03-09, updated 2026-03-12] — Globe20Regular for inline external-call indicators
 
 **Affects:** Developer, Reviewer
 **Severity:** Medium
-**Rule:** Use `ArrowUpRight20Regular` for "external API calls" indicators (outbound arrow icon). Never use Globe for inline external-call indicators.
-**Context:** Web Resources moved to `DocumentGlobe24Regular` (MS icon: globe+document). `Globe24Regular` is now used for the External Dependencies navigation tab (globe = "the internet / external world"). `ArrowUpRight` is for inline external-call row indicators only.
+**Rule:** Use `Globe20Regular` for inline "makes external calls" row indicators across all component lists. `DocumentGlobe24Regular` and `Globe20Regular` are visually distinct — no ambiguity.
+**Context:** Web Resources moved to `DocumentGlobe24Regular` (MS icon: globe+document). `Globe24Regular` is now used for the External Dependencies navigation tab.
 **Example:**
-- Wrong: `<Globe20Regular />` as the icon for an inline external API call indicator
-- Right: `<Globe20Regular />` for inline external-call indicators in Web Resources list; `DocumentGlobe24Regular` for Web Resources tab; `Globe24Regular` for External Dependencies tab
+- Wrong: `<ArrowUpRight20Regular />` as the icon for an inline external API call indicator
+- Right: `<Globe20Regular />` for inline external-call row indicators; `DocumentGlobe24Regular` for Web Resources tab; `Globe24Regular` for External Dependencies tab
 
 ---
 
@@ -749,17 +749,16 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 
 ---
 
-## [2026-03-11] — Globe20Regular exception: Web Resources external-call row indicator only
+## [2026-03-11, updated 2026-03-12] — Globe20Regular is the standard external-call row indicator
 
 **Affects:** Developer, Reviewer
 **Severity:** Medium
-**Rule:** `Globe20Regular` is acceptable as the external-call row indicator icon specifically inside `WebResourcesList.tsx`. It must NOT be used as a general external-call indicator in any other component.
+**Rule:** `Globe20Regular` is the standard inline external-call row indicator across ALL component lists (FlowsList, WebResourcesList, etc.).
 
-**Rationale:** Web Resources already use `DocumentGlobe24Regular` as their component-category icon. Using `Globe20Regular` for the inline external-call indicator in this specific list is a deliberate in-context association: the globe visual ties the "has external calls" signal to the same web/globe metaphor that defines the category. All other components (PluginsList, FlowsList, etc.) must use `ArrowUpRight20Regular` for external-call indicators — the exception is WebResourcesList only.
+**Rationale:** `DocumentGlobe24Regular` (document + globe) and `Globe20Regular` (plain globe) are visually distinct icons — no ambiguity. `Globe20Regular` (plain globe = "the internet") is the correct semantic choice for an inline "makes external calls" indicator. `ArrowUpRight20Regular` is NOT used for this purpose.
 
 **Summary:**
-- `WebResourcesList.tsx` row indicator for "has external calls" → `Globe20Regular` (exception — acceptable)
-- All other components' "has external calls" / external-call indicators → `ArrowUpRight20Regular`
+- All component row indicators for "has external calls" → `Globe20Regular`
 - Web Resources component-category icon → `DocumentGlobe24Regular` (from componentIcons.ts)
 - External Dependencies nav tab → `Globe24Regular` (from componentIcons.ts)
 
@@ -811,5 +810,17 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 **Example:**
 - Wrong: `` className={`${styles.cardRow} ${isExpanded ? styles.expanded : ''}`} ``
 - Right: `className={mergeClasses(styles.cardRow, isExpanded && styles.expanded)}`
+
+---
+
+## [2026-03-12] — Present a fix brief and wait for approval before implementing reviewer-flagged changes
+
+**Affects:** Developer, Orchestrator
+**Severity:** High
+**Rule:** Before implementing any fixes for reviewer-flagged blockers or high-severity comments, present a brief summary of each issue and the proposed fix approach to the project owner. Do not touch any code until the project owner explicitly approves the plan.
+**Context:** The agent jumped straight into implementing reviewer fixes without first checking with the project owner. The correct workflow is: (1) list each blocker/issue with a one-line description of what is wrong, (2) state the intended fix approach for each, (3) wait for the project owner to say "go ahead" or adjust the plan, then (4) implement.
+**Example:**
+- Wrong: Reviewer flags 3 blockers → agent immediately edits source files to address them
+- Right: Reviewer flags 3 blockers → agent posts a brief ("Issue 1: missing shape prop on Badge — fix: add shape='rounded'. Issue 2: ...") → project owner approves → agent implements
 
 ---

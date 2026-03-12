@@ -67,7 +67,10 @@ export class CrossEntityAnalyzer {
     );
 
     const entityViews = new Map<string, CrossEntityEntityView>();
-    const chainLinks: CrossEntityChainLink[] = [];
+    // Seed chain links with unbound action calls (no entity target — chain map only)
+    const chainLinks: CrossEntityChainLink[] = this.collectUnboundChainLinks(
+      blueprints, entityDisplayMap, allFlows
+    );
     let totalEntryPoints = 0;
     const globalRisks: CrossEntityRisk[] = [];
 
@@ -375,6 +378,79 @@ export class CrossEntityAnalyzer {
   }
 
   /**
+   * Collect chain links for unbound custom actions / APIs.
+   * These have no entity target so they never appear in per-entity pipeline views —
+   * they are added directly to the Global Chain Map only.
+   */
+  private collectUnboundChainLinks(
+    blueprints: EntityBlueprint[],
+    entityDisplayMap: Map<string, string>,
+    allFlows: Flow[]
+  ): CrossEntityChainLink[] {
+    const links: CrossEntityChainLink[] = [];
+    const seen = new Set<string>(); // deduplicate by flowId + actionName
+
+    const addLink = (
+      sourceEntity: string,
+      sourceDisplayName: string,
+      flow: Flow,
+      action: import('../types/blueprint.js').DataverseAction
+    ): void => {
+      const key = `${flow.id}:${action.customActionApiName ?? action.actionName}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      links.push({
+        sourceEntity,
+        sourceEntityDisplayName: sourceDisplayName,
+        targetEntity: '(unbound)',
+        targetEntityDisplayName: 'Unbound Custom Action / API',
+        automationName: flow.name,
+        automationType: 'Flow',
+        operation: 'Action',
+        isAsynchronous: true,
+        ...(action.customActionApiName ? { customActionApiName: action.customActionApiName } : {}),
+      });
+    };
+
+    // Entity-scoped flows
+    for (const bp of blueprints) {
+      const sourceEntity = bp.entity.LogicalName.toLowerCase();
+      const sourceDisplayName = entityDisplayMap.get(sourceEntity) || sourceEntity;
+      for (const flow of bp.flows) {
+        for (const action of flow.definition.dataverseActions ?? []) {
+          if (!action.isUnbound) continue;
+          addLink(sourceEntity, sourceDisplayName, flow, action);
+        }
+      }
+    }
+
+    // Unscoped flows (scheduled, manual, solution-level)
+    const blueprintScopedIds = new Set(blueprints.flatMap(bp => bp.flows.map(f => f.id.toLowerCase())));
+    for (const flow of allFlows) {
+      if (blueprintScopedIds.has(flow.id.toLowerCase())) continue;
+      const entityName =
+        (flow.entity && flow.entity !== 'none' ? flow.entity : null) ||
+        (flow.definition.triggerEntity && flow.definition.triggerEntity !== 'none'
+          ? flow.definition.triggerEntity : null);
+      const sourceEntity = entityName?.toLowerCase()
+        ?? (flow.definition.triggerType === 'Scheduled' ? '(scheduled)'
+          : flow.definition.triggerType === 'Manual' ? '(manual)'
+          : '(unscoped)');
+      const sourceDisplayName = entityName
+        ? entityDisplayMap.get(sourceEntity) || entityName
+        : flow.definition.triggerType === 'Scheduled' ? 'Scheduled Flow'
+        : flow.definition.triggerType === 'Manual' ? 'Manual / On-Demand Flow'
+        : 'Solution Flow';
+      for (const action of flow.definition.dataverseActions ?? []) {
+        if (!action.isUnbound) continue;
+        addLink(sourceEntity, sourceDisplayName, flow, action);
+      }
+    }
+
+    return links;
+  }
+
+  /**
    * Layer 2: Discover ALL entry points across all blueprints.
    * Scans source-first: for each blueprint's flows and classic workflows,
    * collects writes to any entity (including those NOT in blueprints).
@@ -431,6 +507,7 @@ export class CrossEntityAnalyzer {
       for (const flow of sourceBp.flows) {
         // Direct dataverse actions
         for (const action of flow.definition.dataverseActions ?? []) {
+          if (action.isUnbound) continue; // handled separately in collectUnboundChainLinks
           const actionTarget = action.targetEntity.toLowerCase();
           if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
           if (actionTarget === sourceEntity) continue; // skip self-referential writes
@@ -506,6 +583,7 @@ export class CrossEntityAnalyzer {
       }
 
       for (const action of flow.definition.dataverseActions ?? []) {
+        if (action.isUnbound) continue; // handled separately in collectUnboundChainLinks
         const actionTarget = action.targetEntity.toLowerCase();
         if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
         if (actionTarget === sourceEntity) continue; // skip self-referential writes
@@ -595,6 +673,7 @@ export class CrossEntityAnalyzer {
       const childFlow = childEntry.flow;
 
       for (const action of childFlow.definition.dataverseActions ?? []) {
+        if (action.isUnbound) continue; // unbound actions have no entity target
         const actionTarget = action.targetEntity.toLowerCase();
         if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
         if (actionTarget === sourceEntity) continue; // skip self-referential writes
@@ -821,6 +900,7 @@ export class CrossEntityAnalyzer {
     entityDisplayMap: Map<string, string>
   ): CrossEntityBranch | undefined {
     for (const action of actions) {
+      if (action.isUnbound || action.targetEntity === '') continue; // unbound: no entity target
       const target = action.targetEntity.toLowerCase();
       if (target === sourceEntity) continue;
       if (target === '[dynamic]' || target.startsWith('[dynamic')) continue;
@@ -971,6 +1051,11 @@ export class CrossEntityAnalyzer {
     if (op === 'create') return msg === 'create';
     if (op === 'update') return msg === 'update';
     if (op === 'delete') return msg === 'delete';
+    // 'Action' (bound custom actions) is intentionally not mapped here: the SDK message
+    // name for a custom action is the action's unique name, not 'action'. Matching it
+    // would require knowing each action's message name at analysis time. The TracePipeline
+    // UI surfaces an informational note to alert users that plugins on the action's
+    // message may also fire.
     return false;
   }
 
