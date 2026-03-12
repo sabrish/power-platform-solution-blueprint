@@ -208,6 +208,14 @@ ${safeJson}
   <div class="mermaid" id="diagram-0">
 ${diagram.mermaidDiagram}
   </div>
+  <!--
+    Note: mermaidDiagram content is NOT htmlEscape()d here — Mermaid reads the raw
+    text content of this div and would fail to parse HTML entities. This is safe because:
+    (1) entity logical names are validated to /^[a-z][a-z0-9_]*$/ before any OData query,
+        so they cannot contain HTML-breaking characters.
+    (2) entity display names are enclosed in Mermaid double-quoted labels ["…"],
+        where < > & are treated as Mermaid text and cannot break out of the outer <div>.
+  -->
   <p class="diagram-stats">Entities: ${diagram.entityCount} | Relationships: ${diagram.relationshipCount}</p>
 </div>`;
 
