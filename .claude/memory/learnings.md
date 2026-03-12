@@ -840,3 +840,17 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
   4. `git add <review compliance files> && git commit -m "fix(review): address reviewer findings across component lists"`
 
 ---
+
+## [2026-03-12] — Only .claude/memory/interactions/ is gitignored — all other memory files are git-tracked
+
+**Affects:** All agents
+**Severity:** Blocker
+**Rule:** Never claim that `.claude/memory/` files are gitignored. Only the `.claude/memory/interactions/` subdirectory is gitignored. All other files directly under `.claude/memory/` — `learnings.md`, `project.md`, `decisions.md`, `patterns-dataverse.md`, `patterns-ui.md`, and any future files added there — are tracked by git and must be committed normally like any other project file.
+**Context:** The agent repeatedly and incorrectly stated that memory files were gitignored, which would have caused agents to skip committing important project state. The `.gitignore` only excludes `interactions/` (session logs), not the persistent memory files.
+**Example:**
+- Wrong: "I will not commit `.claude/memory/learnings.md` because memory files are gitignored"
+- Wrong: Treating any `.claude/memory/*.md` file as excluded from version control
+- Right: Stage and commit `.claude/memory/learnings.md`, `project.md`, `decisions.md`, `patterns-*.md` along with any other changed project files
+- Right: Only `.claude/memory/interactions/` (session logs) is gitignored and must never be committed
+
+---
