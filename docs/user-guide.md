@@ -1,6 +1,6 @@
 # PPSB User Guide
 
-Complete guide for using Power Platform Solution Blueprint (PPSB) v0.9
+Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.0
 
 ## Table of Contents
 
@@ -334,14 +334,17 @@ Available after generation completes. Shows every Dataverse API call made during
 
 #### Cross-Entity Automation Tab
 
-Shows automation chains that cross entity boundaries — when a flow or classic workflow running on Entity A writes to Entity B and triggers Entity B's own plugins and rules.
+Shows automation chains that cross entity boundaries — when a flow or classic workflow running on Entity A writes to Entity B and triggers Entity B's own plugins and rules. Also shows entities that make external API calls regardless of cross-entity writes.
+
+**Default filter**: The view shows entities that have cross-entity writes OR make external API calls. A note below the filter bar confirms when the default filter is active. Check "Show all entities with automation" to see every entity that has any automation registered.
 
 **Global Chain Map**: Force-directed graph of all source → target entity edges. Filter by automation type (Flow / Classic Workflow) or operation (Create / Update / Delete).
 
-**Per-Entity Pipeline View**: Select any entity to see:
-- **Entry Points**: Which automations on other entities write to this entity (operation, fields, async/sync, confidence)
-- **Activation Trace**: For each entry point, every registered automation on the target entity with fire/won't-fire status and matched filter attributes
-- **Downstream Branches**: If an activation itself writes to a third entity, the branch is shown inline
+**Per-Entity Pipeline View** (pipeline-first layout, added in v1.1.0): Entities are presented with their automation grouped into Create, Update, Delete, and Manual/On-Demand pipeline sections. For each pipeline:
+- **Inbound entry points** are shown as context — which automations on other entities write to this entity for that operation
+- Steps triggered by an inbound cross-entity write are marked with a **`← inbound` badge**; hovering the badge shows the source automation name and the entity it originates from
+- Flow steps that call non-Dataverse connectors display the **connector name as a badge** and list any external HTTP call URLs below the step
+- Entity headers show a **`⤷ External calls` badge** when any flow step on that entity makes external API calls
 
 **Risks Panel**: Detected issues across all traces:
 - **No Filter Attributes** (High) — plugins that fire on ALL updates, not just relevant fields

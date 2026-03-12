@@ -5,6 +5,35 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-12
+
+### Added
+- **Pipeline-first Cross-Entity Automation view** — switched from trace-first to pipeline-first layout; Create/Update/Delete/Manual pipelines shown per entity with inbound entry points as context; steps triggered by an inbound cross-entity write are marked with a `← inbound` badge (hover tooltip shows source automation and entity name)
+- **External API call detection on flow steps** — connector names (non-Dataverse) shown as badges; external HTTP call URLs listed below each flow step; `⤷ External calls` badge on entity headers when any step makes external calls
+- **Entities with external calls in default view** — entities that make external API calls but receive no cross-entity writes now appear in the default (filtered) view alongside cross-entity entities
+- **"Default: entities with cross-entity writes or external API calls." filter note** — shown below the filter bar when the default filter is active
+
+### Changed
+- **HTML export: entity headers** now show `⤷ External calls` badge alongside `→ cross-entity`; default filter includes `hasExternalInteraction` in addition to `hasCrossEntityOutput`
+- **HTML export: step rows** now include external call badge, connector name badges, and external URL list
+- **HTML export: Manual/On-Demand pipeline blocks** added to entity accordion bodies for entities with inbound cross-entity entry points
+- **Markdown export: Pipeline Traces section** now includes entities with external calls (no inbound cross-entity writes); connector and external URL details added to flow step output
+- **`gridTemplateColumns` token sweep** across all 20 list components — raw pixel values replaced with `tokens.spacingHorizontal*` equivalents
+- **`htmlEscape` consolidation** — dual `escapeHtml`/`htmlEscape` methods unified into single `htmlEscape` with null guard; 139 callsites updated
+
+### Fixed
+- **Flows using only Dataverse connectors incorrectly tagged as making external calls** — `hasExternalCalls` now only set when `externalCalls` array is non-empty; `shared_commondataservices*` and `dynamicscrm*` connector names filtered from `connectionReferences`
+- **AUDIT-009: raw `<div>` empty states** replaced with `<EmptyState>` in `FieldSecurityProfilesView` and `PluginPackagesList`
+- **AUDIT-011: missing `transition`** added to `profileRow` in `FieldSecurityProfilesView`
+- **Rules of Hooks violation** in `SecurityRolesView` — `useMemo` moved above early-return guard
+- **`useCallback` missing** on toggle handlers across 12 list components
+- **`mergeClasses` replacing template-literal** className concatenation in `FieldSecurityProfilesView` and `GlobalChoicesList`
+- **`onSelectAPI` prop** in `CustomAPIsList` now destructured and wired to row click handler
+- **`FilterGroup` missing `hasActiveFilters`/`onClear`** in `GlobalChoicesList`
+- **Inline `marginTop` style** moved to `makeStyles` in `ScopeSelector`
+
+---
+
 ## [1.0.1] - 2026-03-11
 
 ### Fixed
@@ -535,6 +564,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **No Telemetry**: No usage data collected or transmitted
 
 
+[1.1.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.8.0...v0.9.0
