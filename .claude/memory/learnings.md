@@ -824,3 +824,19 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 - Right: Reviewer flags 3 blockers → agent posts a brief ("Issue 1: missing shape prop on Badge — fix: add shape='rounded'. Issue 2: ...") → project owner approves → agent implements
 
 ---
+
+## [2026-03-12] — Split staged files into separate commits by logical area before git add/commit
+
+**Affects:** Developer, Orchestrator
+**Severity:** Blocker
+**Rule:** When multiple batches of changes exist (e.g. a feature implementation, a refactor sweep, a UI token/style audit pass, and review compliance fixes), split them into separate commits by logical area BEFORE running `git add`. Never bundle unrelated file groups into a single commit just because they all passed review together. CLAUDE.md already mandates "one logical change per commit" — that rule applies even when a large set of files is ready at the same time.
+**Context:** The agent bundled 24 files of unrelated changes — core feature files, export/reporter changes, a UI token sweep, and review compliance fixes — into a single commit. All four groups had passed pre-commit review, but they were logically independent changes and should have been committed separately. Passing review does not override the one-logical-change rule.
+**Example:**
+- Wrong: `git add src/core/discovery/PluginDiscovery.ts src/core/reporters/HtmlReporter.ts src/components/PluginsList.tsx src/components/FlowsList.tsx ... (24 files) && git commit -m "feat: ..."`
+- Right:
+  1. `git add <core feature files> && git commit -m "feat(plugins): ..."`
+  2. `git add <export/reporter files> && git commit -m "feat(export): ..."`
+  3. `git add <UI token/style files> && git commit -m "style: apply token sweep to all component lists"`
+  4. `git add <review compliance files> && git commit -m "fix(review): address reviewer findings across component lists"`
+
+---
