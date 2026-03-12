@@ -70,11 +70,11 @@ export {
   // Custom Pages (= Pages) — Microsoft: document + pencil icon. UPDATED to match.
   DocumentEdit24Regular as CustomPagesIcon,
 
-  // Canvas Apps — Microsoft: apps list / phone with play. AppsListRegular is a close match.
-  AppsListRegular as CanvasAppsIcon,
+  // Canvas Apps — Microsoft: apps list / phone with play. AppsList24Regular matches the 24px size used by all other dashboard icons.
+  AppsList24Regular as CanvasAppsIcon,
 
-  // Model-Driven Apps — Microsoft: app module (grid of tiles). AppGenericRegular is a close match.
-  AppGenericRegular as ModelDrivenAppsIcon,
+  // Model-Driven Apps — Microsoft: app module (grid of tiles). AppGeneric24Regular matches the 24px size used by all other dashboard icons.
+  AppGeneric24Regular as ModelDrivenAppsIcon,
 
   // ── Contextual / inline indicators ────────────────────────────────────────
 

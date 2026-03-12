@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Text,
   Badge,
   makeStyles,
+  mergeClasses,
   tokens,
   Card,
   Title3,
@@ -15,6 +16,9 @@ import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 const useStyles = makeStyles({
+  listContainer: {
+    marginTop: tokens.spacingVerticalL,
+  },
   row: {
     display: 'grid',
     gridTemplateColumns: '24px minmax(200px, 2fr) auto auto',
@@ -25,7 +29,7 @@ interface CustomConnectorsListProps {
   customConnectors: CustomConnector[];
 }
 
-export function CustomConnectorsList({ customConnectors }: CustomConnectorsListProps) {
+export function CustomConnectorsList({ customConnectors }: CustomConnectorsListProps): JSX.Element {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -44,14 +48,14 @@ export function CustomConnectorsList({ customConnectors }: CustomConnectorsListP
     );
   }, [sorted, searchQuery]);
 
-  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
+  const toggleExpand = useCallback((id: string) => setExpandedId(prev => prev === id ? null : id), []);
 
-  const renderDetail = (connector: CustomConnector) => (
+  const renderDetail = (connector: CustomConnector): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>Custom Connector Details</Title3>
 
-        <div className={`${shared.detailsGrid} ${shared.section}`}>
+        <div className={mergeClasses(shared.detailsGrid, shared.section)}>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Logical Name</Text>
             <Text className={shared.codeText}>{connector.name}</Text>
@@ -113,7 +117,7 @@ export function CustomConnectorsList({ customConnectors }: CustomConnectorsListP
   }
 
   return (
-    <div className={shared.container} style={{ marginTop: tokens.spacingVerticalL }}>
+    <div className={mergeClasses(shared.container, styles.listContainer)}>
       <FilterBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -130,7 +134,7 @@ export function CustomConnectorsList({ customConnectors }: CustomConnectorsListP
         return (
           <div key={connector.id}>
             <div
-              className={`${shared.cardRow} ${styles.row} ${isExpanded ? shared.cardRowExpanded : ''}`}
+              className={mergeClasses(shared.cardRow, styles.row, isExpanded && shared.cardRowExpanded)}
               role="button"
               tabIndex={0}
               aria-expanded={isExpanded}

@@ -21,7 +21,7 @@ interface JsonExportWrapper {
  * - Version control (git diff friendly)
  */
 export class JsonReporter {
-  private readonly toolVersion = '1.0.0';
+  private readonly toolVersion = '1.0.1';
 
   /**
    * Generate JSON export of blueprint
@@ -64,7 +64,13 @@ export class JsonReporter {
       businessProcessFlows: result.businessProcessFlows,
       businessProcessFlowsByEntity: this.mapToObject(result.businessProcessFlowsByEntity),
       customAPIs: result.customAPIs,
-      environmentVariables: result.environmentVariables,
+      environmentVariables: result.environmentVariables.map(ev => ({
+        ...ev,
+        currentValue: undefined,
+        defaultValue: undefined,
+        hasCurrentValue: !!ev.currentValue,
+        hasDefaultValue: !!ev.defaultValue,
+      })),
       connectionReferences: result.connectionReferences,
       globalChoices: result.globalChoices,
       customConnectors: result.customConnectors,
@@ -81,6 +87,8 @@ export class JsonReporter {
             totalEntryPoints: result.crossEntityAnalysis.totalEntryPoints,
             totalBranches: result.crossEntityAnalysis.totalBranches,
             risks: result.crossEntityAnalysis.risks,
+            allEntityPipelines: this.mapToObject(result.crossEntityAnalysis.allEntityPipelines),
+            noFilterPluginCount: result.crossEntityAnalysis.noFilterPluginCount,
           }
         : undefined,
       externalEndpoints: result.externalEndpoints,

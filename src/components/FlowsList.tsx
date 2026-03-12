@@ -1,15 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Text,
   Badge,
+  Checkbox,
   makeStyles,
+  mergeClasses,
   tokens,
   Card,
   Title3,
   ToggleButton,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
-import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
+import { ChevronDown20Regular, ChevronRight20Regular, Globe20Regular } from '@fluentui/react-icons';
 import type { Flow } from '../core';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { EmptyState } from './EmptyState';
@@ -27,7 +29,7 @@ const FLOWS_FILTER_SPECS: readonly FilterSpec<Flow>[] = [
 const useStyles = makeStyles({
   flowRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
+    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
   },
   externalCallItem: {
     padding: tokens.spacingVerticalS,
@@ -58,10 +60,11 @@ export interface FlowsListProps {
 export function FlowsList({
   flows,
   entityLogicalName,
-}: FlowsListProps) {
+}: FlowsListProps): JSX.Element {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedFlowId, setExpandedFlowId] = useState<string | null>(null);
+  const [showExternalOnly, setShowExternalOnly] = useState(false);
 
   // Filter flows by entity if specified
   const filteredFlows = useMemo(() => {
@@ -112,9 +115,14 @@ export function FlowsList({
     FLOWS_FILTER_SPECS,
   );
 
-  const toggleExpand = (flowId: string) => {
-    setExpandedFlowId(expandedFlowId === flowId ? null : flowId);
-  };
+  const displayedFlows = useMemo(
+    () => showExternalOnly ? searchedFlows.filter(f => f.hasExternalCalls) : searchedFlows,
+    [searchedFlows, showExternalOnly],
+  );
+
+  const toggleExpand = useCallback((flowId: string) => {
+    setExpandedFlowId(prev => prev === flowId ? null : flowId);
+  }, []);
 
   const getStateBadgeProps = (state: Flow['state']) => {
     switch (state) {
@@ -129,7 +137,7 @@ export function FlowsList({
     }
   };
 
-  const renderFlowDetails = (flow: Flow) => (
+  const renderFlowDetails = (flow: Flow): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>Flow Details</Title3>
@@ -279,7 +287,7 @@ export function FlowsList({
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search flows..."
-        filteredCount={searchedFlows.length}
+        filteredCount={displayedFlows.length}
         totalCount={sortedFlows.length}
         itemLabel="flows"
       >
@@ -321,18 +329,29 @@ export function FlowsList({
             </ToggleButton>
           ))}
         </FilterGroup>
+        <FilterGroup
+          label="Show:"
+          hasActiveFilters={showExternalOnly}
+          onClear={() => setShowExternalOnly(false)}
+        >
+          <Checkbox
+            label="External calls only"
+            checked={showExternalOnly}
+            onChange={(_, data) => setShowExternalOnly(Boolean(data.checked))}
+          />
+        </FilterGroup>
       </FilterBar>
-      {searchedFlows.length === 0 && sortedFlows.length > 0 && (
+      {displayedFlows.length === 0 && sortedFlows.length > 0 && (
         <EmptyState type="search" />
       )}
-      {searchedFlows.map((flow) => {
+      {displayedFlows.map((flow) => {
         const isExpanded = expandedFlowId === flow.id;
         const stateBadgeProps = getStateBadgeProps(flow.state);
 
         return (
           <div key={flow.id}>
             <div
-              className={`${shared.cardRow} ${styles.flowRow} ${isExpanded ? shared.cardRowExpanded : ''}`}
+              className={mergeClasses(shared.cardRow, styles.flowRow, isExpanded && shared.cardRowExpanded)}
               role="button"
               tabIndex={0}
               aria-expanded={isExpanded}
@@ -367,6 +386,10 @@ export function FlowsList({
                 )}
               </div>
               <Badge {...stateBadgeProps}>{flow.state}</Badge>
+              {flow.hasExternalCalls
+                ? <Globe20Regular style={{ color: tokens.colorBrandForeground1 }} title="Makes external calls" />
+                : <span aria-hidden="true" />
+              }
               <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
                 {formatDate(flow.modifiedOn)}
               </Text>

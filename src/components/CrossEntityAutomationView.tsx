@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useState, useCallback, Fragment, type ReactElement } from 'react';
 import {
   Text,
   Title3,
@@ -20,11 +20,13 @@ import { FilterBar, FilterGroup } from './FilterBar';
 import {
   ArrowRight24Regular,
   Warning24Regular,
+  Warning20Regular,
   Lightbulb24Regular,
   CheckmarkCircle16Regular,
   ErrorCircle16Regular,
   Info16Regular,
 } from '@fluentui/react-icons';
+import { EmptyState } from './EmptyState';
 import {
   PluginsIcon as BracesVariable24Regular,
   FlowsIcon as CloudFlow24Regular,
@@ -403,8 +405,8 @@ const useStyles = makeStyles({
   },
 
   /* ── Empty-state icons ── */
-  emptyStateIconLarge: { fontSize: '48px' },
-  emptyStateIconMedium: { fontSize: '32px' },
+  emptyStateIconLarge: { fontSize: tokens.fontSizeHero900 },
+  emptyStateIconMedium: { fontSize: tokens.fontSizeHero800 },
 
   /* ── Stats card subtext (small muted label below a large number) ── */
   statsSubtext: { fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 },
@@ -424,7 +426,7 @@ export interface CrossEntityAutomationViewProps {
   blueprints: EntityBlueprint[];
 }
 
-export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationViewProps) {
+export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationViewProps): JSX.Element {
   const styles = useStyles();
   const [subView, setSubView] = useState<string>('traces');
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(() => {
@@ -474,13 +476,13 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
     );
   }
 
-  const toggleEntity = (name: string) => {
+  const toggleEntity = useCallback((name: string) => {
     setExpandedEntities(prev => {
       const next = new Set(prev);
       if (next.has(name)) next.delete(name); else next.add(name);
       return next;
     });
-  };
+  }, []);
 
   const highRisks = analysis.risks.filter(r => r.severity === 'High');
   const mediumRisks = analysis.risks.filter(r => r.severity === 'Medium');
@@ -619,17 +621,24 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             searchPlaceholder="Search entities..."
             filteredCount={
               Array.from(analysis.allEntityPipelines.entries()).filter(([logicalName, p]) => {
-                const visible = showAllEntities || p.hasCrossEntityOutput;
+                const visible = showAllEntities || p.hasCrossEntityOutput || p.hasCrossEntityInput || p.hasExternalInteraction;
                 if (!visible) return false;
                 if (!pipelineSearch.trim()) return true;
                 const q = pipelineSearch.toLowerCase();
                 return p.entityDisplayName.toLowerCase().includes(q) || logicalName.toLowerCase().includes(q);
               }).length
             }
-            totalCount={showAllEntities ? analysis.allEntityPipelines.size : analysis.entityViews.size}
+            totalCount={showAllEntities
+              ? analysis.allEntityPipelines.size
+              : Array.from(analysis.allEntityPipelines.values()).filter(p => p.hasCrossEntityOutput || p.hasCrossEntityInput || p.hasExternalInteraction).length
+            }
             itemLabel="entities"
           >
-            <FilterGroup label="Show:">
+            <FilterGroup
+              label="Show:"
+              hasActiveFilters={showAllEntities}
+              onClear={() => setShowAllEntities(false)}
+            >
               <Checkbox
                 label="Show all entities with automation"
                 checked={showAllEntities}
@@ -640,13 +649,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
 
           {/* Empty state: no cross-entity links at all and filter is on */}
           {analysis.entityViews.size === 0 && !showAllEntities && (
-            <div className={styles.emptyState}>
-              <Info16Regular className={styles.emptyStateIconMedium} />
-              <Text weight="semibold">No cross-entity automation found</Text>
-              <Text style={{ fontSize: tokens.fontSizeBase200 }}>
-                Check "Show all entities with automation" to see all entity automation pipelines.
-              </Text>
-            </div>
+            <EmptyState type="search" />
           )}
 
           {/* Entity list */}
@@ -665,8 +668,9 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
             const visibleEntries = Array.from(analysis.allEntityPipelines.entries())
               // Sort alphabetically by display name
               .sort(([, a], [, b]) => a.entityDisplayName.localeCompare(b.entityDisplayName))
-              // Filter: source entities (cross-entity output) only unless showAllEntities
-              .filter(([, p]) => showAllEntities || p.hasCrossEntityOutput)
+              // Filter: show entities with cross-entity output, inbound entry points, or external interaction
+              // unless showAllEntities is toggled (which shows all entities with any automation)
+              .filter(([, p]) => showAllEntities || p.hasCrossEntityOutput || p.hasCrossEntityInput || p.hasExternalInteraction)
               // Filter: search
               .filter(([logicalName, p]) => {
                 if (!pipelineSearch.trim()) return true;
@@ -708,9 +712,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
 
                 {/* Empty search result state */}
                 {visibleEntries.length === 0 && pipelineSearch.trim() !== '' && (
-                  <div className={styles.emptyState}>
-                    <Text>No entities match "{pipelineSearch}".</Text>
-                  </div>
+                  <EmptyState type="search" />
                 )}
               </div>
             );
@@ -753,7 +755,7 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
               hasActiveFilters={filterOperation !== 'all'}
               onClear={() => setFilterOperation('all')}
             >
-              {(['all', 'Create', 'Update', 'Delete'] as const).map(op => (
+              {(['all', 'Create', 'Update', 'Delete', 'Action'] as const).map(op => (
                 <ToggleButton
                   key={op}
                   appearance="outline"
@@ -762,14 +764,14 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                   checked={filterOperation === op}
                   onClick={() => setFilterOperation(filterOperation === op && op !== 'all' ? 'all' : op)}
                 >
-                  {op === 'all' ? 'All Ops' : op}
+                  {op === 'all' ? 'All Ops' : op === 'Action' ? 'Custom Action' : op}
                 </ToggleButton>
               ))}
             </FilterGroup>
           </FilterBar>
 
           {filteredLinks.length === 0 ? (
-            <div className={styles.emptyState}><Text>No chain links match the current filter.</Text></div>
+            <EmptyState type="search" />
           ) : (
             <Card>
               <div className={styles.chainTable}>
@@ -780,29 +782,36 @@ export function CrossEntityAutomationView({ analysis }: CrossEntityAutomationVie
                 <Text className={styles.chainTableHeader}>Operation</Text>
                 <Text className={styles.chainTableHeader}>Mode</Text>
                 {filteredLinks.map((link, i) => (
-                  <>
-                    <div key={`src-${i}`}>
+                  <Fragment key={i}>
+                    <div>
                       <Text weight="semibold">{link.sourceEntityDisplayName}</Text>
                       <br />
                       <Text className={styles.monoText} style={{ color: tokens.colorNeutralForeground3 }}>{link.sourceEntity}</Text>
                     </div>
-                    <ArrowRight24Regular key={`arr-${i}`} style={{ color: tokens.colorNeutralForeground3 }} />
-                    <div key={`tgt-${i}`}>
+                    <ArrowRight24Regular style={{ color: tokens.colorNeutralForeground3 }} />
+                    <div>
                       <Text weight="semibold">{link.targetEntityDisplayName}</Text>
                       <br />
                       <Text className={styles.monoText} style={{ color: tokens.colorNeutralForeground3 }}>{link.targetEntity}</Text>
                     </div>
-                    <div key={`auto-${i}`} className={styles.chainAutoCell}>
+                    <div className={styles.chainAutoCell}>
                       <Text style={{ wordBreak: 'break-word' }}>{link.automationName}</Text>
                       <Badge appearance="outline" shape="rounded" color={link.automationType === 'Flow' ? 'success' : 'important'} className={styles.chainAutoBadge}>
                         {link.automationType}
                       </Badge>
                     </div>
-                    <OperationBadge key={`op-${i}`} operation={link.operation} />
-                    <Badge key={`mode-${i}`} appearance="tint" shape="rounded" color={link.isAsynchronous ? 'success' : 'warning'}>
+                    <div>
+                      <OperationBadge operation={link.operation} />
+                      {link.operation === 'Action' && link.customActionApiName && (
+                        <Text className={styles.monoText} style={{ color: tokens.colorNeutralForeground3, display: 'block', fontSize: tokens.fontSizeBase100 }}>
+                          {link.customActionApiName}
+                        </Text>
+                      )}
+                    </div>
+                    <Badge appearance="tint" shape="rounded" color={link.isAsynchronous ? 'success' : 'warning'}>
                       {link.isAsynchronous ? 'Async' : 'Sync'}
                     </Badge>
-                  </>
+                  </Fragment>
                 ))}
               </div>
             </Card>
@@ -880,7 +889,12 @@ function EntityPipelineRow({
                 <div className={styles.traceSubHeader}>
                   {typeIcon(trace.entryPoint.automationType === 'ClassicWorkflow' ? 'ClassicWorkflow' : 'Flow')}{' '}
                   <strong>{trace.entryPoint.automationName}</strong>
-                  {' '}— {trace.entryPoint.sourceEntityDisplayName} &rarr; <strong>{trace.entryPoint.operation}</strong>
+                  {' '}— {trace.entryPoint.sourceEntityDisplayName} &rarr;{' '}
+                  <strong>
+                    {trace.entryPoint.operation === 'Action' && trace.entryPoint.customActionApiName
+                      ? `Calls: ${trace.entryPoint.customActionApiName}`
+                      : trace.entryPoint.operation}
+                  </strong>
                   {' '}
                   <Badge appearance="tint" shape="rounded" color="informative" className={styles.tinyBadge}>
                     {trace.entryPoint.confidence}
@@ -1087,6 +1101,19 @@ function TracePipeline({
 
   return (
     <div>
+      {/* Custom action informational note */}
+      {trace.entryPoint.operation === 'Action' && (
+        <div className={styles.entryFieldsRow} style={{ display: 'flex', alignItems: 'flex-start', gap: tokens.spacingHorizontalXS }}>
+          <Info16Regular style={{ color: tokens.colorBrandForeground1, flexShrink: 0, marginTop: '2px' }} />
+          <Text size={200} style={{ fontStyle: 'italic' }}>
+            This entry point calls a bound custom action
+            {trace.entryPoint.customActionApiName ? ` (${trace.entryPoint.customActionApiName})` : ''}.
+            The action&apos;s internal effects on this entity are not analysed — plugins registered on the
+            action&apos;s message may also fire.
+          </Text>
+        </div>
+      )}
+
       {/* Numbered steps that will fire */}
       {willFire.map((act, i) => (
         <StepBlock
@@ -1102,7 +1129,9 @@ function TracePipeline({
 
       {willFire.length === 0 && (
         <Text className={styles.emptyPipelineText}>
-          No automations registered on this entity for this message.
+          {trace.entryPoint.operation === 'Action'
+            ? 'No CRUD-registered automations detected for this custom action call. See note above.'
+            : 'No automations registered on this entity for this message.'}
         </Text>
       )}
 
@@ -1360,8 +1389,8 @@ function FieldMatchVerdict({
   if (firingStatus === 'WillFireNoFilter') {
     return (
       <div className={mergeClasses(styles.fieldMatchBase, styles.fieldMatchNoFilter)}>
-        <div className={styles.matchVerdict} style={{ color: tokens.colorPaletteRedForeground1 }}>
-          &#9888;&#65039; WILL FIRE — no filtering attributes, fires on ALL updates
+        <div className={styles.matchVerdict} style={{ color: tokens.colorPaletteRedForeground1, display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
+          <Warning20Regular /> WILL FIRE — no filtering attributes, fires on ALL updates
         </div>
         <Text className={styles.noFilterAdvisory}>
           Add filtering attributes to this {activation.automationType.toLowerCase()} to improve performance.
@@ -1387,7 +1416,7 @@ function FieldPills({
   const matchedSet = new Set(matchedFields.map(f => f.toLowerCase()));
 
   const showEntry = entryFields.length > 0;
-  const showFilter = filterFields.length > 0 && filterFields[0] !== filterFields.join(''); // avoid showing when it's just a single label
+  const showFilter = filterFields.length > 0;
 
   return (
     <div>
@@ -1435,14 +1464,22 @@ function TypeBadge({ type }: { type: AutomationActivation['automationType'] | Pi
 
 function OperationBadge({ operation }: { operation: string }) {
   const styles = useStyles();
+  const label = operation === 'Manual' ? 'On-Demand / Manual Trigger'
+    : operation === 'Action' ? 'Custom Action'
+    : operation;
+  const color = operation === 'Create' ? 'success'
+    : operation === 'Delete' ? 'danger'
+    : operation === 'Manual' ? 'informative'
+    : operation === 'Action' ? 'brand'
+    : 'warning';
   return (
     <Badge
       appearance="tint"
       shape="rounded"
-      color={operation === 'Create' ? 'success' : operation === 'Delete' ? 'danger' : 'warning'}
+      color={color}
       className={styles.stepBadge}
     >
-      {operation}
+      {label}
     </Badge>
   );
 }

@@ -99,6 +99,7 @@ export class CrossEntityAnalyzer {
           automationType: ep.automationType,
           operation: ep.operation,
           isAsynchronous: ep.isAsynchronous,
+          ...(ep.customActionApiName ? { customActionApiName: ep.customActionApiName } : {}),
         });
       }
 
@@ -247,7 +248,8 @@ export class CrossEntityAnalyzer {
           if (sd !== 0) return sd;
           const rd = (a.rank ?? 999) - (b.rank ?? 999);
           if (rd !== 0) return rd;
-          return a.mode === 'Sync' && b.mode !== 'Sync' ? -1 : 1;
+          if (a.mode === b.mode) return 0;
+          return a.mode === 'Sync' ? -1 : 1;
         });
 
         if (uniqueSteps.length > 0) messagePipelines.push({ message, steps: uniqueSteps });
@@ -263,6 +265,101 @@ export class CrossEntityAnalyzer {
         inboundEntryPoints: inboundEPs,
         hasCrossEntityOutput: messagePipelines.some(mp => mp.steps.some(s => s.downstream !== undefined)),
         hasCrossEntityInput: inboundEPs.length > 0,
+        hasExternalInteraction: messagePipelines.some(mp => mp.steps.some(s => s.hasExternalCalls === true)),
+      });
+    }
+
+    // Step 1 — Process flows from allFlows that have a triggerEntity in blueprints
+    // but are NOT already in any blueprint's flow list (e.g. manual flows with entity = 'none').
+    const blueprintScopedFlowIdsForPipeline = new Set<string>();
+    for (const bp of blueprints) {
+      for (const flow of bp.flows) {
+        blueprintScopedFlowIdsForPipeline.add(flow.id.toLowerCase());
+      }
+    }
+
+    for (const flow of allFlows) {
+      if (blueprintScopedFlowIdsForPipeline.has(flow.id.toLowerCase())) continue;
+      const triggerEntity = (flow.definition.triggerEntity && flow.definition.triggerEntity !== 'none'
+        ? flow.definition.triggerEntity.toLowerCase()
+        : null);
+      if (!triggerEntity) continue;
+      const targetBp = blueprintMap.get(triggerEntity);
+      if (!targetBp) continue;
+
+      // This flow has a trigger entity in blueprints but wasn't in bp.flows.
+      // Add it to that entity's pipeline under the 'Manual' message group.
+      const entityKey = triggerEntity;
+      const displayName = entityDisplayMap.get(entityKey) || entityKey;
+
+      const conditionFields = this.extractFieldsFromTriggerCondition(flow.definition.triggerConditions);
+      const downstream = this.detectDownstreamBranch(
+        flow.definition.dataverseActions ?? [], entityKey, entityDisplayMap
+      );
+      const step: PipelineStep = {
+        automationType: 'Flow',
+        automationId: flow.id,
+        automationName: flow.name,
+        mode: 'Async',
+        filteringAttributes: conditionFields,
+        firesForAllUpdates: false,
+        hasExternalCalls:
+          (flow.definition.externalCalls?.length ?? 0) > 0 ||
+          flow.definition.connectionReferences.length > 0,
+        ...(downstream ? { downstream } : {}),
+      };
+
+      const existing = allEntityPipelines.get(entityKey);
+      if (existing) {
+        // Add to existing pipeline under 'Manual' group
+        const manualPipeline = existing.messagePipelines.find(mp => mp.message === 'Manual');
+        if (manualPipeline) {
+          if (!manualPipeline.steps.some(s => s.automationId === flow.id)) {
+            manualPipeline.steps.push(step);
+          }
+        } else {
+          existing.messagePipelines.push({ message: 'Manual', steps: [step] });
+        }
+      } else {
+        // Create new entity pipeline entry
+        const inboundEPs = allEntryPointsByTarget.get(entityKey) ?? [];
+        allEntityPipelines.set(entityKey, {
+          entityLogicalName: entityKey,
+          entityDisplayName: displayName,
+          messagePipelines: [{ message: 'Manual', steps: [step] }],
+          inboundEntryPoints: inboundEPs,
+          hasCrossEntityOutput: !!downstream,
+          hasCrossEntityInput: inboundEPs.length > 0,
+          hasExternalInteraction: step.hasExternalCalls ?? false,
+        });
+      }
+    }
+
+    // Step 2 — Compute hasExternalInteraction for all entity pipelines
+    // and recompute hasCrossEntityOutput to include Manual steps.
+    for (const [, pipeline] of allEntityPipelines) {
+      const hasExt = pipeline.messagePipelines.some(mp =>
+        mp.steps.some(s => s.hasExternalCalls === true)
+      );
+      pipeline.hasExternalInteraction = hasExt;
+      // Also recompute hasCrossEntityOutput to include Manual steps
+      pipeline.hasCrossEntityOutput = pipeline.messagePipelines.some(mp =>
+        mp.steps.some(s => s.downstream !== undefined)
+      );
+    }
+
+    // Step 3 — Add entities that only receive inbound cross-entity writes (no own automation).
+    for (const [entityKey, entityView] of allEntryPointsByTarget) {
+      if (allEntityPipelines.has(entityKey)) continue;
+      const displayName = entityDisplayMap.get(entityKey) || entityKey;
+      allEntityPipelines.set(entityKey, {
+        entityLogicalName: entityKey,
+        entityDisplayName: displayName,
+        messagePipelines: [],
+        inboundEntryPoints: entityView,
+        hasCrossEntityOutput: false,
+        hasCrossEntityInput: entityView.length > 0,
+        hasExternalInteraction: false,
       });
     }
 
@@ -337,7 +434,7 @@ export class CrossEntityAnalyzer {
           const actionTarget = action.targetEntity.toLowerCase();
           if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
           if (actionTarget === sourceEntity) continue; // skip self-referential writes
-          if (!['Create', 'Update', 'Delete'].includes(action.operation)) continue;
+          if (!['Create', 'Update', 'Delete', 'Action'].includes(action.operation)) continue;
 
           addEntryPoint(actionTarget, {
             automationType: 'Flow',
@@ -345,12 +442,13 @@ export class CrossEntityAnalyzer {
             automationId: flow.id,
             sourceEntity,
             sourceEntityDisplayName: sourceDisplayName,
-            operation: action.operation as 'Create' | 'Update' | 'Delete',
+            operation: action.operation as 'Create' | 'Update' | 'Delete' | 'Action',
             fields: action.fields ?? [],
             isAsynchronous: true,
             isScheduled: flow.definition.triggerType === 'Scheduled',
             isOnDemand: flow.definition.triggerType === 'Manual',
             confidence: action.confidence,
+            ...(action.customActionApiName ? { customActionApiName: action.customActionApiName } : {}),
           });
         }
 
@@ -385,7 +483,11 @@ export class CrossEntityAnalyzer {
       // Determine source entity label from trigger type.
       // Dataverse returns primaryentity="none" (literal string) for flows without a primary entity.
       const triggerType = flow.definition.triggerType;
-      const entityName = flow.entity && flow.entity !== 'none' ? flow.entity : null;
+      const entityName =
+        (flow.entity && flow.entity !== 'none' ? flow.entity : null) ||
+        (flow.definition.triggerEntity && flow.definition.triggerEntity !== 'none'
+          ? flow.definition.triggerEntity
+          : null);
       let sourceEntity: string;
       let sourceDisplayName: string;
 
@@ -407,7 +509,7 @@ export class CrossEntityAnalyzer {
         const actionTarget = action.targetEntity.toLowerCase();
         if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
         if (actionTarget === sourceEntity) continue; // skip self-referential writes
-        if (!['Create', 'Update', 'Delete'].includes(action.operation)) continue;
+        if (!['Create', 'Update', 'Delete', 'Action'].includes(action.operation)) continue;
 
         addEntryPoint(actionTarget, {
           automationType: 'Flow',
@@ -415,12 +517,13 @@ export class CrossEntityAnalyzer {
           automationId: flow.id,
           sourceEntity,
           sourceEntityDisplayName: sourceDisplayName,
-          operation: action.operation as 'Create' | 'Update' | 'Delete',
+          operation: action.operation as 'Create' | 'Update' | 'Delete' | 'Action',
           fields: action.fields ?? [],
           isAsynchronous: true,
           isScheduled: triggerType === 'Scheduled',
           isOnDemand: triggerType === 'Manual',
           confidence: action.confidence,
+          ...(action.customActionApiName ? { customActionApiName: action.customActionApiName } : {}),
         });
       }
 
@@ -495,7 +598,7 @@ export class CrossEntityAnalyzer {
         const actionTarget = action.targetEntity.toLowerCase();
         if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
         if (actionTarget === sourceEntity) continue; // skip self-referential writes
-        if (!['Create', 'Update', 'Delete'].includes(action.operation)) continue;
+        if (!['Create', 'Update', 'Delete', 'Action'].includes(action.operation)) continue;
 
         addEntryPoint(actionTarget, {
           automationType: 'Flow',
@@ -503,13 +606,14 @@ export class CrossEntityAnalyzer {
           automationId: childFlow.id,
           sourceEntity,
           sourceEntityDisplayName: sourceDisplayName,
-          operation: action.operation as 'Create' | 'Update' | 'Delete',
+          operation: action.operation as 'Create' | 'Update' | 'Delete' | 'Action',
           fields: action.fields ?? [],
           isAsynchronous: true,
           isScheduled: false,
           isOnDemand: childFlow.definition.triggerType === 'Manual',
           // Downgrade confidence for child flows (we don't know if parent always calls child)
           confidence: action.confidence === 'High' ? 'Medium' : action.confidence,
+          ...(action.customActionApiName ? { customActionApiName: action.customActionApiName } : {}),
         });
       }
 
@@ -720,13 +824,13 @@ export class CrossEntityAnalyzer {
       const target = action.targetEntity.toLowerCase();
       if (target === sourceEntity) continue;
       if (target === '[dynamic]' || target.startsWith('[dynamic')) continue;
-      if (!['Create', 'Update', 'Delete'].includes(action.operation)) continue;
+      if (!['Create', 'Update', 'Delete', 'Action'].includes(action.operation)) continue;
 
       const targetDisplayName = entityDisplayMap.get(target) || action.targetEntity;
       return {
         targetEntity: target,
         targetEntityDisplayName: targetDisplayName,
-        operation: action.operation as 'Create' | 'Update' | 'Delete',
+        operation: action.operation as 'Create' | 'Update' | 'Delete' | 'Action',
         fields: action.fields ?? [],
         pipelineRef: target,
       };

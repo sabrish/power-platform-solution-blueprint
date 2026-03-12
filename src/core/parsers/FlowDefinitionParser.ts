@@ -2,6 +2,12 @@ import type { FlowDefinition, ExternalCall, DataverseAction } from '../types/blu
 
 /**
  * Parses Power Automate flow definitions from clientdata JSON
+ *
+ * NOTE: Private methods use `data: any` / `action: any` parameters intentionally.
+ * Power Automate does not publish a TypeScript schema for flow definitions.
+ * Multiple historical connector formats (modern Dataverse connector, legacy CDS connector,
+ * OpenApiConnection, direct HTTP) must all be handled. The `any` types reflect this
+ * structural ambiguity and are acceptable technical debt for this parser.
  */
 export class FlowDefinitionParser {
   /**
@@ -400,10 +406,31 @@ export class FlowDefinitionParser {
     } else if (operationId.includes('listrecords') || operationId.includes('listitems') || actionNameLower.includes('list')) {
       operation = 'List';
       confidence = 'Medium';
+    } else if (operationId.includes('performboundaction')) {
+      // Bound custom action/API targeting a specific entity — cross-entity relationship
+      operation = 'Action';
+      confidence = 'High';
+    } else if (operationId.includes('performunboundaction')) {
+      // Unbound actions have no entity target — cannot determine cross-entity relationship
+      operation = 'Action';
+      confidence = 'Low';
     }
 
     if (!operation) {
       return null;
+    }
+
+    // For Action operations, extract the Dataverse custom action / API unique name
+    // (inputs.parameters.actionName holds the action schema name, e.g. "new_SendWelcome")
+    let customActionApiName: string | undefined;
+    if (operation === 'Action') {
+      const rawActionName =
+        inputs.parameters?.actionName ||
+        inputs.parameters?.Action ||
+        inputs.parameters?.action;
+      if (rawActionName && typeof rawActionName === 'string' && !this.isDynamicExpression(rawActionName)) {
+        customActionApiName = rawActionName;
+      }
     }
 
     // Try to extract target entity
@@ -454,6 +481,7 @@ export class FlowDefinitionParser {
     }
 
     if (!targetEntity) {
+      // Unbound actions have no entity — cannot classify as cross-entity; skip
       return null;
     }
 
@@ -476,6 +504,7 @@ export class FlowDefinitionParser {
       actionName,
       confidence,
       ...(fields.length > 0 ? { fields } : {}),
+      ...(customActionApiName ? { customActionApiName } : {}),
     };
   }
 
