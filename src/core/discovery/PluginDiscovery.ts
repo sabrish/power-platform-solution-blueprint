@@ -102,7 +102,7 @@ export class PluginDiscovery {
           modeName: this.getModeName(raw.mode),
           rank: raw.rank,
           message: raw.sdkmessageid?.name || 'Unknown',
-          entity: raw.sdkmessagefilterid?.primaryobjecttypecode || 'none',
+          entity: raw.sdkmessagefilterid?.primaryobjecttypecode || null,
           assemblyName: raw.plugintypeid?.assemblyname || 'Unknown',
           typeName: raw.plugintypeid?.typename || 'Unknown',
           pluginTypeId: raw.plugintypeid?.plugintypeid || '',

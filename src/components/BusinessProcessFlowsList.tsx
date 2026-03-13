@@ -188,7 +188,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
                           color: tokens.colorNeutralForeground3,
                         }}
                       >
-                        Entity: {stage.entity}
+                        Entity: {stage.entity ?? 'None'}
                         {stage.steps.length > 0 && ` • ${stage.steps.length} steps`}
                       </Text>
                     </div>

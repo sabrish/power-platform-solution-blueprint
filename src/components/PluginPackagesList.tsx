@@ -133,7 +133,9 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
       result.push({
         assemblyName,
         steps: [...steps].sort((a, b) => {
-          if (a.entity !== b.entity) return a.entity.localeCompare(b.entity);
+          const entityA = a.entity ?? '';
+          const entityB = b.entity ?? '';
+          if (entityA !== entityB) return entityA.localeCompare(entityB);
           if (a.message !== b.message) return a.message.localeCompare(b.message);
           if (a.stage !== b.stage) return a.stage - b.stage;
           return a.rank - b.rank;
@@ -155,7 +157,7 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
         pkg.steps.some(s =>
           s.name.toLowerCase().includes(q) ||
           s.typeName.toLowerCase().includes(q) ||
-          s.entity.toLowerCase().includes(q)
+          (s.entity?.toLowerCase().includes(q) ?? false)
         )
       );
     }

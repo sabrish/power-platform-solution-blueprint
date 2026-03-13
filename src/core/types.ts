@@ -73,7 +73,7 @@ export interface PluginStep {
   modeName: string;
   rank: number;
   message: string;
-  entity: string;
+  entity: string | null;
   assemblyName: string;
   typeName: string;
   pluginTypeId: string;

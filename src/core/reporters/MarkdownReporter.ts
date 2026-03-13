@@ -35,6 +35,7 @@ import type { CanvasApp } from '../types/canvasApp.js';
 import type { CustomPage } from '../types/customPage.js';
 import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
 import MarkdownFormatter from './markdown/MarkdownFormatter.js';
+import { resolveEntityName } from '../utils/entityName.js';
 
 export class MarkdownReporter {
   /**
@@ -665,7 +666,7 @@ export class MarkdownReporter {
       const warnHeaders = ['Plugin', 'Entity', 'Message', 'Stage'];
       const warnRows = syncWithExternal.map(p => [
         p.name,
-        p.entity,
+        p.entity ?? 'Global',
         p.message,
         p.stageName,
       ]);
@@ -2613,11 +2614,12 @@ export class MarkdownReporter {
       }
 
       const entities = grouped.get(plugin.assemblyName)!;
-      if (!entities.has(plugin.entity)) {
-        entities.set(plugin.entity, []);
+      const entityKey = plugin.entity ?? 'Global';
+      if (!entities.has(entityKey)) {
+        entities.set(entityKey, []);
       }
 
-      entities.get(plugin.entity)!.push(plugin);
+      entities.get(entityKey)!.push(plugin);
     }
 
     return grouped;
@@ -2630,7 +2632,7 @@ export class MarkdownReporter {
     const grouped = new Map<string, Flow[]>();
 
     for (const flow of flows) {
-      const entity = flow.entity || 'Manual/Scheduled';
+      const entity = resolveEntityName(flow.entity) ?? 'Manual/Scheduled';
       if (!grouped.has(entity)) {
         grouped.set(entity, []);
       }

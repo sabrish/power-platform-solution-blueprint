@@ -863,7 +863,7 @@ export class BlueprintGenerator {
     const pluginsByEntity = new Map<string, PluginStep[]>();
 
     for (const plugin of plugins) {
-      const entity = plugin.entity.toLowerCase();
+      const entity = plugin.entity?.toLowerCase() ?? 'global';
       if (!pluginsByEntity.has(entity)) {
         pluginsByEntity.set(entity, []);
       }

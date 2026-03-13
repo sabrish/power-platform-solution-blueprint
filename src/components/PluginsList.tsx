@@ -69,13 +69,15 @@ export function PluginsList({
   // Filter plugins by entity if specified
   const filteredPlugins = useMemo(() => {
     if (!entityLogicalName) return plugins;
-    return plugins.filter((p) => p.entity.toLowerCase() === entityLogicalName.toLowerCase());
+    return plugins.filter((p) => p.entity?.toLowerCase() === entityLogicalName.toLowerCase());
   }, [plugins, entityLogicalName]);
 
   // Sort plugins by entity, message, stage, and rank
   const sortedPlugins = useMemo(() => {
     return [...filteredPlugins].sort((a, b) => {
-      if (a.entity !== b.entity) return a.entity.localeCompare(b.entity);
+      const entityA = a.entity ?? '';
+      const entityB = b.entity ?? '';
+      if (entityA !== entityB) return entityA.localeCompare(entityB);
       if (a.message !== b.message) return a.message.localeCompare(b.message);
       if (a.stage !== b.stage) return a.stage - b.stage;
       return a.rank - b.rank;
@@ -132,7 +134,7 @@ export function PluginsList({
     if (!q) return toggleFilteredPlugins;
     return toggleFilteredPlugins.filter((p) =>
       p.name.toLowerCase().includes(q) ||
-      p.entity.toLowerCase().includes(q) ||
+      (p.entity?.toLowerCase().includes(q) ?? false) ||
       p.assemblyName.toLowerCase().includes(q) ||
       p.typeName.toLowerCase().includes(q)
     );
@@ -204,7 +206,7 @@ export function PluginsList({
           </div>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Entity</Text>
-            <Text className={mergeClasses(shared.detailValue, shared.codeText)}>{plugin.entity}</Text>
+            <Text className={mergeClasses(shared.detailValue, shared.codeText)}>{plugin.entity ?? 'Global'}</Text>
           </div>
           <div className={shared.detailItem}>
             <Text className={shared.detailLabel}>Message</Text>
@@ -400,7 +402,7 @@ export function PluginsList({
                 <Text className={shared.codeText}>{plugin.assemblyName}</Text>
               </div>
               {!entityLogicalName && (
-                <Text className={shared.codeText}>{plugin.entity}</Text>
+                <Text className={shared.codeText}>{plugin.entity ?? 'Global'}</Text>
               )}
               <Badge appearance="outline" shape="rounded" size="small">{plugin.message}</Badge>
               <Badge
