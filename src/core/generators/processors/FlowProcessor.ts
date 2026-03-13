@@ -1,0 +1,55 @@
+import type { IDataverseClient } from '../../dataverse/IDataverseClient.js';
+import type { FetchLogger } from '../../utils/FetchLogger.js';
+import type { ProgressInfo, StepWarning, Flow } from '../../types/blueprint.js';
+import { FlowDiscovery } from '../../discovery/FlowDiscovery.js';
+import { checkForPartialFailures } from './processorUtils.js';
+
+export async function processFlows(
+  client: IDataverseClient,
+  flowIds: string[],
+  onProgress: (progress: ProgressInfo) => void,
+  logger: FetchLogger,
+  stepWarnings: StepWarning[]
+): Promise<Flow[]> {
+  if (flowIds.length === 0) {
+    return [];
+  }
+
+  try {
+    // Report progress
+    onProgress({
+      phase: 'flows',
+      entityName: '',
+      current: 0,
+      total: flowIds.length,
+      message: `Documenting ${flowIds.length} flow${flowIds.length > 1 ? 's' : ''}...`,
+    });
+
+    const flowDiscovery = new FlowDiscovery(client, (current, total) => {
+      onProgress({
+        phase: 'flows',
+        entityName: '',
+        current,
+        total,
+        message: `Documenting flows (${current}/${total})...`,
+      });
+    }, logger);
+    const flowLogWatermark = logger.getEntries().length;
+    const flows = await flowDiscovery.getFlowsByIds(flowIds);
+    checkForPartialFailures('Flows', flowLogWatermark, logger, stepWarnings);
+
+    onProgress({
+      phase: 'flows',
+      entityName: '',
+      current: flows.length,
+      total: flows.length,
+      message: 'Flows documented',
+    });
+
+    return flows;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    stepWarnings.push({ step: 'Flows', message: msg, partial: false });
+    return [];
+  }
+}

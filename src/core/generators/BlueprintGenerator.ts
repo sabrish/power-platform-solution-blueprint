@@ -6,29 +6,30 @@ import { SolutionComponentDiscovery } from '../discovery/SolutionComponentDiscov
 import { SolutionDiscovery } from '../discovery/SolutionDiscovery.js';
 import { PublisherDiscovery } from '../discovery/PublisherDiscovery.js';
 import { SchemaDiscovery } from '../discovery/SchemaDiscovery.js';
-import { PluginDiscovery } from '../discovery/PluginDiscovery.js';
-import { FlowDiscovery } from '../discovery/FlowDiscovery.js';
-import { BusinessRuleDiscovery } from '../discovery/BusinessRuleDiscovery.js';
-import { ClassicWorkflowDiscovery } from '../discovery/ClassicWorkflowDiscovery.js';
-import { FormDiscovery } from '../discovery/FormDiscovery.js';
-import { WebResourceDiscovery } from '../discovery/WebResourceDiscovery.js';
-import { CustomAPIDiscovery } from '../discovery/CustomApiDiscovery.js';
-import { WorkflowMigrationAnalyzer } from '../analyzers/WorkflowMigrationAnalyzer.js';
 import { ERDGenerator } from '../generators/ERDGenerator.js';
 import { CrossEntityAnalyzer } from '../analyzers/CrossEntityAnalyzer.js';
 import { ExternalDependencyAggregator } from '../analyzers/ExternalDependencyAggregator.js';
 import { SolutionDistributionAnalyzer } from '../analyzers/SolutionDistributionAnalyzer.js';
-import { SecurityRoleDiscovery } from '../discovery/SecurityRoleDiscovery.js';
-import { FieldSecurityProfileDiscovery } from '../discovery/FieldSecurityProfileDiscovery.js';
-import { BusinessProcessFlowDiscovery } from '../discovery/BusinessProcessFlowDiscovery.js';
-import { EnvironmentVariableDiscovery } from '../discovery/EnvironmentVariableDiscovery.js';
-import { ConnectionReferenceDiscovery } from '../discovery/ConnectionReferenceDiscovery.js';
-import { GlobalChoiceDiscovery } from '../discovery/GlobalChoiceDiscovery.js';
-import { CustomConnectorDiscovery } from '../discovery/CustomConnectorDiscovery.js';
-import { ColumnSecurityDiscovery } from '../discovery/ColumnSecurityDiscovery.js';
-import { AppDiscovery } from '../discovery/AppDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import { normalizeGuid } from '../utils/guid.js';
+import {
+  processPlugins,
+  processFlows,
+  processBusinessRules,
+  processWebResources,
+  processClassicWorkflows,
+  processBusinessProcessFlows,
+  processCustomAPIs,
+  processEnvironmentVariables,
+  processConnectionReferences,
+  processGlobalChoices,
+  processCustomConnectors,
+  processSecurityRoles,
+  processFieldSecurityProfiles,
+  processColumnSecurity,
+  processForms,
+  processApps,
+} from './processors/index.js';
 import {
   groupPluginsByEntity,
   groupFlowsByEntity,
@@ -42,19 +43,13 @@ import { JsonReporter } from '../reporters/JsonReporter.js';
 import { MarkdownReporter } from '../reporters/MarkdownReporter.js';
 import { HtmlReporter } from '../reporters/HtmlReporter.js';
 import { ZipPackager } from '../exporters/ZipPackager.js';
-import type { EntityMetadata, PluginStep, Publisher, Solution } from '../types.js';
+import type { EntityMetadata, Publisher, Solution } from '../types.js';
 import type { ComponentInventory, ComponentInventoryWithSolutions, WorkflowInventory } from '../types/components.js';
-import type { CanvasApp } from '../types/canvasApp.js';
-import type { CustomPage } from '../types/customPage.js';
-import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
 import type {
   GeneratorOptions,
   BlueprintResult,
   EntityBlueprint,
   ProgressInfo,
-  Flow,
-  BusinessRule,
-  WebResource,
   StepWarning,
 } from '../types/blueprint.js';
 
@@ -148,7 +143,7 @@ export class BlueprintGenerator {
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 3: Process Plugins
-      const plugins = await this.processPlugins(inventory.pluginIds);
+      const plugins = await processPlugins(this.client, inventory.pluginIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
       const pluginsByEntity = groupPluginsByEntity(plugins);
 
       if (inventory.pluginIds.length === 0) {
@@ -158,7 +153,7 @@ export class BlueprintGenerator {
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 4: Process Flows
-      const flows = await this.processFlows(workflowInventory.flowIds);
+      const flows = await processFlows(this.client, workflowInventory.flowIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
       const flowsByEntity = groupFlowsByEntity(flows);
 
       if (workflowInventory.flowIds.length === 0) {
@@ -168,7 +163,7 @@ export class BlueprintGenerator {
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 5: Process Business Rules
-      const businessRules = await this.processBusinessRules(workflowInventory.businessRuleIds);
+      const businessRules = await processBusinessRules(this.client, workflowInventory.businessRuleIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
       const businessRulesByEntity = groupBusinessRulesByEntity(businessRules);
 
       if (workflowInventory.businessRuleIds.length === 0) {
@@ -178,7 +173,7 @@ export class BlueprintGenerator {
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 5.5: Process Classic Workflows (deprecated, requires migration)
-      const classicWorkflows = await this.processClassicWorkflows(workflowInventory.classicWorkflowIds);
+      const classicWorkflows = await processClassicWorkflows(this.client, workflowInventory.classicWorkflowIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
       const classicWorkflowsByEntity = groupClassicWorkflowsByEntity(classicWorkflows);
 
       if (workflowInventory.classicWorkflowIds.length > 0) {
@@ -188,13 +183,13 @@ export class BlueprintGenerator {
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 5.6: Process Business Process Flows
-      const businessProcessFlows = await this.processBusinessProcessFlows(workflowInventory.businessProcessFlowIds);
+      const businessProcessFlows = await processBusinessProcessFlows(this.client, workflowInventory.businessProcessFlowIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
       const businessProcessFlowsByEntity = groupBusinessProcessFlowsByEntity(businessProcessFlows);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6: Process Web Resources
-      const webResources = await this.processWebResources(inventory.webResourceIds);
+      const webResources = await processWebResources(this.client, inventory.webResourceIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
       const webResourcesByType = groupWebResourcesByType(webResources);
 
       if (inventory.webResourceIds.length === 0) {
@@ -204,45 +199,49 @@ export class BlueprintGenerator {
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.5: Process Custom APIs
-      const customAPIs = await this.processCustomAPIs(inventory.customApiIds);
+      const customAPIs = await processCustomAPIs(this.client, inventory.customApiIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.6: Process Environment Variables
-      const environmentVariables = await this.processEnvironmentVariables(inventory.environmentVariableIds);
+      const environmentVariables = await processEnvironmentVariables(this.client, inventory.environmentVariableIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.7: Process Connection References
-      const connectionReferences = await this.processConnectionReferences(inventory.connectionReferenceIds);
+      const connectionReferences = await processConnectionReferences(this.client, inventory.connectionReferenceIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.8: Process Global Choices (Option Sets)
-      const globalChoices = await this.processGlobalChoices(inventory.globalChoiceIds);
+      const globalChoices = await processGlobalChoices(this.client, inventory.globalChoiceIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.9: Process Custom Connectors
-      const customConnectors = await this.processCustomConnectors(inventory.customConnectorIds);
+      const customConnectors = await processCustomConnectors(this.client, inventory.customConnectorIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.10: Process Security Roles
-      const securityRoles = await this.processSecurityRoles(inventory.securityRoleIds);
+      const securityRoles = await processSecurityRoles(this.client, inventory.securityRoleIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.11: Process Field Security Profiles
-      const { profiles: fieldSecurityProfiles, fieldSecurityByEntity } = await this.processFieldSecurityProfiles(
+      const { profiles: fieldSecurityProfiles, fieldSecurityByEntity } = await processFieldSecurityProfiles(
+        this.client,
         inventory.fieldSecurityProfileIds,
-        entities.map((e) => e.LogicalName)
+        entities.map((e) => e.LogicalName),
+        this.reportProgress.bind(this),
+        this.logger,
+        this.stepWarnings
       );
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6.12: Process Column Security (Attribute Masking & Column Security Profiles)
-      const { attributeMaskingRules, columnSecurityProfiles } = await this.processColumnSecurity();
+      const { attributeMaskingRules, columnSecurityProfiles } = await processColumnSecurity(this.client, this.reportProgress.bind(this), this.stepWarnings);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
@@ -256,39 +255,20 @@ export class BlueprintGenerator {
         total: inventory.canvasAppIds.length + inventory.appModuleIds.length,
         message: 'Discovering Canvas Apps, Custom Pages, and Model-Driven Apps...',
       });
-      let canvasApps: CanvasApp[] = [];
-      let customPages: CustomPage[] = [];
-      let modelDrivenApps: ModelDrivenApp[] = [];
-      try {
-        const appDiscovery = new AppDiscovery(
-          this.client,
-          (current, total) => this.reportProgress({ phase: 'apps', entityName: '', current, total, message: 'Fetching app records...' }),
-          this.logger
-        );
-        const [appsResult, mdApps] = await Promise.all([
-          inventory.canvasAppIds.length > 0
-            ? appDiscovery.getAppsAndPagesByIds(inventory.canvasAppIds)
-            : Promise.resolve({ canvasApps: [], customPages: [] }),
-          inventory.appModuleIds.length > 0
-            ? appDiscovery.getModelDrivenAppsByIds(inventory.appModuleIds)
-            : Promise.resolve([]),
-        ]);
-        canvasApps = appsResult.canvasApps;
-        customPages = appsResult.customPages;
-        modelDrivenApps = mdApps;
-      } catch (err) {
-        this.stepWarnings.push({
-          step: 'Apps',
-          message: err instanceof Error ? err.message : 'Unknown error fetching app records',
-          partial: false,
-        });
-      }
+      const { canvasApps, customPages, modelDrivenApps } = await processApps(
+        this.client,
+        inventory.canvasAppIds,
+        inventory.appModuleIds,
+        this.reportProgress.bind(this),
+        this.logger,
+        this.stepWarnings
+      );
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 7: Process Forms and JavaScript Event Handlers
       // Pass entities with rootcomponentbehavior info to determine form inclusion
-      const forms = await this.processForms(entities, inventory.formIds, inventory.entitiesWithAllSubcomponents);
+      const forms = await processForms(this.client, entities, inventory.formIds, inventory.entitiesWithAllSubcomponents, this.reportProgress.bind(this), this.logger, this.stepWarnings);
       const formsByEntity = groupFormsByEntity(forms);
 
       // STEP 8: Populate automation and security in entity blueprints
@@ -726,711 +706,6 @@ export class BlueprintGenerator {
       this.options.onProgress(progress);
     }
   }
-
-  /**
-   * After a process* step completes, check the fetch log for any new failed entries
-   * and push a partial StepWarning so the dashboard can surface them.
-   */
-  private checkForPartialFailures(stepName: string, logWatermark: number): void {
-    const newFailures = this.logger.getEntries()
-      .slice(logWatermark)
-      .filter(e => e.status === 'failed');
-    if (newFailures.length > 0) {
-      this.stepWarnings.push({
-        step: stepName,
-        message: `${newFailures.length} API request(s) failed — results may be incomplete. See Fetch Log for details.`,
-        partial: true,
-        failedCount: newFailures.length,
-      });
-    }
-  }
-
-  /**
-   * Process plugins - fetch detailed plugin metadata
-   */
-  private async processPlugins(pluginIds: string[]): Promise<PluginStep[]> {
-    if (pluginIds.length === 0) {
-      return [];
-    }
-
-    try {
-      // Report progress
-      this.reportProgress({
-        phase: 'plugins',
-        entityName: '',
-        current: 0,
-        total: pluginIds.length,
-        message: `Documenting ${pluginIds.length} plugin${pluginIds.length > 1 ? 's' : ''}...`,
-      });
-
-      const pluginDiscovery = new PluginDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'plugins',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting plugins (${current}/${total})...`,
-        });
-      }, this.logger);
-      const logWatermark = this.logger.getEntries().length;
-      const plugins = await pluginDiscovery.getPluginsByIds(pluginIds);
-      this.checkForPartialFailures('Plugins', logWatermark);
-
-      this.reportProgress({
-        phase: 'plugins',
-        entityName: '',
-        current: plugins.length,
-        total: plugins.length,
-        message: 'Plugins documented',
-      });
-
-      return plugins;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Plugins', message: msg, partial: false });
-      return [];
-    }
-  }
-
-  /**
-   * Process flows - fetch detailed flow metadata
-   */
-  private async processFlows(flowIds: string[]): Promise<Flow[]> {
-    if (flowIds.length === 0) {
-      return [];
-    }
-
-    try {
-      // Report progress
-      this.reportProgress({
-        phase: 'flows',
-        entityName: '',
-        current: 0,
-        total: flowIds.length,
-        message: `Documenting ${flowIds.length} flow${flowIds.length > 1 ? 's' : ''}...`,
-      });
-
-      const flowDiscovery = new FlowDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'flows',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting flows (${current}/${total})...`,
-        });
-      }, this.logger);
-      const flowLogWatermark = this.logger.getEntries().length;
-      const flows = await flowDiscovery.getFlowsByIds(flowIds);
-      this.checkForPartialFailures('Flows', flowLogWatermark);
-
-      this.reportProgress({
-        phase: 'flows',
-        entityName: '',
-        current: flows.length,
-        total: flows.length,
-        message: 'Flows documented',
-      });
-
-      return flows;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Flows', message: msg, partial: false });
-      return [];
-    }
-  }
-
-
-  /**
-   * Process business rules - fetch detailed business rule metadata
-   */
-  private async processBusinessRules(businessRuleIds: string[]): Promise<BusinessRule[]> {
-    if (businessRuleIds.length === 0) {
-      return [];
-    }
-
-    try {
-      // Report progress
-      this.reportProgress({
-        phase: 'business-rules',
-        entityName: '',
-        current: 0,
-        total: businessRuleIds.length,
-        message: `Documenting ${businessRuleIds.length} business rule${businessRuleIds.length > 1 ? 's' : ''}...`,
-      });
-
-      const businessRuleDiscovery = new BusinessRuleDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'business-rules',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting business rules (${current}/${total})...`,
-        });
-      }, this.logger);
-      const brLogWatermark = this.logger.getEntries().length;
-      const businessRules = await businessRuleDiscovery.getBusinessRulesByIds(businessRuleIds);
-      this.checkForPartialFailures('Business Rules', brLogWatermark);
-
-      // Report completion
-      this.reportProgress({
-        phase: 'business-rules',
-        entityName: '',
-        current: businessRules.length,
-        total: businessRules.length,
-        message: 'Business rules documented',
-      });
-
-      return businessRules;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Business Rules', message: msg, partial: false });
-      return [];
-    }
-  }
-
-  /**
-   * Process web resources - fetch and analyze web resource content
-   */
-  private async processWebResources(webResourceIds: string[]): Promise<WebResource[]> {
-    if (webResourceIds.length === 0) {
-      return [];
-    }
-
-    try {
-      // Report progress
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: webResourceIds.length,
-        message: `Analyzing ${webResourceIds.length} web resource${webResourceIds.length > 1 ? 's' : ''}...`,
-      });
-
-      const webResourceDiscovery = new WebResourceDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          // When current === total, Pass 1 is done but Pass 2 (JS content fetch) may still be running
-          message: current < total
-            ? `Analyzing web resources (${current}/${total})...`
-            : 'Fetching JavaScript web resource content...',
-        });
-      }, this.logger);
-      const wrLogWatermark = this.logger.getEntries().length;
-      const webResources = await webResourceDiscovery.getWebResourcesByIds(webResourceIds);
-      this.checkForPartialFailures('Web Resources', wrLogWatermark);
-
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: webResources.length,
-        total: webResources.length,
-        message: 'Web resources analyzed',
-      });
-
-      return webResources;
-    } catch (error) {
-      this.stepWarnings.push({ step: 'Web Resources', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
-      return [];
-    }
-  }
-
-
-  /**
-   * Process classic workflows (deprecated, requires migration)
-   */
-  private async processClassicWorkflows(workflowIds: string[]): Promise<import('../types/classicWorkflow.js').ClassicWorkflow[]> {
-    if (workflowIds.length === 0) {
-      return [];
-    }
-
-    try {
-      // Report progress
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: workflowIds.length,
-        message: `Documenting ${workflowIds.length} classic workflow(s) (migration recommended)...`,
-      });
-
-      const classicWorkflowDiscovery = new ClassicWorkflowDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting classic workflows (${current}/${total})...`,
-        });
-      }, this.logger);
-      const cwLogWatermark = this.logger.getEntries().length;
-      const workflows = await classicWorkflowDiscovery.getClassicWorkflowsByIds(workflowIds);
-      this.checkForPartialFailures('Classic Workflows', cwLogWatermark);
-
-      // Analyze each workflow for migration
-      const analyzer = new WorkflowMigrationAnalyzer();
-      for (const workflow of workflows) {
-        workflow.migrationRecommendation = analyzer.analyze(workflow);
-      }
-
-      // Report completion
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: workflows.length,
-        total: workflows.length,
-        message: 'Classic workflows documented with migration recommendations',
-      });
-
-      return workflows;
-    } catch (error) {
-      // Don't fail the entire generation if classic workflows fail
-      return [];
-    }
-  }
-
-
-  /**
-   * Process Business Process Flows
-   */
-  private async processBusinessProcessFlows(workflowIds: string[]): Promise<import('../types/businessProcessFlow.js').BusinessProcessFlow[]> {
-    if (workflowIds.length === 0) {
-      return [];
-    }
-
-    try {
-      // Report progress
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: workflowIds.length,
-        message: `Documenting ${workflowIds.length} Business Process Flow(s)...`,
-      });
-
-      const bpfDiscovery = new BusinessProcessFlowDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting Business Process Flows (${current}/${total})...`,
-        });
-      }, this.logger);
-      const bpfLogWatermark = this.logger.getEntries().length;
-      const bpfs = await bpfDiscovery.getBusinessProcessFlowsByIds(workflowIds);
-      this.checkForPartialFailures('Business Process Flows', bpfLogWatermark);
-
-      // Report completion
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: workflowIds.length,
-        total: workflowIds.length,
-        message: `Documented ${bpfs.length} Business Process Flow(s)`,
-      });
-
-      return bpfs;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Business Process Flows', message: msg, partial: false });
-      return [];
-    }
-  }
-
-
-  /**
-   * Process Custom APIs
-   */
-  private async processCustomAPIs(customApiIds: string[]): Promise<import('../types/customApi.js').CustomAPI[]> {
-    if (customApiIds.length === 0) {
-      return [];
-    }
-
-    try {
-      // Report progress
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: customApiIds.length,
-        message: `Documenting ${customApiIds.length} Custom API(s)...`,
-      });
-
-      const customApiDiscovery = new CustomAPIDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          // When current === total, Pass 1 is done but request param + response property fetches may still be running
-          message: current < total
-            ? `Documenting Custom APIs (${current}/${total})...`
-            : 'Fetching Custom API parameters and response properties...',
-        });
-      }, this.logger);
-      const customAPIs = await customApiDiscovery.getCustomAPIsByIds(customApiIds);
-
-      // Report completion
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: customApiIds.length,
-        total: customApiIds.length,
-        message: `Documented ${customAPIs.length} Custom API(s)`,
-      });
-
-      return customAPIs;
-    } catch (error) {
-      this.stepWarnings.push({ step: 'Custom APIs', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
-      return [];
-    }
-  }
-
-  /**
-   * Process Environment Variables
-   */
-  private async processEnvironmentVariables(envVarIds: string[]): Promise<import('../types/environmentVariable.js').EnvironmentVariable[]> {
-    if (envVarIds.length === 0) {
-      return [];
-    }
-
-    try {
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: envVarIds.length,
-        message: `Documenting ${envVarIds.length} Environment Variable(s)...`,
-      });
-
-      const envVarDiscovery = new EnvironmentVariableDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting Environment Variables (${current}/${total})...`,
-        });
-      }, this.logger);
-      const evLogWatermark = this.logger.getEntries().length;
-      const envVars = await envVarDiscovery.getEnvironmentVariablesByIds(envVarIds);
-      this.checkForPartialFailures('Environment Variables', evLogWatermark);
-
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: envVarIds.length,
-        total: envVarIds.length,
-        message: `Documented ${envVars.length} Environment Variable(s)`,
-      });
-
-      return envVars;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Environment Variables', message: msg, partial: false });
-      return [];
-    }
-  }
-
-  private async processConnectionReferences(connRefIds: string[]): Promise<import('../types/connectionReference.js').ConnectionReference[]> {
-    if (connRefIds.length === 0) return [];
-    try {
-      this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connRefIds.length,
-        message: `Documenting ${connRefIds.length} Connection Reference(s)...` });
-      const connRefDiscovery = new ConnectionReferenceDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting Connection References (${current}/${total})...`,
-        });
-      }, this.logger);
-      const crLogWatermark = this.logger.getEntries().length;
-      const refs = await connRefDiscovery.getConnectionReferencesByIds(connRefIds);
-      this.checkForPartialFailures('Connection References', crLogWatermark);
-      return refs;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Connection References', message: msg, partial: false });
-      return [];
-    }
-  }
-
-  private async processGlobalChoices(globalChoiceIds: string[]): Promise<import('../types/globalChoice.js').GlobalChoice[]> {
-    if (globalChoiceIds.length === 0) return [];
-    try {
-      this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: globalChoiceIds.length,
-        message: `Documenting ${globalChoiceIds.length} Global Choice(s)...` });
-      const gcDiscovery = new GlobalChoiceDiscovery(
-        this.client,
-        undefined,
-        this.logger
-      );
-      const gcLogWatermark = this.logger.getEntries().length;
-      const choices = await gcDiscovery.discoverGlobalChoices(globalChoiceIds);
-      this.checkForPartialFailures('Global Choices', gcLogWatermark);
-      return choices;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Global Choices', message: msg, partial: false });
-      return [];
-    }
-  }
-
-  private async processCustomConnectors(connectorIds: string[]): Promise<import('../types/customConnector.js').CustomConnector[]> {
-    if (connectorIds.length === 0) return [];
-    try {
-      this.reportProgress({ phase: 'discovering', entityName: '', current: 0, total: connectorIds.length,
-        message: `Documenting ${connectorIds.length} Custom Connector(s)...` });
-      const ccDiscovery = new CustomConnectorDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting Custom Connectors (${current}/${total})...`,
-        });
-      }, this.logger);
-      const ccLogWatermark = this.logger.getEntries().length;
-      const connectors = await ccDiscovery.getConnectorsByIds(connectorIds);
-      this.checkForPartialFailures('Custom Connectors', ccLogWatermark);
-      return connectors;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Custom Connectors', message: msg, partial: false });
-      return [];
-    }
-  }
-
-  /**
-   * Process Security Roles
-   */
-  private async processSecurityRoles(securityRoleIds: string[]): Promise<import('../discovery/SecurityRoleDiscovery.js').SecurityRoleDetail[]> {
-    if (securityRoleIds.length === 0) {
-      return [];
-    }
-
-    try {
-      const securityRoleDiscovery = new SecurityRoleDiscovery(this.client, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          message: `Documenting security roles (${current}/${total})...`,
-        });
-      }, this.logger);
-
-      // Batch-fetch only the solution-scoped roles by ID
-      const srLogWatermark = this.logger.getEntries().length;
-      const rolesInSolution = await securityRoleDiscovery.getSecurityRoles(securityRoleIds);
-
-      // Bulk 2-pass fetch: roleprivilegescollection → privileges table
-      const roleDetails = await securityRoleDiscovery.getRoleDetailsForRoles(rolesInSolution);
-      this.checkForPartialFailures('Security Roles', srLogWatermark);
-
-      return roleDetails;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Security Roles', message: msg, partial: false });
-      return [];
-    }
-  }
-
-  /**
-   * Process Field Security Profiles
-   */
-  private async processFieldSecurityProfiles(
-    profileIds: string[],
-    entityNames: string[]
-  ): Promise<{
-    profiles: import('../discovery/FieldSecurityProfileDiscovery.js').FieldSecurityProfile[];
-    fieldSecurityByEntity: Map<string, import('../discovery/FieldSecurityProfileDiscovery.js').EntityFieldSecurity>;
-  }> {
-    if (profileIds.length === 0) {
-      return {
-        profiles: [],
-        fieldSecurityByEntity: new Map(),
-      };
-    }
-
-    try {
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: profileIds.length,
-        message: `Documenting ${profileIds.length} field security profile(s)...`,
-      });
-
-      const fieldSecurityDiscovery = new FieldSecurityProfileDiscovery(this.client, this.logger);
-
-      // Get all profiles
-      const allProfiles = await fieldSecurityDiscovery.getFieldSecurityProfiles();
-
-      // Filter to only profiles in the solution
-      const profilesInSolution = allProfiles.filter(profile =>
-        profileIds.some(id =>
-          normalizeGuid(id) === normalizeGuid(profile.fieldsecurityprofileid)
-        )
-      );
-
-      // Get field security for all entities
-      const fieldSecurityByEntity = await fieldSecurityDiscovery.getEntitiesFieldSecurity(entityNames);
-
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: profileIds.length,
-        total: profileIds.length,
-        message: `Documented ${profilesInSolution.length} field security profile(s)`,
-      });
-
-      return {
-        profiles: profilesInSolution,
-        fieldSecurityByEntity,
-      };
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.stepWarnings.push({ step: 'Field Security Profiles', message: msg, partial: false });
-      return { profiles: [], fieldSecurityByEntity: new Map() };
-    }
-  }
-
-  /**
-   * Process column security (attribute masking rules and column security profiles)
-   */
-  private async processColumnSecurity(): Promise<{
-    attributeMaskingRules: import('../discovery/ColumnSecurityDiscovery.js').AttributeMaskingRule[];
-    columnSecurityProfiles: import('../discovery/ColumnSecurityDiscovery.js').ColumnSecurityProfile[];
-  }> {
-    try {
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 0,
-        total: 2,
-        message: `Discovering attribute masking and column security...`,
-      });
-
-      const columnSecurityDiscovery = new ColumnSecurityDiscovery(this.client);
-
-      // Get attribute masking rules
-      const attributeMaskingRules = await columnSecurityDiscovery.getAttributeMaskingRules();
-
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 1,
-        total: 2,
-        message: `Found ${attributeMaskingRules.length} attribute masking rule(s)`,
-      });
-
-      // Get column security profiles
-      const columnSecurityProfiles = await columnSecurityDiscovery.getColumnSecurityProfiles();
-
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: 2,
-        total: 2,
-        message: `Column security discovery complete`,
-      });
-
-      return {
-        attributeMaskingRules,
-        columnSecurityProfiles,
-      };
-    } catch (error) {
-      this.stepWarnings.push({
-        step: 'Column Security',
-        message: `Column security discovery failed: ${error instanceof Error ? error.message : 'Unknown error'}. Results may be incomplete.`,
-        partial: true,
-      });
-      return {
-        attributeMaskingRules: [],
-        columnSecurityProfiles: [],
-      };
-    }
-  }
-
-  /**
-   * Process Canvas Apps
-   */
-  /**
-   * Process forms and JavaScript event handlers
-   */
-  private async processForms(entities: EntityMetadata[], formIds: string[], entitiesWithAllSubcomponents: Set<string>): Promise<import('../types/blueprint.js').FormDefinition[]> {
-    if (entities.length === 0) {
-      return [];
-    }
-
-    try {
-      const entityNames = entities.map(e => e.LogicalName);
-      const formDiscovery = new FormDiscovery(this.client, this.logger, (current, total) => {
-        this.reportProgress({
-          phase: 'discovering',
-          entityName: '',
-          current,
-          total,
-          // When current === total, Pass 1 is done but form XML content fetch may still be running
-          message: current < total
-            ? `Discovering forms (${current}/${total} entities)...`
-            : 'Fetching form XML definitions...',
-        });
-      });
-      const allForms = await formDiscovery.getFormsForEntities(entityNames);
-
-      // Build map of entity logical name to metadata ID
-      const entityLogicalNameToId = new Map<string, string>();
-      for (const entity of entities) {
-        if (entity.MetadataId) {
-          entityLogicalNameToId.set(entity.LogicalName.toLowerCase(), entity.MetadataId.toLowerCase().replace(/[{}]/g, ''));
-        }
-      }
-
-      // Filter forms based on rootcomponentbehavior:
-      // - If entity has rootcomponentbehavior=0: Include ALL forms for that entity
-      // - Otherwise: Only include forms explicitly in solutioncomponents
-      const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
-
-      const forms = allForms.filter(form => {
-        const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
-        const entityLogicalName = form.entity.toLowerCase();
-        const entityMetadataId = entityLogicalNameToId.get(entityLogicalName);
-
-        // Check if this form's entity has rootcomponentbehavior=0 (include all subcomponents)
-        const entityIncludesAllSubcomponents = entityMetadataId && entitiesWithAllSubcomponents.has(entityMetadataId);
-
-        if (entityIncludesAllSubcomponents) {
-          return true;
-        }
-
-        // Otherwise, check if form is explicitly in solutioncomponents
-        const inSolution = normalizedFormIds.has(normalizedFormId);
-        return inSolution;
-      });
-
-      // Report completion
-      this.reportProgress({
-        phase: 'discovering',
-        entityName: '',
-        current: forms.length,
-        total: forms.length,
-        message: `${forms.length} forms in solution(s)`,
-      });
-
-      return forms;
-    } catch (error) {
-      this.stepWarnings.push({ step: 'Forms', message: error instanceof Error ? error.message : 'Unknown error', partial: false });
-      return [];
-    }
-  }
-
 
   /**
    * Export blueprint as JSON
