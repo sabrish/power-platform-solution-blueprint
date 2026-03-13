@@ -1,5 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
 import { normalizeGuid } from '../utils/guid.js';
@@ -46,7 +47,7 @@ interface RawCustomAPIParameter {
 /**
  * Discovers Custom APIs
  */
-export class CustomAPIDiscovery {
+export class CustomAPIDiscovery implements IDiscoverer<CustomAPI> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -62,6 +63,10 @@ export class CustomAPIDiscovery {
    * @param customApiIds Array of custom API IDs from solution components
    * @returns Array of Custom APIs with parameters
    */
+  discoverByIds(ids: string[]): Promise<CustomAPI[]> {
+    return this.getCustomAPIsByIds(ids);
+  }
+
   async getCustomAPIsByIds(customApiIds: string[]): Promise<CustomAPI[]> {
     if (customApiIds.length === 0) {
       return [];
