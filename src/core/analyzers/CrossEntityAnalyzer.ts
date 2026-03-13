@@ -449,8 +449,29 @@ export class CrossEntityAnalyzer {
       const sourceDisplayName = entityName
         ? entityDisplayMap.get(sourceEntity) || entityName
         : flow.definition.triggerType === 'Scheduled' ? 'Scheduled Flow'
-        : flow.definition.triggerType === 'Manual' ? 'Manual / On-Demand Flow'
-        : 'Solution Flow';
+        : flow.definition.triggerType === 'Manual' ? (() => {
+            // DIAGNOSTIC — remove before release
+            console.log('[PPSB-DIAG] Flow classified as Manual/On-Demand in collectUnboundChainLinks:', {
+              id: flow.id,
+              name: flow.name,
+              entity: flow.entity,
+              triggerEntity: flow.definition.triggerEntity,
+            });
+            return 'Manual / On-Demand Flow';
+          })()
+        : (() => {
+            // DIAGNOSTIC — remove before release
+            console.log('[PPSB-DIAG] Flow fell through to unscoped label in collectUnboundChainLinks:', {
+              id: flow.id,
+              name: flow.name,
+              entity: flow.entity,
+              triggerType: flow.definition.triggerType,
+              triggerEntity: flow.definition.triggerEntity,
+              triggerEvent: flow.definition.triggerEvent,
+              scopeName: flow.scopeName,
+            });
+            return 'Solution Flow';
+          })();
       for (const action of flow.definition.dataverseActions ?? []) {
         if (!action.isUnbound) continue;
         addLink(sourceEntity, sourceDisplayName, flow, action);
@@ -583,9 +604,26 @@ export class CrossEntityAnalyzer {
         sourceEntity = '(scheduled)';
         sourceDisplayName = 'Scheduled Flow';
       } else if (triggerType === 'Manual') {
+        // DIAGNOSTIC — remove before release
+        console.log('[PPSB-DIAG] Flow classified as Manual/On-Demand in discoverAllEntryPoints:', {
+          id: flow.id,
+          name: flow.name,
+          entity: flow.entity,
+          triggerEntity: flow.definition.triggerEntity,
+        });
         sourceEntity = '(manual)';
         sourceDisplayName = 'Manual / On-Demand Flow';
       } else {
+        // DIAGNOSTIC — remove before release
+        console.log('[PPSB-DIAG] Flow fell through to unscoped label in discoverAllEntryPoints:', {
+          id: flow.id,
+          name: flow.name,
+          entity: flow.entity,
+          triggerType: flow.definition.triggerType,
+          triggerEntity: flow.definition.triggerEntity,
+          triggerEvent: flow.definition.triggerEvent,
+          scopeName: flow.scopeName,
+        });
         sourceEntity = '(unscoped)';
         sourceDisplayName = 'Solution Flow';
       }
