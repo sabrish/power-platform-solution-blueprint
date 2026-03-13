@@ -210,10 +210,10 @@ export function BusinessRulesList({
         )}
 
         {/* Actions Section */}
-        {rule.definition.actions.length > 0 && (
+        {rule.definition.thenActions.length > 0 && (
           <div className={shared.section}>
             <Title3>THEN (Actions)</Title3>
-            {rule.definition.actions.map((action, idx) => (
+            {rule.definition.thenActions.map((action, idx) => (
               <div
                 key={idx}
                 className={styles.actionItem}
@@ -312,7 +312,7 @@ export function BusinessRulesList({
         const isExpanded = expandedRuleId === rule.id;
         const stateBadgeProps = getStateBadgeProps(rule.state);
         const conditionCount = rule.definition.conditions.length;
-        const actionCount = rule.definition.actions.length;
+        const actionCount = rule.definition.thenActions.length + rule.definition.elseActions.length;
 
         return (
           <div key={rule.id}>

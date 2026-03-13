@@ -755,7 +755,7 @@ export class MarkdownReporter {
         rule.definition.executionContext,
         rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
         rule.definition.conditions.length.toString(),
-        rule.definition.actions.length.toString(),
+        (rule.definition.thenActions.length + rule.definition.elseActions.length).toString(),
         this.formatDate(rule.modifiedOn),
       ]);
 
@@ -783,11 +783,23 @@ export class MarkdownReporter {
           sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
           sections.push('');
         }
-        if (rule.definition.actions.length > 0) {
+        if (rule.definition.thenActions.length > 0) {
           sections.push(MarkdownFormatter.formatHeading('THEN: Actions', 4));
           sections.push('');
           const aHeaders = ['Type', 'Field', 'Value / Message'];
-          const aRows = rule.definition.actions.map(a => [
+          const aRows = rule.definition.thenActions.map(a => [
+            a.type,
+            a.field,
+            a.value ?? a.message ?? '',
+          ]);
+          sections.push(MarkdownFormatter.formatTable(aHeaders, aRows));
+          sections.push('');
+        }
+        if (rule.definition.elseActions.length > 0) {
+          sections.push(MarkdownFormatter.formatHeading('ELSE: Actions', 4));
+          sections.push('');
+          const aHeaders = ['Type', 'Field', 'Value / Message'];
+          const aRows = rule.definition.elseActions.map(a => [
             a.type,
             a.field,
             a.value ?? a.message ?? '',
@@ -1904,7 +1916,7 @@ export class MarkdownReporter {
         rule.definition.executionContext,
         rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
         rule.definition.conditions.length.toString(),
-        rule.definition.actions.length.toString(),
+        (rule.definition.thenActions.length + rule.definition.elseActions.length).toString(),
       ]);
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));

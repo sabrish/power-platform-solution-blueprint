@@ -953,7 +953,7 @@ ${rows}
         <td>${this.htmlEscape(br.definition.executionContext)}</td>
         <td>${stateBadge}</td>
         <td>${br.definition.conditions.length}</td>
-        <td>${br.definition.actions.length}</td>
+        <td>${br.definition.thenActions.length + br.definition.elseActions.length}</td>
       </tr>`;
     }).join('\n');
 
@@ -1134,7 +1134,8 @@ ${rows}
     const items = businessRules.map((rule, i) => {
       const entityDisplay = this.htmlEscape(rule.entityDisplayName || rule.entity);
       const conditions = rule.definition.conditions ?? [];
-      const actions = rule.definition.actions ?? [];
+      const thenActions = rule.definition.thenActions ?? [];
+      const elseActions = rule.definition.elseActions ?? [];
       const id = `br-${i}`;
 
       const condRows = conditions.map(c => `<tr>
@@ -1144,7 +1145,13 @@ ${rows}
         <td>${this.htmlEscape(c.logicOperator)}</td>
       </tr>`).join('');
 
-      const actRows = actions.map(a => `<tr>
+      const thenRows = thenActions.map(a => `<tr>
+        <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
+        <td><code>${this.htmlEscape(a.field)}</code></td>
+        <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
+      </tr>`).join('');
+
+      const elseRows = elseActions.map(a => `<tr>
         <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
         <td><code>${this.htmlEscape(a.field)}</code></td>
         <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
@@ -1161,22 +1168,26 @@ ${rows}
         <span class="badge">${this.htmlEscape(rule.scope)}</span>
         <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.htmlEscape(rule.definition.executionContext)}</span>
         ${conditions.length > 0 ? `<span class="badge">${conditions.length} condition${conditions.length !== 1 ? 's' : ''}</span>` : ''}
-        ${actions.length > 0 ? `<span class="badge">${actions.length} action${actions.length !== 1 ? 's' : ''}</span>` : ''}
+        ${(thenActions.length + elseActions.length) > 0 ? `<span class="badge">${thenActions.length + elseActions.length} action${(thenActions.length + elseActions.length) !== 1 ? 's' : ''}</span>` : ''}
       </div>
       ${rule.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.htmlEscape(rule.description)}</div>` : ''}
     </div>
   </div>
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
     ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.htmlEscape(rule.definition.parseError)}</div>` : ''}
-    <div style="display:grid;grid-template-columns:minmax(200px,1fr) minmax(200px,1fr);gap:16px;">
+    <div style="display:flex;flex-direction:column;gap:16px;">
       <div>
         <h5 style="margin-bottom:6px">IF: Conditions${rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.htmlEscape(rule.definition.conditionLogic)})</span>` : ''}</h5>
         ${conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Field</th><th scope="col">Operator</th><th scope="col">Value</th><th scope="col">Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
       </div>
       <div>
         <h5 style="margin-bottom:6px">THEN: Actions</h5>
-        ${actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${actRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No actions detected.</p>'}
+        ${thenActions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${thenRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
       </div>
+      ${elseActions.length > 0 ? `<div>
+        <h5 style="margin-bottom:6px">ELSE: Actions</h5>
+        <table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${elseRows}</tbody></table>
+      </div>` : ''}
     </div>
   </div>
 </div>`;

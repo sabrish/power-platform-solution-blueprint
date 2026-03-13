@@ -77,7 +77,7 @@ export class BusinessRuleParser {
         try {
           const json = JSON.parse(clientdata) as Record<string, unknown>;
           const result = this.parseJson(json);
-          if (result.conditions.length > 0 || result.actions.length > 0) {
+          if (result.conditions.length > 0 || result.thenActions.length > 0 || result.elseActions.length > 0) {
             return result;
           }
         } catch {
@@ -90,7 +90,8 @@ export class BusinessRuleParser {
     if (!xaml || xaml.trim() === '') {
       return {
         conditions: [],
-        actions: [],
+        thenActions: [],
+        elseActions: [],
         executionContext: 'Client',
         conditionLogic: 'No conditions defined',
       };
@@ -129,11 +130,12 @@ export class BusinessRuleParser {
       const executionContext = this.determineExecutionContext(finalActions);
       const conditionLogic = this.buildConditionLogic(finalConditions);
 
-      return { conditions: finalConditions, actions: finalActions, executionContext, conditionLogic };
+      return { conditions: finalConditions, thenActions: finalActions, elseActions: [], executionContext, conditionLogic };
     } catch (error) {
       return {
         conditions: [],
-        actions: [],
+        thenActions: [],
+        elseActions: [],
         executionContext: 'Client',
         conditionLogic: 'Unable to parse conditions',
         parseError: error instanceof Error ? error.message : 'Unknown error',
@@ -359,7 +361,8 @@ export class BusinessRuleParser {
 
     return {
       conditions,
-      actions,
+      thenActions: actions,
+      elseActions: [],
       executionContext: 'Client',
       conditionLogic: this.buildConditionLogic(conditions),
     };
@@ -433,7 +436,7 @@ export class BusinessRuleParser {
     const executionContext = this.determineExecutionContext(actions);
     const conditionLogic = this.buildConditionLogic(conditions);
 
-    return { conditions, actions, executionContext, conditionLogic };
+    return { conditions, thenActions: actions, elseActions: [], executionContext, conditionLogic };
   }
 
   /**

@@ -292,7 +292,8 @@ export interface BusinessRule {
  */
 export interface BusinessRuleDefinition {
   conditions: Condition[];
-  actions: Action[];
+  thenActions: Action[];      // actions that execute when conditions are true
+  elseActions: Action[];      // actions that execute in the else branch (empty array if no else)
   executionContext: 'Client' | 'Server' | 'Both';
   conditionLogic: string;
   parseError?: string;
@@ -312,7 +313,7 @@ export interface Condition {
  * Business rule action
  */
 export interface Action {
-  type: 'ShowField' | 'HideField' | 'SetValue' | 'SetRequired' | 'LockField' | 'UnlockField' | 'ShowError';
+  type: 'ShowField' | 'HideField' | 'SetValue' | 'SetRequired' | 'SetOptional' | 'LockField' | 'UnlockField' | 'ShowError';
   field: string;
   value?: string;
   message?: string;
