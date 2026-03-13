@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -29,7 +29,7 @@ const useStyles = makeStyles({
   },
   relationshipRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr) auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr) auto auto`,
     gap: tokens.spacingHorizontalM,
     alignItems: 'start',
     padding: tokens.spacingVerticalM,
@@ -108,9 +108,9 @@ export function RelationshipsView({ oneToMany, manyToOne, manyToMany, currentEnt
   const styles = useStyles();
   const [expandedRelationshipId, setExpandedRelationshipId] = useState<string | null>(null);
 
-  const toggleExpand = (id: string) => {
-    setExpandedRelationshipId(expandedRelationshipId === id ? null : id);
-  };
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedRelationshipId((prev) => (prev === id ? null : id));
+  }, []);
 
   const getCascadeBadge = (value?: string) => {
     switch (value) {

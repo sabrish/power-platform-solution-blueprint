@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -30,7 +30,7 @@ const BPF_FILTER_SPECS: readonly FilterSpec<BusinessProcessFlow>[] = [
 const useStyles = makeStyles({
   row: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto auto auto auto`,
   },
   stagesList: {
     display: 'flex',
@@ -102,9 +102,9 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
     BPF_FILTER_SPECS,
   );
 
-  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
+  const toggleExpand = useCallback((id: string) => setExpandedId((prev) => (prev === id ? null : id)), []);
 
-  const renderDetail = (bpf: BusinessProcessFlow) => (
+  const renderDetail = (bpf: BusinessProcessFlow): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>Business Process Flow Details</Title3>

@@ -1,4 +1,4 @@
-import { useMemo, memo, useState, type ReactElement } from 'react';
+import { useMemo, memo, useState, useCallback, type ReactElement } from 'react';
 import {
   Title3,
   Text,
@@ -20,7 +20,7 @@ const useStyles = makeStyles({
   // Local-only styles not covered by useCardRowStyles
   roleRow: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto auto auto`,
   },
   legend: {
     padding: tokens.spacingVerticalS,
@@ -93,9 +93,9 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
 
   const getDepthBadgeAppearance = (_depth: number): 'tint' => 'tint';
 
-  const toggleExpand = (roleId: string): void => {
-    setExpandedRoleId(expandedRoleId === roleId ? null : roleId);
-  };
+  const toggleExpand = useCallback((roleId: string): void => {
+    setExpandedRoleId((prev) => (prev === roleId ? null : roleId));
+  }, []);
 
   const renderEntityPermissionsTable = (role: SecurityRoleDetail): ReactElement => (
     <div className={styles.entityPermissionsTable}>
@@ -194,6 +194,13 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
     </div>
   );
 
+  const rolesWithSpecialPerms = useMemo(
+    () => securityRoles.filter(role =>
+      specialPermissions.some(perm => role.specialPermissions?.[perm.key])
+    ),
+    [securityRoles]
+  );
+
   if (securityRoles.length === 0) {
     return (
       <EmptyState
@@ -203,13 +210,6 @@ function SecurityRolesViewComponent({ securityRoles }: SecurityRolesViewProps) {
       />
     );
   }
-
-  const rolesWithSpecialPerms = useMemo(
-    () => securityRoles.filter(role =>
-      specialPermissions.some(perm => role.specialPermissions?.[perm.key])
-    ),
-    [securityRoles]
-  );
 
   return (
     <div className={shared.container}>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -43,7 +43,7 @@ const useStyles = makeStyles({
   },
   row: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto auto auto auto`,
   },
   featureItem: {
     padding: tokens.spacingVerticalS,
@@ -117,7 +117,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
     WORKFLOWS_FILTER_SPECS,
   );
 
-  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
+  const toggleExpand = useCallback((id: string) => setExpandedId((prev) => (prev === id ? null : id)), []);
 
   const getTriggers = (w: ClassicWorkflow): string => {
     const t: string[] = [];
@@ -128,7 +128,7 @@ export function ClassicWorkflowsList({ workflows }: ClassicWorkflowsListProps) {
     return t.join(', ') || 'None';
   };
 
-  const renderDetail = (workflow: ClassicWorkflow) => {
+  const renderDetail = (workflow: ClassicWorkflow): JSX.Element => {
     const rec = workflow.migrationRecommendation;
     return (
       <div className={shared.expandedDetails}>

@@ -18,7 +18,9 @@ import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 
 // These must exactly match PluginDiscovery.getStageName() output (no hyphens)
-const STAGE_VALUES = ['PreValidation', 'PreOperation', 'PostOperation', 'Asynchronous'];
+// 'Asynchronous' is NOT a stage — it is a mode. Asynchronous plugins use stage 50 (PostOperation).
+const STAGE_VALUES = ['PreValidation', 'PreOperation', 'PostOperation'];
+const MODE_VALUES = ['Synchronous', 'Asynchronous'];
 const PLUGIN_TYPE_DROPDOWN_MIN_WIDTH = '130px'; // fixed dropdown width — no token equivalent
 const STATE_VALUES = ['Enabled', 'Disabled'];
 
@@ -28,7 +30,6 @@ const formatStageLabel = (stageName: string): string => {
     case 'PreValidation': return 'Pre-Validation';
     case 'PreOperation': return 'Pre-Operation';
     case 'PostOperation': return 'Post-Operation';
-    case 'Asynchronous': return 'Async';
     default: return stageName;
   }
 };
@@ -36,7 +37,7 @@ const formatStageLabel = (stageName: string): string => {
 const useStyles = makeStyles({
   pluginRow: {
     display: 'grid',
-    gridTemplateColumns: '24px 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} 40px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto auto`,
   },
   rank: {
     fontWeight: tokens.fontWeightSemibold,
@@ -55,12 +56,13 @@ export interface PluginsListProps {
 export function PluginsList({
   plugins,
   entityLogicalName,
-}: PluginsListProps) {
+}: PluginsListProps): JSX.Element {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedPluginId, setExpandedPluginId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStageFilters, setActiveStageFilters] = useState<Set<string>>(new Set());
+  const [activeModeFilters, setActiveModeFilters] = useState<Set<string>>(new Set());
   const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
   const [selectedMessage, setSelectedMessage] = useState<string>('');
 
@@ -87,10 +89,16 @@ export function PluginsList({
     return [...msgs].sort();
   }, [sortedPlugins]);
 
-  // Count per stage / state in the base dataset (drives disabled state on filter buttons)
+  // Count per stage / mode / state in the base dataset (drives disabled state on filter buttons)
   const stageCounts = useMemo(() => {
     const counts = Object.fromEntries(STAGE_VALUES.map((s) => [s, 0]));
     for (const p of sortedPlugins) counts[p.stageName] = (counts[p.stageName] ?? 0) + 1;
+    return counts;
+  }, [sortedPlugins]);
+
+  const modeCounts = useMemo(() => {
+    const counts = Object.fromEntries(MODE_VALUES.map((m) => [m, 0]));
+    for (const p of sortedPlugins) counts[p.modeName] = (counts[p.modeName] ?? 0) + 1;
     return counts;
   }, [sortedPlugins]);
 
@@ -109,11 +117,14 @@ export function PluginsList({
     if (activeStageFilters.size > 0) {
       filtered = filtered.filter((p) => activeStageFilters.has(p.stageName));
     }
+    if (activeModeFilters.size > 0) {
+      filtered = filtered.filter((p) => activeModeFilters.has(p.modeName));
+    }
     if (activeStateFilters.size > 0) {
       filtered = filtered.filter((p) => activeStateFilters.has(p.state));
     }
     return filtered;
-  }, [sortedPlugins, selectedMessage, activeStageFilters, activeStateFilters]);
+  }, [sortedPlugins, selectedMessage, activeStageFilters, activeModeFilters, activeStateFilters]);
 
   // Apply search filter
   const searchedPlugins = useMemo(() => {
@@ -135,6 +146,14 @@ export function PluginsList({
       } else {
         next.add(stage);
       }
+      return next;
+    });
+  }, []);
+
+  const toggleModeFilter = useCallback((mode: string) => {
+    setActiveModeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(mode)) next.delete(mode); else next.add(mode);
       return next;
     });
   }, []);
@@ -315,6 +334,25 @@ export function PluginsList({
               onClick={() => toggleStageFilter(stage)}
             >
               {formatStageLabel(stage)}
+            </ToggleButton>
+          ))}
+        </FilterGroup>
+        <FilterGroup
+          label="Mode:"
+          hasActiveFilters={activeModeFilters.size > 0}
+          onClear={() => setActiveModeFilters(new Set())}
+        >
+          {MODE_VALUES.map((mode) => (
+            <ToggleButton
+              key={mode}
+              appearance="outline"
+              className={shared.filterButton}
+              size="small"
+              checked={activeModeFilters.has(mode)}
+              disabled={modeCounts[mode] === 0}
+              onClick={() => toggleModeFilter(mode)}
+            >
+              {mode}
             </ToggleButton>
           ))}
         </FilterGroup>

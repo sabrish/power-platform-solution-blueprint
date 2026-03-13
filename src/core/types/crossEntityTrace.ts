@@ -17,7 +17,7 @@ export interface CrossEntityEntryPoint {
   /** Entity the automation lives on */
   sourceEntity: string;
   sourceEntityDisplayName: string;
-  operation: 'Create' | 'Update' | 'Delete';
+  operation: 'Create' | 'Update' | 'Delete' | 'Action';
   /** Fields being set (empty = unknown) */
   fields: string[];
   isAsynchronous: boolean;
@@ -26,6 +26,11 @@ export interface CrossEntityEntryPoint {
   /** For on-demand classic workflows */
   isOnDemand: boolean;
   confidence: 'High' | 'Medium' | 'Low';
+  /**
+   * For 'Action' operations: the Dataverse custom action / bound API unique name.
+   * Internal effects on the target entity are unknown — shown in chain with informational note.
+   */
+  customActionApiName?: string;
 }
 
 /** How one registered automation responds to a specific entry point */
@@ -50,7 +55,7 @@ export interface AutomationActivation {
 export interface CrossEntityBranch {
   targetEntity: string;
   targetEntityDisplayName: string;
-  operation: 'Create' | 'Update' | 'Delete';
+  operation: 'Create' | 'Update' | 'Delete' | 'Action';
   fields: string[];
   /** Key into CrossEntityAnalysisResult.entityViews to avoid duplication */
   pipelineRef: string;
@@ -97,11 +102,15 @@ export interface PipelineStep {
   downstream?: CrossEntityBranch;
   /** True if this flow makes any external HTTP/connector calls */
   hasExternalCalls?: boolean;
+  /** Connector display names used by this flow step */
+  connectionReferences?: string[];
+  /** External HTTP calls detected by static analysis */
+  externalCallSummaries?: Array<{ url: string; domain: string; method: string | null }>;
 }
 
-/** All steps for one Dataverse message (Create / Update / Delete) on an entity */
+/** All steps for one Dataverse message (Create / Update / Delete / Manual) on an entity */
 export interface MessagePipeline {
-  message: 'Create' | 'Update' | 'Delete';
+  message: 'Create' | 'Update' | 'Delete' | 'Manual';
   /** Steps sorted: stage ASC → rank ASC → Sync before Async */
   steps: PipelineStep[];
 }
@@ -116,6 +125,8 @@ export interface EntityAutomationPipeline {
   inboundEntryPoints: CrossEntityEntryPoint[];
   hasCrossEntityOutput: boolean;
   hasCrossEntityInput: boolean;
+  /** True if any automation in this entity's pipeline makes external HTTP calls or uses non-Dataverse connectors */
+  hasExternalInteraction: boolean;
 }
 
 /** Top-level result of the cross-entity analysis */
@@ -141,6 +152,11 @@ export interface CrossEntityChainLink {
   targetEntityDisplayName: string;
   automationName: string;
   automationType: 'Flow' | 'ClassicWorkflow';
-  operation: 'Create' | 'Update' | 'Delete';
+  operation: 'Create' | 'Update' | 'Delete' | 'Action';
   isAsynchronous: boolean;
+  /**
+   * For 'Action' operations: the Dataverse custom action / bound API unique name.
+   * Internal effects on the target entity are unknown.
+   */
+  customActionApiName?: string;
 }

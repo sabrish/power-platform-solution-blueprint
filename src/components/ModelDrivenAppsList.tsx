@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -17,7 +17,7 @@ import { useCardRowStyles } from '../hooks/useCardRowStyles';
 const useStyles = makeStyles({
   row: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto`,
     gap: tokens.spacingHorizontalM,
   },
 });
@@ -47,9 +47,9 @@ export function ModelDrivenAppsList({ modelDrivenApps }: ModelDrivenAppsListProp
     );
   }, [sorted, searchQuery]);
 
-  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
+  const toggleExpand = useCallback((id: string) => setExpandedId((prev) => (prev === id ? null : id)), []);
 
-  const renderDetail = (app: ModelDrivenApp) => (
+  const renderDetail = (app: ModelDrivenApp): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>Model-Driven App Details</Title3>

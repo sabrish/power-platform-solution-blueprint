@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, MouseEvent } from 'react';
 import {
   Text,
   Badge,
+  Button,
   Checkbox,
   makeStyles,
   mergeClasses,
@@ -11,7 +12,7 @@ import {
   ToggleButton,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
-import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
+import { ChevronDown20Regular, ChevronRight20Regular, Eye20Regular, EyeOff20Regular } from '@fluentui/react-icons';
 import type { EnvironmentVariable } from '../core';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
@@ -29,7 +30,7 @@ const useStyles = makeStyles({
   },
   row: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto`,
   },
   valueBox: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -45,6 +46,24 @@ const useStyles = makeStyles({
   mutedText: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase200,
+  },
+  maskedValue: {
+    fontFamily: 'Consolas, Monaco, monospace',
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+    letterSpacing: tokens.spacingHorizontalXS,
+  },
+  valueRevealRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalXS,
+    flexWrap: 'wrap',
+  },
+  maskNote: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase200,
+    fontStyle: 'italic',
+    marginTop: tokens.spacingVerticalS,
   },
 });
 
@@ -67,6 +86,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     return [...environmentVariables].sort((a, b) => a.schemaName.localeCompare(b.schemaName));
@@ -108,6 +128,89 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     setExpandedId(prev => prev === id ? null : id);
   }, []);
 
+  const toggleReveal = useCallback((id: string, e: MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
+    setRevealedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const renderValueWithReveal = (envVar: EnvironmentVariable, context: 'row' | 'detail'): JSX.Element => {
+    const hasValue = !!(envVar.currentValue || envVar.defaultValue);
+    const isRevealed = revealedIds.has(envVar.id);
+
+    if (!hasValue) {
+      return <Text className={styles.mutedText}>Not set</Text>;
+    }
+
+    if (context === 'row') {
+      return (
+        <div className={styles.valueRevealRow}>
+          {isRevealed
+            ? <Text className={shared.codeText}>{envVar.currentValue ?? envVar.defaultValue}</Text>
+            : <Text className={styles.maskedValue}>•••••••</Text>
+          }
+          <Button
+            appearance="subtle"
+            size="small"
+            icon={isRevealed ? <EyeOff20Regular /> : <Eye20Regular />}
+            aria-label={isRevealed ? 'Hide value' : 'Show value'}
+            onClick={(e) => toggleReveal(envVar.id, e)}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.valueRevealRow}>
+        {isRevealed
+          ? <Text className={shared.codeText}>{envVar.currentValue ?? envVar.defaultValue}</Text>
+          : <Text className={styles.maskedValue}>•••••••</Text>
+        }
+        <Button
+          appearance="subtle"
+          size="small"
+          icon={isRevealed ? <EyeOff20Regular /> : <Eye20Regular />}
+          aria-label={isRevealed ? 'Hide value' : 'Show value'}
+          onClick={(e) => toggleReveal(envVar.id, e)}
+        />
+      </div>
+    );
+  };
+
+  const renderValueBoxWithReveal = (envVar: EnvironmentVariable, valueType: 'current' | 'default'): JSX.Element => {
+    const value = valueType === 'current' ? envVar.currentValue : envVar.defaultValue;
+    const isRevealed = revealedIds.has(envVar.id);
+
+    if (!value) {
+      return (
+        <div className={styles.valueBox}>
+          <span className={styles.mutedLabel}>{valueType === 'current' ? 'Not set' : 'None'}</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.valueBox}>
+        <div className={styles.valueRevealRow}>
+          {isRevealed
+            ? value
+            : <Text className={styles.maskedValue}>•••••••</Text>
+          }
+          <Button
+            appearance="subtle"
+            size="small"
+            icon={isRevealed ? <EyeOff20Regular /> : <Eye20Regular />}
+            aria-label={isRevealed ? 'Hide value' : 'Show value'}
+            onClick={(e) => toggleReveal(envVar.id, e)}
+          />
+        </div>
+      </div>
+    );
+  };
+
   const renderDetail = (envVar: EnvironmentVariable): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
@@ -115,17 +218,17 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
 
         <div className={shared.section}>
           <Text className={shared.detailLabel}>Current Value</Text>
-          <div className={styles.valueBox}>
-            {envVar.currentValue ?? <span className={styles.mutedLabel}>Not set</span>}
-          </div>
+          {renderValueBoxWithReveal(envVar, 'current')}
         </div>
 
         <div className={shared.section}>
           <Text className={shared.detailLabel}>Default Value</Text>
-          <div className={styles.valueBox}>
-            {envVar.defaultValue ?? <span className={styles.mutedLabel}>None</span>}
-          </div>
+          {renderValueBoxWithReveal(envVar, 'default')}
         </div>
+
+        <Text className={styles.maskNote}>
+          Values are masked in this view and excluded from all exports. Check your environment for actual values.
+        </Text>
 
         {envVar.hint && (
           <div className={shared.section}>
@@ -245,12 +348,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
                 <Text className={shared.codeText}>{envVar.schemaName}</Text>
               </div>
               <div className={shared.badgeGroup}>
-                {envVar.currentValue
-                  ? <Text className={shared.codeText}>{envVar.currentValue}</Text>
-                  : envVar.defaultValue
-                    ? <Text className={shared.codeText}>{envVar.defaultValue}</Text>
-                    : <Text className={styles.mutedText}>Not set</Text>
-                }
+                {renderValueWithReveal(envVar, 'row')}
               </div>
               <Badge appearance="filled" shape="rounded" size="small" color={getTypeColor(envVar.typeName)}>
                 {envVar.typeName}

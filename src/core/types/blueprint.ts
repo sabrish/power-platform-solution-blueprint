@@ -660,12 +660,22 @@ export interface SolutionDependency {
  * Dataverse action detected in flow
  */
 export interface DataverseAction {
-  operation: 'Create' | 'Update' | 'Get' | 'List' | 'Delete';
+  operation: 'Create' | 'Update' | 'Get' | 'List' | 'Delete' | 'Action';
   targetEntity: string;
   actionName: string;
   confidence: 'High' | 'Medium' | 'Low';
   /** Fields being set (only populated for Create/Update operations) */
   fields?: string[];
+  /**
+   * For 'Action' operations: the Dataverse custom action / bound API unique name
+   * (e.g. "new_SendWelcomeEmail"). Internal effects on the target entity are unknown.
+   */
+  customActionApiName?: string;
+  /**
+   * True for PerformUnboundAction calls — no entity target, effects not traceable.
+   * These surface in the Global Chain Map only, never in per-entity pipeline views.
+   */
+  isUnbound?: boolean;
 }
 
 /**

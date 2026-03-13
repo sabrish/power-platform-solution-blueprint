@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Button,
   Spinner,
@@ -10,6 +10,7 @@ import {
   Checkbox,
   Dropdown,
   Option,
+  OptionGroup,
   Tag,
   MessageBar,
   MessageBarBody,
@@ -101,6 +102,11 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase200,
   },
+  disabledOptionText: {
+    color: tokens.colorNeutralForeground4,
+    fontSize: tokens.fontSizeBase200,
+    fontStyle: 'italic',
+  },
   subOptions: {
     marginTop: tokens.spacingVerticalM,
     paddingLeft: tokens.spacingHorizontalL,
@@ -117,6 +123,15 @@ const useStyles = makeStyles({
     marginTop: tokens.spacingVerticalXXL,
     display: 'flex',
     justifyContent: 'flex-end',
+  },
+  cancelButton: {
+    marginRight: tokens.spacingHorizontalS,
+  },
+  retryButton: {
+    marginTop: tokens.spacingVerticalS,
+  },
+  checkboxesSubSection: {
+    marginTop: tokens.spacingVerticalM,
   },
   loadingContainer: {
     display: 'flex',
@@ -176,6 +191,24 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     }
   }, [publisherScopeMode]);
 
+  // Identifies the Default Solution (uniquename === 'Default') and its publisher.
+  // Selecting the Default Solution/Publisher is not recommended — it contains all
+  // unmanaged customisations made directly in the environment. (Refs: GitHub issue #34)
+  const defaultPublisherUniqueName = useMemo(() => {
+    const defaultSol = solutions.find(s => s.uniquename === 'Default');
+    return defaultSol?.publisherid.uniquename ?? null;
+  }, [solutions]);
+
+  const isDefaultSolution = useCallback(
+    (sol: Solution) => sol.uniquename === 'Default',
+    []
+  );
+
+  const isDefaultPublisher = useCallback(
+    (pub: Publisher) => !!defaultPublisherUniqueName && pub.uniquename === defaultPublisherUniqueName,
+    [defaultPublisherUniqueName]
+  );
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -207,7 +240,6 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
-      console.error('Error loading publishers and solutions:', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -338,7 +370,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
               <MessageBarTitle>Failed to load data</MessageBarTitle>
               {error}
               <br />
-              <Button appearance="secondary" size="small" onClick={handleRetry} style={{ marginTop: '8px' }}>
+              <Button appearance="secondary" size="small" onClick={handleRetry} className={styles.retryButton}>
                 Retry
               </Button>
             </MessageBarBody>
@@ -360,20 +392,46 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
                     multiselect
                     selectedOptions={selectedPublisherIds}
                     onOptionSelect={(_, data) => {
-                      if (data.selectedOptions) {
-                        setSelectedPublisherIds(data.selectedOptions);
-                      }
+                      setSelectedPublisherIds(
+                        (data.selectedOptions ?? []).filter(id => {
+                          const pub = publishers.find(p => p.publisherid === id);
+                          return !pub || !isDefaultPublisher(pub);
+                        })
+                      );
                     }}
                     disabled={loading}
                   >
-                    {publishers.map((publisher) => (
-                      <Option key={publisher.publisherid} value={publisher.publisherid} text={publisher.friendlyname}>
+                    {publishers.filter(p => !isDefaultPublisher(p)).map((publisher) => (
+                      <Option
+                        key={publisher.publisherid}
+                        value={publisher.publisherid}
+                        text={publisher.friendlyname}
+                      >
                         <div className={styles.solutionInfo}>
                           <Text>{publisher.friendlyname}</Text>
                           <Text className={styles.secondaryText}>Prefix: {publisher.customizationprefix}</Text>
                         </div>
                       </Option>
                     ))}
+                    {publishers.some(p => isDefaultPublisher(p)) && (
+                      <OptionGroup label="Not Recommended">
+                        {publishers.filter(p => isDefaultPublisher(p)).map((publisher) => (
+                          <Option
+                            key={publisher.publisherid}
+                            value={publisher.publisherid}
+                            text={publisher.friendlyname}
+                            disabled
+                          >
+                            <div className={styles.solutionInfo}>
+                              <Text>{publisher.friendlyname}</Text>
+                              <Text className={styles.disabledOptionText}>
+                                Default Publisher — contains all direct environment customisations.
+                              </Text>
+                            </div>
+                          </Option>
+                        ))}
+                      </OptionGroup>
+                    )}
                   </Dropdown>
                 </Field>
 
@@ -425,22 +483,46 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
                             multiselect
                             selectedOptions={selectedSolutionIds}
                             onOptionSelect={(_, data) => {
-                              if (data.selectedOptions) {
-                                setSelectedSolutionIds(data.selectedOptions);
-                              }
+                              setSelectedSolutionIds(
+                                (data.selectedOptions ?? []).filter(id => {
+                                  const sol = solutions.find(s => s.solutionid === id);
+                                  return !sol || !isDefaultSolution(sol);
+                                })
+                              );
                             }}
                             disabled={loading || filteredSolutions.length === 0}
                           >
-                            {filteredSolutions.map((solution) => (
-                              <Option key={solution.solutionid} value={solution.solutionid} text={solution.friendlyname}>
+                            {filteredSolutions.filter(s => !isDefaultSolution(s)).map((solution) => (
+                              <Option
+                                key={solution.solutionid}
+                                value={solution.solutionid}
+                                text={solution.friendlyname}
+                              >
                                 <div className={styles.solutionInfo}>
                                   <Text>{solution.friendlyname}</Text>
-                                  <Text className={styles.secondaryText}>
-                                    v{solution.version} | {solution.publisherid.friendlyname}
-                                  </Text>
+                                  <Text className={styles.secondaryText}>v{solution.version} | {solution.publisherid.friendlyname}</Text>
                                 </div>
                               </Option>
                             ))}
+                            {filteredSolutions.some(s => isDefaultSolution(s)) && (
+                              <OptionGroup label="Not Recommended">
+                                {filteredSolutions.filter(s => isDefaultSolution(s)).map((solution) => (
+                                  <Option
+                                    key={solution.solutionid}
+                                    value={solution.solutionid}
+                                    text={solution.friendlyname}
+                                    disabled
+                                  >
+                                    <div className={styles.solutionInfo}>
+                                      <Text>{solution.friendlyname}</Text>
+                                      <Text className={styles.disabledOptionText}>
+                                        Default Solution — contains all direct environment customisations.
+                                      </Text>
+                                    </div>
+                                  </Option>
+                                ))}
+                              </OptionGroup>
+                            )}
                           </Dropdown>
                         </Field>
 
@@ -484,22 +566,46 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
                     multiselect
                     selectedOptions={selectedSolutionIds}
                     onOptionSelect={(_, data) => {
-                      if (data.selectedOptions) {
-                        setSelectedSolutionIds(data.selectedOptions);
-                      }
+                      setSelectedSolutionIds(
+                        (data.selectedOptions ?? []).filter(id => {
+                          const sol = solutions.find(s => s.solutionid === id);
+                          return !sol || !isDefaultSolution(sol);
+                        })
+                      );
                     }}
                     disabled={loading}
                   >
-                    {solutions.map((solution) => (
-                      <Option key={solution.solutionid} value={solution.solutionid} text={solution.friendlyname}>
+                    {solutions.filter(s => !isDefaultSolution(s)).map((solution) => (
+                      <Option
+                        key={solution.solutionid}
+                        value={solution.solutionid}
+                        text={solution.friendlyname}
+                      >
                         <div className={styles.solutionInfo}>
                           <Text>{solution.friendlyname}</Text>
-                          <Text className={styles.secondaryText}>
-                            v{solution.version} | {solution.publisherid.friendlyname}
-                          </Text>
+                          <Text className={styles.secondaryText}>v{solution.version} | {solution.publisherid.friendlyname}</Text>
                         </div>
                       </Option>
                     ))}
+                    {solutions.some(s => isDefaultSolution(s)) && (
+                      <OptionGroup label="Not Recommended">
+                        {solutions.filter(s => isDefaultSolution(s)).map((solution) => (
+                          <Option
+                            key={solution.solutionid}
+                            value={solution.solutionid}
+                            text={solution.friendlyname}
+                            disabled
+                          >
+                            <div className={styles.solutionInfo}>
+                              <Text>{solution.friendlyname}</Text>
+                              <Text className={styles.disabledOptionText}>
+                                Default Solution — contains all direct environment customisations.
+                              </Text>
+                            </div>
+                          </Option>
+                        ))}
+                      </OptionGroup>
+                    )}
                   </Dropdown>
                 </Field>
 
@@ -543,7 +649,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
           </Tooltip>
         </div>
 
-        <div style={{ marginTop: tokens.spacingVerticalM }}>
+        <div className={styles.checkboxesSubSection}>
           <Tooltip
             content="Include common system fields like createdon, createdby, modifiedon, modifiedby, ownerid, statecode, statuscode, etc."
             relationship="description"
@@ -560,7 +666,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
       {/* Continue Button */}
       <div className={styles.buttonContainer}>
         {onCancel && (
-          <Button appearance="secondary" onClick={onCancel} style={{ marginRight: '8px' }}>
+          <Button appearance="secondary" onClick={onCancel} className={styles.cancelButton}>
             Cancel
           </Button>
         )}

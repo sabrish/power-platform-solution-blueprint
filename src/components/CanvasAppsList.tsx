@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -16,7 +16,7 @@ import { useCardRowStyles } from '../hooks/useCardRowStyles';
 const useStyles = makeStyles({
   row: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto`,
     gap: tokens.spacingHorizontalM,
   },
 });
@@ -46,9 +46,9 @@ export function CanvasAppsList({ canvasApps }: CanvasAppsListProps) {
     );
   }, [sorted, searchQuery]);
 
-  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
+  const toggleExpand = useCallback((id: string) => setExpandedId((prev) => (prev === id ? null : id)), []);
 
-  const renderDetail = (app: CanvasApp) => (
+  const renderDetail = (app: CanvasApp): JSX.Element => (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>Canvas App Details</Title3>

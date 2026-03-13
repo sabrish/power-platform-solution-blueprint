@@ -191,15 +191,24 @@ Promoted → PATTERN-006 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
-## [2026-02-26] — Version numbers in three files must always match at release time
+## [2026-02-26, updated 2026-03-13] — Version numbers in five files must always match at release time
 
 **Affects:** Document Updater, Orchestrator, Reviewer
 **Severity:** Blocker
-**Rule:** Version numbers appear in three places that must all match before a release is tagged: (1) `package.json` — the `"version"` field, (2) `CHANGELOG.md` — the latest versioned entry header (e.g. `## [0.8.0] — 2026-02-26`), (3) `README.md` — the shields.io version badge at the top and any inline version references. The Document Updater must update all three in the same release step. Mismatched versions across these files is a release blocker and must be resolved before the orchestrator prints the git tag command.
-**Context:** Added after noticing the README.md version badge was not explicitly included in the release workflow document-updater step. The orchestrator release sequence now requires the document-updater to confirm all three files are consistent before marking step 4 complete.
+**Rule:** Version numbers appear in five places that must all match before a release is tagged:
+1. `package.json` — the `"version"` field
+2. `CHANGELOG.md` — the latest versioned entry header (e.g. `## [1.1.0] — 2026-03-12`)
+3. `README.md` — the shields.io version badge at the top and any inline version references
+4. `src/core/reporters/JsonReporter.ts` — the `private readonly toolVersion` field (line ~24). This is hardcoded and is NOT derived from `package.json`. It must be manually updated on every release.
+5. `docs/user-guide.md` — the version string in the subtitle on line 3 (e.g. `Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.0`)
+
+The Document Updater must update all five in the same release step. Mismatched versions across any of these files is a release blocker and must be resolved before the orchestrator prints the git tag command.
+**Context:** (1–3) Added 2026-02-26 after noticing the README badge was missing from the release workflow. (4–5) Added 2026-03-13: `JsonReporter.ts` contains a hardcoded `toolVersion` class field that agents repeatedly overlooked at release time; `docs/user-guide.md` line 3 subtitle also embeds the version string and was equally overlooked.
 **Example:**
-- Wrong: Bumping `package.json` to `0.8.0` and updating `CHANGELOG.md` but leaving the README badge on `0.7.2`
-- Right: Update `package.json`, `CHANGELOG.md`, and `README.md` badge in the same step; verify all three read `0.8.0` before proceeding
+- Wrong: Bumping `package.json` to `1.2.0` and updating `CHANGELOG.md` and `README.md` but leaving `JsonReporter.ts` on `1.1.0` and `docs/user-guide.md` subtitle on `v1.1.0`
+- Right: Update all five files in the same step; verify every location reads the new version before proceeding
+- ❌ Wrong: `private readonly toolVersion = '1.1.0';` after bumping the project to `1.2.0`
+- ✅ Right: `private readonly toolVersion = '1.2.0';` — updated in the same commit as `package.json`
 
 ---
 
@@ -535,15 +544,15 @@ Using flat tables with only counts (e.g. "5 conditions") was insufficient — us
 
 ---
 
-## [2026-03-09] — ArrowUpRight20Regular for external calls; Globe24Regular for External Dependencies tab
+## [2026-03-09, updated 2026-03-12] — Globe20Regular for inline external-call indicators
 
 **Affects:** Developer, Reviewer
 **Severity:** Medium
-**Rule:** Use `ArrowUpRight20Regular` for "external API calls" indicators (outbound arrow icon). Never use Globe for inline external-call indicators.
-**Context:** Web Resources moved to `DocumentGlobe24Regular` (MS icon: globe+document). `Globe24Regular` is now used for the External Dependencies navigation tab (globe = "the internet / external world"). `ArrowUpRight` is for inline external-call row indicators only.
+**Rule:** Use `Globe20Regular` for inline "makes external calls" row indicators across all component lists. `DocumentGlobe24Regular` and `Globe20Regular` are visually distinct — no ambiguity.
+**Context:** Web Resources moved to `DocumentGlobe24Regular` (MS icon: globe+document). `Globe24Regular` is now used for the External Dependencies navigation tab.
 **Example:**
-- Wrong: `<Globe20Regular />` as the icon for an inline external API call indicator
-- Right: `<Globe20Regular />` for inline external-call indicators in Web Resources list; `DocumentGlobe24Regular` for Web Resources tab; `Globe24Regular` for External Dependencies tab
+- Wrong: `<ArrowUpRight20Regular />` as the icon for an inline external API call indicator
+- Right: `<Globe20Regular />` for inline external-call row indicators; `DocumentGlobe24Regular` for Web Resources tab; `Globe24Regular` for External Dependencies tab
 
 ---
 
@@ -749,17 +758,16 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 
 ---
 
-## [2026-03-11] — Globe20Regular exception: Web Resources external-call row indicator only
+## [2026-03-11, updated 2026-03-12] — Globe20Regular is the standard external-call row indicator
 
 **Affects:** Developer, Reviewer
 **Severity:** Medium
-**Rule:** `Globe20Regular` is acceptable as the external-call row indicator icon specifically inside `WebResourcesList.tsx`. It must NOT be used as a general external-call indicator in any other component.
+**Rule:** `Globe20Regular` is the standard inline external-call row indicator across ALL component lists (FlowsList, WebResourcesList, etc.).
 
-**Rationale:** Web Resources already use `DocumentGlobe24Regular` as their component-category icon. Using `Globe20Regular` for the inline external-call indicator in this specific list is a deliberate in-context association: the globe visual ties the "has external calls" signal to the same web/globe metaphor that defines the category. All other components (PluginsList, FlowsList, etc.) must use `ArrowUpRight20Regular` for external-call indicators — the exception is WebResourcesList only.
+**Rationale:** `DocumentGlobe24Regular` (document + globe) and `Globe20Regular` (plain globe) are visually distinct icons — no ambiguity. `Globe20Regular` (plain globe = "the internet") is the correct semantic choice for an inline "makes external calls" indicator. `ArrowUpRight20Regular` is NOT used for this purpose.
 
 **Summary:**
-- `WebResourcesList.tsx` row indicator for "has external calls" → `Globe20Regular` (exception — acceptable)
-- All other components' "has external calls" / external-call indicators → `ArrowUpRight20Regular`
+- All component row indicators for "has external calls" → `Globe20Regular`
 - Web Resources component-category icon → `DocumentGlobe24Regular` (from componentIcons.ts)
 - External Dependencies nav tab → `Globe24Regular` (from componentIcons.ts)
 
@@ -811,5 +819,47 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 **Example:**
 - Wrong: `` className={`${styles.cardRow} ${isExpanded ? styles.expanded : ''}`} ``
 - Right: `className={mergeClasses(styles.cardRow, isExpanded && styles.expanded)}`
+
+---
+
+## [2026-03-12] — Present a fix brief and wait for approval before implementing reviewer-flagged changes
+
+**Affects:** Developer, Orchestrator
+**Severity:** High
+**Rule:** Before implementing any fixes for reviewer-flagged blockers or high-severity comments, present a brief summary of each issue and the proposed fix approach to the project owner. Do not touch any code until the project owner explicitly approves the plan.
+**Context:** The agent jumped straight into implementing reviewer fixes without first checking with the project owner. The correct workflow is: (1) list each blocker/issue with a one-line description of what is wrong, (2) state the intended fix approach for each, (3) wait for the project owner to say "go ahead" or adjust the plan, then (4) implement.
+**Example:**
+- Wrong: Reviewer flags 3 blockers → agent immediately edits source files to address them
+- Right: Reviewer flags 3 blockers → agent posts a brief ("Issue 1: missing shape prop on Badge — fix: add shape='rounded'. Issue 2: ...") → project owner approves → agent implements
+
+---
+
+## [2026-03-12] — Split staged files into separate commits by logical area before git add/commit
+
+**Affects:** Developer, Orchestrator
+**Severity:** Blocker
+**Rule:** When multiple batches of changes exist (e.g. a feature implementation, a refactor sweep, a UI token/style audit pass, and review compliance fixes), split them into separate commits by logical area BEFORE running `git add`. Never bundle unrelated file groups into a single commit just because they all passed review together. CLAUDE.md already mandates "one logical change per commit" — that rule applies even when a large set of files is ready at the same time.
+**Context:** The agent bundled 24 files of unrelated changes — core feature files, export/reporter changes, a UI token sweep, and review compliance fixes — into a single commit. All four groups had passed pre-commit review, but they were logically independent changes and should have been committed separately. Passing review does not override the one-logical-change rule.
+**Example:**
+- Wrong: `git add src/core/discovery/PluginDiscovery.ts src/core/reporters/HtmlReporter.ts src/components/PluginsList.tsx src/components/FlowsList.tsx ... (24 files) && git commit -m "feat: ..."`
+- Right:
+  1. `git add <core feature files> && git commit -m "feat(plugins): ..."`
+  2. `git add <export/reporter files> && git commit -m "feat(export): ..."`
+  3. `git add <UI token/style files> && git commit -m "style: apply token sweep to all component lists"`
+  4. `git add <review compliance files> && git commit -m "fix(review): address reviewer findings across component lists"`
+
+---
+
+## [2026-03-12] — Only .claude/memory/interactions/ is gitignored — all other memory files are git-tracked
+
+**Affects:** All agents
+**Severity:** Blocker
+**Rule:** Never claim that `.claude/memory/` files are gitignored. Only the `.claude/memory/interactions/` subdirectory is gitignored. All other files directly under `.claude/memory/` — `learnings.md`, `project.md`, `decisions.md`, `patterns-dataverse.md`, `patterns-ui.md`, and any future files added there — are tracked by git and must be committed normally like any other project file.
+**Context:** The agent repeatedly and incorrectly stated that memory files were gitignored, which would have caused agents to skip committing important project state. The `.gitignore` only excludes `interactions/` (session logs), not the persistent memory files.
+**Example:**
+- Wrong: "I will not commit `.claude/memory/learnings.md` because memory files are gitignored"
+- Wrong: Treating any `.claude/memory/*.md` file as excluded from version control
+- Right: Stage and commit `.claude/memory/learnings.md`, `project.md`, `decisions.md`, `patterns-*.md` along with any other changed project files
+- Right: Only `.claude/memory/interactions/` (session logs) is gitignored and must never be committed
 
 ---

@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-11
+**Last updated:** 2026-03-12
 
 ---
 
@@ -18,13 +18,14 @@
 
 ## Current Version
 
+**v1.1.0** (released 2026-03-12) — minor: pipeline-first Cross-Entity Automation view, external API call detection, HTML/Markdown export parity, and AUDIT compliance fixes
 **v1.0.1** (released 2026-03-11) — patch: discovery pagination fix + OData injection guards
 **v1.0.0** (released 2026-03-11)
 **v0.9.0** (released 2026-03-07)
 
 ---
 
-## What is Working (as of v1.0.0)
+## What is Working (as of v1.1.0)
 
 ### Core Discovery
 - Entity schema discovery (fields, relationships, keys, alternate keys)
@@ -62,6 +63,11 @@
 - Centralised `componentIcons.ts` — single source of truth for all component/tab icons
 - `useListFilter` hook — shared filter/search logic across all component lists
 - `useCardRowStyles` hook — shared card-row styles ensuring AUDIT-005/006 compliance
+- Cross-Entity Automation view redesigned as pipeline-first accordion: automation nodes as top-level items, entities as children; inbound flows shown with ← badge
+- External API call detection on flow steps: HTTP actions and connector calls surfaced in the UI
+- Entities with external calls automatically included in the default Cross-Entity Automation view
+- HTML and Markdown export parity: external calls and Manual trigger pipelines now render correctly in both formats
+- Token sweep, `useCallback`, `EmptyState`, and full AUDIT compliance fixes applied across all list components
 
 ### Key fixes since v0.7.2
 - Business rule parser completely rewritten — covers all condition/action patterns including `controls.forEach` delegate, double-wrapped parens, date-derived variables
@@ -126,6 +132,18 @@ pnpm typecheck  # Type check
 ---
 
 ## In Progress / Known Limitations
+
+### Released in v1.1.0 (2026-03-12)
+
+Minor release. Key features shipped:
+- Cross-Entity Automation Trace redesigned as pipeline-first view: automation nodes (flows, classic workflows, BPFs) are top-level accordion items; entities appear as children with ← inbound badges on flows that target them
+- External API call detection added to flow step analysis: HTTP trigger actions and premium/external connector calls surfaced per step
+- Entities that own flows with external API calls are included in the default Cross-Entity Automation view automatically
+- HTML and Markdown export parity restored: external call annotations and Manual trigger pipelines now render in both export formats
+- Token sweep across all list components: raw pixel values and hex colours replaced with `tokens.*` equivalents
+- `useCallback` wrapping applied to all toggle/filter handlers across all list components
+- `EmptyState` component adopted across all component lists (bare `<Text>` empty states removed)
+- Full AUDIT-001 through AUDIT-013 compliance verified and fixed across all list components
 
 ### Released in v1.0.1 (2026-03-11)
 

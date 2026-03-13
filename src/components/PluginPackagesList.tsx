@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -7,7 +7,8 @@ import {
   Checkbox,
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
-import { ChevronDown20Regular, ChevronRight20Regular, Box20Regular } from '@fluentui/react-icons';
+import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
+import { EmptyState } from './EmptyState';
 import type { PluginStep } from '../core';
 
 const useStyles = makeStyles({
@@ -18,7 +19,7 @@ const useStyles = makeStyles({
   },
   row: {
     display: 'grid',
-    gridTemplateColumns: '24px minmax(200px, 2fr) auto auto',
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto auto`,
     gap: tokens.spacingHorizontalM,
     alignItems: 'start',
     padding: tokens.spacingVerticalM,
@@ -100,15 +101,6 @@ const useStyles = makeStyles({
     minWidth: 0,
     wordBreak: 'break-word',
   },
-  emptyState: {
-    padding: tokens.spacingVerticalXXXL,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: tokens.spacingVerticalL,
-    color: tokens.colorNeutralForeground3,
-  },
 });
 
 interface PluginPackage {
@@ -173,17 +165,17 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
     return filtered;
   }, [packages, searchQuery, showDisabledOnly]);
 
-  const toggleExpand = (assemblyName: string) => {
-    setExpandedPackage(expandedPackage === assemblyName ? null : assemblyName);
-  };
+  const toggleExpand = useCallback((assemblyName: string) => {
+    setExpandedPackage((prev) => (prev === assemblyName ? null : assemblyName));
+  }, []);
 
   if (plugins.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Box20Regular />
-        <Text size={500} weight="semibold">No Plugin Packages Found</Text>
-        <Text>No plugins were found in the selected solution(s).</Text>
-      </div>
+      <EmptyState
+        type="plugins"
+        title="No Plugin Packages Found"
+        message="No plugins were found in the selected solution(s)."
+      />
     );
   }
 
@@ -207,9 +199,7 @@ export function PluginPackagesList({ plugins }: PluginPackagesListProps): JSX.El
       </FilterBar>
 
       {filteredPackages.length === 0 && packages.length > 0 ? (
-        <div className={styles.emptyState}>
-          <Text>No packages match your search.</Text>
-        </div>
+        <EmptyState type="search" />
       ) : null}
 
       {filteredPackages.map(pkg => {
