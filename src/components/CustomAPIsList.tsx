@@ -53,13 +53,12 @@ const useStyles = makeStyles({
 
 interface CustomAPIsListProps {
   customAPIs: CustomAPI[];
-  onSelectAPI?: (api: CustomAPI) => void;
 }
 
 /**
  * Card-row list of Custom APIs. Each row expands inline to show full details.
  */
-export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps) {
+export function CustomAPIsList({ customAPIs }: CustomAPIsListProps) {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedApiId, setExpandedApiId] = useState<string | null>(null);
@@ -271,8 +270,8 @@ export function CustomAPIsList({ customAPIs, onSelectAPI }: CustomAPIsListProps)
               role="button"
               tabIndex={0}
               aria-expanded={isExpanded}
-              onClick={() => { toggleExpand(api.id); onSelectAPI?.(api); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(api.id); onSelectAPI?.(api); } }}
+              onClick={() => toggleExpand(api.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(api.id); } }}
             >
               <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}

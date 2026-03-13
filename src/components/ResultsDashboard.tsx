@@ -47,7 +47,7 @@ import {
   CrossEntityAutomationIcon,
   FetchLogIcon,
 } from './componentIcons';
-import type { BlueprintResult, CustomAPI } from '../core';
+import type { BlueprintResult } from '../core';
 import type { BlueprintGenerator } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
@@ -60,7 +60,6 @@ import { WebResourcesList } from './WebResourcesList';
 import { ClassicWorkflowsList } from './ClassicWorkflowsList';
 import { BusinessProcessFlowsList } from './BusinessProcessFlowsList';
 import { CustomAPIsList } from './CustomAPIsList';
-import { CustomAPIDetailView } from './CustomAPIDetailView';
 import { EnvironmentVariablesList } from './EnvironmentVariablesList';
 import { ConnectionReferencesList } from './ConnectionReferencesList';
 import { GlobalChoicesList } from './GlobalChoicesList';
@@ -249,7 +248,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>(defaultSelectedKey);
   const [selectedCard, setSelectedCard] = useState<string | null>(defaultSelectedKey);
-  const [selectedCustomAPI, setSelectedCustomAPI] = useState<CustomAPI | null>(null);
   const browserSectionRef = useRef<HTMLDivElement>(null);
 
   // Check what architecture features are available
@@ -613,25 +611,7 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
             )}
 
             {selectedTab === 'customAPIs' && hasResults('customAPIs') && (
-              <div>
-                {selectedCustomAPI ? (
-                  <div>
-                    <Button
-                      appearance="secondary"
-                      onClick={() => setSelectedCustomAPI(null)}
-                      style={{ marginBottom: tokens.spacingVerticalL }}
-                    >
-                      ← Back to List
-                    </Button>
-                    <CustomAPIDetailView api={selectedCustomAPI} />
-                  </div>
-                ) : (
-                  <CustomAPIsList
-                    customAPIs={result.customAPIs}
-                    onSelectAPI={setSelectedCustomAPI}
-                  />
-                )}
-              </div>
+              <CustomAPIsList customAPIs={result.customAPIs} />
             )}
 
             {selectedTab === 'environmentVariables' && hasResults('environmentVariables') && (
