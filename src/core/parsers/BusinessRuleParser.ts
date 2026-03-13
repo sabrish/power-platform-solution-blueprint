@@ -175,153 +175,190 @@ export class BusinessRuleParser {
       return fieldVarMap.get(v) ?? varName;
     };
 
-    // ── Step 3: Skip null guard ────────────────────────────────────────────────
+    // ── Step 3: Skip null guard and parse all condition groups ────────────────
 
-    // The null guard is always: if(v1==null || v2==null || v1==undefined || v2==undefined) { return; }
-    // We don't extract conditions from it — we skip it entirely by looking for the NEXT if statement.
+    // Helper: parse a single condition from an if(...) header
+    const parseCondition = (condExpr: string): Condition[] => {
+      const conds: Condition[] = [];
 
-    // ── Step 4: Extract the main condition ─────────────────────────────────────
-
-    const conditions: Condition[] = [];
-
-    // After the null guard, the main condition appears. We detect three patterns:
-
-    // Pattern A: option set equals integer
-    // if((vN) === (795390000))
-    const matchOptionSet = js.match(/if\s*\(\s*\((v\d+)\)\s*===\s*\((\d+)\)\s*\)/);
-    if (matchOptionSet) {
-      const valueVar = matchOptionSet[1];
-      const optionValue = matchOptionSet[2];
-      const field = resolveField(valueVar);
-      if (field !== valueVar) {
-        conditions.push({ field, operator: 'equals', value: optionValue, logicOperator: 'AND' });
+      // Pattern A: option set equals integer — if((vN) === (795390000))
+      const matchOptionSet = condExpr.match(/^\s*\((v\d+)\)\s*===\s*\((\d+)\)\s*$/);
+      if (matchOptionSet) {
+        const valueVar = matchOptionSet[1];
+        const optionValue = matchOptionSet[2];
+        const field = resolveField(valueVar);
+        if (field !== valueVar) {
+          conds.push({ field, operator: 'equals', value: optionValue, logicOperator: 'AND' });
+        }
+        return conds;
       }
-    }
 
-    // Pattern B: boolean equals true
-    // if((vN)==(true)||((vN)==true&&(true)=='1')||...)
-    if (conditions.length === 0) {
-      const matchBool = js.match(/if\s*\(\s*\((v\d+)\)\s*==\s*\(true\)/);
+      // Pattern B: boolean equals true — if((vN)==(true)||...)
+      const matchBool = condExpr.match(/^\s*\((v\d+)\)\s*==\s*\(true\)/);
       if (matchBool) {
         const valueVar = matchBool[1];
         const field = resolveField(valueVar);
         if (field !== valueVar) {
-          conditions.push({ field, operator: 'equals', value: 'true', logicOperator: 'AND' });
+          conds.push({ field, operator: 'equals', value: 'true', logicOperator: 'AND' });
         }
+        return conds;
       }
-    }
 
-    // Pattern C: lookup equals specific record (using comparator function v7)
-    // if(v7((vN),(vM), function(op1,op2){ ...sanitizeGuid... }))
-    // vM is the lookup array: var vM = [{id:'...', entityType:'...', name:'LookupName'}]
-    if (conditions.length === 0) {
-      const matchLookup = /if\s*\(v\d+\s*\(\s*\((v\d+)\)\s*,\s*\((v\d+)\)/;
-      const lookupMatch = js.match(matchLookup);
-      if (lookupMatch) {
-        const valueVar = lookupMatch[1];
-        const lookupArrayVar = lookupMatch[2];
+      // Pattern C: lookup equals — if(v7((vN),(vM), function(...)))
+      const matchLookup = condExpr.match(/^v\d+\s*\(\s*\((v\d+)\)\s*,\s*\((v\d+)\)/);
+      if (matchLookup) {
+        const valueVar = matchLookup[1];
+        const lookupArrayVar = matchLookup[2];
         const field = resolveField(valueVar);
-        // Extract the lookup name from the array definition: var vM = [{..., name:'...' }]
         const arrayDefRegex = new RegExp(`var\\s+${lookupArrayVar.replace('$', '\\$')}\\s*=\\s*\\[.*?name\\s*:\\s*'([^']+)'`, 's');
         const arrayMatch = js.match(arrayDefRegex);
         const lookupName = arrayMatch ? arrayMatch[1] : '(lookup record)';
         if (field !== valueVar) {
-          conditions.push({ field, operator: 'equals', value: lookupName, logicOperator: 'AND' });
+          conds.push({ field, operator: 'equals', value: lookupName, logicOperator: 'AND' });
         }
+        return conds;
+      }
+
+      return conds;
+    };
+
+    // ── Step 4: Extract all if/else-if blocks iteratively ──────────────────────
+
+    const conditionGroups: import('../types/blueprint.js').ConditionGroup[] = [];
+    const elseActions: Action[] = [];
+
+    // Find the first real if statement after null guard
+    // Null guard pattern: if(vX==null || vY==null ...) { return; }
+    // Skip it and find the next if statement
+    const nullGuardMatch = js.match(/if\s*\([^)]*==\s*(?:null|undefined)[^)]*\)\s*\{\s*return\s*;?\s*\}/);
+    let startPos = nullGuardMatch ? nullGuardMatch.index! + nullGuardMatch[0].length : 0;
+
+    // Find all if/else-if blocks from startPos onwards
+    const ifElseRe = /(?:^|}\s*else\s+)if\s*\(([^)]+(?:\([^)]*\))*[^)]*)\)\s*\{/g;
+    ifElseRe.lastIndex = startPos;
+
+    let match: RegExpExecArray | null;
+    const blocks: Array<{ condExpr: string; startPos: number }> = [];
+
+    while ((match = ifElseRe.exec(js)) !== null) {
+      blocks.push({ condExpr: match[1], startPos: match.index + match[0].length });
+    }
+
+    // Parse each block
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      const nextBlockStart = blocks[i + 1]?.startPos ?? js.length;
+
+      // Extract the block body — everything from block.startPos to the next block (or closing brace)
+      let blockBody = js.substring(block.startPos, nextBlockStart);
+
+      // Check if this is the unconditional else: "else if(true)"
+      if (block.condExpr.trim() === 'true') {
+        // This is the final else block — all actions here are elseActions
+        elseActions.push(...this.parseActionsFromBlock(blockBody, resolveField));
+        break;
+      }
+
+      // Parse the condition
+      const conditions = parseCondition(block.condExpr);
+
+      // Parse actions from this block
+      const actions = this.parseActionsFromBlock(blockBody, resolveField);
+
+      if (conditions.length > 0 || actions.length > 0) {
+        conditionGroups.push({ conditions, actions });
       }
     }
 
-    // ── Step 5: Extract THEN actions (inside the main if block) ───────────────
-
-    const thenActions: Action[] = [];
-    const elseActions: Action[] = [];
-
-    // Find the main if block start and the else if(true) position
-    // Main if: starts after the condition we just matched
-    // ELSE: always "} else if(true) {"
-
-    const elsePos = js.indexOf('} else if(true)');
-    const thenBlock = elsePos > 0 ? js.substring(0, elsePos) : js;
-    const elseBlock = elsePos > 0 ? js.substring(elsePos) : '';
-
-    // Helper to parse actions from a block of code
-    const parseActions = (block: string): Action[] => {
-      const acts: Action[] = [];
-
-      // .setRequiredLevel('required' | 'none' | 'recommended')
-      const reqRe = /\(*(v\d+)\)*\.setRequiredLevel\(['"]([^'"]+)['"]\)/g;
-      let match: RegExpExecArray | null;
-      while ((match = reqRe.exec(block)) !== null) {
-        const level = match[2];
-        const type = level === 'none' ? 'SetOptional' : 'SetRequired';
-        acts.push({ type, field: resolveField(match[1]), value: level });
+    // If no condition groups found, try the legacy single-condition fallback
+    if (conditionGroups.length === 0 && elseActions.length === 0) {
+      // Fallback: parse entire JS as a single block
+      const fallbackConditions = parseCondition(js);
+      const fallbackActions = this.parseActionsFromBlock(js, resolveField);
+      if (fallbackConditions.length > 0 || fallbackActions.length > 0) {
+        conditionGroups.push({ conditions: fallbackConditions, actions: fallbackActions });
       }
+    }
 
-      // .controls.forEach(function(c,i){ c.setVisible(true|false) }) — delegate pattern
-      const ctrlVisRe = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setVisible\((true|false)\)/g;
-      while ((match = ctrlVisRe.exec(block)) !== null) {
-        acts.push({ type: match[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(match[1]) });
-      }
+    if (conditionGroups.length === 0 && elseActions.length === 0) return null;
 
-      // .setVisible(true|false) — direct call
-      const visRe = /\(*(v\d+)\)*\.setVisible\((true|false)\)/g;
-      while ((match = visRe.exec(block)) !== null) {
-        acts.push({ type: match[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(match[1]) });
-      }
-
-      // .controls.forEach(function(c,i){ c.setDisabled(true|false) }) — delegate pattern
-      const ctrlDisRe = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setDisabled\((true|false)\)/g;
-      while ((match = ctrlDisRe.exec(block)) !== null) {
-        acts.push({ type: match[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(match[1]) });
-      }
-
-      // .setDisabled(true|false) — direct call
-      const disRe = /\(*(v\d+)\)*\.setDisabled\((true|false)\)/g;
-      while ((match = disRe.exec(block)) !== null) {
-        acts.push({ type: match[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(match[1]) });
-      }
-
-      // .setValue(value)
-      const setValRe = /\(*(v\d+)\)*\.setValue\(([^)]*)\)/g;
-      while ((match = setValRe.exec(block)) !== null) {
-        const raw = match[2].trim().replace(/^['"]|['"]$/g, '');
-        acts.push({ type: 'SetValue', field: resolveField(match[1]), value: raw || undefined });
-      }
-
-      // ShowError: c.setNotification(...)
-      // Build stepId → message map
-      const notifMsgMap = new Map<string, string>();
-      const notifMsgRe = /GetResourceString\([^,]+,\s*'([^']+)'\)[^,)]*,\s*'([^'"]+)'/g;
-      while ((match = notifMsgRe.exec(block)) !== null) notifMsgMap.set(match[2], match[1]);
-      const notifLitRe = /c\.setNotification\('([^']+)',\s*'([^']+)'\)/g;
-      while ((match = notifLitRe.exec(block)) !== null) {
-        if (!notifMsgMap.has(match[2])) notifMsgMap.set(match[2], match[1]);
-      }
-      const cleanupRe = /\{'CId'\s*:\s*'([^']+)'\s*,\s*'SId'\s*:\s*'([^']+)'\}/g;
-      const notifSeen = new Set<string>();
-      while ((match = cleanupRe.exec(block)) !== null) {
-        const field = match[1], stepId = match[2];
-        const key = `${field}|${stepId}`;
-        if (!notifSeen.has(key)) {
-          notifSeen.add(key);
-          acts.push({ type: 'ShowError', field, message: notifMsgMap.get(stepId) });
-        }
-      }
-
-      return acts;
-    };
-
-    thenActions.push(...parseActions(thenBlock));
-    elseActions.push(...parseActions(elseBlock));
-
-    if (conditions.length === 0 && thenActions.length === 0 && elseActions.length === 0) return null;
-
+    const firstGroupConditions = conditionGroups[0]?.conditions ?? [];
     return {
-      conditionGroups: conditions.length > 0 || thenActions.length > 0 ? [{ conditions, actions: thenActions }] : [],
+      conditionGroups,
       elseActions,
       executionContext: 'Client',
-      conditionLogic: this.buildConditionLogic(conditions),
+      conditionLogic: this.buildConditionLogic(firstGroupConditions),
     };
+  }
+
+  /**
+   * Parse actions from a JavaScript block.
+   * Extracted as a class method for reuse across condition groups.
+   */
+  private static parseActionsFromBlock(block: string, resolveField: (varName: string) => string): Action[] {
+    const acts: Action[] = [];
+
+    // .setRequiredLevel('required' | 'none' | 'recommended')
+    const reqRe = /\(*(v\d+)\)*\.setRequiredLevel\(['"]([^'"]+)['"]\)/g;
+    let match: RegExpExecArray | null;
+    while ((match = reqRe.exec(block)) !== null) {
+      const level = match[2];
+      const type = level === 'none' ? 'SetOptional' : 'SetRequired';
+      acts.push({ type, field: resolveField(match[1]), value: level });
+    }
+
+    // .controls.forEach(function(c,i){ c.setVisible(true|false) }) — delegate pattern
+    const ctrlVisRe = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setVisible\((true|false)\)/g;
+    while ((match = ctrlVisRe.exec(block)) !== null) {
+      acts.push({ type: match[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(match[1]) });
+    }
+
+    // .setVisible(true|false) — direct call
+    const visRe = /\(*(v\d+)\)*\.setVisible\((true|false)\)/g;
+    while ((match = visRe.exec(block)) !== null) {
+      acts.push({ type: match[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(match[1]) });
+    }
+
+    // .controls.forEach(function(c,i){ c.setDisabled(true|false) }) — delegate pattern
+    const ctrlDisRe = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setDisabled\((true|false)\)/g;
+    while ((match = ctrlDisRe.exec(block)) !== null) {
+      acts.push({ type: match[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(match[1]) });
+    }
+
+    // .setDisabled(true|false) — direct call
+    const disRe = /\(*(v\d+)\)*\.setDisabled\((true|false)\)/g;
+    while ((match = disRe.exec(block)) !== null) {
+      acts.push({ type: match[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(match[1]) });
+    }
+
+    // .setValue(value)
+    const setValRe = /\(*(v\d+)\)*\.setValue\(([^)]*)\)/g;
+    while ((match = setValRe.exec(block)) !== null) {
+      const raw = match[2].trim().replace(/^['"]|['"]$/g, '');
+      acts.push({ type: 'SetValue', field: resolveField(match[1]), value: raw || undefined });
+    }
+
+    // ShowError: c.setNotification(...)
+    // Build stepId → message map
+    const notifMsgMap = new Map<string, string>();
+    const notifMsgRe = /GetResourceString\([^,]+,\s*'([^']+)'\)[^,)]*,\s*'([^'"]+)'/g;
+    while ((match = notifMsgRe.exec(block)) !== null) notifMsgMap.set(match[2], match[1]);
+    const notifLitRe = /c\.setNotification\('([^']+)',\s*'([^']+)'\)/g;
+    while ((match = notifLitRe.exec(block)) !== null) {
+      if (!notifMsgMap.has(match[2])) notifMsgMap.set(match[2], match[1]);
+    }
+    const cleanupRe = /\{'CId'\s*:\s*'([^']+)'\s*,\s*'SId'\s*:\s*'([^']+)'\}/g;
+    const notifSeen = new Set<string>();
+    while ((match = cleanupRe.exec(block)) !== null) {
+      const field = match[1], stepId = match[2];
+      const key = `${field}|${stepId}`;
+      if (!notifSeen.has(key)) {
+        notifSeen.add(key);
+        acts.push({ type: 'ShowError', field, message: notifMsgMap.get(stepId) });
+      }
+    }
+
+    return acts;
   }
 
   // ---------------------------------------------------------------------------
