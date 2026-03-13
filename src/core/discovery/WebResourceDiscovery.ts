@@ -1,5 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { WebResource } from '../types/blueprint.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { JavaScriptParser } from '../parsers/JavaScriptParser.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
@@ -17,7 +18,7 @@ interface WebResourceRecord {
   '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
-export class WebResourceDiscovery {
+export class WebResourceDiscovery implements IDiscoverer<WebResource> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -30,6 +31,10 @@ export class WebResourceDiscovery {
     this.client = client;
     this.onProgress = onProgress;
     this.logger = logger;
+  }
+
+  discoverByIds(ids: string[]): Promise<WebResource[]> {
+    return this.getWebResourcesByIds(ids);
   }
 
   async getWebResourcesByIds(resourceIds: string[]): Promise<WebResource[]> {

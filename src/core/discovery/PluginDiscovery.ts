@@ -1,5 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { PluginStep, ImageDefinition } from '../types.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
@@ -31,7 +32,7 @@ interface RawPluginImage {
   messagepropertyname: string;
 }
 
-export class PluginDiscovery {
+export class PluginDiscovery implements IDiscoverer<PluginStep> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -44,6 +45,10 @@ export class PluginDiscovery {
     this.client = client;
     this.onProgress = onProgress;
     this.logger = logger;
+  }
+
+  discoverByIds(ids: string[]): Promise<PluginStep[]> {
+    return this.getPluginsByIds(ids);
   }
 
   async getPluginsByIds(pluginIds: string[]): Promise<PluginStep[]> {

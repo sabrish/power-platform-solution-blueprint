@@ -1,6 +1,7 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
 
@@ -53,7 +54,7 @@ interface RawProcessStage {
   processstage_processstageparameter?: RawProcessStageParam[];
 }
 
-export class BusinessProcessFlowDiscovery {
+export class BusinessProcessFlowDiscovery implements IDiscoverer<BusinessProcessFlow> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -66,6 +67,10 @@ export class BusinessProcessFlowDiscovery {
     this.client = client;
     this.onProgress = onProgress;
     this.logger = logger;
+  }
+
+  discoverByIds(ids: string[]): Promise<BusinessProcessFlow[]> {
+    return this.getBusinessProcessFlowsByIds(ids);
   }
 
   async getBusinessProcessFlowsByIds(workflowIds: string[]): Promise<BusinessProcessFlow[]> {

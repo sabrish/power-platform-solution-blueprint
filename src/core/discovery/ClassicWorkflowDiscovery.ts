@@ -1,6 +1,7 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { ClassicWorkflow } from '../types/classicWorkflow.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
 
@@ -32,7 +33,7 @@ interface RawWorkflowXaml {
   xaml?: string;
 }
 
-export class ClassicWorkflowDiscovery {
+export class ClassicWorkflowDiscovery implements IDiscoverer<ClassicWorkflow> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -45,6 +46,10 @@ export class ClassicWorkflowDiscovery {
     this.client = client;
     this.onProgress = onProgress;
     this.logger = logger;
+  }
+
+  discoverByIds(ids: string[]): Promise<ClassicWorkflow[]> {
+    return this.getClassicWorkflowsByIds(ids);
   }
 
   async getClassicWorkflowsByIds(workflowIds: string[]): Promise<ClassicWorkflow[]> {

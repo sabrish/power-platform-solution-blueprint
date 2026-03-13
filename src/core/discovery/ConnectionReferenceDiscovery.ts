@@ -1,5 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { ConnectionReference } from '../types/connectionReference.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
@@ -23,7 +24,7 @@ interface RawConnectionReference {
   '_modifiedby_value@OData.Community.Display.V1.FormattedValue'?: string;
 }
 
-export class ConnectionReferenceDiscovery {
+export class ConnectionReferenceDiscovery implements IDiscoverer<ConnectionReference> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -36,6 +37,10 @@ export class ConnectionReferenceDiscovery {
     this.client = client;
     this.onProgress = onProgress;
     this.logger = logger;
+  }
+
+  discoverByIds(ids: string[]): Promise<ConnectionReference[]> {
+    return this.getConnectionReferencesByIds(ids);
   }
 
   async getConnectionReferencesByIds(ids: string[]): Promise<ConnectionReference[]> {

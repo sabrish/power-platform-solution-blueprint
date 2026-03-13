@@ -1,6 +1,7 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { Flow } from '../types/blueprint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { FlowDefinitionParser } from '../parsers/FlowDefinitionParser.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
@@ -27,7 +28,7 @@ interface WorkflowClientDataRecord {
   clientdata: string | null;
 }
 
-export class FlowDiscovery {
+export class FlowDiscovery implements IDiscoverer<Flow> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -40,6 +41,10 @@ export class FlowDiscovery {
     this.client = client;
     this.onProgress = onProgress;
     this.logger = logger;
+  }
+
+  discoverByIds(ids: string[]): Promise<Flow[]> {
+    return this.getFlowsByIds(ids);
   }
 
   async getFlowsByIds(workflowIds: string[]): Promise<Flow[]> {

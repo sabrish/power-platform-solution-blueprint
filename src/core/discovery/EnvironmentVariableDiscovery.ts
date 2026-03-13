@@ -1,5 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { EnvironmentVariable, EnvironmentVariableValue } from '../types/environmentVariable.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
@@ -44,7 +45,7 @@ interface RawEnvironmentVariableValue {
 /**
  * Discovers Environment Variables
  */
-export class EnvironmentVariableDiscovery {
+export class EnvironmentVariableDiscovery implements IDiscoverer<EnvironmentVariable> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -64,6 +65,10 @@ export class EnvironmentVariableDiscovery {
    * @param envVarIds Array of environment variable definition IDs from solution components
    * @returns Array of Environment Variables with their values
    */
+  discoverByIds(ids: string[]): Promise<EnvironmentVariable[]> {
+    return this.getEnvironmentVariablesByIds(ids);
+  }
+
   async getEnvironmentVariablesByIds(envVarIds: string[]): Promise<EnvironmentVariable[]> {
     if (envVarIds.length === 0) {
       return [];
