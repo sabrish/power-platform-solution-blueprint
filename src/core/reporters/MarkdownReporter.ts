@@ -26,7 +26,6 @@ import type {
   CrossEntityEntityView,
   CrossEntityTrace,
   AutomationActivation,
-  PipelineStep,
 } from '../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../types/classicWorkflow.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
@@ -1328,57 +1327,118 @@ export class MarkdownReporter {
     sections.push(MarkdownFormatter.formatTable(chainHeaders, chainRows));
     sections.push('');
 
-    // Consolidated pipeline traces
-    const externalOnlyPipelines = Array.from(analysis.allEntityPipelines.entries())
-      .filter(([logicalName, p]) => p.hasExternalInteraction && !analysis.entityViews.has(logicalName));
+    // Pipeline-first view: automations as top-level headings, entities as bullet lists
+    sections.push('## Automation Pipelines');
+    sections.push('');
+    sections.push('Each automation listed below, with the entities it affects and the direction of interaction.');
+    sections.push('');
 
-    if (analysis.entityViews.size > 0 || externalOnlyPipelines.length > 0) {
-      sections.push('## Pipeline Traces');
-      sections.push('');
-      sections.push('Per-entity activation analysis — which automations fire (or don\'t) when an external source writes to the entity.');
-      sections.push('');
+    // Collect all unique automations
+    const automationMap = new Map<string, {
+      id: string;
+      name: string;
+      type: 'Flow' | 'ClassicWorkflow' | 'BusinessRule' | 'Plugin';
+      affectedEntities: Array<{
+        logicalName: string;
+        displayName: string;
+        direction: 'inbound' | 'outbound' | 'both';
+        operations: string[];
+        isAsync: boolean;
+        hasExternalCalls: boolean;
+      }>;
+      triggerType: 'Dataverse' | 'Manual' | 'Scheduled' | 'Mixed';
+      hasExternalCalls: boolean;
+    }>();
 
-      // Entities with inbound cross-entity entry points
-      for (const [logicalName, view] of analysis.entityViews) {
-        sections.push(`### ${view.entityDisplayName}`);
-        sections.push('');
-        sections.push(`**Entity:** \`${view.entityLogicalName}\` | **Entry Points:** ${view.traces.length}`);
-        sections.push('');
-        for (const trace of view.traces) {
-          sections.push(this.formatTraceDetails(trace));
-        }
-        // Manual/On-Demand pipelines for this entity
-        const entityPipeline = analysis.allEntityPipelines.get(logicalName);
-        const manualPipelines = entityPipeline?.messagePipelines.filter(mp => mp.message === 'Manual') ?? [];
-        if (manualPipelines.length > 0) {
-          sections.push('#### On-Demand / Manual Pipeline');
-          sections.push('');
-          for (const mp of manualPipelines) {
-            sections.push(this.formatPipelineSteps(mp.steps));
+    // Scan all entity pipelines to extract automations
+    for (const [entityLogicalName, pipeline] of analysis.allEntityPipelines.entries()) {
+      // Outbound automations (this entity triggers the automation)
+      for (const mp of pipeline.messagePipelines) {
+        for (const step of mp.steps) {
+          const key = `${step.automationType}-${step.automationId}`;
+          if (!automationMap.has(key)) {
+            automationMap.set(key, {
+              id: step.automationId,
+              name: step.automationName,
+              type: step.automationType,
+              affectedEntities: [],
+              triggerType: mp.message === 'Manual' ? 'Manual' : 'Dataverse',
+              hasExternalCalls: false,
+            });
           }
+          const auto = automationMap.get(key)!;
+          const existing = auto.affectedEntities.find(e => e.logicalName === entityLogicalName);
+          if (existing) {
+            if (!existing.operations.includes(mp.message)) existing.operations.push(mp.message);
+            if (!existing.direction.includes('outbound')) existing.direction = existing.direction === 'inbound' ? 'both' : 'outbound';
+          } else {
+            auto.affectedEntities.push({
+              logicalName: entityLogicalName,
+              displayName: pipeline.entityDisplayName,
+              direction: 'outbound',
+              operations: [mp.message],
+              isAsync: step.mode === 'Async',
+              hasExternalCalls: step.hasExternalCalls ?? false,
+            });
+          }
+          if (step.hasExternalCalls) auto.hasExternalCalls = true;
         }
       }
 
-      // Entities with external API calls but no inbound cross-entity writes
-      if (externalOnlyPipelines.length > 0) {
-        sections.push('### Entities with External API Calls');
-        sections.push('');
-        sections.push('These entities have automations that call external APIs or use non-Dataverse connectors but receive no detected cross-entity writes.');
-        sections.push('');
-        for (const [, pipeline] of externalOnlyPipelines) {
-          sections.push(`#### ${pipeline.entityDisplayName}`);
-          sections.push('');
-          sections.push(`**Entity:** \`${pipeline.entityLogicalName}\``);
-          sections.push('');
-          for (const mp of pipeline.messagePipelines) {
-            if (mp.steps.some(s => s.hasExternalCalls)) {
-              const msgLabel = mp.message === 'Manual' ? 'On-Demand / Manual' : mp.message;
-              sections.push(`**${msgLabel} Pipeline:**`);
-              sections.push('');
-              sections.push(this.formatPipelineSteps(mp.steps));
-            }
-          }
+      // Inbound automations (other entities write to this entity)
+      for (const entryPoint of pipeline.inboundEntryPoints) {
+        const key = `${entryPoint.automationType}-${entryPoint.automationId}`;
+        if (!automationMap.has(key)) {
+          automationMap.set(key, {
+            id: entryPoint.automationId,
+            name: entryPoint.automationName,
+            type: entryPoint.automationType,
+            affectedEntities: [],
+            triggerType: entryPoint.isScheduled ? 'Scheduled' : entryPoint.isOnDemand ? 'Manual' : 'Dataverse',
+            hasExternalCalls: false,
+          });
         }
+        const auto = automationMap.get(key)!;
+        const existing = auto.affectedEntities.find(e => e.logicalName === entityLogicalName);
+        if (existing) {
+          if (!existing.operations.includes(entryPoint.operation)) existing.operations.push(entryPoint.operation);
+          if (!existing.direction.includes('inbound')) existing.direction = existing.direction === 'outbound' ? 'both' : 'inbound';
+        } else {
+          auto.affectedEntities.push({
+            logicalName: entityLogicalName,
+            displayName: pipeline.entityDisplayName,
+            direction: 'inbound',
+            operations: [entryPoint.operation],
+            isAsync: entryPoint.isAsynchronous,
+            hasExternalCalls: false,
+          });
+        }
+      }
+    }
+
+    if (automationMap.size > 0) {
+      // Sort automations alphabetically
+      const sortedAutomations = Array.from(automationMap.values())
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const auto of sortedAutomations) {
+        const triggerLabel = auto.triggerType === 'Manual' ? 'Manual / On-Demand'
+          : auto.triggerType === 'Scheduled' ? 'Scheduled'
+          : 'Dataverse Trigger';
+        const extLabel = auto.hasExternalCalls ? ' | **External calls detected**' : '';
+        sections.push(`### ${auto.name}`);
+        sections.push('');
+        sections.push(`**Type:** ${auto.type} | **Trigger:** ${triggerLabel}${extLabel}`);
+        sections.push('');
+        sections.push('**Affected Entities:**');
+        sections.push('');
+        for (const e of auto.affectedEntities) {
+          const dirSymbol = e.direction === 'inbound' ? '←' : e.direction === 'outbound' ? '→' : '↔';
+          const extEntityLabel = e.hasExternalCalls ? ' _[External calls]_' : '';
+          const mode = e.isAsync ? 'Async' : 'Sync';
+          sections.push(`- ${dirSymbol} **${e.displayName}** (\`${e.logicalName}\`) — ${e.operations.join(', ')} — ${mode}${extEntityLabel}`);
+        }
+        sections.push('');
       }
     }
 
@@ -1478,36 +1538,6 @@ export class MarkdownReporter {
   /**
    * Format a list of pipeline steps as a markdown table + external call details
    */
-  private formatPipelineSteps(steps: PipelineStep[]): string {
-    const lines: string[] = [];
-    const headers = ['#', 'Automation', 'Type', 'Stage', 'Mode', 'Filter', 'Downstream'];
-    const rows = steps.map((step, i) => {
-      const filter = step.firesForAllUpdates
-        ? '⚠️ No filter'
-        : step.filteringAttributes.length > 0
-          ? step.filteringAttributes.slice(0, 3).join(', ') + (step.filteringAttributes.length > 3 ? ` +${step.filteringAttributes.length - 3}` : '')
-          : '—';
-      const ds = step.downstream
-        ? `→ ${step.downstream.targetEntityDisplayName} (${step.downstream.operation})`
-        : '—';
-      const extMark = step.hasExternalCalls ? ' ⤷' : '';
-      return [String(i + 1), `${step.automationName}${extMark}`, step.automationType, step.stageName ?? '—', step.mode, filter, ds];
-    });
-    lines.push(MarkdownFormatter.formatTable(headers, rows));
-    // External call details below table
-    for (const step of steps) {
-      if (step.connectionReferences && step.connectionReferences.length > 0) {
-        lines.push(`- **${step.automationName}** connectors: ${step.connectionReferences.join(', ')}`);
-      }
-      if (step.externalCallSummaries && step.externalCallSummaries.length > 0) {
-        for (const call of step.externalCallSummaries) {
-          lines.push(`  - \`${call.method ? `${call.method} ` : ''}${call.url || call.domain}\``);
-        }
-      }
-    }
-    lines.push('');
-    return lines.join('\n');
-  }
 
   /**
    * Format firing status for markdown
