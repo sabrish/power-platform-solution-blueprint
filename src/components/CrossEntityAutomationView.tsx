@@ -440,6 +440,56 @@ const useStyles = makeStyles({
 
   /* ── Risk description text ── */
   riskDescription: { fontSize: tokens.fontSizeBase200, wordBreak: 'break-word' },
+
+  /* ── Custom Action Triggers section — per-trace info card ── */
+  actionInfoCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXXS,
+    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
+    backgroundColor: tokens.colorNeutralBackground3,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderLeft: `3px solid ${tokens.colorBrandForeground1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    marginBottom: tokens.spacingVerticalXS,
+  },
+  actionInfoCardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalXS,
+    flexWrap: 'wrap',
+  },
+  actionInfoCardName: {
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: tokens.fontSizeBase200,
+    minWidth: 0,
+    wordBreak: 'break-word',
+  },
+  actionInfoCardSource: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+  },
+  actionInfoCardApiName: {
+    fontFamily: 'Consolas, Monaco, monospace',
+    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground3,
+  },
+  actionInfoCardNote: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: tokens.spacingHorizontalXS,
+    marginTop: tokens.spacingVerticalXXS,
+  },
+  actionInfoCardNoteIcon: {
+    color: tokens.colorBrandForeground1,
+    flexShrink: 0,
+    marginTop: '2px',
+  },
+  actionInfoCardNoteText: {
+    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground3,
+    fontStyle: 'italic',
+  },
 });
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -915,6 +965,48 @@ function EntityPipelineRow({
               </div>
             );
           })}
+
+          {/* Custom Action Triggers — entry points with operation === 'Action' are never matched
+              by any MessagePipeline.message ('Create'|'Update'|'Delete'|'Manual'), so they must
+              be surfaced in a dedicated section. */}
+          {(() => {
+            const actionTraces = view.traces.filter(t => t.entryPoint.operation === 'Action');
+            if (actionTraces.length === 0) return null;
+            return (
+              <>
+                <div className={styles.traceDivider} />
+                <div className={styles.traceSubHeader}>
+                  <OperationBadge operation="Action" /> Custom Action triggers
+                </div>
+                {actionTraces.map((t, i) => (
+                  <div key={`action-${i}`} className={styles.actionInfoCard}>
+                    <div className={styles.actionInfoCardHeader}>
+                      {typeIcon(t.entryPoint.automationType)}
+                      <Text className={styles.actionInfoCardName}>{t.entryPoint.automationName}</Text>
+                      <Badge appearance="outline" shape="rounded" color="informative" className={styles.tinyBadge}>
+                        {t.entryPoint.automationType}
+                      </Badge>
+                    </div>
+                    <Text className={styles.actionInfoCardSource}>
+                      Source entity: {t.entryPoint.sourceEntityDisplayName}
+                    </Text>
+                    {t.entryPoint.customActionApiName && (
+                      <Text className={styles.actionInfoCardApiName}>
+                        via <code>{t.entryPoint.customActionApiName}</code>
+                      </Text>
+                    )}
+                    <div className={styles.actionInfoCardNote}>
+                      <Info16Regular className={styles.actionInfoCardNoteIcon} />
+                      <Text className={styles.actionInfoCardNoteText}>
+                        Internal effects on this entity&apos;s pipeline are unknown — custom action
+                        logic is not statically analysed.
+                      </Text>
+                    </div>
+                  </div>
+                ))}
+              </>
+            );
+          })()}
         </div>
       )}
     </div>
