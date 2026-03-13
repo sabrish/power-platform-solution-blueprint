@@ -29,6 +29,14 @@ const useStyles = makeStyles({
     display: 'grid',
     gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto`,
   },
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    marginBottom: tokens.spacingVerticalS,
+    paddingLeft: tokens.spacingHorizontalM,
+    borderLeft: `3px solid ${tokens.colorBrandForeground1}`,
+  },
   conditionItem: {
     padding: tokens.spacingVerticalS,
     borderRadius: tokens.borderRadiusMedium,
@@ -194,10 +202,9 @@ export function BusinessRulesList({
         {/* Conditions Section */}
         {rule.definition.conditions.length > 0 && (
           <div className={shared.section}>
-            <Title3>IF (Conditions)</Title3>
-            <Text weight="semibold" style={{ marginBottom: tokens.spacingVerticalS }}>
-              {rule.definition.conditionLogic}
-            </Text>
+            <div className={styles.sectionHeader}>
+              <Text weight="semibold">IF</Text>
+            </div>
             {rule.definition.conditions.map((condition, idx) => (
               <div key={idx} className={styles.conditionItem}>
                 <Text>
@@ -209,11 +216,36 @@ export function BusinessRulesList({
           </div>
         )}
 
-        {/* Actions Section */}
+        {/* THEN Actions Section */}
         {rule.definition.thenActions.length > 0 && (
           <div className={shared.section}>
-            <Title3>THEN (Actions)</Title3>
+            <div className={styles.sectionHeader}>
+              <Text weight="semibold">THEN</Text>
+            </div>
             {rule.definition.thenActions.map((action, idx) => (
+              <div
+                key={idx}
+                className={styles.actionItem}
+                style={{ borderLeftColor: getActionBorderColor(action.type) }}
+              >
+                <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
+                <Text>
+                  <span className={shared.codeText}>{action.field}</span>
+                  {action.value && <> = <strong>{action.value}</strong></>}
+                  {action.message && <>: <em>{action.message}</em></>}
+                </Text>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ELSE Actions Section */}
+        {rule.definition.elseActions.length > 0 && (
+          <div className={shared.section}>
+            <div className={styles.sectionHeader}>
+              <Text weight="semibold">ELSE</Text>
+            </div>
+            {rule.definition.elseActions.map((action, idx) => (
               <div
                 key={idx}
                 className={styles.actionItem}
