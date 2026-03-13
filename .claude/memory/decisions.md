@@ -230,20 +230,29 @@ const { MarkdownReporter } = await import('./reporters/MarkdownReporter');
 
 ---
 
-## [2026-03-13] — Discovery Classes Must Implement IDiscoverer<T> Interface (Pending)
+## [2026-03-13] — Discovery Classes Must Implement IDiscoverer<T> Interface
 
-**Status:** Accepted — implementation pending
+**Status:** Accepted and implemented
 
-**Decision:** All discovery classes must eventually implement a shared `IDiscoverer<T>` interface with a consistent method signature. Currently no shared interface exists; each class has its own method names (`getFlowsByIds`, `getSecurityRoles`, etc.), making generic orchestration impossible.
+**Decision:** All discovery classes must implement a shared `IDiscoverer<T>` interface with a consistent method signature.
 
-**Target interface:**
+**Interface:**
 ```typescript
 interface IDiscoverer<T> {
-  discoverByIds(ids: string[], logger?: FetchLogger): Promise<T[]>;
+  discoverByIds(ids: string[]): Promise<T[]>;
 }
 ```
 
-**Reason:** Required for S3 (Liskov Substitution) compliance and to enable `BlueprintGenerator` to work generically. Do not add new discovery classes without implementing this interface.
+**Implementation:** `src/core/discovery/IDiscoverer.ts` — 11 classes implement it:
+- FlowDiscovery, PluginDiscovery, BusinessRuleDiscovery, ClassicWorkflowDiscovery
+- BusinessProcessFlowDiscovery, CustomAPIDiscovery, WebResourceDiscovery
+- EnvironmentVariableDiscovery, ConnectionReferenceDiscovery, GlobalChoiceDiscovery, SecurityRoleDiscovery
+
+`discoverByIds()` is the standard entry point. Existing concrete method names (`getFlowsByIds`, etc.) are preserved for backward compatibility.
+
+Processors in `src/core/generators/processors/` call `discoverByIds()` via the `IDiscoverer<T>` interface.
+
+**Reason:** Required for S3 (Liskov Substitution) compliance and to enable generic orchestration. Do not add new discovery classes without implementing this interface.
 
 ---
 

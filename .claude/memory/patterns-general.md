@@ -151,6 +151,44 @@ Do not force optional parameters onto classes that don't use them. If a discover
 
 ---
 
+## FILE ORGANISATION — One File, One Job
+
+**Rule:** Each file should contain ONE logical unit. If a filename contains "and", it likely violates this rule.
+
+**Examples:**
+- One component per file — `PluginsList.tsx`, not `PluginsAndFlowsList.tsx`
+- One hook per file — `useExpandable.ts`, not `useExpandableAndFilter.ts`
+- Utilities grouped by domain in `utils/` folder — `guid.ts`, `odata.ts`, `metadata.ts`
+- If a file exports more than one top-level function/component, those functions/components must be tightly related and used together
+
+**Exception:** Standalone output artifacts (HTML exports, Markdown reports) may combine multiple sections into a single file — this is acceptable because the output itself is a single deliverable.
+
+**Processors:** Component processors extracted to `src/core/generators/processors/` — one processor per component type. Each processor is a pure function that receives dependencies as parameters.
+
+---
+
+## DISCOVERY CLASSES — IDiscoverer<T> Interface
+
+**Standard interface:** `src/core/discovery/IDiscoverer.ts`
+
+All ID-based discovery classes implement:
+```typescript
+interface IDiscoverer<T> {
+  discoverByIds(ids: string[]): Promise<T[]>;
+}
+```
+
+**11 implementing classes:**
+- FlowDiscovery, PluginDiscovery, BusinessRuleDiscovery, ClassicWorkflowDiscovery
+- BusinessProcessFlowDiscovery, CustomAPIDiscovery, WebResourceDiscovery
+- EnvironmentVariableDiscovery, ConnectionReferenceDiscovery, GlobalChoiceDiscovery, SecurityRoleDiscovery
+
+**Usage in processors:** Discovery instances typed as `IDiscoverer<T>` where only `discoverByIds()` is needed. Concrete types used when additional methods are required (e.g. `SecurityRoleDiscovery.getRoleDetailsForRoles()`).
+
+**New discovery classes:** Must implement `IDiscoverer<T>` if they accept an array of IDs and return an array of results.
+
+---
+
 ## UNDERUSED EXISTING UTILITIES
 
 These already exist and MUST be used — not reimplemented:
@@ -163,3 +201,4 @@ These already exist and MUST be used — not reimplemented:
 | `useCardRowStyles` | `src/hooks/useCardRowStyles.ts` | All card-row list components |
 | `componentIcons` | `src/components/componentIcons.ts` | All component/tab icon references |
 | `EmptyState` | `src/components/EmptyState.tsx` | All empty list states |
+| `IDiscoverer<T>` | `src/core/discovery/IDiscoverer.ts` | All new ID-based discovery classes |
