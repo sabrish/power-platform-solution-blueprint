@@ -212,3 +212,45 @@ const { MarkdownReporter } = await import('./reporters/MarkdownReporter');
 3. **Storage:** Always store normalized GUIDs (lowercase, no braces)
 
 **Why:** Dataverse returns GUIDs with braces. OData needs them without for most fields. The `_solutionid_value` exception is a confirmed Dataverse quirk — changing it causes production failures.
+
+---
+
+## [2026-03-13] — DRY/SOLID Are Non-Negotiable Design Principles
+
+**Status:** Accepted
+
+**Decision:** All code must follow DRY (Don't Repeat Yourself) and SOLID principles. A full audit on 2026-03-13 found 87+ duplicate GUID normalisations, 80+ duplicate OData annotation reads, 100+ duplicate detail-row JSX pairs, and 20+ identical expand/collapse state blocks across the codebase. These will be eliminated over time through shared utilities and hooks.
+
+**Hard rules:**
+- Never reimplement `normalizeGuid` — use `src/core/utils/guid.ts`
+- Never reimplement `extractOwnershipMetadata` — use `src/core/utils/metadata.ts`
+- Never reimplement expand/collapse state — use `src/hooks/useExpandable.ts`
+- Never build OData OR-filters manually — always use `buildOrFilter()` from `src/core/utils/odata.ts`
+- Check `src/core/utils/` and `src/hooks/` before writing any new utility logic
+
+---
+
+## [2026-03-13] — Discovery Classes Must Implement IDiscoverer<T> Interface (Pending)
+
+**Status:** Accepted — implementation pending
+
+**Decision:** All discovery classes must eventually implement a shared `IDiscoverer<T>` interface with a consistent method signature. Currently no shared interface exists; each class has its own method names (`getFlowsByIds`, `getSecurityRoles`, etc.), making generic orchestration impossible.
+
+**Target interface:**
+```typescript
+interface IDiscoverer<T> {
+  discoverByIds(ids: string[], logger?: FetchLogger): Promise<T[]>;
+}
+```
+
+**Reason:** Required for S3 (Liskov Substitution) compliance and to enable `BlueprintGenerator` to work generically. Do not add new discovery classes without implementing this interface.
+
+---
+
+## [2026-03-13] — Adding a New Component Type Must Not Require Editing All Reporters (Pending)
+
+**Status:** Accepted — implementation pending
+
+**Decision:** Adding a new component type currently requires editing `BlueprintGenerator`, `MarkdownReporter`, `JsonReporter`, `HtmlReporter`, `ZipPackager`, the UI tab list, and analyzers — a violation of the Open/Closed Principle. A reporter templating pattern must be introduced incrementally to isolate per-component-type formatting.
+
+**Reason:** Audit identified this as S2 (Open/Closed) violation. Every new component type multiplies the edit surface.

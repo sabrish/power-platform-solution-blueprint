@@ -863,3 +863,27 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 - Right: Only `.claude/memory/interactions/` (session logs) is gitignored and must never be committed
 
 ---
+
+## [2026-03-13] — Never reimplement shared utilities — check src/core/utils/ and src/hooks/ first
+
+**Affects:** All agents (especially developer)
+**Severity:** Blocker
+**Rule:** Before writing any GUID normalisation, OData filter building, expand/collapse state, ownership metadata extraction, or display name resolution, check whether a shared utility already exists.
+
+Key utilities:
+- `src/core/utils/guid.ts` — `normalizeGuid(id)`, `normalizeBatch(ids[])`
+- `src/core/utils/metadata.ts` — `extractOwnershipMetadata(record)`
+- `src/core/utils/odata.ts` — `buildOrFilter()` (already existed; was being bypassed)
+- `src/core/utils/entityName.ts` — `resolveEntityName(value)` (normalises `null`, `''`, `'none'`)
+- `src/hooks/useExpandable.ts` — `useExpandable()` (expand/collapse state + toggle)
+- `src/hooks/useListFilter.ts` — shared filter/search logic for all list components
+
+---
+
+## [2026-03-13] — buildOrFilter() must be used for all OData OR-filter construction
+
+**Affects:** Developer, Reviewer
+**Severity:** Blocker
+**Rule:** Never construct OData OR-filters manually with `.map(id => \`field eq ${id}\`).join(' or ')`. Always use `buildOrFilter(batch, fieldName, options)` from `src/core/utils/odata.ts`.
+
+**Context:** Audit found 35+ manual filter constructions in CustomApiDiscovery, EnvironmentVariableDiscovery, ConnectionReferenceDiscovery, AppDiscovery, FieldSecurityProfileDiscovery that bypass the existing utility. These are being fixed in commit 5 of the fix/ui-and-logic-batch2 branch.

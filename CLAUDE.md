@@ -24,7 +24,8 @@ Before responding to any task, read in order:
    - Dataverse, API, discovery, export, build, commits → `.claude/memory/patterns-dataverse.md`
    - React components, Fluent UI v9, UI behaviour → `.claude/memory/patterns-ui.md`
    - Both → load both
-   - Documentation only (no code changes) → skip both
+   - Any task involving new or modified code → also load `.claude/memory/patterns-general.md`
+   - Documentation only (no code changes) → skip all pattern files
 5. `.claude/memory/interactions/` — scan for files relevant to the current task
 
 Report: **"Memory loaded: [files read]"**
@@ -56,6 +57,7 @@ Report: **"Memory loaded: [files read]"**
   `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>`
 - **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient; a passing typecheck does not guarantee the Vite build succeeds
 - **ALWAYS** run the `/pre-commit` skill before any commit touching source, docs, or memory files — it runs reviewer then security-auditor in sequence
+- **ALWAYS** check `src/core/utils/` and `src/hooks/` before writing any new utility logic — never reimplement `normalizeGuid`, `buildOrFilter`, `extractOwnershipMetadata`, `resolveEntityName`, or `useExpandable`
 
 ## UI Hard Rules (Fluent UI v9 — enforced at every review)
 
@@ -87,4 +89,5 @@ These rules were codified on 2026-03-09. Violations are blockers at review time.
 | `UI_PATTERNS.md` | Fluent UI v9 patterns (card-row lists, tokens, makeStyles) |
 | `NPM_SHRINKWRAP_GENERATION.md` | Shrinkwrap regeneration — must use `npm`, never `pnpm` |
 | `CONTRIBUTING.md` | Commit conventions and PR workflow |
+| `.claude/memory/patterns-general.md` | DRY/SOLID patterns — load for all code tasks |
 | `docs/` | Architecture, user guide, roadmap, API security reference |
