@@ -105,6 +105,12 @@ power-platform-solution-blueprint/
 
 **Why flat structure?** PPTB Desktop requires a single-package layout. The original monorepo (packages/core + packages/pptb-tool) was dismantled in v0.5.1 due to `pptb-webview://` protocol incompatibilities with workspace package references.
 
+### File Organisation Principle
+
+Each file has one reason to change. Sub-components, independent hooks, and reusable utilities each live in their own file. The exception is self-contained output generators (e.g. `HtmlReporter`) where the output format requires everything inline — that is a deliberate design choice.
+
+See `CONTRIBUTING.md` for the full rule.
+
 ---
 
 ## 3. Core Business Logic
