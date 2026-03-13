@@ -28,6 +28,16 @@ import { CustomConnectorDiscovery } from '../discovery/CustomConnectorDiscovery.
 import { ColumnSecurityDiscovery } from '../discovery/ColumnSecurityDiscovery.js';
 import { AppDiscovery } from '../discovery/AppDiscovery.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
+import { normalizeGuid } from '../utils/guid.js';
+import {
+  groupPluginsByEntity,
+  groupFlowsByEntity,
+  groupBusinessRulesByEntity,
+  groupClassicWorkflowsByEntity,
+  groupBusinessProcessFlowsByEntity,
+  groupFormsByEntity,
+  groupWebResourcesByType,
+} from '../utils/grouping.js';
 import { JsonReporter } from '../reporters/JsonReporter.js';
 import { MarkdownReporter } from '../reporters/MarkdownReporter.js';
 import { HtmlReporter } from '../reporters/HtmlReporter.js';
@@ -139,7 +149,7 @@ export class BlueprintGenerator {
 
       // STEP 3: Process Plugins
       const plugins = await this.processPlugins(inventory.pluginIds);
-      const pluginsByEntity = this.groupPluginsByEntity(plugins);
+      const pluginsByEntity = groupPluginsByEntity(plugins);
 
       if (inventory.pluginIds.length === 0) {
         warnings.push('No plugins found');
@@ -149,7 +159,7 @@ export class BlueprintGenerator {
 
       // STEP 4: Process Flows
       const flows = await this.processFlows(workflowInventory.flowIds);
-      const flowsByEntity = this.groupFlowsByEntity(flows);
+      const flowsByEntity = groupFlowsByEntity(flows);
 
       if (workflowInventory.flowIds.length === 0) {
         warnings.push('No flows found');
@@ -159,7 +169,7 @@ export class BlueprintGenerator {
 
       // STEP 5: Process Business Rules
       const businessRules = await this.processBusinessRules(workflowInventory.businessRuleIds);
-      const businessRulesByEntity = this.groupBusinessRulesByEntity(businessRules);
+      const businessRulesByEntity = groupBusinessRulesByEntity(businessRules);
 
       if (workflowInventory.businessRuleIds.length === 0) {
         warnings.push('No business rules found');
@@ -169,7 +179,7 @@ export class BlueprintGenerator {
 
       // STEP 5.5: Process Classic Workflows (deprecated, requires migration)
       const classicWorkflows = await this.processClassicWorkflows(workflowInventory.classicWorkflowIds);
-      const classicWorkflowsByEntity = this.groupClassicWorkflowsByEntity(classicWorkflows);
+      const classicWorkflowsByEntity = groupClassicWorkflowsByEntity(classicWorkflows);
 
       if (workflowInventory.classicWorkflowIds.length > 0) {
         warnings.push(`${workflowInventory.classicWorkflowIds.length} classic workflow(s) detected - migration to Power Automate recommended`);
@@ -179,13 +189,13 @@ export class BlueprintGenerator {
 
       // STEP 5.6: Process Business Process Flows
       const businessProcessFlows = await this.processBusinessProcessFlows(workflowInventory.businessProcessFlowIds);
-      const businessProcessFlowsByEntity = this.groupBusinessProcessFlowsByEntity(businessProcessFlows);
+      const businessProcessFlowsByEntity = groupBusinessProcessFlowsByEntity(businessProcessFlows);
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
       // STEP 6: Process Web Resources
       const webResources = await this.processWebResources(inventory.webResourceIds);
-      const webResourcesByType = this.groupWebResourcesByType(webResources);
+      const webResourcesByType = groupWebResourcesByType(webResources);
 
       if (inventory.webResourceIds.length === 0) {
         warnings.push('No web resources found');
@@ -279,7 +289,7 @@ export class BlueprintGenerator {
       // STEP 7: Process Forms and JavaScript Event Handlers
       // Pass entities with rootcomponentbehavior info to determine form inclusion
       const forms = await this.processForms(entities, inventory.formIds, inventory.entitiesWithAllSubcomponents);
-      const formsByEntity = this.groupFormsByEntity(forms);
+      const formsByEntity = groupFormsByEntity(forms);
 
       // STEP 8: Populate automation and security in entity blueprints
       for (const blueprint of entityBlueprints) {
@@ -604,11 +614,11 @@ export class BlueprintGenerator {
           if (!attr.MetadataId) return false;
 
           // Normalize GUIDs: remove braces and lowercase for comparison
-          const normalizedAttrId = this.normalizeGuid(attr.MetadataId);
+          const normalizedAttrId = normalizeGuid(attr.MetadataId);
 
           // Check if this attribute's ID exists in the solution attribute IDs
           return attributeIds.some(solutionAttrId =>
-            this.normalizeGuid(solutionAttrId) === normalizedAttrId
+            normalizeGuid(solutionAttrId) === normalizedAttrId
           );
         });
 
@@ -829,57 +839,6 @@ export class BlueprintGenerator {
     }
   }
 
-  /**
-   * Group flows by entity for entity-specific views
-   */
-  private groupFlowsByEntity(flows: Flow[]): Map<string, Flow[]> {
-    const flowsByEntity = new Map<string, Flow[]>();
-
-    for (const flow of flows) {
-      if (!flow.entity || flow.entity === 'none') {
-        // Flows without an entity (or with the literal "none" from Dataverse) are skipped
-        continue;
-      }
-
-      const entity = flow.entity.toLowerCase();
-      if (!flowsByEntity.has(entity)) {
-        flowsByEntity.set(entity, []);
-      }
-      flowsByEntity.get(entity)!.push(flow);
-    }
-
-    // Sort flows within each entity by name
-    for (const [, entityFlows] of flowsByEntity) {
-      entityFlows.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return flowsByEntity;
-  }
-
-  /**
-   * Group plugins by entity for entity-specific views
-   */
-  private groupPluginsByEntity(plugins: PluginStep[]): Map<string, PluginStep[]> {
-    const pluginsByEntity = new Map<string, PluginStep[]>();
-
-    for (const plugin of plugins) {
-      const entity = plugin.entity?.toLowerCase() ?? 'global';
-      if (!pluginsByEntity.has(entity)) {
-        pluginsByEntity.set(entity, []);
-      }
-      pluginsByEntity.get(entity)!.push(plugin);
-    }
-
-    // Sort plugins within each entity by stage and rank
-    for (const [, entityPlugins] of pluginsByEntity) {
-      entityPlugins.sort((a, b) => {
-        if (a.stage !== b.stage) return a.stage - b.stage;
-        return a.rank - b.rank;
-      });
-    }
-
-    return pluginsByEntity;
-  }
 
   /**
    * Process business rules - fetch detailed business rule metadata
@@ -978,27 +937,6 @@ export class BlueprintGenerator {
     }
   }
 
-  /**
-   * Group business rules by entity
-   */
-  private groupBusinessRulesByEntity(businessRules: BusinessRule[]): Map<string, BusinessRule[]> {
-    const businessRulesByEntity = new Map<string, BusinessRule[]>();
-
-    for (const rule of businessRules) {
-      const entity = rule.entity.toLowerCase();
-      if (!businessRulesByEntity.has(entity)) {
-        businessRulesByEntity.set(entity, []);
-      }
-      businessRulesByEntity.get(entity)!.push(rule);
-    }
-
-    // Sort business rules within each entity by name
-    for (const [, entityRules] of businessRulesByEntity) {
-      entityRules.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return businessRulesByEntity;
-  }
 
   /**
    * Process classic workflows (deprecated, requires migration)
@@ -1053,27 +991,6 @@ export class BlueprintGenerator {
     }
   }
 
-  /**
-   * Group classic workflows by entity
-   */
-  private groupClassicWorkflowsByEntity(workflows: import('../types/classicWorkflow.js').ClassicWorkflow[]): Map<string, import('../types/classicWorkflow.js').ClassicWorkflow[]> {
-    const workflowsByEntity = new Map<string, import('../types/classicWorkflow.js').ClassicWorkflow[]>();
-
-    for (const workflow of workflows) {
-      const entity = workflow.entity.toLowerCase();
-      if (!workflowsByEntity.has(entity)) {
-        workflowsByEntity.set(entity, []);
-      }
-      workflowsByEntity.get(entity)!.push(workflow);
-    }
-
-    // Sort workflows within each entity by name
-    for (const [, entityWorkflows] of workflowsByEntity) {
-      entityWorkflows.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return workflowsByEntity;
-  }
 
   /**
    * Process Business Process Flows
@@ -1123,27 +1040,6 @@ export class BlueprintGenerator {
     }
   }
 
-  /**
-   * Group Business Process Flows by primary entity
-   */
-  private groupBusinessProcessFlowsByEntity(bpfs: import('../types/businessProcessFlow.js').BusinessProcessFlow[]): Map<string, import('../types/businessProcessFlow.js').BusinessProcessFlow[]> {
-    const bpfsByEntity = new Map<string, import('../types/businessProcessFlow.js').BusinessProcessFlow[]>();
-
-    for (const bpf of bpfs) {
-      const entity = bpf.primaryEntity.toLowerCase();
-      if (!bpfsByEntity.has(entity)) {
-        bpfsByEntity.set(entity, []);
-      }
-      bpfsByEntity.get(entity)!.push(bpf);
-    }
-
-    // Sort BPFs within each entity by name
-    for (const [, entityBpfs] of bpfsByEntity) {
-      entityBpfs.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return bpfsByEntity;
-  }
 
   /**
    * Process Custom APIs
@@ -1379,7 +1275,7 @@ export class BlueprintGenerator {
       // Filter to only profiles in the solution
       const profilesInSolution = allProfiles.filter(profile =>
         profileIds.some(id =>
-          this.normalizeGuid(id) === this.normalizeGuid(profile.fieldsecurityprofileid)
+          normalizeGuid(id) === normalizeGuid(profile.fieldsecurityprofileid)
         )
       );
 
@@ -1535,56 +1431,6 @@ export class BlueprintGenerator {
     }
   }
 
-  /**
-   * Group forms by entity
-   */
-  private groupFormsByEntity(forms: import('../types/blueprint.js').FormDefinition[]): Map<string, import('../types/blueprint.js').FormDefinition[]> {
-    const formsByEntity = new Map<string, import('../types/blueprint.js').FormDefinition[]>();
-
-    for (const form of forms) {
-      const entity = form.entity.toLowerCase();
-      if (!formsByEntity.has(entity)) {
-        formsByEntity.set(entity, []);
-      }
-      formsByEntity.get(entity)!.push(form);
-    }
-
-    // Sort forms within each entity by name
-    for (const [, entityForms] of formsByEntity) {
-      entityForms.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return formsByEntity;
-  }
-
-  /**
-   * Group web resources by type
-   */
-  private groupWebResourcesByType(webResources: WebResource[]): Map<string, WebResource[]> {
-    const webResourcesByType = new Map<string, WebResource[]>();
-
-    for (const resource of webResources) {
-      const type = resource.typeName;
-      if (!webResourcesByType.has(type)) {
-        webResourcesByType.set(type, []);
-      }
-      webResourcesByType.get(type)!.push(resource);
-    }
-
-    // Sort web resources within each type by name
-    for (const [, typeResources] of webResourcesByType) {
-      typeResources.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return webResourcesByType;
-  }
-
-  /**
-   * Normalize GUID for comparison (remove braces, lowercase)
-   */
-  private normalizeGuid(guid: string): string {
-    return guid.toLowerCase().replace(/[{}]/g, '');
-  }
 
   /**
    * Export blueprint as JSON

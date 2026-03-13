@@ -13,9 +13,7 @@ import type {
   FileNode,
   MarkdownExport,
   PluginStep,
-  Flow,
   BusinessRule,
-  WebResource,
   PerformanceRisk,
   ExternalEndpoint,
   ERDDefinition,
@@ -29,12 +27,19 @@ import type {
 } from '../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../types/classicWorkflow.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
-import type { CustomAPI } from '../types/customApi.js';
 import type { CanvasApp } from '../types/canvasApp.js';
 import type { CustomPage } from '../types/customPage.js';
 import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
 import MarkdownFormatter from './markdown/MarkdownFormatter.js';
-import { resolveEntityName } from '../utils/entityName.js';
+import {
+  groupPluginsByAssembly,
+  groupFlowsByEntity,
+  groupBusinessRulesByEntity,
+  groupClassicWorkflowsByEntity,
+  groupBpfsByEntity,
+  groupWebResourcesByType,
+  groupCustomAPIsByBinding,
+} from '../utils/grouping.js';
 
 export class MarkdownReporter {
   /**
@@ -623,7 +628,7 @@ export class MarkdownReporter {
     }
 
     // Group by assembly -> entity -> message
-    const grouped = this.groupPluginsByAssembly(result.plugins);
+    const grouped = groupPluginsByAssembly(result.plugins);
 
     for (const [assemblyName, entities] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(assemblyName, 2));
@@ -694,7 +699,7 @@ export class MarkdownReporter {
     }
 
     // Group by entity -> trigger type
-    const grouped = this.groupFlowsByEntity(result.flows);
+    const grouped = groupFlowsByEntity(result.flows);
 
     for (const [entityName, flows] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(entityName || 'Manual/Scheduled Flows', 2));
@@ -736,7 +741,7 @@ export class MarkdownReporter {
     }
 
     // Group by entity
-    const grouped = this.groupBusinessRulesByEntity(result.businessRules);
+    const grouped = groupBusinessRulesByEntity(result.businessRules);
 
     for (const [entityName, rules] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(entityName, 2));
@@ -814,7 +819,7 @@ export class MarkdownReporter {
     }
 
     // Group by entity
-    const grouped = this.groupClassicWorkflowsByEntity(result.classicWorkflows);
+    const grouped = groupClassicWorkflowsByEntity(result.classicWorkflows);
 
     for (const [entityName, workflows] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(entityName, 2));
@@ -861,7 +866,7 @@ export class MarkdownReporter {
     }
 
     // Group by type
-    const grouped = this.groupWebResourcesByType(result.webResources);
+    const grouped = groupWebResourcesByType(result.webResources);
 
     for (const [typeName, resources] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(`${typeName} Files`, 2));
@@ -918,7 +923,7 @@ export class MarkdownReporter {
     }
 
     // Group by binding type
-    const grouped = this.groupCustomAPIsByBinding(result.customAPIs);
+    const grouped = groupCustomAPIsByBinding(result.customAPIs);
 
     for (const [bindingType, apis] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(`${bindingType} APIs`, 2));
@@ -1126,7 +1131,7 @@ export class MarkdownReporter {
     }
 
     // Group by primary entity
-    const grouped = this.groupBpfsByEntity(result.businessProcessFlows);
+    const grouped = groupBpfsByEntity(result.businessProcessFlows);
 
     for (const [entityName, bpfs] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(entityName, 2));
@@ -2632,126 +2637,6 @@ export class MarkdownReporter {
     return 'Unknown';
   }
 
-  /**
-   * Group plugins by assembly -> entity
-   */
-  private groupPluginsByAssembly(plugins: PluginStep[]): Map<string, Map<string, PluginStep[]>> {
-    const grouped = new Map<string, Map<string, PluginStep[]>>();
-
-    for (const plugin of plugins) {
-      if (!grouped.has(plugin.assemblyName)) {
-        grouped.set(plugin.assemblyName, new Map());
-      }
-
-      const entities = grouped.get(plugin.assemblyName)!;
-      const entityKey = plugin.entity ?? 'Global';
-      if (!entities.has(entityKey)) {
-        entities.set(entityKey, []);
-      }
-
-      entities.get(entityKey)!.push(plugin);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group flows by entity
-   */
-  private groupFlowsByEntity(flows: Flow[]): Map<string, Flow[]> {
-    const grouped = new Map<string, Flow[]>();
-
-    for (const flow of flows) {
-      const entity = resolveEntityName(flow.entity) ?? 'Manual/Scheduled';
-      if (!grouped.has(entity)) {
-        grouped.set(entity, []);
-      }
-      grouped.get(entity)!.push(flow);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group business rules by entity
-   */
-  private groupBusinessRulesByEntity(rules: BusinessRule[]): Map<string, BusinessRule[]> {
-    const grouped = new Map<string, BusinessRule[]>();
-
-    for (const rule of rules) {
-      if (!grouped.has(rule.entity)) {
-        grouped.set(rule.entity, []);
-      }
-      grouped.get(rule.entity)!.push(rule);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group classic workflows by entity
-   */
-  private groupClassicWorkflowsByEntity(workflows: ClassicWorkflow[]): Map<string, ClassicWorkflow[]> {
-    const grouped = new Map<string, ClassicWorkflow[]>();
-
-    for (const workflow of workflows) {
-      if (!grouped.has(workflow.entity)) {
-        grouped.set(workflow.entity, []);
-      }
-      grouped.get(workflow.entity)!.push(workflow);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group web resources by type
-   */
-  private groupWebResourcesByType(resources: WebResource[]): Map<string, WebResource[]> {
-    const grouped = new Map<string, WebResource[]>();
-
-    for (const resource of resources) {
-      if (!grouped.has(resource.typeName)) {
-        grouped.set(resource.typeName, []);
-      }
-      grouped.get(resource.typeName)!.push(resource);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group custom APIs by binding type
-   */
-  private groupCustomAPIsByBinding(apis: CustomAPI[]): Map<string, CustomAPI[]> {
-    const grouped = new Map<string, CustomAPI[]>();
-
-    for (const api of apis) {
-      if (!grouped.has(api.bindingType)) {
-        grouped.set(api.bindingType, []);
-      }
-      grouped.get(api.bindingType)!.push(api);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group BPFs by primary entity
-   */
-  private groupBpfsByEntity(bpfs: BusinessProcessFlow[]): Map<string, BusinessProcessFlow[]> {
-    const grouped = new Map<string, BusinessProcessFlow[]>();
-
-    for (const bpf of bpfs) {
-      const entity = bpf.primaryEntityDisplayName || bpf.primaryEntity;
-      if (!grouped.has(entity)) {
-        grouped.set(entity, []);
-      }
-      grouped.get(entity)!.push(bpf);
-    }
-
-    return grouped;
-  }
 
   /**
    * Calculate complexity score for entity
