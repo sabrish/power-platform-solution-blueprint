@@ -21,7 +21,7 @@ interface JsonExportWrapper {
  * - Version control (git diff friendly)
  */
 export class JsonReporter {
-  private readonly toolVersion = '1.0.1';
+  private readonly toolVersion = '1.1.0';
 
   /**
    * Generate JSON export of blueprint
