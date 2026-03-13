@@ -200,12 +200,16 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   }, [solutions]);
 
   const isDefaultSolution = useCallback(
-    (sol: Solution) => sol.uniquename === 'Default',
+    (sol: Solution) =>
+      sol.uniquename === 'Default' ||
+      sol.friendlyname === 'Common Data Services Default Solution',
     []
   );
 
   const isDefaultPublisher = useCallback(
-    (pub: Publisher) => !!defaultPublisherUniqueName && pub.uniquename === defaultPublisherUniqueName,
+    (pub: Publisher) =>
+      (!!defaultPublisherUniqueName && pub.uniquename === defaultPublisherUniqueName) ||
+      pub.uniquename === 'microsoftdynamics',
     [defaultPublisherUniqueName]
   );
 
