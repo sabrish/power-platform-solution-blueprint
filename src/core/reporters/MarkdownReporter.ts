@@ -765,7 +765,7 @@ export class MarkdownReporter {
           sections.push('');
         }
         if (rule.definition.conditions.length > 0) {
-          sections.push('**Conditions**');
+          sections.push(MarkdownFormatter.formatHeading('IF: Conditions', 4));
           sections.push('');
           const cHeaders = ['#', 'Field', 'Operator', 'Value', 'Logic'];
           const cRows = rule.definition.conditions.map((c, i) => [
@@ -779,7 +779,7 @@ export class MarkdownReporter {
           sections.push('');
         }
         if (rule.definition.actions.length > 0) {
-          sections.push('**Actions**');
+          sections.push(MarkdownFormatter.formatHeading('THEN: Actions', 4));
           sections.push('');
           const aHeaders = ['Type', 'Field', 'Value / Message'];
           const aRows = rule.definition.actions.map(a => [
