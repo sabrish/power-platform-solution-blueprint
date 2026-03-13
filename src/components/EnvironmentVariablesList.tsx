@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, MouseEvent } from 'react';
 import {
   Text,
   Badge,
@@ -128,7 +128,7 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     setExpandedId(prev => prev === id ? null : id);
   }, []);
 
-  const toggleReveal = useCallback((id: string, e: React.MouseEvent) => {
+  const toggleReveal = useCallback((id: string, e: MouseEvent<HTMLElement>) => {
     e.stopPropagation();
     setRevealedIds(prev => {
       const next = new Set(prev);
