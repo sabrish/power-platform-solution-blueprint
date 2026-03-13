@@ -191,15 +191,24 @@ Promoted → PATTERN-006 in patterns-dataverse.md ([2026-02-11])
 
 ---
 
-## [2026-02-26] — Version numbers in three files must always match at release time
+## [2026-02-26, updated 2026-03-13] — Version numbers in five files must always match at release time
 
 **Affects:** Document Updater, Orchestrator, Reviewer
 **Severity:** Blocker
-**Rule:** Version numbers appear in three places that must all match before a release is tagged: (1) `package.json` — the `"version"` field, (2) `CHANGELOG.md` — the latest versioned entry header (e.g. `## [0.8.0] — 2026-02-26`), (3) `README.md` — the shields.io version badge at the top and any inline version references. The Document Updater must update all three in the same release step. Mismatched versions across these files is a release blocker and must be resolved before the orchestrator prints the git tag command.
-**Context:** Added after noticing the README.md version badge was not explicitly included in the release workflow document-updater step. The orchestrator release sequence now requires the document-updater to confirm all three files are consistent before marking step 4 complete.
+**Rule:** Version numbers appear in five places that must all match before a release is tagged:
+1. `package.json` — the `"version"` field
+2. `CHANGELOG.md` — the latest versioned entry header (e.g. `## [1.1.0] — 2026-03-12`)
+3. `README.md` — the shields.io version badge at the top and any inline version references
+4. `src/core/reporters/JsonReporter.ts` — the `private readonly toolVersion` field (line ~24). This is hardcoded and is NOT derived from `package.json`. It must be manually updated on every release.
+5. `docs/user-guide.md` — the version string in the subtitle on line 3 (e.g. `Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.0`)
+
+The Document Updater must update all five in the same release step. Mismatched versions across any of these files is a release blocker and must be resolved before the orchestrator prints the git tag command.
+**Context:** (1–3) Added 2026-02-26 after noticing the README badge was missing from the release workflow. (4–5) Added 2026-03-13: `JsonReporter.ts` contains a hardcoded `toolVersion` class field that agents repeatedly overlooked at release time; `docs/user-guide.md` line 3 subtitle also embeds the version string and was equally overlooked.
 **Example:**
-- Wrong: Bumping `package.json` to `0.8.0` and updating `CHANGELOG.md` but leaving the README badge on `0.7.2`
-- Right: Update `package.json`, `CHANGELOG.md`, and `README.md` badge in the same step; verify all three read `0.8.0` before proceeding
+- Wrong: Bumping `package.json` to `1.2.0` and updating `CHANGELOG.md` and `README.md` but leaving `JsonReporter.ts` on `1.1.0` and `docs/user-guide.md` subtitle on `v1.1.0`
+- Right: Update all five files in the same step; verify every location reads the new version before proceeding
+- ❌ Wrong: `private readonly toolVersion = '1.1.0';` after bumping the project to `1.2.0`
+- ✅ Right: `private readonly toolVersion = '1.2.0';` — updated in the same commit as `package.json`
 
 ---
 
