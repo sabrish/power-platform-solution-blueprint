@@ -25,25 +25,6 @@ export class BusinessRuleParser {
   private static readonly RE_DIRECT_VAL = /var\s+(v\d+)\s*=\s*(v\d+)\.get(?:Value|UtcValue)\(\)/g;
   private static readonly RE_DERIVED_VAR = /var\s+(v\d+)\s*=\s*\(\s*\(\s*\(\s*(v\d+)\s*\)\s*!=\s*undefined/g;
 
-  // Condition patterns
-  private static readonly RE_NOT_EMPTY = /\(*(v\d+)\)*\s*!==?\s*(?:undefined|null|"")/g;
-  private static readonly RE_IS_EMPTY = /\(*(v\d+)\)*\s*===?\s*(?:undefined|null|"")/g;
-  private static readonly RE_EQ_LITERAL = /\(*(v\d+)\)*\s*===?\s*\((true|false|'[^']*'|"[^"]*"|-?\d+(?:\.\d+)?)\)/g;
-  private static readonly RE_STR_OP = /\bv\d+\(\(\s*(v\d+)\s*\)\s*,\s*\(\s*'([^']*)'\s*\)\s*,\s*function[\s\S]{0,500}?indexOf[\s\S]{0,80}?(===|!==)\s*-1/g;
-  private static readonly RE_COMP = /\(*(v\d+)\)*\s*([<>]=?)\s*\(*(v\d+)\)*/g;
-
-  // Action patterns
-  private static readonly RE_REQ_LEVEL = /\(*(v\d+)\)*\.setRequiredLevel\(['"]([^'"]+)['"]\)/g;
-  private static readonly RE_VISIBLE = /\(*(v\d+)\)*\.setVisible\((true|false)\)/g;
-  private static readonly RE_CTRL_VISIBLE = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setVisible\((true|false)\)/g;
-  private static readonly RE_DISABLED = /\(*(v\d+)\)*\.setDisabled\((true|false)\)/g;
-  private static readonly RE_CTRL_DISABLED = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setDisabled\((true|false)\)/g;
-  private static readonly RE_SET_VAL = /\(*(v\d+)\)*\.setValue\(([^)]*)\)/g;
-  private static readonly RE_NOTIF_MSG = /GetResourceString\([^,]+,\s*'([^']+)'\)[^,)]*,\s*'([^'"]+)'/g;
-  private static readonly RE_NOTIF_LIT = /c\.setNotification\('([^']+)',\s*'([^']+)'\)/g;
-  private static readonly RE_CLEANUP = /\{'CId'\s*:\s*'([^']+)'\s*,\s*'SId'\s*:\s*'([^']+)'\}/g;
-  private static readonly RE_CTRL_NOTIF = /(v\d+)\.controls\.forEach[\s\S]{0,300}?c\.setNotification/g;
-
   // XAML parsing patterns
   private static readonly RE_COND_PATTERN = /<condition[^>]*attribute="([^"]*)"[^>]*operator="([^"]*)"[^>]*>[\s\S]*?<value[^>]*>([^<]*)<\/value>/gi;
   private static readonly RE_WF4_COND = /<(?:\w+:)?ConditionExpression[^>]*LeftOperand="([^"]*)"[^>]*Operator="([^"]*)"[^>]*RightOperand="([^"]*)"[^/]*/gi;
@@ -55,17 +36,6 @@ export class BusinessRuleParser {
    * Parse business rule — tries clientdata (JSON) first, then XAML
    */
   static parse(xaml: string | null, clientdata: string | null = null, _ruleName?: string): BusinessRuleDefinition {
-    // DIAGNOSTIC — remove before release
-    if (clientdata && clientdata.trim()) {
-      const format = clientdata.trimStart().startsWith('<') ? 'XML/compiled-JS' :
-                     clientdata.trimStart().startsWith('{') ? 'JSON' : 'unknown';
-      console.log('[PPSB-DIAG] BusinessRuleParser raw clientdata preview:', {
-        ruleName: _ruleName ?? 'unknown',
-        format,
-        preview: clientdata.substring(0, 2000),
-      });
-    }
-
     if (clientdata && clientdata.trim()) {
       if (clientdata.trimStart().startsWith('<')) {
         // XML format: <clientdata><clientcode><![CDATA[...compiled JS...]]></clientcode></clientdata>
@@ -151,17 +121,20 @@ export class BusinessRuleParser {
    * Parse the standard Dataverse clientdata XML format.
    *
    * clientdata is always XML: <clientdata><clientcode><![CDATA[...]]></clientcode></clientdata>
-   * The CDATA contains compiled JavaScript that implements the rule. We extract conditions
-   * and actions by analysing the variable bindings and method calls in that JS.
+   * The CDATA contains compiled JavaScript that implements the rule with this structure:
+   *   1. var v0 = entity reference
+   *   2. var v1 = v0.attributes.get('field_logical_name')  ← field attribute variables
+   *   3. if(v1==null || v2==null ...) { return; }  ← null guard (skip — not a condition)
+   *   4. var vN = (v1) ? v1.getValue() : null  ← value variable for the condition field
+   *   5. if((vN) === (795390000)) { ... }  ← THE ACTUAL CONDITION (optionset/boolean/lookup equals)
+   *   6. Inside the if block: THEN actions
+   *   7. } else if(true) { ... }  ← ELSE actions (always "else if(true)", never plain "else")
    *
-   * Variable naming pattern Dataverse uses:
-   *   var v0 = entity reference
-   *   var v1 = v0.attributes.get('emailaddress1')  ← field-control variable
-   *   var v4 = (v1) ? v1.getValue() : null          ← value variable
-   *
-   * Conditions come from: value-var != undefined checks (distinct from the guard-return
-   * at the top which checks field-control vars with == undefined).
-   * Actions come from: v2.setRequiredLevel(...), v2.setVisible(...), etc.
+   * We extract:
+   *   - Variable maps: vN → field logical name
+   *   - Conditions: from the main if statement (not the null guard)
+   *   - THEN actions: from the if block
+   *   - ELSE actions: from the else if(true) block
    */
   private static parseClientDataXml(clientdata: string): BusinessRuleDefinition | null {
     const cdataMatch = clientdata.match(BusinessRuleParser.RE_CDATA);
@@ -171,34 +144,30 @@ export class BusinessRuleParser {
 
     let m: RegExpExecArray | null;
 
-    // ── Variable maps ──────────────────────────────────────────────────────────
+    // ── Step 1: Build variable-to-field map ──────────────────────────────────
 
-    // field-control var → field logical name
+    // field-attribute var → field logical name
     // var v1 = v0.attributes.get('emailaddress1');
     const fieldVarMap = new Map<string, string>();
     BusinessRuleParser.RE_FIELD_DECL.lastIndex = 0;
     while ((m = BusinessRuleParser.RE_FIELD_DECL.exec(js)) !== null) fieldVarMap.set(m[1], m[2]);
 
-    // value-var → field-control var
-    // (a) ternary: var v4 = (v1) ? v1.getValue() : null;  also handles getUtcValue/getOptions
+    // ── Step 2: Build value-variable map ──────────────────────────────────────
+
+    // value-var → attribute-var
+    // var v4 = (v1) ? v1.getValue() : null
     const valueVarMap = new Map<string, string>();
     BusinessRuleParser.RE_TERNARY_VAL.lastIndex = 0;
     while ((m = BusinessRuleParser.RE_TERNARY_VAL.exec(js)) !== null) valueVarMap.set(m[1], m[2]);
-    // (b) direct: var v4 = v1.getValue();
     BusinessRuleParser.RE_DIRECT_VAL.lastIndex = 0;
     while ((m = BusinessRuleParser.RE_DIRECT_VAL.exec(js)) !== null) {
       if (!valueVarMap.has(m[1])) valueVarMap.set(m[1], m[2]);
     }
 
-    // derived-var → source value-var  (date normalisation)
-    // var v4 = (((v3) != undefined && ...) ? new Date((v3)...) : null)
+    // derived-var → source value-var (date normalisation)
     const derivedVarMap = new Map<string, string>();
     BusinessRuleParser.RE_DERIVED_VAR.lastIndex = 0;
     while ((m = BusinessRuleParser.RE_DERIVED_VAR.exec(js)) !== null) derivedVarMap.set(m[1], m[2]);
-
-    // Variables that only serve as null-guard sources inside a derived-var computation.
-    // Their != undefined checks are implementation detail, not business-rule conditions.
-    const derivedSources = new Set(derivedVarMap.values());
 
     // Resolve vN → field logical name (derivedVarMap → valueVarMap → fieldVarMap)
     const resolveField = (varName: string): string => {
@@ -208,161 +177,151 @@ export class BusinessRuleParser {
       return fieldVarMap.get(v) ?? varName;
     };
 
-    // ── Conditions ─────────────────────────────────────────────────────────────
+    // ── Step 3: Skip null guard ────────────────────────────────────────────────
+
+    // The null guard is always: if(v1==null || v2==null || v1==undefined || v2==undefined) { return; }
+    // We don't extract conditions from it — we skip it entirely by looking for the NEXT if statement.
+
+    // ── Step 4: Extract the main condition ─────────────────────────────────────
 
     const conditions: Condition[] = [];
-    const seenCondKeys = new Set<string>();
-    const addCondition = (field: string, operator: string, value = '') => {
-      if (/^v\d+$/.test(field)) return; // unresolved variable — skip
-      const key = `${field}|${operator}|${value}`;
-      if (seenCondKeys.has(key)) return;
-      seenCondKeys.add(key);
-      conditions.push({ field, operator, value, logicOperator: 'AND' });
-    };
 
-    // (a) "contains data": value-vars / derived-vars checked with != / !== undefined|null|""
-    // \(* handles any number of wrapping parens: Dataverse uses both (vN) and ((vN))
-    BusinessRuleParser.RE_NOT_EMPTY.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_NOT_EMPTY.exec(js)) !== null) {
-      const varName = m[1];
-      if (!valueVarMap.has(varName) && !derivedVarMap.has(varName)) continue; // guard-clause uses field-control vars
-      if (derivedSources.has(varName)) continue; // null guard inside derived-var computation
-      const field = resolveField(varName);
-      addCondition(field, 'contains data');
-    }
+    // After the null guard, the main condition appears. We detect three patterns:
 
-    // (b) "does not contain data": value-vars checked with == / === undefined|null|""
-    // Early-return guard uses field-control vars (not in valueVarMap) — safely skipped by the filter.
-    BusinessRuleParser.RE_IS_EMPTY.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_IS_EMPTY.exec(js)) !== null) {
-      const varName = m[1];
-      if (!valueVarMap.has(varName) && !derivedVarMap.has(varName)) continue;
-      if (derivedSources.has(varName)) continue;
-      const field = resolveField(varName);
-      addCondition(field, 'does not contain data');
-    }
-
-    // (c) "equals literal": (vN)==(true|false|'string'|number)
-    // Dataverse wraps the literal in parens, e.g. (v3)==(false) for Two Options fields.
-    // The compound boolean check pattern is: (v3)==(false)||((v3)==true&&...)
-    // Only the first clause uses parens around the literal, so this regex fires exactly once per branch.
-    BusinessRuleParser.RE_EQ_LITERAL.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_EQ_LITERAL.exec(js)) !== null) {
-      const varName = m[1];
-      if (!valueVarMap.has(varName) && !derivedVarMap.has(varName)) continue;
-      if (derivedSources.has(varName)) continue;
-      const field = resolveField(varName);
-      const rawVal = m[2].replace(/^['"]|['"]$/g, '');
-      addCondition(field, 'equals', rawVal);
-    }
-
-    // (d) String "contains" / "does not contain" via Dataverse helper comparator function:
-    // var vH = function(op1, op2, e){ return e(op1, op2); };
-    // vH((vN), ('value'), function(op1,op2){ ... op1.toUpperCase().indexOf(op2.toUpperCase()) === -1 ... })
-    // indexOf === -1 → "does not contain"; indexOf !== -1 → "contains"
-    BusinessRuleParser.RE_STR_OP.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_STR_OP.exec(js)) !== null) {
-      const varName = m[1], literal = m[2], cmp = m[3];
-      if (!valueVarMap.has(varName) && !derivedVarMap.has(varName)) continue;
-      if (derivedSources.has(varName)) continue;
-      const field = resolveField(varName);
-      addCondition(field, cmp === '===' ? 'does not contain' : 'contains', literal);
-    }
-
-    // (e) comparison: (vA) < (vB), (vA) > (vB), (vA) <= (vB), (vA) >= (vB)
-    const compOpNames: Record<string, string> = {
-      '<': 'is less than', '>': 'is greater than',
-      '<=': 'is less than or equal to', '>=': 'is greater than or equal to',
-    };
-    const flipOps: Record<string, string> = {
-      '<': 'is greater than', '>': 'is less than',
-      '<=': 'is greater than or equal to', '>=': 'is less than or equal to',
-    };
-    BusinessRuleParser.RE_COMP.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_COMP.exec(js)) !== null) {
-      const lhsVar = m[1], op = m[2], rhsVar = m[3];
-      const lhsField = resolveField(lhsVar);
-      const rhsField = resolveField(rhsVar);
-      if (lhsField === lhsVar && rhsField === rhsVar) continue; // neither side resolved
-      if (lhsField !== lhsVar) {
-        addCondition(lhsField, compOpNames[op] ?? op, rhsField !== rhsVar ? rhsField : rhsVar);
-      } else {
-        addCondition(rhsField, flipOps[op] ?? op, lhsVar);
+    // Pattern A: option set equals integer
+    // if((vN) === (795390000))
+    const matchOptionSet = js.match(/if\s*\(\s*\((v\d+)\)\s*===\s*\((\d+)\)\s*\)/);
+    if (matchOptionSet) {
+      const valueVar = matchOptionSet[1];
+      const optionValue = matchOptionSet[2];
+      const field = resolveField(valueVar);
+      if (field !== valueVar) {
+        conditions.push({ field, operator: 'equals', value: optionValue, logicOperator: 'AND' });
       }
     }
 
-    // ── Actions ────────────────────────────────────────────────────────────────
-
-    const actions: Action[] = [];
-
-    // .setRequiredLevel('required' | 'none' | 'recommended')
-    BusinessRuleParser.RE_REQ_LEVEL.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_REQ_LEVEL.exec(js)) !== null)
-      actions.push({ type: 'SetRequired', field: resolveField(m[1]), value: m[2] });
-
-    // .setVisible(true|false) — direct call
-    BusinessRuleParser.RE_VISIBLE.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_VISIBLE.exec(js)) !== null)
-      actions.push({ type: m[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(m[1]) });
-
-    // .controls.forEach(function(c,i){ c.setVisible(true|false) }) — delegate pattern
-    BusinessRuleParser.RE_CTRL_VISIBLE.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_CTRL_VISIBLE.exec(js)) !== null)
-      actions.push({ type: m[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(m[1]) });
-
-    // .setDisabled(true|false) — direct call
-    BusinessRuleParser.RE_DISABLED.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_DISABLED.exec(js)) !== null)
-      actions.push({ type: m[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(m[1]) });
-
-    // .controls.forEach(function(c,i){ c.setDisabled(true|false) }) — delegate pattern
-    BusinessRuleParser.RE_CTRL_DISABLED.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_CTRL_DISABLED.exec(js)) !== null)
-      actions.push({ type: m[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(m[1]) });
-
-    // .setValue(value)
-    BusinessRuleParser.RE_SET_VAL.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_SET_VAL.exec(js)) !== null) {
-      const raw = m[2].trim().replace(/^['"]|['"]$/g, '');
-      actions.push({ type: 'SetValue', field: resolveField(m[1]), value: raw || undefined });
-    }
-
-    // ShowError: c.setNotification(GetResourceString(guid, 'message'), stepId)
-    // Build stepId → message from GetResourceString fallback args
-    const notifMsgMap = new Map<string, string>();
-    BusinessRuleParser.RE_NOTIF_MSG.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_NOTIF_MSG.exec(js)) !== null) notifMsgMap.set(m[2], m[1]);
-    // Literal string fallback: c.setNotification('message', 'stepId')
-    BusinessRuleParser.RE_NOTIF_LIT.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_NOTIF_LIT.exec(js)) !== null) {
-      if (!notifMsgMap.has(m[2])) notifMsgMap.set(m[2], m[1]);
-    }
-    // Cleanup array maps field → stepId: {'CId':'fieldname','SId':'stepId'}
-    const notifSeen = new Set<string>();
-    BusinessRuleParser.RE_CLEANUP.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_CLEANUP.exec(js)) !== null) {
-      const field = m[1], stepId = m[2];
-      const key = `${field}|${stepId}`;
-      if (!notifSeen.has(key)) {
-        notifSeen.add(key);
-        actions.push({ type: 'ShowError', field, message: notifMsgMap.get(stepId) });
-      }
-    }
-    // Fallback: controls.forEach + setNotification without a cleanup array
-    if (notifSeen.size === 0) {
-      BusinessRuleParser.RE_CTRL_NOTIF.lastIndex = 0;
-      while ((m = BusinessRuleParser.RE_CTRL_NOTIF.exec(js)) !== null) {
-        const field = resolveField(m[1]);
-        if (field !== m[1]) actions.push({ type: 'ShowError', field });
+    // Pattern B: boolean equals true
+    // if((vN)==(true)||((vN)==true&&(true)=='1')||...)
+    if (conditions.length === 0) {
+      const matchBool = js.match(/if\s*\(\s*\((v\d+)\)\s*==\s*\(true\)/);
+      if (matchBool) {
+        const valueVar = matchBool[1];
+        const field = resolveField(valueVar);
+        if (field !== valueVar) {
+          conditions.push({ field, operator: 'equals', value: 'true', logicOperator: 'AND' });
+        }
       }
     }
 
-    if (conditions.length === 0 && actions.length === 0) return null;
+    // Pattern C: lookup equals specific record (using comparator function v7)
+    // if(v7((vN),(vM), function(op1,op2){ ...sanitizeGuid... }))
+    // vM is the lookup array: var vM = [{id:'...', entityType:'...', name:'LookupName'}]
+    if (conditions.length === 0) {
+      const matchLookup = /if\s*\(v\d+\s*\(\s*\((v\d+)\)\s*,\s*\((v\d+)\)/;
+      const lookupMatch = js.match(matchLookup);
+      if (lookupMatch) {
+        const valueVar = lookupMatch[1];
+        const lookupArrayVar = lookupMatch[2];
+        const field = resolveField(valueVar);
+        // Extract the lookup name from the array definition: var vM = [{..., name:'...' }]
+        const arrayDefRegex = new RegExp(`var\\s+${lookupArrayVar.replace('$', '\\$')}\\s*=\\s*\\[.*?name\\s*:\\s*'([^']+)'`, 's');
+        const arrayMatch = js.match(arrayDefRegex);
+        const lookupName = arrayMatch ? arrayMatch[1] : '(lookup record)';
+        if (field !== valueVar) {
+          conditions.push({ field, operator: 'equals', value: lookupName, logicOperator: 'AND' });
+        }
+      }
+    }
+
+    // ── Step 5: Extract THEN actions (inside the main if block) ───────────────
+
+    const thenActions: Action[] = [];
+    const elseActions: Action[] = [];
+
+    // Find the main if block start and the else if(true) position
+    // Main if: starts after the condition we just matched
+    // ELSE: always "} else if(true) {"
+
+    const elsePos = js.indexOf('} else if(true)');
+    const thenBlock = elsePos > 0 ? js.substring(0, elsePos) : js;
+    const elseBlock = elsePos > 0 ? js.substring(elsePos) : '';
+
+    // Helper to parse actions from a block of code
+    const parseActions = (block: string): Action[] => {
+      const acts: Action[] = [];
+
+      // .setRequiredLevel('required' | 'none' | 'recommended')
+      const reqRe = /\(*(v\d+)\)*\.setRequiredLevel\(['"]([^'"]+)['"]\)/g;
+      let match: RegExpExecArray | null;
+      while ((match = reqRe.exec(block)) !== null) {
+        const level = match[2];
+        const type = level === 'none' ? 'SetOptional' : 'SetRequired';
+        acts.push({ type, field: resolveField(match[1]), value: level });
+      }
+
+      // .controls.forEach(function(c,i){ c.setVisible(true|false) }) — delegate pattern
+      const ctrlVisRe = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setVisible\((true|false)\)/g;
+      while ((match = ctrlVisRe.exec(block)) !== null) {
+        acts.push({ type: match[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(match[1]) });
+      }
+
+      // .setVisible(true|false) — direct call
+      const visRe = /\(*(v\d+)\)*\.setVisible\((true|false)\)/g;
+      while ((match = visRe.exec(block)) !== null) {
+        acts.push({ type: match[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(match[1]) });
+      }
+
+      // .controls.forEach(function(c,i){ c.setDisabled(true|false) }) — delegate pattern
+      const ctrlDisRe = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setDisabled\((true|false)\)/g;
+      while ((match = ctrlDisRe.exec(block)) !== null) {
+        acts.push({ type: match[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(match[1]) });
+      }
+
+      // .setDisabled(true|false) — direct call
+      const disRe = /\(*(v\d+)\)*\.setDisabled\((true|false)\)/g;
+      while ((match = disRe.exec(block)) !== null) {
+        acts.push({ type: match[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(match[1]) });
+      }
+
+      // .setValue(value)
+      const setValRe = /\(*(v\d+)\)*\.setValue\(([^)]*)\)/g;
+      while ((match = setValRe.exec(block)) !== null) {
+        const raw = match[2].trim().replace(/^['"]|['"]$/g, '');
+        acts.push({ type: 'SetValue', field: resolveField(match[1]), value: raw || undefined });
+      }
+
+      // ShowError: c.setNotification(...)
+      // Build stepId → message map
+      const notifMsgMap = new Map<string, string>();
+      const notifMsgRe = /GetResourceString\([^,]+,\s*'([^']+)'\)[^,)]*,\s*'([^'"]+)'/g;
+      while ((match = notifMsgRe.exec(block)) !== null) notifMsgMap.set(match[2], match[1]);
+      const notifLitRe = /c\.setNotification\('([^']+)',\s*'([^']+)'\)/g;
+      while ((match = notifLitRe.exec(block)) !== null) {
+        if (!notifMsgMap.has(match[2])) notifMsgMap.set(match[2], match[1]);
+      }
+      const cleanupRe = /\{'CId'\s*:\s*'([^']+)'\s*,\s*'SId'\s*:\s*'([^']+)'\}/g;
+      const notifSeen = new Set<string>();
+      while ((match = cleanupRe.exec(block)) !== null) {
+        const field = match[1], stepId = match[2];
+        const key = `${field}|${stepId}`;
+        if (!notifSeen.has(key)) {
+          notifSeen.add(key);
+          acts.push({ type: 'ShowError', field, message: notifMsgMap.get(stepId) });
+        }
+      }
+
+      return acts;
+    };
+
+    thenActions.push(...parseActions(thenBlock));
+    elseActions.push(...parseActions(elseBlock));
+
+    if (conditions.length === 0 && thenActions.length === 0 && elseActions.length === 0) return null;
 
     return {
       conditions,
-      thenActions: actions,
-      elseActions: [],
+      thenActions,
+      elseActions,
       executionContext: 'Client',
       conditionLogic: this.buildConditionLogic(conditions),
     };
@@ -376,16 +335,10 @@ export class BusinessRuleParser {
     const rawConditions = this.findConditionsArray(json);
     const rawActions = this.findActionsArray(json);
 
-    // DIAGNOSTIC — remove before release
     const combinatorRaw = String(
       json.conditionsCombinator ?? json.conditionCombinator ??
       json.ConditionsCombinator ?? json.ConditionCombinator ?? 'And'
     );
-    console.log('[PPSB-DIAG] BusinessRule raw conditions structure:', {
-      rawConditions: JSON.stringify(rawConditions, null, 2).substring(0, 1000),
-      rawActions: JSON.stringify(rawActions, null, 2).substring(0, 1000),
-      conditionsCombinator: combinatorRaw,
-    });
 
     const conditions: Condition[] = rawConditions.map(c => ({
       field: String(
