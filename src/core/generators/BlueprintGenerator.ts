@@ -12,7 +12,7 @@ import { BusinessRuleDiscovery } from '../discovery/BusinessRuleDiscovery.js';
 import { ClassicWorkflowDiscovery } from '../discovery/ClassicWorkflowDiscovery.js';
 import { FormDiscovery } from '../discovery/FormDiscovery.js';
 import { WebResourceDiscovery } from '../discovery/WebResourceDiscovery.js';
-import { CustomAPIDiscovery } from '../discovery/CustomAPIDiscovery.js';
+import { CustomAPIDiscovery } from '../discovery/CustomApiDiscovery.js';
 import { WorkflowMigrationAnalyzer } from '../analyzers/WorkflowMigrationAnalyzer.js';
 import { ERDGenerator } from '../generators/ERDGenerator.js';
 import { CrossEntityAnalyzer } from '../analyzers/CrossEntityAnalyzer.js';

@@ -2,6 +2,8 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { ConnectionReference } from '../types/connectionReference.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid } from '../utils/guid.js';
 
 interface RawConnectionReference {
   connectionreferenceid: string;
@@ -43,9 +45,7 @@ export class ConnectionReferenceDiscovery {
       const { results: allResults } = await withAdaptiveBatch<string, RawConnectionReference>(
         ids,
         async (batch) => {
-          const filter = batch
-            .map(id => `connectionreferenceid eq ${id.replace(/[{}]/g, '')}`)
-            .join(' or ');
+          const filter = buildOrFilter(batch.map(normalizeGuid), 'connectionreferenceid', { guids: true });
           const result = await this.client.query<RawConnectionReference>('connectionreferences', {
             select: [
               'connectionreferenceid', 'connectionreferencelogicalname', 'connectionreferencedisplayname',

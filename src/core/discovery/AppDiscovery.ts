@@ -1,6 +1,8 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid } from '../utils/guid.js';
 import type { CanvasApp } from '../types/canvasApp.js';
 import type { CustomPage } from '../types/customPage.js';
 import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
@@ -59,7 +61,7 @@ export class AppDiscovery {
 
     for (const r of records) {
       const base = {
-        id: r.canvasappid.toLowerCase().replace(/[{}]/g, ''),
+        id: normalizeGuid(r.canvasappid),
         name: r.name ?? '',
         displayName: r.displayname ?? r.name ?? '',
         description: r.description || undefined,
@@ -87,10 +89,7 @@ export class AppDiscovery {
     const { results } = await withAdaptiveBatch<string, AppModuleRecord>(
       ids,
       async (batch) => {
-        const filter = batch.map(id => {
-          const cleanId = id.replace(/[{}]/g, '');
-          return `appmoduleid eq ${cleanId}`;
-        }).join(' or ');
+        const filter = buildOrFilter(batch.map(normalizeGuid), 'appmoduleid', { guids: true });
 
         const result = await this.client.query<AppModuleRecord>('appmodules', {
           select: ['appmoduleid', 'name', 'uniquename', 'description', 'ismanaged', 'modifiedon'],
@@ -110,7 +109,7 @@ export class AppDiscovery {
     );
 
     return results.map(r => ({
-      id: r.appmoduleid.toLowerCase().replace(/[{}]/g, ''),
+      id: normalizeGuid(r.appmoduleid),
       name: r.uniquename ?? '',
       displayName: r.name ?? r.uniquename ?? '',
       description: r.description || undefined,
@@ -131,10 +130,7 @@ export class AppDiscovery {
     const { results } = await withAdaptiveBatch<string, CanvasAppRecord>(
       ids,
       async (batch) => {
-        const filter = batch.map(id => {
-          const cleanId = id.replace(/[{}]/g, '');
-          return `canvasappid eq ${cleanId}`;
-        }).join(' or ');
+        const filter = buildOrFilter(batch.map(normalizeGuid), 'canvasappid', { guids: true });
 
         const result = await this.client.query<CanvasAppRecord>('canvasapps', {
           select: ['canvasappid', 'displayname', 'name', 'description', 'ismanaged', 'canvasapptype'],
