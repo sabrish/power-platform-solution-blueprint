@@ -16,13 +16,13 @@ export async function processGlobalChoices(
   try {
     onProgress({ phase: 'discovering', entityName: '', current: 0, total: globalChoiceIds.length,
       message: `Documenting ${globalChoiceIds.length} Global Choice(s)...` });
-    const gcDiscovery = new GlobalChoiceDiscovery(
+    const discovery: import('../../discovery/IDiscoverer.js').IDiscoverer<GlobalChoice> = new GlobalChoiceDiscovery(
       client,
       undefined,
       logger
     );
     const gcLogWatermark = logger.getEntries().length;
-    const choices = await gcDiscovery.discoverGlobalChoices(globalChoiceIds);
+    const choices = await discovery.discoverByIds(globalChoiceIds);
     checkForPartialFailures('Global Choices', gcLogWatermark, logger, stepWarnings);
     return choices;
   } catch (error) {

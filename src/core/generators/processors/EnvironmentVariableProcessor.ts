@@ -25,7 +25,7 @@ export async function processEnvironmentVariables(
       message: `Documenting ${envVarIds.length} Environment Variable(s)...`,
     });
 
-    const envVarDiscovery = new EnvironmentVariableDiscovery(client, (current, total) => {
+    const discovery: import('../../discovery/IDiscoverer.js').IDiscoverer<EnvironmentVariable> = new EnvironmentVariableDiscovery(client, (current, total) => {
       onProgress({
         phase: 'discovering',
         entityName: '',
@@ -35,7 +35,7 @@ export async function processEnvironmentVariables(
       });
     }, logger);
     const evLogWatermark = logger.getEntries().length;
-    const envVars = await envVarDiscovery.getEnvironmentVariablesByIds(envVarIds);
+    const envVars = await discovery.discoverByIds(envVarIds);
     checkForPartialFailures('Environment Variables', evLogWatermark, logger, stepWarnings);
 
     onProgress({

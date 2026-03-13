@@ -27,7 +27,7 @@ export async function processClassicWorkflows(
       message: `Documenting ${workflowIds.length} classic workflow(s) (migration recommended)...`,
     });
 
-    const classicWorkflowDiscovery = new ClassicWorkflowDiscovery(client, (current, total) => {
+    const discovery: import('../../discovery/IDiscoverer.js').IDiscoverer<ClassicWorkflow> = new ClassicWorkflowDiscovery(client, (current, total) => {
       onProgress({
         phase: 'discovering',
         entityName: '',
@@ -37,7 +37,7 @@ export async function processClassicWorkflows(
       });
     }, logger);
     const cwLogWatermark = logger.getEntries().length;
-    const workflows = await classicWorkflowDiscovery.getClassicWorkflowsByIds(workflowIds);
+    const workflows = await discovery.discoverByIds(workflowIds);
     checkForPartialFailures('Classic Workflows', cwLogWatermark, logger, stepWarnings);
 
     // Analyze each workflow for migration

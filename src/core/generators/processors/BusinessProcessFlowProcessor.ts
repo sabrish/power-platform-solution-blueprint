@@ -26,7 +26,7 @@ export async function processBusinessProcessFlows(
       message: `Documenting ${workflowIds.length} Business Process Flow(s)...`,
     });
 
-    const bpfDiscovery = new BusinessProcessFlowDiscovery(client, (current, total) => {
+    const discovery: import('../../discovery/IDiscoverer.js').IDiscoverer<BusinessProcessFlow> = new BusinessProcessFlowDiscovery(client, (current, total) => {
       onProgress({
         phase: 'discovering',
         entityName: '',
@@ -36,7 +36,7 @@ export async function processBusinessProcessFlows(
       });
     }, logger);
     const bpfLogWatermark = logger.getEntries().length;
-    const bpfs = await bpfDiscovery.getBusinessProcessFlowsByIds(workflowIds);
+    const bpfs = await discovery.discoverByIds(workflowIds);
     checkForPartialFailures('Business Process Flows', bpfLogWatermark, logger, stepWarnings);
 
     // Report completion

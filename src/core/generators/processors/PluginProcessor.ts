@@ -2,6 +2,7 @@ import type { IDataverseClient } from '../../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../../utils/FetchLogger.js';
 import type { ProgressInfo, StepWarning } from '../../types/blueprint.js';
 import { PluginDiscovery } from '../../discovery/PluginDiscovery.js';
+import type { IDiscoverer } from '../../discovery/IDiscoverer.js';
 import type { PluginStep } from '../../types.js';
 import { checkForPartialFailures } from './processorUtils.js';
 
@@ -26,7 +27,7 @@ export async function processPlugins(
       message: `Documenting ${pluginIds.length} plugin${pluginIds.length > 1 ? 's' : ''}...`,
     });
 
-    const pluginDiscovery = new PluginDiscovery(client, (current, total) => {
+    const discovery: IDiscoverer<PluginStep> = new PluginDiscovery(client, (current, total) => {
       onProgress({
         phase: 'plugins',
         entityName: '',
@@ -36,7 +37,7 @@ export async function processPlugins(
       });
     }, logger);
     const logWatermark = logger.getEntries().length;
-    const plugins = await pluginDiscovery.getPluginsByIds(pluginIds);
+    const plugins = await discovery.discoverByIds(pluginIds);
     checkForPartialFailures('Plugins', logWatermark, logger, stepWarnings);
 
     onProgress({

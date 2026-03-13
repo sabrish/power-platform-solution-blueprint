@@ -16,7 +16,7 @@ export async function processConnectionReferences(
   try {
     onProgress({ phase: 'discovering', entityName: '', current: 0, total: connRefIds.length,
       message: `Documenting ${connRefIds.length} Connection Reference(s)...` });
-    const connRefDiscovery = new ConnectionReferenceDiscovery(client, (current, total) => {
+    const discovery: import('../../discovery/IDiscoverer.js').IDiscoverer<ConnectionReference> = new ConnectionReferenceDiscovery(client, (current, total) => {
       onProgress({
         phase: 'discovering',
         entityName: '',
@@ -26,7 +26,7 @@ export async function processConnectionReferences(
       });
     }, logger);
     const crLogWatermark = logger.getEntries().length;
-    const refs = await connRefDiscovery.getConnectionReferencesByIds(connRefIds);
+    const refs = await discovery.discoverByIds(connRefIds);
     checkForPartialFailures('Connection References', crLogWatermark, logger, stepWarnings);
     return refs;
   } catch (error) {

@@ -2,6 +2,7 @@ import type { IDataverseClient } from '../../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../../utils/FetchLogger.js';
 import type { ProgressInfo, StepWarning, WebResource } from '../../types/blueprint.js';
 import { WebResourceDiscovery } from '../../discovery/WebResourceDiscovery.js';
+import type { IDiscoverer } from '../../discovery/IDiscoverer.js';
 import { checkForPartialFailures } from './processorUtils.js';
 
 export async function processWebResources(
@@ -25,7 +26,7 @@ export async function processWebResources(
       message: `Analyzing ${webResourceIds.length} web resource${webResourceIds.length > 1 ? 's' : ''}...`,
     });
 
-    const webResourceDiscovery = new WebResourceDiscovery(client, (current, total) => {
+    const discovery: IDiscoverer<WebResource> = new WebResourceDiscovery(client, (current, total) => {
       onProgress({
         phase: 'discovering',
         entityName: '',
@@ -38,7 +39,7 @@ export async function processWebResources(
       });
     }, logger);
     const wrLogWatermark = logger.getEntries().length;
-    const webResources = await webResourceDiscovery.getWebResourcesByIds(webResourceIds);
+    const webResources = await discovery.discoverByIds(webResourceIds);
     checkForPartialFailures('Web Resources', wrLogWatermark, logger, stepWarnings);
 
     onProgress({

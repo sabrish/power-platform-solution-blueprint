@@ -2,6 +2,7 @@ import type { IDataverseClient } from '../../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../../utils/FetchLogger.js';
 import type { ProgressInfo, StepWarning } from '../../types/blueprint.js';
 import { CustomAPIDiscovery } from '../../discovery/CustomApiDiscovery.js';
+import type { IDiscoverer } from '../../discovery/IDiscoverer.js';
 import type { CustomAPI } from '../../types/customApi.js';
 
 export async function processCustomAPIs(
@@ -25,7 +26,7 @@ export async function processCustomAPIs(
       message: `Documenting ${customApiIds.length} Custom API(s)...`,
     });
 
-    const customApiDiscovery = new CustomAPIDiscovery(client, (current, total) => {
+    const discovery: IDiscoverer<CustomAPI> = new CustomAPIDiscovery(client, (current, total) => {
       onProgress({
         phase: 'discovering',
         entityName: '',
@@ -37,7 +38,7 @@ export async function processCustomAPIs(
           : 'Fetching Custom API parameters and response properties...',
       });
     }, logger);
-    const customAPIs = await customApiDiscovery.getCustomAPIsByIds(customApiIds);
+    const customAPIs = await discovery.discoverByIds(customApiIds);
 
     // Report completion
     onProgress({

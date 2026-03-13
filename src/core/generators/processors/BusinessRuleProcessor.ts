@@ -25,7 +25,7 @@ export async function processBusinessRules(
       message: `Documenting ${businessRuleIds.length} business rule${businessRuleIds.length > 1 ? 's' : ''}...`,
     });
 
-    const businessRuleDiscovery = new BusinessRuleDiscovery(client, (current, total) => {
+    const discovery: import('../../discovery/IDiscoverer.js').IDiscoverer<BusinessRule> = new BusinessRuleDiscovery(client, (current, total) => {
       onProgress({
         phase: 'business-rules',
         entityName: '',
@@ -35,7 +35,7 @@ export async function processBusinessRules(
       });
     }, logger);
     const brLogWatermark = logger.getEntries().length;
-    const businessRules = await businessRuleDiscovery.getBusinessRulesByIds(businessRuleIds);
+    const businessRules = await discovery.discoverByIds(businessRuleIds);
     checkForPartialFailures('Business Rules', brLogWatermark, logger, stepWarnings);
 
     // Report completion
