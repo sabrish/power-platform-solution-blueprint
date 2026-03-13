@@ -55,6 +55,17 @@ export class BusinessRuleParser {
    * Parse business rule — tries clientdata (JSON) first, then XAML
    */
   static parse(xaml: string | null, clientdata: string | null = null, _ruleName?: string): BusinessRuleDefinition {
+    // DIAGNOSTIC — remove before release
+    if (clientdata && clientdata.trim()) {
+      const format = clientdata.trimStart().startsWith('<') ? 'XML/compiled-JS' :
+                     clientdata.trimStart().startsWith('{') ? 'JSON' : 'unknown';
+      console.log('[PPSB-DIAG] BusinessRuleParser raw clientdata preview:', {
+        ruleName: _ruleName ?? 'unknown',
+        format,
+        preview: clientdata.substring(0, 2000),
+      });
+    }
+
     if (clientdata && clientdata.trim()) {
       if (clientdata.trimStart().startsWith('<')) {
         // XML format: <clientdata><clientcode><![CDATA[...compiled JS...]]></clientcode></clientdata>
@@ -362,6 +373,17 @@ export class BusinessRuleParser {
     const rawConditions = this.findConditionsArray(json);
     const rawActions = this.findActionsArray(json);
 
+    // DIAGNOSTIC — remove before release
+    const combinatorRaw = String(
+      json.conditionsCombinator ?? json.conditionCombinator ??
+      json.ConditionsCombinator ?? json.ConditionCombinator ?? 'And'
+    );
+    console.log('[PPSB-DIAG] BusinessRule raw conditions structure:', {
+      rawConditions: JSON.stringify(rawConditions, null, 2).substring(0, 1000),
+      rawActions: JSON.stringify(rawActions, null, 2).substring(0, 1000),
+      conditionsCombinator: combinatorRaw,
+    });
+
     const conditions: Condition[] = rawConditions.map(c => ({
       field: String(
         c.attributeName ?? c.sourceAttributeName ?? c.field ?? c.attribute ??
@@ -381,10 +403,6 @@ export class BusinessRuleParser {
     }));
 
     // Apply combinator to conditions after the first
-    const combinatorRaw = String(
-      json.conditionsCombinator ?? json.conditionCombinator ??
-      json.ConditionsCombinator ?? json.ConditionCombinator ?? 'And'
-    );
     const isOr = combinatorRaw.toLowerCase() === 'or';
     for (let i = 1; i < conditions.length; i++) {
       conditions[i].logicOperator = isOr ? 'OR' : 'AND';
