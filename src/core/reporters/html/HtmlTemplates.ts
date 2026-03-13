@@ -947,13 +947,15 @@ ${rows}
       const stateBadge = br.state === 'Active'
         ? '<span class="badge badge-success">Active</span>'
         : '<span class="badge badge-warning">Draft</span>';
+      const conditionCount = br.definition.conditionGroups[0]?.conditions.length ?? 0;
+      const actionCount = br.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + br.definition.elseActions.length;
       return `<tr>
         <td>${this.htmlEscape(br.name)}</td>
         <td>${this.htmlEscape(br.scopeName)}</td>
         <td>${this.htmlEscape(br.definition.executionContext)}</td>
         <td>${stateBadge}</td>
-        <td>${br.definition.conditions.length}</td>
-        <td>${br.definition.thenActions.length + br.definition.elseActions.length}</td>
+        <td>${conditionCount}</td>
+        <td>${actionCount}</td>
       </tr>`;
     }).join('\n');
 
@@ -1133,29 +1135,46 @@ ${rows}
 
     const items = businessRules.map((rule, i) => {
       const entityDisplay = this.htmlEscape(rule.entityDisplayName || rule.entity);
-      const conditions = rule.definition.conditions ?? [];
-      const thenActions = rule.definition.thenActions ?? [];
+      const conditionGroups = rule.definition.conditionGroups ?? [];
       const elseActions = rule.definition.elseActions ?? [];
       const id = `br-${i}`;
 
-      const condRows = conditions.map(c => `<tr>
-        <td><code>${this.htmlEscape(c.field)}</code></td>
-        <td>${this.htmlEscape(c.operator)}</td>
-        <td>${c.value ? this.htmlEscape(c.value) : '—'}</td>
-        <td>${this.htmlEscape(c.logicOperator)}</td>
-      </tr>`).join('');
+      // Build condition/action tables for each group
+      const groupSections = conditionGroups.map((group, groupIdx) => {
+        const condRows = group.conditions.map(c => `<tr>
+          <td><code>${this.htmlEscape(c.field)}</code></td>
+          <td>${this.htmlEscape(c.operator)}</td>
+          <td>${c.value ? this.htmlEscape(c.value) : '—'}</td>
+          <td>${this.htmlEscape(c.logicOperator)}</td>
+        </tr>`).join('');
 
-      const thenRows = thenActions.map(a => `<tr>
-        <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
-        <td><code>${this.htmlEscape(a.field)}</code></td>
-        <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
-      </tr>`).join('');
+        const actionRows = group.actions.map(a => `<tr>
+          <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
+          <td><code>${this.htmlEscape(a.field)}</code></td>
+          <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
+        </tr>`).join('');
+
+        const header = groupIdx === 0 ? 'IF' : 'ELSE IF';
+        return `
+          <div>
+            <h5 style="margin-bottom:6px">${header}: Conditions${groupIdx === 0 && rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.htmlEscape(rule.definition.conditionLogic)})</span>` : ''}</h5>
+            ${group.conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Field</th><th scope="col">Operator</th><th scope="col">Value</th><th scope="col">Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
+          </div>
+          <div>
+            <h5 style="margin-bottom:6px">THEN: Actions</h5>
+            ${group.actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${actionRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
+          </div>
+        `;
+      }).join('');
 
       const elseRows = elseActions.map(a => `<tr>
         <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
         <td><code>${this.htmlEscape(a.field)}</code></td>
         <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
       </tr>`).join('');
+
+      const firstGroupConditionCount = conditionGroups[0]?.conditions.length ?? 0;
+      const totalActionCount = conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + elseActions.length;
 
       return `<div class="accordion-item">
   <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')">
@@ -1167,8 +1186,8 @@ ${rows}
         <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${this.htmlEscape(rule.state)}</span>
         <span class="badge">${this.htmlEscape(rule.scope)}</span>
         <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.htmlEscape(rule.definition.executionContext)}</span>
-        ${conditions.length > 0 ? `<span class="badge">${conditions.length} condition${conditions.length !== 1 ? 's' : ''}</span>` : ''}
-        ${(thenActions.length + elseActions.length) > 0 ? `<span class="badge">${thenActions.length + elseActions.length} action${(thenActions.length + elseActions.length) !== 1 ? 's' : ''}</span>` : ''}
+        ${firstGroupConditionCount > 0 ? `<span class="badge">${firstGroupConditionCount} condition${firstGroupConditionCount !== 1 ? 's' : ''}</span>` : ''}
+        ${totalActionCount > 0 ? `<span class="badge">${totalActionCount} action${totalActionCount !== 1 ? 's' : ''}</span>` : ''}
       </div>
       ${rule.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.htmlEscape(rule.description)}</div>` : ''}
     </div>
@@ -1176,14 +1195,7 @@ ${rows}
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
     ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.htmlEscape(rule.definition.parseError)}</div>` : ''}
     <div style="display:flex;flex-direction:column;gap:16px;">
-      <div>
-        <h5 style="margin-bottom:6px">IF: Conditions${rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.htmlEscape(rule.definition.conditionLogic)})</span>` : ''}</h5>
-        ${conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Field</th><th scope="col">Operator</th><th scope="col">Value</th><th scope="col">Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
-      </div>
-      <div>
-        <h5 style="margin-bottom:6px">THEN: Actions</h5>
-        ${thenActions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${thenRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
-      </div>
+      ${groupSections}
       ${elseActions.length > 0 ? `<div>
         <h5 style="margin-bottom:6px">ELSE: Actions</h5>
         <table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${elseRows}</tbody></table>

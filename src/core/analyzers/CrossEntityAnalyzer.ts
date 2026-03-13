@@ -876,7 +876,8 @@ export class CrossEntityAnalyzer {
       // Skip client-only (form-scoped) BRs — irrelevant to server-side API writes
       if (!isServer) continue;
 
-      const actionFields = [...br.definition.thenActions, ...br.definition.elseActions]
+      const allActions = br.definition.conditionGroups.flatMap(g => g.actions).concat(br.definition.elseActions);
+      const actionFields = allActions
         .filter(a => a.field)
         .map(a => a.field.toLowerCase());
 

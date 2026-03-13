@@ -749,15 +749,19 @@ export class MarkdownReporter {
       sections.push('');
 
       const headers = ['Name', 'Scope', 'Context', 'State', 'Conditions', 'Actions', 'Modified'];
-      const rows = rules.map(rule => [
-        rule.name,
-        rule.scopeName,
-        rule.definition.executionContext,
-        rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
-        rule.definition.conditions.length.toString(),
-        (rule.definition.thenActions.length + rule.definition.elseActions.length).toString(),
-        this.formatDate(rule.modifiedOn),
-      ]);
+      const rows = rules.map(rule => {
+        const conditionCount = rule.definition.conditionGroups[0]?.conditions.length ?? 0;
+        const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
+        return [
+          rule.name,
+          rule.scopeName,
+          rule.definition.executionContext,
+          rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
+          conditionCount.toString(),
+          actionCount.toString(),
+          this.formatDate(rule.modifiedOn),
+        ];
+      });
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
@@ -769,32 +773,37 @@ export class MarkdownReporter {
           sections.push(`**Condition Logic:** \`${rule.definition.conditionLogic}\``);
           sections.push('');
         }
-        if (rule.definition.conditions.length > 0) {
-          sections.push(MarkdownFormatter.formatHeading('IF: Conditions', 4));
-          sections.push('');
-          const cHeaders = ['#', 'Field', 'Operator', 'Value', 'Logic'];
-          const cRows = rule.definition.conditions.map((c, i) => [
-            (i + 1).toString(),
-            c.field,
-            c.operator,
-            c.value,
-            c.logicOperator,
-          ]);
-          sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
-          sections.push('');
-        }
-        if (rule.definition.thenActions.length > 0) {
-          sections.push(MarkdownFormatter.formatHeading('THEN: Actions', 4));
-          sections.push('');
-          const aHeaders = ['Type', 'Field', 'Value / Message'];
-          const aRows = rule.definition.thenActions.map(a => [
-            a.type,
-            a.field,
-            a.value ?? a.message ?? '',
-          ]);
-          sections.push(MarkdownFormatter.formatTable(aHeaders, aRows));
-          sections.push('');
-        }
+
+        // Render each condition group
+        rule.definition.conditionGroups.forEach((group, groupIdx) => {
+          if (group.conditions.length > 0) {
+            sections.push(MarkdownFormatter.formatHeading(groupIdx === 0 ? 'IF: Conditions' : 'ELSE IF: Conditions', 4));
+            sections.push('');
+            const cHeaders = ['#', 'Field', 'Operator', 'Value', 'Logic'];
+            const cRows = group.conditions.map((c, i) => [
+              (i + 1).toString(),
+              c.field,
+              c.operator,
+              c.value,
+              c.logicOperator,
+            ]);
+            sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
+            sections.push('');
+          }
+          if (group.actions.length > 0) {
+            sections.push(MarkdownFormatter.formatHeading('THEN: Actions', 4));
+            sections.push('');
+            const aHeaders = ['Type', 'Field', 'Value / Message'];
+            const aRows = group.actions.map(a => [
+              a.type,
+              a.field,
+              a.value ?? a.message ?? '',
+            ]);
+            sections.push(MarkdownFormatter.formatTable(aHeaders, aRows));
+            sections.push('');
+          }
+        });
+
         if (rule.definition.elseActions.length > 0) {
           sections.push(MarkdownFormatter.formatHeading('ELSE: Actions', 4));
           sections.push('');
@@ -1910,14 +1919,18 @@ export class MarkdownReporter {
       sections.push('');
 
       const headers = ['Name', 'Scope', 'Context', 'State', 'Conditions', 'Actions'];
-      const rows = entity.businessRules.map(rule => [
-        rule.name,
-        rule.scopeName,
-        rule.definition.executionContext,
-        rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
-        rule.definition.conditions.length.toString(),
-        (rule.definition.thenActions.length + rule.definition.elseActions.length).toString(),
-      ]);
+      const rows = entity.businessRules.map(rule => {
+        const conditionCount = rule.definition.conditionGroups[0]?.conditions.length ?? 0;
+        const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
+        return [
+          rule.name,
+          rule.scopeName,
+          rule.definition.executionContext,
+          rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
+          conditionCount.toString(),
+          actionCount.toString(),
+        ];
+      });
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');

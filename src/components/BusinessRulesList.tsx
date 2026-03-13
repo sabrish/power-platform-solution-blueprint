@@ -199,45 +199,50 @@ export function BusinessRulesList({
           </Badge>
         </div>
 
-        {/* Conditions Section */}
-        {rule.definition.conditions.length > 0 && (
-          <div className={shared.section}>
-            <div className={styles.sectionHeader}>
-              <Text weight="semibold">IF</Text>
-            </div>
-            {rule.definition.conditions.map((condition, idx) => (
-              <div key={idx} className={styles.conditionItem}>
-                <Text>
-                  {idx > 0 && <strong>{condition.logicOperator} </strong>}
-                  <span className={shared.codeText}>{condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
-                </Text>
+        {/* Condition Groups */}
+        {rule.definition.conditionGroups.map((group, groupIdx) => (
+          <div key={groupIdx}>
+            {/* Conditions Section */}
+            {group.conditions.length > 0 && (
+              <div className={shared.section}>
+                <div className={styles.sectionHeader}>
+                  <Text weight="semibold">{groupIdx === 0 ? 'IF' : 'ELSE IF'}</Text>
+                </div>
+                {group.conditions.map((condition, idx) => (
+                  <div key={idx} className={styles.conditionItem}>
+                    <Text>
+                      {idx > 0 && <strong>{condition.logicOperator} </strong>}
+                      <span className={shared.codeText}>{condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
+                    </Text>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {/* THEN Actions Section */}
-        {rule.definition.thenActions.length > 0 && (
-          <div className={shared.section}>
-            <div className={styles.sectionHeader}>
-              <Text weight="semibold">THEN</Text>
-            </div>
-            {rule.definition.thenActions.map((action, idx) => (
-              <div
-                key={idx}
-                className={styles.actionItem}
-                style={{ borderLeftColor: getActionBorderColor(action.type) }}
-              >
-                <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
-                <Text>
-                  <span className={shared.codeText}>{action.field}</span>
-                  {action.value && <> = <strong>{action.value}</strong></>}
-                  {action.message && <>: <em>{action.message}</em></>}
-                </Text>
+            {/* THEN Actions Section */}
+            {group.actions.length > 0 && (
+              <div className={shared.section}>
+                <div className={styles.sectionHeader}>
+                  <Text weight="semibold">THEN</Text>
+                </div>
+                {group.actions.map((action, idx) => (
+                  <div
+                    key={idx}
+                    className={styles.actionItem}
+                    style={{ borderLeftColor: getActionBorderColor(action.type) }}
+                  >
+                    <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
+                    <Text>
+                      <span className={shared.codeText}>{action.field}</span>
+                      {action.value && <> = <strong>{action.value}</strong></>}
+                      {action.message && <>: <em>{action.message}</em></>}
+                    </Text>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
+        ))}
 
         {/* ELSE Actions Section */}
         {rule.definition.elseActions.length > 0 && (
@@ -343,8 +348,8 @@ export function BusinessRulesList({
       {searchedRules.map((rule) => {
         const isExpanded = expandedRuleId === rule.id;
         const stateBadgeProps = getStateBadgeProps(rule.state);
-        const conditionCount = rule.definition.conditions.length;
-        const actionCount = rule.definition.thenActions.length + rule.definition.elseActions.length;
+        const conditionCount = rule.definition.conditionGroups[0]?.conditions.length ?? 0;
+        const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
 
         return (
           <div key={rule.id}>

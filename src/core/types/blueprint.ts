@@ -291,9 +291,8 @@ export interface BusinessRule {
  * Parsed business rule definition from XAML
  */
 export interface BusinessRuleDefinition {
-  conditions: Condition[];
-  thenActions: Action[];      // actions that execute when conditions are true
-  elseActions: Action[];      // actions that execute in the else branch (empty array if no else)
+  conditionGroups: ConditionGroup[];  // one entry per IF / ELSE IF block
+  elseActions: Action[];              // final unconditional else if(true) actions — empty if no else
   executionContext: 'Client' | 'Server' | 'Both';
   conditionLogic: string;
   parseError?: string;
@@ -317,6 +316,14 @@ export interface Action {
   field: string;
   value?: string;
   message?: string;
+}
+
+/**
+ * Condition group (IF / ELSE IF block) with conditions and actions
+ */
+export interface ConditionGroup {
+  conditions: Condition[];  // the IF / ELSE IF conditions for this group
+  actions: Action[];        // actions when these conditions are true
 }
 
 /**

@@ -47,7 +47,7 @@ export class BusinessRuleParser {
         try {
           const json = JSON.parse(clientdata) as Record<string, unknown>;
           const result = this.parseJson(json);
-          if (result.conditions.length > 0 || result.thenActions.length > 0 || result.elseActions.length > 0) {
+          if (result.conditionGroups.length > 0 || result.elseActions.length > 0) {
             return result;
           }
         } catch {
@@ -59,8 +59,7 @@ export class BusinessRuleParser {
     // Fall back to XAML
     if (!xaml || xaml.trim() === '') {
       return {
-        conditions: [],
-        thenActions: [],
+        conditionGroups: [],
         elseActions: [],
         executionContext: 'Client',
         conditionLogic: 'No conditions defined',
@@ -100,11 +99,10 @@ export class BusinessRuleParser {
       const executionContext = this.determineExecutionContext(finalActions);
       const conditionLogic = this.buildConditionLogic(finalConditions);
 
-      return { conditions: finalConditions, thenActions: finalActions, elseActions: [], executionContext, conditionLogic };
+      return { conditionGroups: [{ conditions: finalConditions, actions: finalActions }], elseActions: [], executionContext, conditionLogic };
     } catch (error) {
       return {
-        conditions: [],
-        thenActions: [],
+        conditionGroups: [],
         elseActions: [],
         executionContext: 'Client',
         conditionLogic: 'Unable to parse conditions',
@@ -319,8 +317,7 @@ export class BusinessRuleParser {
     if (conditions.length === 0 && thenActions.length === 0 && elseActions.length === 0) return null;
 
     return {
-      conditions,
-      thenActions,
+      conditionGroups: conditions.length > 0 || thenActions.length > 0 ? [{ conditions, actions: thenActions }] : [],
       elseActions,
       executionContext: 'Client',
       conditionLogic: this.buildConditionLogic(conditions),
@@ -389,7 +386,7 @@ export class BusinessRuleParser {
     const executionContext = this.determineExecutionContext(actions);
     const conditionLogic = this.buildConditionLogic(conditions);
 
-    return { conditions, thenActions: actions, elseActions: [], executionContext, conditionLogic };
+    return { conditionGroups: [{ conditions, actions }], elseActions: [], executionContext, conditionLogic };
   }
 
   /**
