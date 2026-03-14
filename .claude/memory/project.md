@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-12
+**Last updated:** 2026-03-13
 
 ---
 
@@ -94,16 +94,19 @@ Data:           Microsoft Dataverse (Cloud)
 src/
   core/
     dataverse/        PptbDataverseClient.ts
-    discovery/        12+ component discovery services
+    discovery/        12+ component discovery services (all implement IDiscoverer<T>)
     analyzers/        PerformanceAnalyzer, WorkflowMigrationAnalyzer, CrossEntityMapper, ExternalDependencyAggregator
     generators/       ERDGenerator.ts, BlueprintGenerator.ts
+      processors/     16 component processors extracted from BlueprintGenerator
     reporters/        MarkdownReporter, JsonReporter, HtmlReporter, ZipPackager
     exporters/        Export-format helpers
     parsers/          FlowDefinitionParser, JavaScriptParser, BusinessRuleParser
     types/            Shared TypeScript interfaces and types
-    utils/            Shared utility functions
+    utils/            Shared utility functions (guid, metadata, entityName, grouping, complexity, odata)
   components/         React components
-  hooks/              Custom React hooks
+    CrossEntityAutomation/  Sub-components extracted from CrossEntityAutomationView
+    ERDView/          Sub-components and utilities (constants, stylesheet, export, traversal)
+  hooks/              Custom React hooks (useListFilter, useCardRowStyles, useExpandable)
   types/              TypeScript type definitions
   App.tsx
   main.tsx
@@ -132,6 +135,41 @@ pnpm typecheck  # Type check
 ---
 
 ## In Progress / Known Limitations
+
+### In Progress — UI/Export Bug Fixes and DRY/SOLID Refactoring (Batch 1)
+
+**Status:** Nearly complete — pending Issue 3 full resolution, pre-commit gate, CHANGELOG, and version bump
+
+**Completed this session (2026-03-13):**
+
+1. **Custom APIs row click** (fixed) — `onSelectAPI` removed from row onClick; only calls `toggleExpand`
+2. **Environment Variables eye icon shift** (fixed) — dedicated 32px grid column for visibility toggle
+3. **Flow mislabelling** (PARTIAL) — `resolveEntityName()` fixes 'none' guard; diagnostic `[PPSB-DIAG]` logging added to `CrossEntityAnalyzer.ts` (lines 454, 464, 608, 618) to capture real-world data for flows showing as "Solution Flow (unscoped)"
+4. **CDS Default Solution filter** (fixed) — extended ScopeSelector predicates
+5. **Business Rules IF/THEN/ELSE structure** (fully implemented) — `conditionGroups: ConditionGroup[]` + `elseActions: Action[]` structure; parser handles single/multi group + optional else; UI renders IF/ELSE IF/THEN/ELSE; both HTML and Markdown exports updated
+6. **HTML cross-entity export** (fixed) — pipeline-first structure in HtmlTemplates.ts and MarkdownReporter.ts
+
+**DRY/SOLID refactoring completed:**
+- `src/core/utils/guid.ts` — `normalizeGuid()`, `normalizeBatch()`
+- `src/core/utils/metadata.ts` — `extractOwnershipMetadata()`
+- `src/core/utils/entityName.ts` — `resolveEntityName()`
+- `src/core/utils/grouping.ts` — consolidated grouping functions
+- `src/core/utils/complexity.ts` — `calculateComplexityScore()`
+- `src/core/utils/odata.ts` — `buildOrFilter()`
+- `src/hooks/useExpandable.ts` — shared expand/collapse state
+- `src/core/discovery/IDiscoverer.ts` — interface implemented on 11 discovery classes
+- `src/core/generators/processors/` — 16 processor files split from BlueprintGenerator
+- `src/components/CrossEntityAutomation/` — sub-components extracted from CrossEntityAutomationView.tsx
+- `src/components/ERDView/` — utilities extracted (constants, stylesheet, export, traversal)
+
+**Pending before PR merge:**
+1. **Issue 3 full fix** — awaiting user to run tool and share `[PPSB-DIAG]` console output for flows showing as "Solution Flow (unscoped)"
+2. **Remove `[PPSB-DIAG]` logs** from CrossEntityAnalyzer.ts after Issue 3 is resolved
+3. **Run `/pre-commit`** (reviewer + security-auditor) before creating PR
+4. **Update CHANGELOG.md** for this batch of changes
+5. **Version bump** — this batch warrants a version increment
+
+**Current build state:** `pnpm typecheck && pnpm build` — PASSES (verified 2026-03-13)
 
 ### Released in v1.1.0 (2026-03-12)
 
