@@ -19,8 +19,9 @@
  */
 import type { BlueprintResult } from '../types/blueprint.js';
 import { HtmlTemplates } from './html/HtmlTemplates.js';
+import type { IReporter } from './IReporter.js';
 
-export class HtmlReporter {
+export class HtmlReporter implements IReporter<string> {
   private templates: HtmlTemplates;
 
   constructor() {

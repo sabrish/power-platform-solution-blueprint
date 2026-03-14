@@ -41,8 +41,9 @@ import {
   groupCustomAPIsByBinding,
 } from '../utils/grouping.js';
 import { calculateComplexityScore } from '../utils/complexity.js';
+import type { IReporter } from './IReporter.js';
 
-export class MarkdownReporter {
+export class MarkdownReporter implements IReporter<MarkdownExport> {
   /**
    * Generate complete markdown export from blueprint result
    */
