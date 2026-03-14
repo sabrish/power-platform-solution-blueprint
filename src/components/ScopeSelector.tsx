@@ -199,17 +199,27 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     return defaultSol?.publisherid.uniquename ?? null;
   }, [solutions]);
 
-  const isDefaultSolution = useCallback(
-    (sol: Solution) =>
-      sol.uniquename === 'Default' ||
-      sol.friendlyname === 'Common Data Services Default Solution',
-    []
-  );
+  // Known system publisher friendly names to exclude regardless of uniquename.
+  // The CDS Default Publisher has an auto-generated uniquename (e.g. cr114, cr23a)
+  // that varies per environment, so we match by friendly name as a fallback.
+  const EXCLUDED_PUBLISHER_NAMES = ['CDS Default Publisher'] as const;
 
   const isDefaultPublisher = useCallback(
     (pub: Publisher) =>
       (!!defaultPublisherUniqueName && pub.uniquename === defaultPublisherUniqueName) ||
-      pub.uniquename === 'microsoftdynamics',
+      EXCLUDED_PUBLISHER_NAMES.includes(pub.friendlyname as (typeof EXCLUDED_PUBLISHER_NAMES)[number]),
+    [defaultPublisherUniqueName]
+  );
+
+  const isDefaultSolution = useCallback(
+    (sol: Solution) =>
+      sol.uniquename === 'Default' ||
+      sol.friendlyname === 'Common Data Services Default Solution' ||
+      (!!sol.publisherid &&
+        ((!!defaultPublisherUniqueName && sol.publisherid.uniquename === defaultPublisherUniqueName) ||
+          EXCLUDED_PUBLISHER_NAMES.includes(
+            sol.publisherid.friendlyname as (typeof EXCLUDED_PUBLISHER_NAMES)[number]
+          ))),
     [defaultPublisherUniqueName]
   );
 
