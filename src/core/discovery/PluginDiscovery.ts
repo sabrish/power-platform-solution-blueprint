@@ -4,6 +4,7 @@ import type { IDiscoverer } from './IDiscoverer.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
+import { normalizeBatch } from '../utils/guid.js';
 
 interface RawPluginStep {
   sdkmessageprocessingstepid: string;
@@ -60,7 +61,7 @@ export class PluginDiscovery implements IDiscoverer<PluginStep> {
         pluginIds,
         async (batch) => {
           const filter = buildOrFilter(
-            batch.map(id => id.replace(/[{}]/g, '')),
+            normalizeBatch(batch),
             'sdkmessageprocessingstepid',
             { guids: true }
           );
@@ -173,7 +174,7 @@ export class PluginDiscovery implements IDiscoverer<PluginStep> {
       );
 
       for (const raw of allImages) {
-        const stepId = (raw as any)._sdkmessageprocessingstepid_value?.toLowerCase();
+        const stepId = raw._sdkmessageprocessingstepid_value?.toLowerCase();
         if (!stepId) continue;
         const imageType = raw.imagetype === 0 ? 'PreImage' : 'PostImage';
         const image: ImageDefinition = {

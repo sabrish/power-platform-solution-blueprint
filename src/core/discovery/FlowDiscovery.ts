@@ -5,6 +5,7 @@ import type { IDiscoverer } from './IDiscoverer.js';
 import { FlowDefinitionParser } from '../parsers/FlowDefinitionParser.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid } from '../utils/guid.js';
 
 interface WorkflowMetaRecord {
   workflowid: string;
@@ -100,18 +101,18 @@ export class FlowDiscovery implements IDiscoverer<Flow> {
           Math.floor(workflowIds.length / 2) + Math.floor(done / 2),
           workflowIds.length
         ),
-        getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
+        getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
       }
     );
 
     // Normalise workflowid (lowercase, no braces) for consistent map keys
     for (const r of cdRecords) {
-      clientDataMap.set(r.workflowid.toLowerCase().replace(/[{}]/g, ''), r.clientdata ?? null);
+      clientDataMap.set(normalizeGuid(r.workflowid), r.clientdata ?? null);
     }
 
     this.onProgress?.(workflowIds.length, workflowIds.length);
     return metaRecords.map(r =>
-      this.mapToFlow(r, clientDataMap.get(r.workflowid.toLowerCase().replace(/[{}]/g, '')) ?? null)
+      this.mapToFlow(r, clientDataMap.get(normalizeGuid(r.workflowid)) ?? null)
     );
   }
 

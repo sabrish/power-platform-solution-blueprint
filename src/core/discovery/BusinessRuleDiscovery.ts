@@ -5,6 +5,7 @@ import type { FetchLogger } from '../utils/FetchLogger.js';
 import { BusinessRuleParser } from '../parsers/BusinessRuleParser.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
+import { normalizeBatch } from '../utils/guid.js';
 
 interface BusinessRuleRecord {
   workflowid: string;
@@ -53,7 +54,7 @@ export class BusinessRuleDiscovery implements IDiscoverer<BusinessRule> {
       return [];
     }
 
-    const cleanIds = brIds.map(id => id.replace(/[{}]/g, '').toLowerCase());
+    const cleanIds = normalizeBatch(brIds);
     const invalidIndex = cleanIds.findIndex(id => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id));
     if (invalidIndex !== -1) {
       throw new TypeError(`Invalid workflow ID: ${brIds[invalidIndex]}`);

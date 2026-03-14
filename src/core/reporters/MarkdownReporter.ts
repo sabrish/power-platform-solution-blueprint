@@ -2162,7 +2162,7 @@ export class MarkdownReporter {
   /**
    * Generate simple ASCII visualization of plugin execution pipeline
    */
-  private generateSimplePipelineASCII(byStage: Map<number, any[]>, businessRules: BusinessRule[]): string {
+  private generateSimplePipelineASCII(byStage: Map<number, PluginStep[]>, businessRules: BusinessRule[]): string {
     const lines: string[] = [];
     lines.push('Execution Order:');
     lines.push('');
