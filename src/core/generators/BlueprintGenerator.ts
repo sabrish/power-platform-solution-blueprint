@@ -12,33 +12,9 @@ import { ExternalDependencyAggregator } from '../analyzers/ExternalDependencyAgg
 import { SolutionDistributionAnalyzer } from '../analyzers/SolutionDistributionAnalyzer.js';
 import { filterSystemFields } from '../utils/fieldFilters.js';
 import { normalizeGuid } from '../utils/guid.js';
-import {
-  processPlugins,
-  processFlows,
-  processBusinessRules,
-  processWebResources,
-  processClassicWorkflows,
-  processBusinessProcessFlows,
-  processCustomAPIs,
-  processEnvironmentVariables,
-  processConnectionReferences,
-  processGlobalChoices,
-  processCustomConnectors,
-  processSecurityRoles,
-  processFieldSecurityProfiles,
-  processColumnSecurity,
-  processForms,
-  processApps,
-} from './processors/index.js';
-import {
-  groupPluginsByEntity,
-  groupFlowsByEntity,
-  groupBusinessRulesByEntity,
-  groupClassicWorkflowsByEntity,
-  groupBusinessProcessFlowsByEntity,
-  groupFormsByEntity,
-  groupWebResourcesByType,
-} from '../utils/grouping.js';
+import { GENERATOR_STEPS } from './processors/generatorSteps.js';
+import { createAccumulator } from './processors/ProcessorStep.js';
+import type { ProcessorContext } from './processors/ProcessorStep.js';
 import { JsonReporter } from '../reporters/JsonReporter.js';
 import { MarkdownReporter } from '../reporters/MarkdownReporter.js';
 import { HtmlReporter } from '../reporters/HtmlReporter.js';
@@ -142,134 +118,43 @@ export class BlueprintGenerator {
 
       if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
 
-      // STEP 3: Process Plugins
-      const plugins = await processPlugins(this.client, inventory.pluginIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-      const pluginsByEntity = groupPluginsByEntity(plugins);
+      // STEPS 3-7: Run all registered processor steps
+      const acc = createAccumulator();
+      const processorContext: ProcessorContext = {
+        client: this.client,
+        inventory,
+        workflowInventory,
+        entities,
+        signal: this.options.signal,
+        onProgress: this.reportProgress.bind(this),
+        stepWarnings: this.stepWarnings,
+        logger: this.logger,
+        acc,
+      };
 
-      if (inventory.pluginIds.length === 0) {
-        warnings.push('No plugins found');
+      for (const step of GENERATOR_STEPS) {
+        if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+        await step.run(processorContext);
       }
 
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
+      // Merge step-level warnings into the top-level warnings array
+      warnings.push(...acc.warnings);
 
-      // STEP 4: Process Flows
-      const flows = await processFlows(this.client, workflowInventory.flowIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-      const flowsByEntity = groupFlowsByEntity(flows);
-
-      if (workflowInventory.flowIds.length === 0) {
-        warnings.push('No flows found');
-      }
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 5: Process Business Rules
-      const businessRules = await processBusinessRules(this.client, workflowInventory.businessRuleIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-      const businessRulesByEntity = groupBusinessRulesByEntity(businessRules);
-
-      if (workflowInventory.businessRuleIds.length === 0) {
-        warnings.push('No business rules found');
-      }
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 5.5: Process Classic Workflows (deprecated, requires migration)
-      const classicWorkflows = await processClassicWorkflows(this.client, workflowInventory.classicWorkflowIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-      const classicWorkflowsByEntity = groupClassicWorkflowsByEntity(classicWorkflows);
-
-      if (workflowInventory.classicWorkflowIds.length > 0) {
-        warnings.push(`${workflowInventory.classicWorkflowIds.length} classic workflow(s) detected - migration to Power Automate recommended`);
-      }
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 5.6: Process Business Process Flows
-      const businessProcessFlows = await processBusinessProcessFlows(this.client, workflowInventory.businessProcessFlowIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-      const businessProcessFlowsByEntity = groupBusinessProcessFlowsByEntity(businessProcessFlows);
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6: Process Web Resources
-      const webResources = await processWebResources(this.client, inventory.webResourceIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-      const webResourcesByType = groupWebResourcesByType(webResources);
-
-      if (inventory.webResourceIds.length === 0) {
-        warnings.push('No web resources found');
-      }
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.5: Process Custom APIs
-      const customAPIs = await processCustomAPIs(this.client, inventory.customApiIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.6: Process Environment Variables
-      const environmentVariables = await processEnvironmentVariables(this.client, inventory.environmentVariableIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.7: Process Connection References
-      const connectionReferences = await processConnectionReferences(this.client, inventory.connectionReferenceIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.8: Process Global Choices (Option Sets)
-      const globalChoices = await processGlobalChoices(this.client, inventory.globalChoiceIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.9: Process Custom Connectors
-      const customConnectors = await processCustomConnectors(this.client, inventory.customConnectorIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.10: Process Security Roles
-      const securityRoles = await processSecurityRoles(this.client, inventory.securityRoleIds, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.11: Process Field Security Profiles
-      const { profiles: fieldSecurityProfiles, fieldSecurityByEntity } = await processFieldSecurityProfiles(
-        this.client,
-        inventory.fieldSecurityProfileIds,
-        entities.map((e) => e.LogicalName),
-        this.reportProgress.bind(this),
-        this.logger,
-        this.stepWarnings
-      );
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.12: Process Column Security (Attribute Masking & Column Security Profiles)
-      const { attributeMaskingRules, columnSecurityProfiles } = await processColumnSecurity(this.client, this.reportProgress.bind(this), this.stepWarnings);
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 6.13: Process Canvas Apps, Custom Pages, and Model-Driven Apps
-      // Canvas Apps and Custom Pages both use component type 300 in solutioncomponents
-      // and are split post-retrieval by canvasapptype (0 = Canvas App, 2 = Custom Page; 1 = Component Library, skipped).
-      this.reportProgress({
-        phase: 'apps',
-        entityName: '',
-        current: 0,
-        total: inventory.canvasAppIds.length + inventory.appModuleIds.length,
-        message: 'Discovering Canvas Apps, Custom Pages, and Model-Driven Apps...',
-      });
-      const { canvasApps, customPages, modelDrivenApps } = await processApps(
-        this.client,
-        inventory.canvasAppIds,
-        inventory.appModuleIds,
-        this.reportProgress.bind(this),
-        this.logger,
-        this.stepWarnings
-      );
-
-      if (this.options.signal?.aborted) throw new Error('Blueprint generation cancelled');
-
-      // STEP 7: Process Forms and JavaScript Event Handlers
-      // Pass entities with rootcomponentbehavior info to determine form inclusion
-      const forms = await processForms(this.client, entities, inventory.formIds, inventory.entitiesWithAllSubcomponents, this.reportProgress.bind(this), this.logger, this.stepWarnings);
-      const formsByEntity = groupFormsByEntity(forms);
+      // Destructure accumulator for readability in subsequent code
+      const {
+        plugins, pluginsByEntity,
+        flows, flowsByEntity,
+        businessRules, businessRulesByEntity,
+        classicWorkflows, classicWorkflowsByEntity,
+        businessProcessFlows, businessProcessFlowsByEntity,
+        customAPIs, environmentVariables, connectionReferences,
+        globalChoices, customConnectors,
+        securityRoles, fieldSecurityProfiles, fieldSecurityByEntity,
+        attributeMaskingRules, columnSecurityProfiles,
+        canvasApps, customPages, modelDrivenApps,
+        webResources, webResourcesByType,
+        formsByEntity,
+      } = acc;
 
       // STEP 8: Populate automation and security in entity blueprints
       for (const blueprint of entityBlueprints) {
