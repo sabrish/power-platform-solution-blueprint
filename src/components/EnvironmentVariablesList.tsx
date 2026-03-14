@@ -30,9 +30,9 @@ const useStyles = makeStyles({
   },
   row: {
     display: 'grid',
-    // chevron | name | value | eye | type | default | required/managed
+    // chevron | name | eye | value | type | default | required/managed
     // Badge columns use min-content: sized to widest cell content across all rows, no fixed px.
-    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(0, 2fr) minmax(0, 1fr) ${tokens.spacingHorizontalXXXL} min-content min-content min-content`,
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(0, 2fr) ${tokens.spacingHorizontalXXXL} minmax(0, 1fr) min-content min-content min-content`,
     alignItems: 'start',
   },
   eyeIconColumn: {
@@ -199,10 +199,6 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     return (
       <div className={styles.valueBox}>
         <div className={styles.valueRevealRow}>
-          {isRevealed
-            ? value
-            : <Text className={styles.maskedValue}>•••••••</Text>
-          }
           <Button
             appearance="subtle"
             size="small"
@@ -210,6 +206,10 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
             aria-label={isRevealed ? 'Hide value' : 'Show value'}
             onClick={(e) => toggleReveal(envVar.id, e)}
           />
+          {isRevealed
+            ? value
+            : <Text className={styles.maskedValue}>•••••••</Text>
+          }
         </div>
       </div>
     );
@@ -351,11 +351,11 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
                 <Text weight="semibold">{envVar.displayName}</Text>
                 <Text className={shared.codeText}>{envVar.schemaName}</Text>
               </div>
-              <div className={styles.valueTextCell}>
-                {renderValueText(envVar)}
-              </div>
               <div className={styles.eyeIconColumn}>
                 {renderRevealButton(envVar)}
+              </div>
+              <div className={styles.valueTextCell}>
+                {renderValueText(envVar)}
               </div>
               <Badge appearance="filled" shape="rounded" size="small" color={getTypeColor(envVar.typeName)}>
                 {envVar.typeName}
