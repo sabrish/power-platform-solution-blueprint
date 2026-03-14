@@ -31,6 +31,7 @@ const useStyles = makeStyles({
   row: {
     display: 'grid',
     gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto auto auto auto`,
+    alignItems: 'start',
   },
   stagesList: {
     display: 'flex',

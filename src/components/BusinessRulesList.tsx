@@ -28,6 +28,7 @@ const useStyles = makeStyles({
   ruleRow: {
     display: 'grid',
     gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto`,
+    alignItems: 'start',
   },
   sectionHeader: {
     display: 'flex',

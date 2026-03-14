@@ -33,6 +33,7 @@ const useStyles = makeStyles({
   apiRow: {
     display: 'grid',
     gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto auto auto`,
+    alignItems: 'start',
   },
   paramTable: {
     display: 'flex',
@@ -44,7 +45,7 @@ const useStyles = makeStyles({
     display: 'grid',
     gridTemplateColumns: 'minmax(160px, 1fr) auto minmax(80px, auto)',
     gap: tokens.spacingHorizontalS,
-    alignItems: 'center',
+    alignItems: 'start',
     padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
     backgroundColor: tokens.colorNeutralBackground3,
     borderRadius: tokens.borderRadiusSmall,
