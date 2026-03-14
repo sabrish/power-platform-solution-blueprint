@@ -30,7 +30,7 @@ import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
 import type { CanvasApp } from '../types/canvasApp.js';
 import type { CustomPage } from '../types/customPage.js';
 import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
-import MarkdownFormatter from './markdown/MarkdownFormatter.js';
+import { MarkdownFormatter } from './markdown/MarkdownFormatter.js';
 import {
   groupPluginsByAssembly,
   groupFlowsByEntity,
