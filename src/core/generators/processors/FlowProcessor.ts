@@ -1,12 +1,10 @@
-import type { IDataverseClient } from '../../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../../utils/FetchLogger.js';
 import type { ProgressInfo, StepWarning, Flow } from '../../types/blueprint.js';
-import { FlowDiscovery } from '../../discovery/FlowDiscovery.js';
 import type { IDiscoverer } from '../../discovery/IDiscoverer.js';
 import { checkForPartialFailures } from './processorUtils.js';
 
 export async function processFlows(
-  client: IDataverseClient,
+  discoverer: IDiscoverer<Flow>,
   flowIds: string[],
   onProgress: (progress: ProgressInfo) => void,
   logger: FetchLogger,
@@ -26,17 +24,8 @@ export async function processFlows(
       message: `Documenting ${flowIds.length} flow${flowIds.length > 1 ? 's' : ''}...`,
     });
 
-    const discovery: IDiscoverer<Flow> = new FlowDiscovery(client, (current, total) => {
-      onProgress({
-        phase: 'flows',
-        entityName: '',
-        current,
-        total,
-        message: `Documenting flows (${current}/${total})...`,
-      });
-    }, logger);
     const flowLogWatermark = logger.getEntries().length;
-    const flows = await discovery.discoverByIds(flowIds);
+    const flows = await discoverer.discoverByIds(flowIds);
     checkForPartialFailures('Flows', flowLogWatermark, logger, stepWarnings);
 
     onProgress({

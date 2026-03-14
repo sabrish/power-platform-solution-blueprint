@@ -27,6 +27,8 @@ import {
   processForms,
   processApps,
 } from './index.js';
+import { PluginDiscovery } from '../../discovery/PluginDiscovery.js';
+import { FlowDiscovery } from '../../discovery/FlowDiscovery.js';
 import {
   groupPluginsByEntity,
   groupFlowsByEntity,
@@ -40,12 +42,23 @@ import type { ProcessorStep, ProcessorContext } from './ProcessorStep.js';
 
 /**
  * Plugins — Step 3
+ * Constructs a PluginDiscovery instance and injects it into processPlugins (P6).
  */
 const pluginsStep: ProcessorStep = {
   name: 'Plugins',
   async run(ctx: ProcessorContext): Promise<void> {
+    const discoverer = new PluginDiscovery(ctx.client, (current, total) => {
+      ctx.onProgress({
+        phase: 'plugins',
+        entityName: '',
+        current,
+        total,
+        message: `Documenting plugins (${current}/${total})...`,
+      });
+    }, ctx.logger);
+
     ctx.acc.plugins = await processPlugins(
-      ctx.client,
+      discoverer,
       ctx.inventory.pluginIds,
       ctx.onProgress,
       ctx.logger,
@@ -61,12 +74,23 @@ const pluginsStep: ProcessorStep = {
 
 /**
  * Flows — Step 4
+ * Constructs a FlowDiscovery instance and injects it into processFlows (P6).
  */
 const flowsStep: ProcessorStep = {
   name: 'Flows',
   async run(ctx: ProcessorContext): Promise<void> {
+    const discoverer = new FlowDiscovery(ctx.client, (current, total) => {
+      ctx.onProgress({
+        phase: 'flows',
+        entityName: '',
+        current,
+        total,
+        message: `Documenting flows (${current}/${total})...`,
+      });
+    }, ctx.logger);
+
     ctx.acc.flows = await processFlows(
-      ctx.client,
+      discoverer,
       ctx.workflowInventory.flowIds,
       ctx.onProgress,
       ctx.logger,
