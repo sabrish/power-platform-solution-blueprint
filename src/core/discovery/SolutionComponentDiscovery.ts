@@ -2,6 +2,7 @@ import type { IDataverseClient, QueryOptions, QueryResult } from '../dataverse/I
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { ComponentType, WorkflowCategory, type ComponentInventory, type ComponentInventoryWithSolutions, type WorkflowInventory, type WorkflowInventoryWithSolutions } from '../types/components.js';
+import { normalizeGuid } from '../utils/guid.js';
 
 /**
  * Solution component record
@@ -127,9 +128,9 @@ export class SolutionComponentDiscovery {
       // Group by component type (deduplicates across solutions)
       for (const component of result.value) {
         // Normalize GUID: remove braces and lowercase for consistent comparison
-        const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
+        const objectId = normalizeGuid(component.objectid);
         const componentType = component.componenttype;
-        const solutionId = (component._solutionid_value || '').toLowerCase().replace(/[{}]/g, '');
+        const solutionId = normalizeGuid(component._solutionid_value || '');
 
         // Track which solutions contain this component
         if (!componentToSolutions.has(objectId)) {
@@ -251,7 +252,7 @@ export class SolutionComponentDiscovery {
       // for these objectids by the pre-switch tracking code above.
       // Each query is isolated in its own try/catch (PATTERN-012) so a failure on one type
       // does not prevent the other types from being discovered.
-      const scObjectIds = new Set(result.value.map(c => c.objectid.toLowerCase().replace(/[{}]/g, '')));
+      const scObjectIds = new Set(result.value.map(c => normalizeGuid(c.objectid)));
 
       const t0CustomApis = Date.now();
       try {
@@ -272,7 +273,7 @@ export class SolutionComponentDiscovery {
           resultCount: allCustomApis.value.length,
         });
         for (const api of allCustomApis.value) {
-          const id = api.customapiid.toLowerCase().replace(/[{}]/g, '');
+          const id = normalizeGuid(api.customapiid);
           if (scObjectIds.has(id) && !inventory.customApiIds.includes(id)) {
             inventory.customApiIds.push(id);
             componentTypes.set(id, ComponentType.CustomAPI);
@@ -314,7 +315,7 @@ export class SolutionComponentDiscovery {
           resultCount: allConnRefs.value.length,
         });
         for (const ref of allConnRefs.value) {
-          const id = ref.connectionreferenceid.toLowerCase().replace(/[{}]/g, '');
+          const id = normalizeGuid(ref.connectionreferenceid);
           if (scObjectIds.has(id) && !inventory.connectionReferenceIds.includes(id)) {
             inventory.connectionReferenceIds.push(id);
             componentTypes.set(id, ComponentType.ConnectionReference);
@@ -357,7 +358,7 @@ export class SolutionComponentDiscovery {
           resultCount: allConnectors.value.length,
         });
         for (const connector of allConnectors.value) {
-          const id = connector.connectorid.toLowerCase().replace(/[{}]/g, '');
+          const id = normalizeGuid(connector.connectorid);
           if (scObjectIds.has(id) && !inventory.customConnectorIds.includes(id)) {
             inventory.customConnectorIds.push(id);
             componentTypes.set(id, ComponentType.CustomConnector);
@@ -431,8 +432,8 @@ export class SolutionComponentDiscovery {
     });
 
     for (const component of result.value) {
-      const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
-      const solutionId = (component._solutionid_value || '').toLowerCase().replace(/[{}]/g, '');
+      const objectId = normalizeGuid(component.objectid);
+      const solutionId = normalizeGuid(component._solutionid_value || '');
 
       if (!componentToSolutions.has(objectId)) componentToSolutions.set(objectId, []);
       if (solutionId && !componentToSolutions.get(objectId)!.includes(solutionId)) {
@@ -523,7 +524,7 @@ export class SolutionComponentDiscovery {
         { select: ['sdkmessageprocessingstepid'] },
         'Default Solution — Plugin Steps'
       );
-      inventory.pluginIds = pluginsResult.value.map(p => p.sdkmessageprocessingstepid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.pluginIds = pluginsResult.value.map(p => normalizeGuid(p.sdkmessageprocessingstepid));
 
       // Query workflows (all categories) - all workflows
       const workflowsResult = await logQuery<{ workflowid: string }>(
@@ -531,7 +532,7 @@ export class SolutionComponentDiscovery {
         { select: ['workflowid'] },
         'Default Solution — Workflows'
       );
-      inventory.workflowIds = workflowsResult.value.map(w => w.workflowid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.workflowIds = workflowsResult.value.map(w => normalizeGuid(w.workflowid));
 
       // Query web resources - all
       const webResourcesResult = await logQuery<{ webresourceid: string }>(
@@ -539,7 +540,7 @@ export class SolutionComponentDiscovery {
         { select: ['webresourceid'] },
         'Default Solution — Web Resources'
       );
-      inventory.webResourceIds = webResourcesResult.value.map(w => w.webresourceid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.webResourceIds = webResourcesResult.value.map(w => normalizeGuid(w.webresourceid));
 
       // Query custom APIs - all
       const customApisResult = await logQuery<{ customapiid: string }>(
@@ -547,7 +548,7 @@ export class SolutionComponentDiscovery {
         { select: ['customapiid'] },
         'Default Solution — Custom APIs'
       );
-      inventory.customApiIds = customApisResult.value.map(c => c.customapiid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.customApiIds = customApisResult.value.map(c => normalizeGuid(c.customapiid));
 
       // Query environment variables - all
       const envVarsResult = await logQuery<{ environmentvariabledefinitionid: string }>(
@@ -555,7 +556,7 @@ export class SolutionComponentDiscovery {
         { select: ['environmentvariabledefinitionid'] },
         'Default Solution — Environment Variables'
       );
-      inventory.environmentVariableIds = envVarsResult.value.map(e => e.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.environmentVariableIds = envVarsResult.value.map(e => normalizeGuid(e.environmentvariabledefinitionid));
 
       // Query connection references - all
       const connRefsResult = await logQuery<{ connectionreferenceid: string }>(
@@ -563,7 +564,7 @@ export class SolutionComponentDiscovery {
         { select: ['connectionreferenceid'] },
         'Default Solution — Connection References'
       );
-      inventory.connectionReferenceIds = connRefsResult.value.map(c => c.connectionreferenceid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.connectionReferenceIds = connRefsResult.value.map(c => normalizeGuid(c.connectionreferenceid));
 
       // Query custom connectors - all connectors in the environment
       // Note: iscustomizable/Value filter is unreliable (ManagedProperty OData navigation
@@ -574,7 +575,7 @@ export class SolutionComponentDiscovery {
         { select: ['connectorid'] },
         'Default Solution — Custom Connectors'
       );
-      inventory.customConnectorIds = customConnectorsResult.value.map(c => c.connectorid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.customConnectorIds = customConnectorsResult.value.map(c => normalizeGuid(c.connectorid));
 
       // Query plugin packages - all
       const pluginPackagesResult = await logQuery<{ pluginpackageid: string }>(
@@ -582,7 +583,7 @@ export class SolutionComponentDiscovery {
         { select: ['pluginpackageid'] },
         'Default Solution — Plugin Packages'
       );
-      inventory.pluginPackageIds = pluginPackagesResult.value.map(p => p.pluginpackageid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.pluginPackageIds = pluginPackagesResult.value.map(p => normalizeGuid(p.pluginpackageid));
 
       // Query security roles - all
       const securityRolesResult = await logQuery<{ roleid: string }>(
@@ -590,7 +591,7 @@ export class SolutionComponentDiscovery {
         { select: ['roleid'] },
         'Default Solution — Security Roles'
       );
-      inventory.securityRoleIds = securityRolesResult.value.map(r => r.roleid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.securityRoleIds = securityRolesResult.value.map(r => normalizeGuid(r.roleid));
 
       // Query field security profiles - all
       const fieldSecurityProfilesResult = await logQuery<{ fieldsecurityprofileid: string }>(
@@ -598,7 +599,7 @@ export class SolutionComponentDiscovery {
         { select: ['fieldsecurityprofileid'] },
         'Default Solution — Field Security Profiles'
       );
-      inventory.fieldSecurityProfileIds = fieldSecurityProfilesResult.value.map(f => f.fieldsecurityprofileid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.fieldSecurityProfileIds = fieldSecurityProfilesResult.value.map(f => normalizeGuid(f.fieldsecurityprofileid));
 
       // Canvas apps and Custom Pages both use component type 300 in solutioncomponents
       // and live in the canvasapps entity. Splitting is done post-retrieval by apptype.
@@ -607,7 +608,7 @@ export class SolutionComponentDiscovery {
         { select: ['canvasappid'] },
         'Default Solution — Canvas Apps'
       );
-      inventory.canvasAppIds = canvasAppsResult.value.map(c => c.canvasappid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.canvasAppIds = canvasAppsResult.value.map(c => normalizeGuid(c.canvasappid));
 
       // Model-Driven Apps (appmodules) - all
       const appModulesResult = await logQuery<{ appmoduleid: string }>(
@@ -615,7 +616,7 @@ export class SolutionComponentDiscovery {
         { select: ['appmoduleid'] },
         'Default Solution — App Modules'
       );
-      inventory.appModuleIds = appModulesResult.value.map(a => a.appmoduleid.toLowerCase().replace(/[{}]/g, ''));
+      inventory.appModuleIds = appModulesResult.value.map(a => normalizeGuid(a.appmoduleid));
 
       // Global choices (option sets) — wrapped in its own try/catch so a metadata API failure
       // does not abort the entire Default Solution discovery (PATTERN-012: continue on item failure).
@@ -638,7 +639,7 @@ export class SolutionComponentDiscovery {
           durationMs: Date.now() - t0GlobalChoices,
           resultCount: globalChoicesResult.value.length,
         });
-        inventory.globalChoiceIds = globalChoicesResult.value.map(g => g.MetadataId.toLowerCase().replace(/[{}]/g, ''));
+        inventory.globalChoiceIds = globalChoicesResult.value.map(g => normalizeGuid(g.MetadataId));
       } catch (error) {
         // Continue with empty globalChoiceIds rather than aborting all discovery (PATTERN-012)
         this.logger?.log({
@@ -712,8 +713,7 @@ export class SolutionComponentDiscovery {
         workflowIds,
         async (batch) => {
           const filters = batch.map(id => {
-            const cleanGuid = id.replace(/[{}]/g, '');
-            return `workflowid eq ${cleanGuid}`;
+            return `workflowid eq ${normalizeGuid(id)}`;
           }).join(' or ');
           const result = await this.client.query<WorkflowRecord>('workflows', {
             select: ['workflowid', 'category'],
@@ -731,7 +731,7 @@ export class SolutionComponentDiscovery {
 
       // Classify by category
       for (const workflow of allWorkflows) {
-        const workflowId = workflow.workflowid.toLowerCase().replace(/[{}]/g, '');
+        const workflowId = normalizeGuid(workflow.workflowid);
         const cat = Number(workflow.category); // coerce in case API returns string
 
         switch (cat) {
