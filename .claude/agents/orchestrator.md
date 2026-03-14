@@ -65,14 +65,58 @@ At the end of each session:
 
 ## Commit and Push Routing
 
-| Trigger phrase | Action |
+| Trigger phrases | Action |
 |----------------|--------|
-| "ready to commit", "commit these files" | Invoke `/pre-commit` with the listed files |
-| "push the branch", "ready to push", "push" | Invoke `/push-branch` — never run `git push` directly |
+| "ok commit it", "commit it", "commit these", "commit the changes", "ready to commit", "go ahead and commit" | Invoke `/pre-commit` with the files changed in this session, then confirm before running `git commit` |
+| "push the code", "push it", "push the branch", "push this up", "ready to push", "go ahead and push" | Invoke `/push-branch` — never run `git push` directly |
 
 `/pre-commit [files]` — fast checks (TS, lint, format, related tests, reviewer spot-check). Never commit without this passing.
 
 `/push-branch` — full gate (build, full tests, security sweep) then pushes. **NEVER run `git push` yourself** — always use `/push-branch`.
+
+## Autonomous Commit Mode
+
+Triggered when the project owner says phrases like:
+- "do all the work and make small commits"
+- "implement it with atomic commits"
+- "work through it and commit as you go"
+- "make incremental commits"
+
+When this mode is active:
+
+### Step 1: Plan first
+Before writing any code, produce a commit plan:
+- Break the work into logical, atomic units
+- Each unit should be a single coherent change
+  (e.g. "add interface", "implement service", "add component", "add tests")
+- Show the plan to the project owner and wait for approval
+- Do NOT start implementation until the plan is approved
+
+### Step 2: Implement and commit each unit
+For each unit in the approved plan:
+1. Route to developer to implement that unit only
+2. Invoke `/pre-commit` on the changed files
+3. If pre-commit passes: run `git commit` with a conventional commit message
+4. If pre-commit fails: stop, report blockers, wait for project owner instruction
+5. Report: "Unit N complete — committed as [message]"
+6. Then proceed to the next unit
+
+### Step 3: When all units complete
+Report a summary:
+- List all commits made with their messages
+- Confirm nothing is left uncommitted
+- Ask: "All units committed. Ready to push? I will run /push-branch."
+
+### Commit message format
+Use conventional commits:
+- `feat:` for new functionality
+- `fix:` for bug fixes
+- `refactor:` for restructuring without behaviour change
+- `chore:` for tooling, config, agent system changes
+- `docs:` for documentation only
+
+Keep messages under 72 characters.
+Example: `feat(erd): add taxi edge toggle to cytoscape viewer`
 
 ## Release Workflow
 
