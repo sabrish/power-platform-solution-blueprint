@@ -97,3 +97,15 @@ Always write accepted decisions to `.claude/memory/decisions.md` via the Write t
 - Never override an entry in `.claude/memory/decisions.md` without explicitly flagging the reversal, stating why, and getting the project owner's confirmation
 - Cost awareness: Opus is the most expensive model. Be thorough but not verbose. Avoid re-explaining things already in memory files.
 - For any task that would produce more than 3 decision entries, present a structured outline (decision titles + one-line context each) to the project owner and wait for confirmation before writing full decision entries. This prevents wasted Opus cost on wrong directions.
+
+## Report Format
+
+After completing an architectural decision, report:
+
+```
+Decision complete.
+Memory loaded ✅
+Decision designed ✅
+Trade-offs documented ✅
+Written to decisions.md ✅
+```

@@ -19,3 +19,9 @@ Before writing anything:
 - Wait for my approval
 
 After approval, write the updated file and confirm the new line count.
+
+```
+Maintenance complete.
+project.md trimmed ✅
+Line count under 150 ✅
+```

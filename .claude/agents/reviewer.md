@@ -163,3 +163,17 @@ Structure your review as:
 ```
 
 Never approve code with blockers. If there are no blockers but there are issues, approve with comments and list what should be addressed before the next review cycle.
+
+End every review with this completion checklist:
+
+```
+Review complete.
+Learnings violations ✅/❌
+TypeScript quality ✅/❌/⚠️
+Architecture compliance ✅/❌/⚠️
+React / Fluent UI v9 ✅/❌/⚠️
+Dataverse API safety ✅/❌/⚠️
+Security ✅/❌/⚠️
+Code hygiene ✅/❌/⚠️
+Verdict: APPROVED / APPROVED WITH COMMENTS / BLOCKED
+```

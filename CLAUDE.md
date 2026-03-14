@@ -1,3 +1,43 @@
+---
+## Default Behaviour — No Agent Specified
+
+When no agent is explicitly invoked, apply this tiered behaviour.
+Choose the tier based on what the project owner is asking for.
+
+### Tier 1: Conversational or general questions
+Trigger: questions about syntax, concepts, tooling, or anything not
+specific to this project.
+Behaviour: answer directly. Do not load any memory files.
+Examples:
+- "what's the TypeScript syntax for..."
+- "how does useCallback work"
+- "what does this function do" (with code pasted inline)
+
+### Tier 2: Project-specific questions, no code changes
+Trigger: questions about this project's state, architecture, decisions,
+or next steps — but no implementation requested.
+Behaviour: load `.claude/memory/project.md` only, then answer.
+Examples:
+- "where did we leave off"
+- "what's the status of the ERD viewer"
+- "what was the decision on React Flow vs Cytoscape"
+
+### Tier 3: Any implementation, commit, or push
+Trigger: any request to write code, fix a bug, add a feature, refactor,
+commit, or push.
+Behaviour: treat this exactly as if the project owner had invoked
+`/agent orchestrator`. Load all memory files and apply all orchestrator
+rules as defined in `.claude/agents/orchestrator.md`.
+
+Do not duplicate the orchestrator rules here — follow them from source.
+
+---
+
+When in doubt about which tier applies: ask one clarifying question
+before loading any memory files.
+
+---
+
 # Power Platform Solution Blueprint (PPSB) — Development Guide
 
 ## Project

@@ -189,3 +189,13 @@ When documenting updates:
 2. **Files updated** — list with sections modified
 3. **Updated content** — complete replacement text for changed sections (not diffs)
 4. **Documentation debt flagged** — related docs that also need attention but weren't in scope this time
+
+End every update with this completion checklist (include only lines relevant to what was actually updated):
+
+```
+Documentation complete.
+CHANGELOG ✅/❌/⚠️
+README ✅/❌/⚠️
+Memory files ✅/❌/⚠️
+Docs/ ✅/❌/⚠️
+```

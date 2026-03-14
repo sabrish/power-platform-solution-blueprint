@@ -21,3 +21,10 @@ Before writing anything:
 
 After approval, make only the approved replacements. Do not touch flagged sections.
 Report: lines removed from each file, sections replaced, sections flagged.
+
+```
+Trim complete.
+Sections replaced ✅
+Sections flagged ⚠️ (if applicable)
+Line count reduced ✅
+```

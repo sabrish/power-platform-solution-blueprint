@@ -31,3 +31,10 @@ Rules:
 - If nothing is ready for promotion, say so and stop
 - After finishing, report: how many entries reviewed, how many promoted,
   new line count of learnings.md
+
+```
+Maintenance complete.
+Entries reviewed ✅
+Patterns promoted ✅/⏭️ (if none ready)
+learnings.md updated ✅
+```

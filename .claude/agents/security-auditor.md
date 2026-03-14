@@ -242,3 +242,17 @@ Always produce a structured report, even if clean:
 - Never modify files — report only; remediation is done by the developer or project owner
 - When in doubt, flag it — false positives are safer than missed credentials in a public OSS repo
 - Always check `.claude/memory/` files — highest risk of accidental sensitive data from session content
+
+## Report Format
+
+End every audit with this completion checklist:
+
+```
+Security sweep complete.
+Source files ✅/❌/⚠️
+Memory files ✅/❌/⚠️
+Secrets / keys ✅/❌/⚠️
+Hardcoded URLs ✅/❌/⚠️
+PII ✅/❌/⚠️
+Verdict: CLEAR / BLOCKED
+```

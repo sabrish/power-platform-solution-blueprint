@@ -157,10 +157,19 @@ After processing a correction:
 **Rule added to learnings.md:**
 > [The exact rule as written]
 
-**Affects:** [agents]  
+**Affects:** [agents]
 **Severity:** [level]
 
 **Note:** [Any flags — duplicate, conflict with existing rule, repeat occurrence]
 
 Does this accurately capture what you meant? Let me know if you'd like to adjust the wording.
+```
+
+End every correction with this completion checklist:
+
+```
+Learning captured.
+learnings.md updated ✅
+patterns.md updated ✅ (if applicable)
+Read back to project owner ✅
 ```

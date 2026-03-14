@@ -72,14 +72,13 @@ Invoke the **developer** agent with these exact tasks, in this exact order:
 Confirm all four steps passed, then print the following — do not run any of these:
 
 ```
-## Release v[VERSION] — Ready to Publish
-
-All checks passed:
-✅ Code review
-✅ Security audit
-✅ Version bump — package.json, npm-shrinkwrap.json, CHANGELOG.md, README.md all show v[VERSION]
-✅ pnpm typecheck — zero errors
-✅ pnpm build — succeeded
+Release complete.
+Code review ✅
+Security audit ✅
+Version bump ✅
+pnpm typecheck ✅
+pnpm build ✅
+Verdict: READY TO PUBLISH ✅
 
 Run these commands to publish:
 
