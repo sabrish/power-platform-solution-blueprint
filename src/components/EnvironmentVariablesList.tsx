@@ -30,10 +30,10 @@ const useStyles = makeStyles({
   },
   row: {
     display: 'grid',
-    // chevron | name(auto=widest content) | eye | value(1fr=remaining) | type | default | required/managed
-    // auto for name: sized to widest cell across all rows; 1fr for value: takes remaining space.
+    // chevron | name(2fr) | eye(fixed) | value(1fr) | type | default | required/managed
+    // fr columns scale with panel width; eye stays fixed between name and value.
     // Badge columns use min-content: no fixed px.
-    gridTemplateColumns: `${tokens.spacingHorizontalXXL} auto ${tokens.spacingHorizontalXXXL} 1fr min-content min-content min-content`,
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(0, 2fr) ${tokens.spacingHorizontalXXXL} minmax(0, 1fr) min-content min-content min-content`,
     alignItems: 'start',
   },
   eyeIconColumn: {
