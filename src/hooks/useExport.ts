@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { ExportProgress } from '../core';
+import type { BlueprintResult, ExportProgress } from '../core';
+import { ExportFacade } from '../core/exporters/ExportFacade.js';
 
 /**
  * Hook result interface
@@ -17,36 +18,64 @@ export interface UseExportResult {
 }
 
 /**
- * Hook for export operations with browser download
- * @param blueprintGenerator BlueprintGenerator instance
+ * Shared export operation wrapper — P10: eliminates the duplicated
+ * try/catch/setIsExporting/setError/setProgress pattern.
+ */
+async function runExport(
+  setIsExporting: (v: boolean) => void,
+  setError: (e: Error | null) => void,
+  setProgress: (p: ExportProgress | null) => void,
+  fn: () => Promise<void>
+): Promise<void> {
+  setIsExporting(true);
+  setError(null);
+  try {
+    await fn();
+  } catch (err) {
+    setError(err instanceof Error ? err : new Error('Export failed'));
+  } finally {
+    setIsExporting(false);
+    // Clear progress after a short delay to allow the UI to show completion
+    setTimeout(() => setProgress(null), 2000);
+  }
+}
+
+/**
+ * Trigger browser download of a file
+ */
+function downloadFile(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Hook for export operations with browser download.
+ *
+ * P15: Parameter typed as BlueprintResult — removes the `any` parameter.
+ * Export methods delegate to ExportFacade so BlueprintGenerator is not
+ * required to hold export logic (SRP).
+ *
+ * @param result Completed blueprint result to export
  * @returns Export functions and state
  */
-export function useExport(blueprintGenerator: any): UseExportResult {
+export function useExport(result: BlueprintResult): UseExportResult {
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState<ExportProgress | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  /**
-   * Trigger browser download of file
-   */
-  const downloadFile = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  const facade = new ExportFacade();
 
   /**
    * Export as JSON
    */
-  const exportJson = async () => {
-    try {
-      setIsExporting(true);
-      setError(null);
+  const exportJson = async (): Promise<void> => {
+    await runExport(setIsExporting, setError, setProgress, async () => {
       setProgress({
         phase: 'Generating JSON export',
         current: 0,
@@ -54,7 +83,7 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         message: 'Serializing blueprint data...',
       });
 
-      const json = await blueprintGenerator.exportAsJson();
+      const json = facade.exportAsJson(result);
       const blob = new Blob([json], { type: 'application/json' });
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       downloadFile(blob, `blueprint-${timestamp}.json`);
@@ -65,22 +94,14 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         total: 1,
         message: 'JSON export downloaded',
       });
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
-    } finally {
-      setIsExporting(false);
-      // Clear progress after short delay
-      setTimeout(() => setProgress(null), 2000);
-    }
+    });
   };
 
   /**
    * Export as Markdown (ZIP)
    */
-  const exportMarkdown = async () => {
-    try {
-      setIsExporting(true);
-      setError(null);
+  const exportMarkdown = async (): Promise<void> => {
+    await runExport(setIsExporting, setError, setProgress, async () => {
       setProgress({
         phase: 'Generating Markdown export',
         current: 0,
@@ -88,7 +109,7 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         message: 'Generating documentation files...',
       });
 
-      const zip = await blueprintGenerator.exportAsZip(['markdown']);
+      const zip = await facade.exportAsZip(result, ['markdown']);
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       downloadFile(zip, `blueprint-markdown-${timestamp}.zip`);
 
@@ -98,21 +119,14 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         total: 3,
         message: 'Markdown export downloaded',
       });
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
-    } finally {
-      setIsExporting(false);
-      setTimeout(() => setProgress(null), 2000);
-    }
+    });
   };
 
   /**
-   * Export as HTML (single file, no ZIP)
+   * Export as HTML (single file)
    */
-  const exportHtmlSingle = async () => {
-    try {
-      setIsExporting(true);
-      setError(null);
+  const exportHtml = async (): Promise<void> => {
+    await runExport(setIsExporting, setError, setProgress, async () => {
       setProgress({
         phase: 'Generating HTML export',
         current: 0,
@@ -120,7 +134,7 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         message: 'Creating interactive document...',
       });
 
-      const html = await blueprintGenerator.exportAsHtml();
+      const html = facade.exportAsHtml(result);
       const blob = new Blob([html], { type: 'text/html' });
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       downloadFile(blob, `blueprint-${timestamp}.html`);
@@ -131,68 +145,28 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         total: 1,
         message: 'HTML export downloaded',
       });
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
-    } finally {
-      setIsExporting(false);
-      setTimeout(() => setProgress(null), 2000);
-    }
+    });
   };
 
   /**
-   * Export as HTML (ZIP - for backward compatibility)
+   * Export selected formats as ZIP (or single file if one format and applicable)
    */
-  const exportHtml = async () => {
-    try {
-      setIsExporting(true);
-      setError(null);
-      setProgress({
-        phase: 'Generating HTML export',
-        current: 0,
-        total: 1,
-        message: 'Creating interactive document...',
-      });
-
-      const zip = await blueprintGenerator.exportAsZip(['html']);
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-      downloadFile(zip, `blueprint-${timestamp}.html.zip`);
-
-      setProgress({
-        phase: 'Complete',
-        current: 1,
-        total: 1,
-        message: 'HTML export downloaded',
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
-    } finally {
-      setIsExporting(false);
-      setTimeout(() => setProgress(null), 2000);
-    }
-  };
-
-  /**
-   * Export selected formats as ZIP (or single file if applicable)
-   */
-  const exportZip = async (formats: string[]) => {
-    try {
-      setIsExporting(true);
-      setError(null);
-
-      // If only one format selected and it's HTML or JSON, export as single file
-      if (formats.length === 1) {
-        if (formats[0] === 'html') {
-          await exportHtmlSingle();
-          return;
-        } else if (formats[0] === 'json') {
-          await exportJson();
-          return;
-        }
-        // For markdown (multiple files), continue with ZIP
+  const exportZip = async (formats: string[]): Promise<void> => {
+    // Single-format shortcuts — export as the native file type directly
+    if (formats.length === 1) {
+      if (formats[0] === 'html') {
+        await exportHtml();
+        return;
       }
+      if (formats[0] === 'json') {
+        await exportJson();
+        return;
+      }
+      // markdown (multi-file) always goes to ZIP
+    }
 
-      const total = formats.length + 1; // +1 for packaging
-      let current = 0;
+    await runExport(setIsExporting, setError, setProgress, async () => {
+      const total = formats.length + 1; // +1 for packaging step
 
       setProgress({
         phase: 'Generating exports',
@@ -201,7 +175,7 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         message: `Generating ${formats.length} format(s)...`,
       });
 
-      // Generate all formats
+      let current = 0;
       for (const format of formats) {
         current++;
         setProgress({
@@ -210,7 +184,7 @@ export function useExport(blueprintGenerator: any): UseExportResult {
           total,
           message: `Generating ${format} export...`,
         });
-        await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI update
+        await new Promise<void>(resolve => setTimeout(resolve, 100)); // Allow UI update
       }
 
       setProgress({
@@ -220,7 +194,7 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         message: 'Creating ZIP archive...',
       });
 
-      const zip = await blueprintGenerator.exportAsZip(formats);
+      const zip = await facade.exportAsZip(result, formats);
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       downloadFile(zip, `blueprint-${timestamp}.zip`);
 
@@ -230,25 +204,20 @@ export function useExport(blueprintGenerator: any): UseExportResult {
         total,
         message: 'Export downloaded successfully',
       });
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
-    } finally {
-      setIsExporting(false);
-      setTimeout(() => setProgress(null), 2000);
-    }
+    });
   };
 
   /**
    * Export all formats
    */
-  const exportAll = async () => {
+  const exportAll = async (): Promise<void> => {
     await exportZip(['markdown', 'json', 'html']);
   };
 
   /**
    * Clear error state
    */
-  const clearError = () => {
+  const clearError = (): void => {
     setError(null);
   };
 

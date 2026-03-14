@@ -48,7 +48,6 @@ import {
   FetchLogIcon,
 } from './componentIcons';
 import type { BlueprintResult } from '../core';
-import type { BlueprintGenerator } from '../core';
 import type { ScopeSelection } from '../types/scope';
 import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { PluginsList } from './PluginsList';
@@ -213,11 +212,10 @@ const useStyles = makeStyles({
 export interface ResultsDashboardProps {
   result: BlueprintResult;
   scope: ScopeSelection;
-  blueprintGenerator: BlueprintGenerator;
   onStartOver: () => void;
 }
 
-export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOver }: ResultsDashboardProps) {
+export function ResultsDashboard({ result, scope, onStartOver }: ResultsDashboardProps) {
   const styles = useStyles();
 
   // Compute default selected card — first component type with data (evaluated once before hooks)
@@ -709,7 +707,6 @@ export function ResultsDashboard({ result, scope, blueprintGenerator, onStartOve
       <ExportDialog
         isOpen={showExportDialog}
         result={result}
-        blueprintGenerator={blueprintGenerator}
         onClose={() => setShowExportDialog(false)}
       />
 

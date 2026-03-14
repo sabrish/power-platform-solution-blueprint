@@ -117,7 +117,7 @@ function App() {
   const [selectedScope, setSelectedScope] = useState<ScopeSelection | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const { generate, result, progress, recentFetches, isGenerating, isCancelling, error, cancel, reset, blueprintGenerator } = useBlueprint(
+  const { generate, result, progress, recentFetches, isGenerating, isCancelling, error, cancel, reset } = useBlueprint(
     selectedScope!
   );
 
@@ -214,7 +214,6 @@ function App() {
         result={result}
         scope={selectedScope}
         onStartOver={handleChangeSelection}
-        blueprintGenerator={blueprintGenerator!}
       />
     );
   }
