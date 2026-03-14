@@ -20,14 +20,9 @@ import {
   Tooltip,
   Field,
 } from '@fluentui/react-components';
-import {
-  PptbDataverseClient,
-  PublisherDiscovery,
-  SolutionDiscovery,
-  type Publisher,
-  type Solution,
-} from '../core';
+import type { Publisher, Solution } from '../core';
 import type { ScopeType, ScopeSelection, PublisherScopeMode } from '../types/scope';
+import { useScopeData } from '../hooks/useScopeData';
 import { Footer } from './Footer';
 
 const useStyles = makeStyles({
@@ -158,11 +153,8 @@ export interface ScopeSelectorProps {
 export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps) {
   const styles = useStyles();
 
-  // Data state
-  const [publishers, setPublishers] = useState<Publisher[]>([]);
-  const [solutions, setSolutions] = useState<Solution[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Data fetching — delegated to useScopeData hook
+  const { publishers, solutions, isLoading: loading, error, retry: handleRetry } = useScopeData();
 
   // Selection state
   const [scopeType, setScopeType] = useState<ScopeType>('solution');
@@ -171,11 +163,6 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   const [selectedSolutionIds, setSelectedSolutionIds] = useState<string[]>([]);
   const [includeSystem, setIncludeSystem] = useState(true);
   const [includeSystemFields, setIncludeSystemFields] = useState(false); // Default: exclude system fields
-
-  // Load data on mount
-  useEffect(() => {
-    loadData();
-  }, []);
 
   // Reset selections when scope type changes
   useEffect(() => {
@@ -222,46 +209,6 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
           ))),
     [defaultPublisherUniqueName]
   );
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      if (!window.toolboxAPI || !window.dataverseAPI) {
-        throw new Error('PPTB Desktop API not available. Please run this tool inside PPTB Desktop.');
-      }
-
-      // Get environment URL from tool context
-      const toolContext = await window.toolboxAPI.getToolContext();
-      const environmentUrl = toolContext?.connectionUrl || 'Current Environment';
-
-      const client = new PptbDataverseClient(window.dataverseAPI, environmentUrl);
-      const publisherDiscovery = new PublisherDiscovery(client);
-      const solutionDiscovery = new SolutionDiscovery(client);
-
-      const [publishersData, solutionsData] = await Promise.all([
-        publisherDiscovery.getPublishers(),
-        solutionDiscovery.getSolutions(),
-      ]);
-
-      setPublishers(publishersData);
-      setSolutions(solutionsData);
-
-      if (publishersData.length === 0 && solutionsData.length === 0) {
-        setError('No custom publishers or solutions found in this environment.');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRetry = () => {
-    loadData();
-  };
 
   const handleScopeTypeChange = (_: unknown, data: { value: string }) => {
     setScopeType(data.value as ScopeType);
