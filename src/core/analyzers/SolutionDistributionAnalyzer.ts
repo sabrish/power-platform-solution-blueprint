@@ -6,6 +6,7 @@ import type {
   BlueprintResult,
 } from '../types/blueprint.js';
 import type { Solution } from '../types.js';
+import { normalizeGuid } from '../utils/guid.js';
 
 /**
  * Analyzes component distribution across solutions
@@ -90,76 +91,76 @@ export class SolutionDistributionAnalyzer {
     result: BlueprintResult,
     solutionComponentMap: Map<string, Set<string>>
   ): ComponentCounts {
-    const solutionId = solution.solutionid.toLowerCase().replace(/[{}]/g, '');
+    const solutionId = normalizeGuid(solution.solutionid);
     const componentIdsInSolution = solutionComponentMap.get(solutionId) || new Set();
 
     const counts: ComponentCounts = {
       entities: result.entities.filter(e =>
-        componentIdsInSolution.has(e.entity.MetadataId.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(e.entity.MetadataId))
       ).length,
 
       plugins: result.plugins.filter(p =>
-        componentIdsInSolution.has(p.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(p.id))
       ).length,
 
       flows: result.flows.filter(f =>
-        componentIdsInSolution.has(f.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(f.id))
       ).length,
 
       businessRules: result.businessRules.filter(br =>
-        componentIdsInSolution.has(br.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(br.id))
       ).length,
 
       classicWorkflows: result.classicWorkflows.filter(wf =>
-        componentIdsInSolution.has(wf.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(wf.id))
       ).length,
 
       bpfs: result.businessProcessFlows.filter(bpf =>
-        componentIdsInSolution.has(bpf.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(bpf.id))
       ).length,
 
       webResources: result.webResources.filter(wr =>
-        componentIdsInSolution.has(wr.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(wr.id))
       ).length,
 
       customAPIs: result.customAPIs.filter(api =>
-        componentIdsInSolution.has(api.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(api.id))
       ).length,
 
       environmentVariables: result.environmentVariables.filter(ev =>
-        componentIdsInSolution.has(ev.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(ev.id))
       ).length,
 
       connectionReferences: result.connectionReferences.filter(cr =>
-        componentIdsInSolution.has(cr.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(cr.id))
       ).length,
 
       globalChoices: result.globalChoices.filter(gc =>
-        componentIdsInSolution.has(gc.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(gc.id))
       ).length,
 
       customConnectors: result.customConnectors.filter(cc =>
-        componentIdsInSolution.has(cc.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(cc.id))
       ).length,
 
       securityRoles: result.securityRoles?.filter(sr =>
-        componentIdsInSolution.has(sr.roleid.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(sr.roleid))
       ).length ?? 0,
 
       fieldSecurityProfiles: result.fieldSecurityProfiles?.filter(fp =>
-        componentIdsInSolution.has(fp.fieldsecurityprofileid.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(fp.fieldsecurityprofileid))
       ).length ?? 0,
 
       canvasApps: result.canvasApps.filter(ca =>
-        componentIdsInSolution.has(ca.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(ca.id))
       ).length,
 
       customPages: result.customPages.filter(cp =>
-        componentIdsInSolution.has(cp.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(cp.id))
       ).length,
 
       modelDrivenApps: result.modelDrivenApps.filter(mda =>
-        componentIdsInSolution.has(mda.id.toLowerCase().replace(/[{}]/g, ''))
+        componentIdsInSolution.has(normalizeGuid(mda.id))
       ).length,
 
       total: 0,

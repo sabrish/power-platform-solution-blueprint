@@ -3,6 +3,7 @@ import type { FetchLogger } from '../../utils/FetchLogger.js';
 import type { ProgressInfo, StepWarning, FormDefinition } from '../../types/blueprint.js';
 import type { EntityMetadata } from '../../types.js';
 import { FormDiscovery } from '../../discovery/FormDiscovery.js';
+import { normalizeGuid, normalizeBatch } from '../../utils/guid.js';
 
 export async function processForms(
   client: IDataverseClient,
@@ -37,17 +38,17 @@ export async function processForms(
     const entityLogicalNameToId = new Map<string, string>();
     for (const entity of entities) {
       if (entity.MetadataId) {
-        entityLogicalNameToId.set(entity.LogicalName.toLowerCase(), entity.MetadataId.toLowerCase().replace(/[{}]/g, ''));
+        entityLogicalNameToId.set(entity.LogicalName.toLowerCase(), normalizeGuid(entity.MetadataId));
       }
     }
 
     // Filter forms based on rootcomponentbehavior:
     // - If entity has rootcomponentbehavior=0: Include ALL forms for that entity
     // - Otherwise: Only include forms explicitly in solutioncomponents
-    const normalizedFormIds = new Set(formIds.map(id => id.toLowerCase().replace(/[{}]/g, '')));
+    const normalizedFormIds = new Set(normalizeBatch(formIds));
 
     const forms = allForms.filter(form => {
-      const normalizedFormId = form.id.toLowerCase().replace(/[{}]/g, '');
+      const normalizedFormId = normalizeGuid(form.id);
       const entityLogicalName = form.entity.toLowerCase();
       const entityMetadataId = entityLogicalNameToId.get(entityLogicalName);
 
