@@ -165,3 +165,80 @@ Processors in `src/core/generators/processors/` call `discoverByIds()` via the `
 **Decision:** Adding a new component type currently requires editing `BlueprintGenerator`, `MarkdownReporter`, `JsonReporter`, `HtmlReporter`, `ZipPackager`, the UI tab list, and analyzers — a violation of the Open/Closed Principle. A reporter templating pattern must be introduced incrementally to isolate per-component-type formatting.
 
 **Reason:** Audit identified this as S2 (Open/Closed) violation. Every new component type multiplies the edit surface.
+
+---
+
+### D-UI-001: I-prefix on true interface contracts only
+I-prefix applies only to IDataverseClient, IDiscoverer<T>, IReporter<TOutput>, IHtmlTemplateSection.
+NOT on type aliases, hook return shapes, prop types, or DTOs.
+Settled: 2026-03-14
+
+---
+
+### D-ARCH-001: ProcessorStep[] registration pattern
+Adding a new component type to the pipeline = one new entry in GENERATOR_STEPS array.
+Never add a hardcoded sequential call to BlueprintGenerator.generate().
+Source: BlueprintGenerator.ts + src/core/generators/processors/generatorSteps.ts
+Settled: 2026-03-14
+
+---
+
+### D-ARCH-002: ComponentTabDefinition[] registry
+Tab logic in ResultsDashboard is driven by COMPONENT_TABS array.
+Adding a new component type to the UI = one new entry in that array.
+Never add a new branch to defaultSelectedKey, hasResults(), or tab JSX directly.
+Source: src/components/ComponentTabRegistry.tsx
+Settled: 2026-03-14
+
+---
+
+### D-ARCH-003: ExportFacade separation
+BlueprintGenerator has no export concern. All export format generation is in ExportFacade.
+Source: src/core/exporters/ExportFacade.ts
+Settled: 2026-03-14
+
+---
+
+### D-ARCH-004: IReporter<TOutput> is the formal reporter contract
+All reporters (MarkdownReporter, HtmlReporter, JsonReporter) implement IReporter<TOutput>.
+Source: src/core/reporters/IReporter.ts
+Settled: 2026-03-14
+
+---
+
+### D-ARCH-005: useScopeData() hook — UI layer isolation
+UI components never construct core classes directly (no new PptbDataverseClient(...) inside a component).
+All data loading goes through a hook: useScopeData, useBlueprint, etc.
+Source: src/hooks/useScopeData.ts
+Settled: 2026-03-14
+
+---
+
+### D-ARCH-006: HtmlTemplateSection registry
+Each component type has one section file in src/core/reporters/html/sections/.
+All sections registered in HTML_TEMPLATE_SECTIONS array with static imports.
+Never add dynamic imports to section loading.
+Source: src/core/reporters/html/sections/index.ts
+Settled: 2026-03-14
+
+---
+
+### D-ARCH-007: systemFilters.ts canonical location
+src/core/utils/systemFilters.ts is the canonical location.
+src/utils/systemFilters.ts is a forwarding shim only — do not add logic there.
+Settled: 2026-03-14
+
+---
+
+### D-CODE-001: Named exports everywhere
+Named exports on all files except src/App.tsx and src/main.tsx (Vite entry point convention).
+No default exports on core classes, hooks, or utilities.
+Settled: 2026-03-14
+
+---
+
+### D-CODE-002: Discriminated union for loading state
+Standard pattern: phase: 'idle' | 'generating' | 'done' | 'error'
+Never use separate isLoading: boolean alongside error state.
+Reference: useBlueprint.ts
+Settled: 2026-03-14

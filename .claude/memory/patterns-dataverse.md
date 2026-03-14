@@ -490,3 +490,70 @@ to appear stuck at 50% or jump from 0% to 100%.
 > **Note:** Use PATTERN-022 (Pass 2 silent, snap to 100%) when the two passes iterate over
 > different-sized item sets. Use PATTERN-023 (50/50 split) when both passes iterate the same
 > set and you want the bar to advance continuously across both passes.
+
+---
+
+## LAYER ARCHITECTURE (canonical)
+
+```
+src/components/       ← UI only; calls hooks; never imports from src/core/ directly
+      │ hooks only
+      ▼
+src/hooks/            ← orchestrates core services; owns loading/error state
+      │ core services only
+      ▼
+src/core/             ← business logic; no React imports; no window access except
+      │                  PptbDataverseClient
+      │ IDataverseClient only
+      ▼
+window.dataverseAPI   ← all access via PptbDataverseClient only
+```
+
+---
+
+## CROSS-LAYER IMPORT RULES
+
+- src/components/ may import from src/hooks/ and src/core/types/ only
+- src/hooks/ may import from src/core/ freely
+- src/core/ may NOT import from src/utils/ — shared utilities live in src/core/utils/
+- src/core/ may NOT import React or any UI library
+
+---
+
+## PROCESSOR STEP PATTERN
+
+All component type processors are registered in BlueprintGenerator as ProcessorStep[] array.
+Adding a new component type:
+  1. Create processor file in src/core/generators/processors/
+  2. Add one entry to GENERATOR_STEPS in generatorSteps.ts
+Never add a hardcoded sequential call to generate().
+Source: src/core/generators/processors/generatorSteps.ts
+
+---
+
+## EXPORT FACADE PATTERN
+
+BlueprintGenerator produces BlueprintResult — it has no export concern.
+All export format generation goes through ExportFacade.
+Hooks call ExportFacade.export(format, result) — never call reporter methods directly.
+Source: src/core/exporters/ExportFacade.ts
+
+---
+
+## REPORTER CONTRACT
+
+All reporters implement IReporter<TOutput>:
+  interface IReporter<TOutput> {
+    generate(result: BlueprintResult): TOutput;
+  }
+Adding a new reporter: implement IReporter<TOutput>, register in ExportFacade.
+Source: src/core/reporters/IReporter.ts
+
+---
+
+## HTML SECTION PATTERN
+
+Each component type has one section file in src/core/reporters/html/sections/.
+All sections registered with static imports in HTML_TEMPLATE_SECTIONS array.
+Never use dynamic imports in section loading.
+Source: src/core/reporters/html/sections/index.ts

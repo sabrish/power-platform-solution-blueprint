@@ -202,3 +202,23 @@ These already exist and MUST be used — not reimplemented:
 | `componentIcons` | `src/components/componentIcons.ts` | All component/tab icon references |
 | `EmptyState` | `src/components/EmptyState.tsx` | All empty list states |
 | `IDiscoverer<T>` | `src/core/discovery/IDiscoverer.ts` | All new ID-based discovery classes |
+
+---
+
+## D7 — Discriminated union for async state
+
+Use: { phase: 'idle' | 'loading' | 'done' | 'error'; data?: T; error?: string }
+Never: separate isLoading: boolean + error: string | null
+
+---
+
+## D8 — Named exports mandatory
+
+All modules use named exports. Default exports only in src/App.tsx and src/main.tsx.
+Applies to: hooks, utilities, core classes, reporters, discoverers, processors.
+
+---
+
+## D9 — Component size limit
+
+200 LOC hard limit per component file. Decompose before adding code that would exceed it.
