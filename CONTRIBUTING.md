@@ -163,6 +163,17 @@ For **bug fixes** and small improvements (typos, docs, obvious defects), you can
 - **Performance**: Follow patterns in `DATAVERSE_OPTIMIZATION_GUIDE.md`
 - **Naming**: Use descriptive names, avoid abbreviations unless well-known
 
+### Interface Naming Convention
+
+Use the `I` prefix **only** for true interface contracts used in dependency inversion:
+- `IDataverseClient` — injected into classes that call Dataverse
+- `IDiscoverer<T>` — polymorphic discovery interface
+
+Do **not** use the `I` prefix on:
+- Hook return shapes (e.g. `UseBlueprintResult`, not `IUseBlueprintResult`)
+- Type aliases or DTOs
+- Props interfaces (e.g. `ScopeSelectorProps`, not `IScopeSelectorProps`)
+
 ## File Organisation
 
 **One file, one job.**

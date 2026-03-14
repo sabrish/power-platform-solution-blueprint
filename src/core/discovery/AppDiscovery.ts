@@ -6,6 +6,10 @@ import { normalizeGuid } from '../utils/guid.js';
 import type { CanvasApp } from '../types/canvasApp.js';
 import type { CustomPage } from '../types/customPage.js';
 import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
+import {
+  CANVAS_APP_TYPE_STANDARD,
+  CANVAS_APP_TYPE_CUSTOM_PAGE,
+} from '../utils/canvasAppType.js';
 
 /**
  * Raw record shape returned from canvasapps OData entity set.
@@ -68,11 +72,11 @@ export class AppDiscovery {
         isManaged: r.ismanaged === true,
       };
 
-      if (r.canvasapptype === 2) {
+      if (r.canvasapptype === CANVAS_APP_TYPE_CUSTOM_PAGE) {
         customPages.push(base);
-      } else if (r.canvasapptype === 0 || r.canvasapptype === undefined) {
-        // 0 = Standard canvas app; undefined = field absent (treat as canvas app)
-        // Skip canvasapptype === 1 (Component libraries — not user-facing apps)
+      } else if (r.canvasapptype === CANVAS_APP_TYPE_STANDARD || r.canvasapptype === undefined) {
+        // CANVAS_APP_TYPE_STANDARD = 0; undefined = field absent (treat as canvas app)
+        // Skip CANVAS_APP_TYPE_COMPONENT_LIBRARY = 1 (Component libraries — not user-facing apps)
         canvasApps.push(base);
       }
     }

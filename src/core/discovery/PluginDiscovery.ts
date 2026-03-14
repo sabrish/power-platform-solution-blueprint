@@ -5,6 +5,7 @@ import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
 import { normalizeBatch } from '../utils/guid.js';
+import { getPluginStageLabel } from '../utils/pluginStageLabels.js';
 
 interface RawPluginStep {
   sdkmessageprocessingstepid: string;
@@ -198,14 +199,7 @@ export class PluginDiscovery implements IDiscoverer<PluginStep> {
   }
 
   getStageName(stage: number): string {
-    switch (stage) {
-      case 10: return 'PreValidation';
-      case 20: return 'PreOperation';
-      case 30: return 'MainOperation';
-      case 40: return 'PostOperation';
-      case 50: return 'Asynchronous';
-      default: return 'Unknown';
-    }
+    return getPluginStageLabel(stage);
   }
 
   getModeName(mode: number): string {

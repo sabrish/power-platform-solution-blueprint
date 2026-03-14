@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       applyTheme(isDark ? 'dark' : 'light');
     };
 
-    const pptbAPI = (window as any).toolboxAPI;
+    const pptbAPI = window.toolboxAPI;
 
     // Read initial theme
     if (pptbAPI?.utils?.getCurrentTheme) {

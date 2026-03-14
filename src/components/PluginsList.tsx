@@ -18,6 +18,7 @@ import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 import { useExpandable } from '../hooks/useExpandable';
+import { getPluginStageLabel } from '../core/utils/pluginStageLabels';
 
 // These must exactly match PluginDiscovery.getStageName() output (no hyphens)
 // 'Asynchronous' is NOT a stage — it is a mode. Asynchronous plugins use stage 50 (PostOperation).
@@ -26,15 +27,19 @@ const MODE_VALUES = ['Synchronous', 'Asynchronous'];
 const PLUGIN_TYPE_DROPDOWN_MIN_WIDTH = '130px'; // fixed dropdown width — no token equivalent
 const STATE_VALUES = ['Enabled', 'Disabled'];
 
-/** Convert internal stageName to a human-readable display label */
-const formatStageLabel = (stageName: string): string => {
-  switch (stageName) {
-    case 'PreValidation': return 'Pre-Validation';
-    case 'PreOperation': return 'Pre-Operation';
-    case 'PostOperation': return 'Post-Operation';
-    default: return stageName;
-  }
+/**
+ * Display-label map for filter buttons: maps canonical stage name → hyphenated UI label.
+ * Stage names come from getPluginStageLabel() in src/core/utils/pluginStageLabels.ts.
+ */
+const STAGE_DISPLAY_LABELS: Record<string, string> = {
+  [getPluginStageLabel(10)]: 'Pre-Validation',
+  [getPluginStageLabel(20)]: 'Pre-Operation',
+  [getPluginStageLabel(40)]: 'Post-Operation',
 };
+
+/** Convert internal stageName to a human-readable display label for UI filter buttons */
+const formatStageLabel = (stageName: string): string =>
+  STAGE_DISPLAY_LABELS[stageName] ?? stageName;
 
 const FILTER_SPECS = [
   { name: 'stage', getKey: (p: PluginStep) => p.stageName },
