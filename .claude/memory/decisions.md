@@ -24,112 +24,42 @@
 ## [2026-02-10] — Official PPTB API: window.dataverseAPI
 
 **Status:** Accepted and implemented (since v0.5.1)
-
-**Decision:** Use `window.dataverseAPI` for ALL Dataverse operations. Use `window.toolboxAPI.getToolContext()` (async) for tool context.
-
-**Reason:** Official PPTB Desktop API structure as defined by `@pptb/types` v1.0.19+.
-
-**Anti-pattern explicitly rejected:**
-- `window.toolboxAPI.dataverse.queryData()` — old structure, do not use
-- `executeDataverseRequest()` — does not exist
-
-**Key API shape:**
-```typescript
-window.dataverseAPI.queryData(odataQuery, connectionTarget?)
-window.dataverseAPI.fetchXmlQuery(fetchXml, connectionTarget?)
-window.dataverseAPI.create / retrieve / update / delete / ...
-await window.toolboxAPI.getToolContext()  // async — always await
-```
+Use `window.dataverseAPI` for all Dataverse operations. `window.toolboxAPI.getToolContext()` (async — always await) for tool context. Forbidden: `window.toolboxAPI.dataverse.*` and `executeDataverseRequest()` (neither exists). **Technical spec:** PATTERN-005 in patterns-dataverse.md.
 
 ---
 
 ## [2026-02-10] — PptbDataverseClient Constructor
 
 **Status:** Accepted and implemented (since v0.5.1)
-
-**Decision:** `PptbDataverseClient` accepts a `DataverseAPI.API` instance directly (not a nested toolbox structure). Environment URL comes from `toolContext.connectionUrl`.
-
-**Why:** Matches official `@pptb/types` package structure exactly.
+Accepts `DataverseAPI.API` directly; environment URL from `toolContext.connectionUrl`. Matches `@pptb/types` package structure exactly. **Technical spec:** see PATTERN-005.
 
 ---
 
 ## [2026-02-11] — Publisher Scope Converts to Solution Scope
 
 **Status:** Accepted and implemented (since v0.5.3)
-
-**Decision:** Publisher scope always converts internally to a list of solution IDs and then uses the same code path as solution scope. No separate publisher-specific query methods.
-
-**Reason:**
-- "All solutions from publisher" → system provides filtered solution list → solution IDs
-- "Specific solutions only" → user selects → solution IDs
-- Both paths end with solution IDs; a single code path is simpler and avoids metadata API limitations (`startswith()` not supported on EntityDefinitions)
-
-**What was removed:** `getEntitiesByPublisher()` method (reduced code by 78 lines)
-
-**Implementation:**
-```typescript
-// In useBlueprint.ts or equivalent conversion layer
-if (scope.type === 'publisher') {
-  return {
-    type: 'solution',
-    solutionIds: scope.solutionIds,  // already resolved at UI layer
-    includeSystem: scope.includeSystem,
-    excludeSystemFields: scope.excludeSystemFields,
-  };
-}
-```
+Publisher scope always resolves to solution IDs at the UI layer before passing to core logic. No separate publisher-specific query methods in discovery classes. `getEntitiesByPublisher()` removed (saved 78 lines). **Technical spec:** PATTERN-006 in patterns-dataverse.md.
 
 ---
 
 ## [2026-02-11] — Metadata API: Fetch All + Filter in Memory
 
 **Status:** Accepted and implemented
-
-**Decision:** The Dataverse metadata API (`EntityDefinitions`) does NOT support `startswith()`, `orderBy`, or complex filters. Always fetch all custom entities and filter in memory.
-
-**Supported:** Basic equality filters (`IsCustomEntity eq true`), `$select`, `$expand`
-**Not supported:** `startswith()`, `orderBy`, most OData functions
-
-**Pattern:**
-```typescript
-// Fetch all custom entities
-const result = await client.queryMetadata('EntityDefinitions', {
-  select: ['LogicalName', 'SchemaName', 'DisplayName'],
-  filter: 'IsCustomEntity eq true',
-});
-// Filter by prefix in memory
-const filtered = result.value.filter(e => e.LogicalName.startsWith('prefix_'));
-// Sort in memory
-filtered.sort((a, b) => a.LogicalName.localeCompare(b.LogicalName));
-```
+`EntityDefinitions` does not support `startswith()`, `orderBy`, or complex filters. Always fetch all custom entities and filter/sort in memory. **Technical spec:** PATTERN-004 in patterns-dataverse.md.
 
 ---
 
 ## [2026-02-11] — Batch Size = 20 (10 for privileges)
 
 **Status:** Accepted and implemented
-
-**Decision:** All OData OR-filter batch queries use `batchSize = 20`. Security role privilege queries use `batchSize = 10` due to longer field paths and higher URL length risk.
-
-**Reason:** Prevents HTTP 414 (URL too long) and HTTP 400 errors. GUIDs are 36 characters; 20 GUIDs ≈ 1.5KB in URL.
-
-**Tables that require batching:** plugin steps, plugin images, workflows, web resources, custom APIs, security role privileges, forms, field permissions, connection references.
+Standard batchSize = 20; privilege queries batchSize = 10 (longer field paths). Prevents HTTP 414/400. Tables requiring batching: plugin steps, images, workflows, web resources, custom APIs, security role privileges, forms, field permissions, connection references. **Technical spec:** PATTERN-002 in patterns-dataverse.md.
 
 ---
 
 ## [2026-02-11] — Static Imports for Reporters and ZipPackager
 
 **Status:** Accepted and implemented (since v0.7.2)
-
-**Decision:** All reporters (`MarkdownReporter`, `JsonReporter`, `HtmlReporter`, `ZipPackager`) must be statically imported, never dynamically imported.
-
-**Reason:** Dynamic `import()` calls create separate Vite chunks that are unreachable under the `pptb-webview://` protocol used by PPTB Desktop. Static imports bundle everything into the main chunk.
-
-**Anti-pattern explicitly rejected:**
-```typescript
-// NEVER use dynamic imports for reporters
-const { MarkdownReporter } = await import('./reporters/MarkdownReporter');
-```
+All reporters and discovery classes in BlueprintGenerator must be statically imported. Dynamic `import()` creates chunks unreachable under `pptb-webview://`. **Technical spec:** PATTERN-007 in patterns-dataverse.md.
 
 ---
 
@@ -146,14 +76,7 @@ const { MarkdownReporter } = await import('./reporters/MarkdownReporter');
 ## [2026-02-22] — No DataGrid for Component Browser Lists
 
 **Status:** Accepted and implemented
-
-**Decision:** Do NOT use Fluent UI `DataGrid` for component browser lists. All lists must use the card-row expandable pattern.
-
-**Reason:** DataGrid causes column overflow and navigates away from the list, breaking the UX.
-
-**Exception (legacy, do not replicate):** `ConnectionReferencesList.tsx` uses DataGrid.
-
-**Canonical reference implementations:** `FlowsList.tsx`, `PluginsList.tsx`
+Card-row accordion (PATTERN-001) required for all component browser lists. DataGrid causes column overflow and navigates away from the list. **Technical spec:** PATTERN-001 in patterns-ui.md, AUDIT-013.
 
 ---
 
@@ -218,35 +141,14 @@ const { MarkdownReporter } = await import('./reporters/MarkdownReporter');
 ## [2026-03-13] — DRY/SOLID Are Non-Negotiable Design Principles
 
 **Status:** Accepted
-
-**Decision:** All code must follow DRY (Don't Repeat Yourself) and SOLID principles. A full audit on 2026-03-13 found 87+ duplicate GUID normalisations, 80+ duplicate OData annotation reads, 100+ duplicate detail-row JSX pairs, and 20+ identical expand/collapse state blocks across the codebase. These will be eliminated over time through shared utilities and hooks.
-
-**Hard rules:**
-- Never reimplement `normalizeGuid` — use `src/core/utils/guid.ts`
-- Never reimplement `extractOwnershipMetadata` — use `src/core/utils/metadata.ts`
-- Never reimplement expand/collapse state — use `src/hooks/useExpandable.ts`
-- Never build OData OR-filters manually — always use `buildOrFilter()` from `src/core/utils/odata.ts`
-- Check `src/core/utils/` and `src/hooks/` before writing any new utility logic
+2026-03-13 audit found 87+ duplicate GUID normalisations, 80+ OData annotation reads, 100+ detail-row JSX pairs, 20+ expand/collapse state blocks. Shared utilities and hooks created to eliminate these. Never reimplement `normalizeGuid`, `extractOwnershipMetadata`, `resolveEntityName`, `buildOrFilter`, `useExpandable`. **Technical spec:** patterns-general.md (all sections).
 
 ---
 
 ## [2026-03-13] — Discovery Classes Must Implement IDiscoverer<T> Interface
 
 **Status:** Accepted and implemented
-
-**Decision:** All discovery classes must implement a shared `IDiscoverer<T>` interface with a consistent method signature.
-
-**Interface:**
-```typescript
-interface IDiscoverer<T> {
-  discoverByIds(ids: string[]): Promise<T[]>;
-}
-```
-
-**Implementation:** `src/core/discovery/IDiscoverer.ts` — 11 classes implement it:
-- FlowDiscovery, PluginDiscovery, BusinessRuleDiscovery, ClassicWorkflowDiscovery
-- BusinessProcessFlowDiscovery, CustomAPIDiscovery, WebResourceDiscovery
-- EnvironmentVariableDiscovery, ConnectionReferenceDiscovery, GlobalChoiceDiscovery, SecurityRoleDiscovery
+All ID-based discovery classes implement `IDiscoverer<T>` with `discoverByIds(ids: string[]): Promise<T[]>`. Enables generic orchestration in processors; required for LSP compliance. 11 implementing classes. New discovery classes must implement this interface. **Technical spec:** patterns-general.md, DISCOVERY CLASSES section.
 
 `discoverByIds()` is the standard entry point. Existing concrete method names (`getFlowsByIds`, etc.) are preserved for backward compatibility.
 

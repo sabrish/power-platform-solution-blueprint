@@ -1,8 +1,3 @@
----
-name: maintain-memory
-description: Trim project.md to keep it lean and signal-rich. Run every 3-4 sessions.
----
-
 /agent document-updater
 
 Maintenance pass on .claude/memory/project.md.

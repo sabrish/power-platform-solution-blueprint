@@ -1,7 +1,7 @@
 ---
 name: security-auditor
 description: Security and privacy auditor for the PPSB OSS project. Scans source code, memory files, docs, and config files for sensitive data before commits or releases. Invoke before any git commit, before pushing to GitHub, before a release, or anytime you want a clean sweep. Also invoke when the skills-learner has updated memory files to ensure no sensitive content was accidentally captured. Read-only — never modifies files, only reports findings.
-model: claude-haiku-4-5
+model: claude-haiku-4-5-20251001
 tools: Read, Glob, Grep
 ---
 

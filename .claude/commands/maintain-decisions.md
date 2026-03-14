@@ -1,8 +1,3 @@
----
-name: maintain-decisions
-description: Prune decisions.md by collapsing settled decisions to summaries. Run every major version.
----
-
 /agent document-updater
 
 Maintenance pass on .claude/memory/decisions.md.

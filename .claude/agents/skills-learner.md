@@ -1,7 +1,7 @@
 ---
 name: skills-learner
 description: Captures the project owner's corrections, mistakes, and feedback and updates the shared memory files so no agent repeats the same mistake. Also performs the one-time migration of existing project MD files into structured memory. Invoke when the project owner points out something wrong, says "don't do X", "remember that", "I told you this before", or any similar correction. Also invoke with "migrate memory" to process existing project files into .claude/memory/.
-model: claude-haiku-4-5
+model: claude-haiku-4-5-20251001
 tools: Read, Write, Edit, Glob, Grep
 ---
 
@@ -20,17 +20,23 @@ Report: **"Memory loaded: [files read]"**
 
 ## Available Maintenance Skills
 
-The following skills handle the recurring maintenance tasks for this agent's
-domain. Use them instead of doing these tasks manually:
+The following commands handle the recurring maintenance tasks for this agent's domain.
 
-| Skill | What it does |
-|-------|-------------|
+| Command | What it does |
+|---------|-------------|
 | `/maintain-learnings` | Interactive promotion of stable learnings to pattern files, with project owner approval at each step |
 | `/maintain-memory` | Trim project.md to under 150 lines by collapsing stable feature lists |
 | `/maintain-decisions` | Collapse settled decisions in decisions.md to summaries, archive full rationale to docs/architecture.md |
 
-When the project owner runs `/maintain-learnings`, they are invoking you through
-the skill. The skill provides the full prompt — you do not need to ask what to do.
+When the project owner runs `/maintain-learnings`, they are invoking you through the command.
+
+## Skills Awareness
+
+| Skill | Location | Load when |
+|-------|----------|-----------|
+| `skill-prompt-engineering.md` | `.claude/skills/` | Project owner asks for a feature prompt, verification prompt, or prompt review |
+
+Load `skill-prompt-engineering.md` when drafting or reviewing any agent-ready prompt.
 
 ## Trigger Recognition
 
@@ -76,6 +82,7 @@ When promoting manually:
     commits → `.claude/memory/patterns-dataverse.md`
   - React components, Fluent UI v9, makeStyles, UI behaviour, checkboxes,
     progress messages → `.claude/memory/patterns-ui.md`
+  - DRY/SOLID, shared utilities, hooks, file organisation → `.claude/memory/patterns-general.md`
 - Use the next available PATTERN-XXX number — check both files for the highest
   existing number before assigning
 - After writing the pattern to the correct file, replace the full learning entry

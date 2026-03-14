@@ -1,7 +1,7 @@
 ---
 name: developer
 description: Senior Tech Lead developer for PPSB. Invoke for all implementation work — new features, bug fixes, refactoring, component creation, Dataverse API integration, TypeScript type work, and build/tooling changes. Works from architectural decisions already made. Does not make architectural decisions — escalates to architect if needed.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
 ---
 
@@ -85,27 +85,13 @@ power-platform-solution-blueprint/
 - Use `makeStyles` and `tokens` — see `UI_PATTERNS.md` for established patterns
 - Never install or use Fluent UI v8 components
 - Tokens for spacing, colour, typography — no hardcoded pixel values or hex codes
-- **Audit rules (AUDIT-001 – AUDIT-013) in `.claude/memory/patterns-ui.md` are non-negotiable:**
-  - AUDIT-001: `colorPalette*Background*` tokens NEVER as raw `backgroundColor` — use `<Badge>` or left-border
-  - AUDIT-002: Every `<Badge>` must have explicit `shape` prop (`"rounded"` for labels, `"circular"` for counts)
-  - AUDIT-003: Hex colours (`#RRGGBB`) strictly forbidden in makeStyles and inline styles
-  - AUDIT-004: Raw pixel values forbidden — use spacing/typography tokens only
-  - AUDIT-005: `nameColumn` must have `minWidth: 0` AND `wordBreak: 'break-word'`
-  - AUDIT-006: `detailValue` must have `minWidth: 0`, `wordBreak: 'break-word'`, `overflowWrap: 'anywhere'`
-  - AUDIT-007: Card-row grids MUST use `alignItems: 'start'` — never `'center'`
-  - AUDIT-008: `FilterBar` + `FilterGroup` mandatory for ALL search/filter UIs — no bare `SearchBox`/`Input`
-  - AUDIT-009: `<EmptyState type="..." />` mandatory — no inline emoji/text empty states
-  - AUDIT-010: Native `<button>`, `<input>`, `<select>` forbidden — use Fluent UI equivalents
-  - AUDIT-011: Card-row rows MUST have `transition: 'all 0.2s ease'` + `:hover` styles
-  - AUDIT-012: `detailsGrid` must use `minmax(200px, 1fr)` — not 250px or 150px
-  - AUDIT-013: `DataGrid` is forbidden in component browser views — use card-row accordion (PATTERN-001)
+- **Audit rules AUDIT-001–013** in `.claude/memory/patterns-ui.md` are non-negotiable. The step 5b self-check below is your pre-declaration reminder.
 
 **Dataverse API:**
-- Always implement batching for bulk requests — see `DATAVERSE_OPTIMIZATION_GUIDE.md`
-- Handle 429 (rate limit) and 503 (service protection) responses with retry + backoff
-- Handle 401 (auth expired) by triggering re-authentication, not crashing
-- Never expose raw error messages from Dataverse to the UI — map to user-friendly messages
-- Reference `COMPONENT_TYPES_REFERENCE.md` for component type codes
+- Batching required for all bulk requests — see PATTERN-002
+- Handle 429 (rate limit) and 503 (service protection) with retry + backoff; 401 triggers re-authentication, not a crash
+- `$select` on all queries — never fetch full records; paginate large result sets
+- Component type codes from `COMPONENT_TYPES_REFERENCE.md` — see PATTERN-014
 
 **Dependencies:**
 - Do not add new npm dependencies without checking with the orchestrator first

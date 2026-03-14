@@ -28,13 +28,13 @@ never invoke specialist agents directly.
 
 | Agent | Model | Invoke for |
 |-------|-------|-----------|
-| `orchestrator` | Sonnet 4.5 | **Start here for everything.** Routes tasks, manages session flow, owns the release sequence |
-| `architect` | Opus 4.5 | Architecture decisions, API design, data models, security design. ⚠️ Most expensive — orchestrator flags cost before invoking |
-| `developer` | Sonnet 4.5 | All implementation: features, bug fixes, components, Dataverse integration, TypeScript |
+| `orchestrator` | Sonnet 4.6 | **Start here for everything.** Routes tasks, manages session flow, owns the release sequence |
+| `architect` | Opus 4.6 | Architecture decisions, API design, data models, security design. ⚠️ Most expensive — orchestrator flags cost before invoking |
+| `developer` | Sonnet 4.6 | All implementation: features, bug fixes, components, Dataverse integration, TypeScript |
 | `reviewer` | Haiku 4.5 | Read-only code review. Checks learnings violations first (auto-blocker), then full checklist |
 | `document-updater` | Haiku 4.5 | CHANGELOG, docs/, README, memory file updates, end-of-session project.md |
 | `skills-learner` | Haiku 4.5 | Captures corrections into learnings.md. Invoke when you correct an agent's mistake |
-| `security-auditor` | Haiku 4.5 | Read-only security sweep. Runs before every commit and release |
+| `security-auditor` | Haiku 4.5 | Read-only security sweep. Runs before every push and release |
 
 **Hard rules:**
 - Only ONE architect instance active at a time
@@ -100,21 +100,30 @@ Skills are split across two directories:
 - **`.claude/skills/`** — Internal skills. Not accessible as terminal slash commands; the
   orchestrator reads and executes these on your behalf when you describe the task.
 
-| Skill | Location | Invoked by | When to use |
-|-------|----------|-----------|------------|
-| `/pre-commit [files]` | `.claude/commands/` | You or Orchestrator | Before every commit — runs reviewer then security-auditor |
-| `/release v[X.Y.Z]` | `.claude/skills/` | Orchestrator | When you say "prepare a release" — runs the full release sequence |
-| `/maintain-learnings` | `.claude/skills/` | You | Every 3-4 sessions — promotes stable learnings to patterns, keeps learnings.md lean |
-| `/maintain-memory` | `.claude/skills/` | You | Every 3-4 sessions — trims project.md to under 150 lines |
-| `/maintain-decisions` | `.claude/skills/` | You | Every major version — collapses settled decisions to summaries |
-| `/trim-guides` | `.claude/skills/` | You | When combined pattern count reaches ~20 entries — removes duplication with root guide files |
+### Commands — `.claude/commands/` (slash commands; type directly or orchestrator invokes)
 
-**Two kinds of skills:**
-- **Terminal slash commands** (`.claude/commands/`): Type `/pre-commit [files]` directly
-  in the Claude Code terminal. The orchestrator can also invoke these by reading the file.
-- **Internal skills** (`.claude/skills/`): Tell the orchestrator "ready to commit [files]"
-  or "prepare a release for vX.Y.Z" and it invokes the skill. Requires your approval at
-  each step before anything is written.
+| Command | Invoked by | When to use |
+|---------|-----------|------------|
+| `/pre-commit [files]` | You or Orchestrator | Before every `git commit` — fast checks: TS, lint, format, related tests, reviewer spot-check. Completes in under 60 seconds. |
+| `/push-branch` | You or Orchestrator | Instead of `git push` — runs full gate (build, full tests, security sweep) then pushes if clean |
+| `/maintain-learnings` | You | Every 3-4 sessions — promotes stable learnings to patterns, keeps learnings.md lean |
+| `/maintain-memory` | You | Every 3-4 sessions — trims project.md to under 150 lines |
+| `/maintain-decisions` | You | Every major version — collapses settled decisions to summaries |
+
+### Internal skills — `.claude/skills/` (orchestrator reads and executes)
+
+| Skill | Invoked by | When to use |
+|-------|-----------|------------|
+| `/release v[X.Y.Z]` | Orchestrator | When you say "prepare a release" — full release sequence |
+| `/trim-guides` | You | When combined pattern count reaches ~20 entries — removes duplication with root guide files |
+| `skill-prompt-engineering` | agents | Loaded when drafting or reviewing feature/verification prompts |
+
+**Two kinds of commands:**
+- **Terminal slash commands** (`.claude/commands/`): Type `/pre-commit [files]` or
+  `/push-branch` directly in the Claude Code terminal. Orchestrator also invokes these
+  automatically when you say the trigger phrase (e.g. "ready to commit", "push the branch").
+- **Internal skills** (`.claude/skills/`): Tell the orchestrator "prepare a release for vX.Y.Z"
+  and it invokes the skill. Requires your approval at each step before anything is written.
 
 ---
 
@@ -192,8 +201,16 @@ Tell the orchestrator which files you're committing. It invokes `/pre-commit` au
 /agent orchestrator
 Ready to commit these files: [list files]
 ```
-The orchestrator runs reviewer then security-auditor and reports a combined verdict
-before you run git add.
+`/pre-commit` runs fast checks (TS, lint, format, related tests, reviewer spot-check) and reports a verdict before you run `git add`. Completes in under 60 seconds.
+
+### Pushing the branch
+
+Instead of running `git push` directly, say "push the branch". The orchestrator invokes `/push-branch`:
+```
+/agent orchestrator
+Push the branch.
+```
+`/push-branch` runs the full gate (build, full test suite, security sweep) and only pushes if everything passes. Never run `git push` directly.
 
 ---
 
@@ -226,7 +243,8 @@ git push origin v[version]
 
 | Trigger | Task | Command |
 |---------|------|---------|
-| Before every commit | Review + audit gate | Tell orchestrator "ready to commit [files]" |
+| Before every commit | Fast checks (TS, lint, related tests, spot review) | Tell orchestrator "ready to commit [files]" → `/pre-commit` |
+| Before every push | Full gate (build, tests, security sweep) + push | Tell orchestrator "push the branch" → `/push-branch` |
 | Before every release | Full release sequence | Tell orchestrator "prepare a release for v[X.Y.Z]" |
 | Every session end | Update project.md | Tell orchestrator "session done, update memory" |
 | Every 3-4 sessions | Promote learnings → patterns | `/maintain-learnings` |
@@ -274,4 +292,4 @@ most critical:
 
 ---
 
-*Last updated: 2026-02-27 — generated by Claude Code document-updater*
+*Last updated: 2026-03-14 — updated by Claude Code document-updater*

@@ -1,8 +1,3 @@
----
-name: maintain-learnings
-description: Promote stable learnings to pattern files and keep learnings.md lean. Run every 3-4 sessions.
----
-
 /agent skills-learner
 
 Maintenance pass on .claude/memory/learnings.md.

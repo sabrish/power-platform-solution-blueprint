@@ -1,8 +1,3 @@
----
-name: release
-description: Full release sequence invoked by the orchestrator. Runs reviewer, security-auditor, document-updater (version bump), and developer (typecheck/build/shrinkwrap) in order. Not invoked directly by the project owner — the orchestrator calls this when you say "prepare a release" or "cut a release".
----
-
 /agent orchestrator
 
 Release sequence for Power Platform Solution Blueprint (PPSB).

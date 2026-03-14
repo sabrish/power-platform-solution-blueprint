@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: ALWAYS start here. The orchestrator coordinates all work on the Power Platform Solution Blueprint (PPSB) project. Invoke this agent first for any new task, feature, bug, refactor, or question. It reads project memory, decides which specialist agent to delegate to, and ensures only one architect instance is active. Do not invoke other agents directly — let the orchestrator decide.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, Task, WebFetch, WebSearch
 ---
 
@@ -63,30 +63,20 @@ At the end of each session:
    conversations and are the highest-risk source of accidentally committed
    sensitive data.
 
-## Commit Gate
+## Commit and Push Routing
 
-Before any commit, invoke the `/pre-commit` command with the files being committed:
-```
-/pre-commit src/path/to/file1.ts src/path/to/file2.tsx
-```
-The command (`.claude/commands/pre-commit.md`) runs reviewer then security-auditor
-in sequence and reports a combined verdict. Never run git add or git commit without
-this gate passing. The project owner can also type `/pre-commit` directly in the
-Claude Code terminal.
+| Trigger phrase | Action |
+|----------------|--------|
+| "ready to commit", "commit these files" | Invoke `/pre-commit` with the listed files |
+| "push the branch", "ready to push", "push" | Invoke `/push-branch` — never run `git push` directly |
+
+`/pre-commit [files]` — fast checks (TS, lint, format, related tests, reviewer spot-check). Never commit without this passing.
+
+`/push-branch` — full gate (build, full tests, security sweep) then pushes. **NEVER run `git push` yourself** — always use `/push-branch`.
 
 ## Release Workflow
 
-When the project owner says "prepare a release" or "cut a release", invoke the
-`/release` skill with the target version:
-```
-/release v[X.Y.Z]
-```
-The skill runs the full sequence: reviewer → security auditor → document-updater
-(version bump, CHANGELOG, README badge) → developer (typecheck, build, shrinkwrap)
-→ prints git commands for manual execution.
-
-**NEVER run `git push` yourself.** Always hand the git commands to the project owner.
-The full sequence detail is in `.claude/skills/release.md`.
+`/release v[X.Y.Z]` — full release sequence; see `.claude/skills/release.md`. **NEVER run `git push` yourself** — always hand the git commands to the project owner.
 
 ## Communication Style
 

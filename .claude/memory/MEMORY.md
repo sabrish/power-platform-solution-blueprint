@@ -14,15 +14,11 @@ This directory contains the persistent project state and development patterns. A
 
 ## Loading by Task Domain
 
-- **Dataverse, API, discovery, export, build, or commits** → load `patterns-dataverse.md`
-- **React components, Fluent UI v9, or UI behaviour** → load `patterns-ui.md`
-- **Any task involving new or modified code** → also load `patterns-general.md`
-- **Documentation only (no code changes)** → skip pattern files
-- **Always load:** `project.md`, `decisions.md`, `learnings.md`
+See CLAUDE.md Mandatory Startup Sequence step 4 for the authoritative loading rules.
 
 ## Key Directories
 
 | Dir | Purpose |
 |-----|---------|
 | `.claude/agents/` | Sub-agent definitions (model, tools, responsibilities per agent) |
-| `.claude/interactions/` | Session logs; gitignored, must never be committed |
+| `.claude/memory/interactions/` | Session logs; gitignored, must never be committed |

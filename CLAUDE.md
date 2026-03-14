@@ -40,9 +40,9 @@ Report: **"Memory loaded: [files read]"**
 
 | Agent | Model | Role |
 |-------|-------|------|
-| `orchestrator` | Sonnet 4.5 | Routes all tasks; start every session here |
-| `architect` | Opus 4.5 | Architecture decisions and data model design; only ONE active at a time |
-| `developer` | Sonnet 4.5 | All implementation — features, bugs, components, Dataverse integration |
+| `orchestrator` | Sonnet 4.6 | Routes all tasks; start every session here |
+| `architect` | Opus 4.6 | Architecture decisions and data model design; only ONE active at a time |
+| `developer` | Sonnet 4.6 | All implementation — features, bugs, components, Dataverse integration |
 | `reviewer` | Haiku 4.5 | Read-only code review for TypeScript, React, Fluent UI v9, and security |
 | `document-updater` | Haiku 4.5 | CHANGELOG, docs/, README, and memory file maintenance |
 | `skills-learner` | Haiku 4.5 | Captures corrections and feedback into memory files |
@@ -50,34 +50,25 @@ Report: **"Memory loaded: [files read]"**
 
 ## Hard Rules
 
-- **NEVER** guess Dataverse component type codes — always check `COMPONENT_TYPES_REFERENCE.md` first
-- **NEVER** use `executeDataverseRequest()` or `window.toolboxAPI.dataverse.*` — they do not exist
-- **ALWAYS** use static imports for reporters — dynamic imports break under `pptb-webview://`
+- **NEVER** guess Dataverse component type codes — always check `COMPONENT_TYPES_REFERENCE.md` first → see PATTERN-014
+- **NEVER** use `executeDataverseRequest()` or `window.toolboxAPI.dataverse.*` — they do not exist → see PATTERN-005
+- **ALWAYS** use static imports for reporters — dynamic imports break under `pptb-webview://` → see PATTERN-007
 - **ALWAYS** commit one logical change per commit, Conventional Commits format, with trailer:
-  `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>`
-- **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient; a passing typecheck does not guarantee the Vite build succeeds
-- **ALWAYS** run the `/pre-commit` skill before any commit touching source, docs, or memory files — it runs reviewer then security-auditor in sequence
-- **ALWAYS** check `src/core/utils/` and `src/hooks/` before writing any new utility logic — never reimplement `normalizeGuid`, `buildOrFilter`, `extractOwnershipMetadata`, `resolveEntityName`, or `useExpandable`
+  `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>` → see PATTERN-011
+- **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient
+- **ALWAYS** run `/pre-commit` before any git commit. Run `/push-branch` instead of `git push` directly — it runs the full pre-PR gate and only pushes if clean.
+- **ALWAYS** check `src/core/utils/` and `src/hooks/` before writing any new utility logic — see patterns-general.md D1–D6
 
 ## UI Hard Rules (Fluent UI v9 — enforced at every review)
 
-These rules were codified on 2026-03-09. Violations are blockers at review time. Full details in `.claude/memory/patterns-ui.md`.
+Codified 2026-03-09. Full specs with code examples: `.claude/memory/patterns-ui.md` (AUDIT-001 – AUDIT-013). Any violation is a **blocker** at review time.
 
-| Rule | What is forbidden | What to use instead |
-|------|-------------------|---------------------|
-| AUDIT-001 | `colorPalette*Background*` as `backgroundColor` on raw elements with text | `<Badge color="...">` or left-border |
-| AUDIT-002 | `<Badge>` without explicit `shape` prop | `shape="rounded"` (labels) / `shape="circular"` (counts) |
-| AUDIT-003 | Hex colours in makeStyles or inline styles | Semantic `color` prop on Badge; `tokens.*` everywhere else |
-| AUDIT-004 | Raw pixel values (`16px`, `fontWeight: 500`) | `tokens.spacingVertical*`, `tokens.fontWeight*` |
-| AUDIT-005 | `nameColumn` without `minWidth: 0` + `wordBreak: 'break-word'` | Both required always |
-| AUDIT-006 | `detailValue` without overflow protection | `minWidth: 0`, `wordBreak: 'break-word'`, `overflowWrap: 'anywhere'` |
-| AUDIT-007 | `alignItems: 'center'` on card-row grids | `alignItems: 'start'` always |
-| AUDIT-008 | Bare `SearchBox`/`Input`/`Checkbox` outside `FilterBar`/`FilterGroup` | `FilterBar` + `FilterGroup` + `ToggleButton` |
-| AUDIT-009 | Inline emoji or plain `<Text>` for empty states | `<EmptyState type="..." />` |
-| AUDIT-010 | Native `<button>`, `<input>`, `<select>` with CSS resets | Fluent UI `Button`, `Input`, `Dropdown` |
-| AUDIT-011 | Card-row rows without hover transition | `transition: 'all 0.2s ease'` + `:hover` styles |
-| AUDIT-012 | `detailsGrid` not using `minmax(200px, 1fr)` | Always `minmax(200px, 1fr)` |
-| AUDIT-013 | `DataGrid` in any component browser view | Card-row accordion (PATTERN-001) |
+## Commands
+
+| Command | When to use |
+|---------|-------------|
+| `/pre-commit [files]` | Before every `git commit` — fast checks only (TS, lint, format, related tests) |
+| `/push-branch` | Instead of `git push` — full gate (build, full tests, security sweep) then pushes |
 
 ## Key Reference Files
 

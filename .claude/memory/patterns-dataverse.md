@@ -21,7 +21,7 @@ const allResults: SomeType[] = [];
 for (let i = 0; i < ids.length; i += batchSize) {
   const batch = ids.slice(i, i + batchSize);
   const filter = batch.map(id => {
-    const cleanId = id.replace(/[{}]/g, '');  // normalize GUID
+    const cleanId = normalizeGuid(id);  // use normalizeGuid() — see patterns-general.md D1
     return `fieldid eq ${cleanId}`;
   }).join(' or ');
   const result = await client.queryData(`table?$select=f1,f2&$filter=${filter}`);
@@ -90,13 +90,10 @@ const filter = `id eq ${cleanGuid}`;           // correct
 const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
 const filter = `_solutionid_value eq '${guidWithBraces}'`;   // CORRECT for this field only
 
-// Rule 2: Normalize for comparison — lowercase, no braces
-function normalizeGuid(guid: string): string {
-  return guid.toLowerCase().replace(/[{}]/g, '');
-}
-
-// Rule 3: Store normalized GUIDs
-const objectId = component.objectid.toLowerCase().replace(/[{}]/g, '');
+// Rule 2 & 3: Always normalize GUIDs for comparison and storage
+// Use normalizeGuid() from src/core/utils/guid.ts — see patterns-general.md D1
+// NEVER reimplement inline: normalizeGuid(guid) does toLowerCase() + strip braces
+const objectId = normalizeGuid(component.objectid);
 inventory.pluginIds.push(objectId);  // normalized on storage
 ```
 
@@ -220,7 +217,7 @@ await window.dataverseAPI.queryData('entities');
 
 Every commit MUST:
 1. Use Conventional Commits format: `<type>[optional scope]: <description>`
-2. End with `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>`
+2. End with `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`
 3. Be a separate commit per logical change — never batch unrelated changes
 
 **Types:** feat, fix, docs, style, refactor, perf, test, chore, build, ci, revert

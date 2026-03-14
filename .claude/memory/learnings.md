@@ -12,13 +12,7 @@ Promoted → PATTERN-005 in patterns-dataverse.md ([2026-02-10])
 
 ## [2026-02-10] — getToolContext is async — always await it
 
-**Affects:** All agents
-**Severity:** Blocker
-**Rule:** Always `await window.toolboxAPI.getToolContext()`. It returns a Promise, not a synchronous value.
-**Context:** Treating it as synchronous returns a Promise object, not the ToolContext, causing downstream null reference errors.
-**Example:**
-- Wrong: `const ctx = window.toolboxAPI.getToolContext(); ctx.connectionUrl`
-- Right: `const ctx = await window.toolboxAPI.getToolContext(); ctx.connectionUrl`
+Promoted → PATTERN-005 in patterns-dataverse.md ([2026-03-14])
 
 ---
 
@@ -72,26 +66,13 @@ Promoted → PATTERN-006 in patterns-dataverse.md ([2026-02-11])
 
 ## [2026-02-11] — Checkbox labels must use "Include" pattern, not "Exclude"
 
-**Affects:** Developer (UI)
-**Severity:** Medium
-**Rule:** All boolean checkboxes must use "Include [thing]" phrasing. Never "Exclude [thing]". Invert the value internally if needed. Exception: when the project owner explicitly specifies a descriptive "Show only…" label, that phrasing is also acceptable (e.g. "Show only variables using Default values" in EnvironmentVariablesList).
-**Context:** "Exclude system fields" was confusing users. Changed to "Include system fields" in v0.5.3.
-**Example:**
-- Wrong: Checkbox label "Exclude system fields"
-- Right: Checkbox label "Include system fields" (with `excludeSystemFields: !includeSystemFields` internally)
-- Acceptable alternative (project owner directed): "Show only variables using Default values"
+Promoted → PATTERN-008 in patterns-ui.md ([2026-03-14])
 
 ---
 
 ## [2026-02-22] — Never use DataGrid for component browser lists
 
-**Affects:** Developer, Reviewer
-**Severity:** High
-**Rule:** Do not use Fluent UI `DataGrid` for any component browser list component. Always use the card-row expandable pattern (see PATTERN-001 in `.claude/memory/patterns-ui.md`).
-**Context:** DataGrid caused column overflow and navigated away from the list view. The canonical examples are FlowsList.tsx and PluginsList.tsx.
-**Example:**
-- Wrong: `<DataGrid items={flows} columns={columns} />`
-- Right: Card-row div grid with chevron, inline expand, makeStyles — see FlowsList.tsx
+Promoted → PATTERN-001/AUDIT-013 in patterns-ui.md ([2026-03-14])
 
 ---
 
@@ -133,13 +114,7 @@ Promoted → PATTERN-006 in patterns-dataverse.md ([2026-02-11])
 
 ## [2026-02-23] — Long strings in detail grid items need overflow protection
 
-**Affects:** Developer (UI)
-**Severity:** Medium
-**Rule:** Detail grid items (expanded panel content) must include `minWidth: 0`, `wordBreak: 'break-word'`, and `overflowWrap: 'anywhere'` to prevent assembly names, unique names, and other long strings from overflowing their grid column.
-**Context:** Plugin list and BPF list expanded detail panels had text overflow issues with long assembly names and unique names. Fixed in v0.7.2.
-**Example:**
-- Wrong: `detailValue: { fontSize: tokens.fontSizeBase200 }` — overflows with long values
-- Right: `detailValue: { fontSize: tokens.fontSizeBase200, minWidth: 0, wordBreak: 'break-word', overflowWrap: 'anywhere' }`
+Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 
 ---
 
@@ -390,21 +365,13 @@ var _esc = function(s) {
 
 ## [2026-03-08] — All discovery classes that batch must use withAdaptiveBatch and FetchLogger
 
-**Affects:** Developer, Reviewer
-**Severity:** High
-**Rule:** Every discovery class that makes batched API calls must: (1) use `withAdaptiveBatch` instead of a manual `for` loop with a hardcoded `batchSize` variable; (2) accept a `FetchLogger` in its constructor and pass it to every `withAdaptiveBatch` call; (3) provide `getBatchLabel` for any second-pass fetch where names/labels are known from a prior pass. `BlueprintGenerator` must pass `this.logger` to every discovery class constructor that accepts one. Classes that make only single non-batched queries (PublisherDiscovery, SolutionDiscovery, EntityDiscovery, SchemaDiscovery) are exempt.
-**Context:** Audit of all 20 discovery classes found 7 still using manual for-loop batching with no FetchLogger. These are invisible in the processing screen and Fetch Diagnostics tab. Several also had N+1 anti-patterns (per-item individual queries inside a loop).
-**Example:**
-- Wrong: `for (let i = 0; i < ids.length; i += batchSize) { const batch = ids.slice(i, i + batchSize); ... }` with no logger
-- Right: `withAdaptiveBatch(ids, async (batch) => { ... }, { step, entitySet, logger, getBatchLabel })`
+Promoted → PATTERN-017 in patterns-dataverse.md ([2026-03-14])
 
 ---
 
 ## [2026-03-09] — Full UI/UX audit completed — all findings codified as hard rules
 
-**Affects:** All agents
-**Severity:** High
-**Rule:** A comprehensive UI/UX audit of all 43 components was completed on 2026-03-09. Findings (2 Critical, 11 High, 12 Medium, 6 Low) have been captured as AUDIT-001 through AUDIT-013 in `.claude/memory/patterns-ui.md`. Key additions: palette background tokens forbidden on raw HTML elements, Badge shape always required, hex colors forbidden, FilterBar mandatory everywhere, EmptyState component mandatory, DataGrid forbidden (re-confirmed). All agents must load patterns-ui.md for any UI task.
+Findings captured as AUDIT-001 through AUDIT-013 in `.claude/memory/patterns-ui.md`. See that file for all specs. ([2026-03-09])
 
 ---
 
@@ -422,39 +389,13 @@ var _esc = function(s) {
 
 ## [2026-03-09] — Sticky table columns: zIndex is required on body cells, not just headers
 
-**Affects:** Developer, Reviewer
-**Severity:** High
-**Rule:** When implementing a sticky-column HTML table, apply `zIndex: 1` to body `<td>` cells in the sticky column in addition to the header `<th>` cells. Without it the browser paints scrolling cells on top of the sticky column background, causing text and badge overlap during horizontal scroll. Use this complete pattern:
-- Header corner `<th>`: `position:sticky`, `top:0`, `left:0`, `zIndex:3`, `backgroundColor`
-- Other header `<th>`: `position:sticky`, `top:0`, `zIndex:1`, `backgroundColor`
-- Body sticky `<td>`: `position:sticky`, `left:0`, `zIndex:1`, `backgroundColor`
-- All body `<td>`: `backgroundColor` (prevents transparency bleed in dark mode)
-- Scroll container: `overflowX:'auto'`, `overflowY:'auto'`, `maxHeight`
-**Context:** Without `zIndex:1` on sticky body cells, scrolling content paints over the sticky column in both light and dark mode. The header-cell zIndex alone is insufficient.
-**Example:**
-- Wrong: Applying `position:sticky, left:0` on `<td>` without `zIndex:1`
-- Right: `style={{ position:'sticky', left:0, zIndex:1, backgroundColor: tokens.colorNeutralBackground1 }}`
+Promoted → PATTERN-018 in patterns-ui.md ([2026-03-14])
 
 ---
 
 ## [2026-03-10] — Full icon alignment with Power Apps solution explorer (componentIcons.ts)
 
-**Affects:** Developer, Reviewer
-**Severity:** Medium
-**Rule:** Component icons in `componentIcons.ts` are aligned with the Power Apps maker portal solution explorer (observed 2026-03-10). The complete mapping:
-- `PuzzlePiece24Regular` — Plugins (Microsoft: puzzle piece for Plug-in assemblies)
-- `BracesVariable24Regular` — Environment Variables (Microsoft: variable box icon)
-- `PeopleLock24Regular` — Security Roles (Microsoft: two people + lock badge)
-- `UsbPlug24Regular` — Connection References (Microsoft: vertical USB/plug connector)
-- `PlugDisconnected24Regular` — Custom Connectors (Microsoft: angled disconnected plug)
-- `DocumentEdit24Regular` — Custom Pages (Microsoft: document + pencil)
-- `TableLock24Regular` — Field Security Profiles (Microsoft: table/grid + lock badge)
-- `ClipboardSettings24Regular` — Classic Workflows (Microsoft classifies under "Processes" — document + gear badge icon)
-- `FlashSettings24Regular` — Custom APIs (our own: lightning bolt + gear = configurable API trigger; MS uses generic folder)
-- `DocumentGlobe24Regular` — Web Resources (Microsoft: globe + document page). Frees Globe24Regular.
-- `Globe24Regular` — External Dependencies nav tab (globe = "the internet / external world"). Replaced Open24Regular.
-- All other icons (Table, CloudFlow, MultiselectLtr, Archive, etc.) were already correct
-See `COMPONENT_ICONS_REFERENCE.md` for the complete catalogue including future component types.
+Promoted → PATTERN-019 in patterns-ui.md ([2026-03-14])
 
 ---
 
@@ -558,45 +499,19 @@ Using flat tables with only counts (e.g. "5 conditions") was insufficient — us
 
 ## [2026-03-09] — All component-category icons must live in componentIcons.ts
 
-**Affects:** Developer, Reviewer
-**Severity:** High
-**Rule:** All component-type icons are centralised in `src/components/componentIcons.ts` and exported with descriptive names (`PluginsIcon`, `FlowsIcon`, `WebResourcesIcon`, etc.). Consumer components must always import from `componentIcons.ts` — never directly from `@fluentui/react-icons` for component-category icons. The HTML export (`HtmlTemplates.ts`) has its own `navIcon()` / `alertIcon()` SVG helpers and cannot share React components; that is the only accepted exception.
-**Context:** Direct icon imports scattered across components created inconsistency when icons were changed (e.g. plugin icon migration). Centralising in componentIcons.ts means a single-file change propagates everywhere.
-**Example:**
-- Wrong: `import { BracesVariable24Regular } from '@fluentui/react-icons'` in a component browser view
-- Right: `import { PluginsIcon } from '../componentIcons'`
+Promoted → PATTERN-019 in patterns-ui.md ([2026-03-14])
 
 ---
 
 ## [2026-03-10] — Plugin icon is PuzzlePiece24Regular; Environment Variables icon is BracesVariable24Regular
 
-**Affects:** Developer, Reviewer
-**Severity:** Medium
-**Rule:** Use `PuzzlePiece24Regular` for the plugins component-category icon. Use `BracesVariable24Regular` for Environment Variables. Do NOT use `Code24Regular` for either (its `</>` glyph implies HTML/JSX).
-**Context:** Updated 2026-03-10 after inspecting the Power Apps maker portal solution explorer screenshots. Microsoft uses a jigsaw puzzle piece for "Plug-in assemblies" — the puzzle piece metaphor (something that "plugs into" the system) is more accurate than braces. `BracesVariable24Regular` (`{x}`) is now correctly assigned to Environment Variables because `{x}` IS the Power Platform variable syntax. Before this change, Plugins used BracesVariable and Environment Variables used TextBulletListSquareSettingsRegular (neither matched Microsoft).
-**Example:**
-- Wrong: `export const PluginsIcon = Code24Regular;`
-- Wrong: `export const PluginsIcon = BracesVariable24Regular;` (old rule — now superseded)
-- Right: `export const PluginsIcon = PuzzlePiece24Regular;`
-- Right: `export const EnvironmentVariablesIcon = BracesVariable24Regular;`
+Promoted → PATTERN-019 in patterns-ui.md ([2026-03-14])
 
 ---
 
 ## [2026-03-09] — Replace all inline emoji with Fluent UI icon components in the React UI
 
-**Affects:** Developer, Reviewer
-**Severity:** High
-**Rule:** Inline emoji used as visual indicators (⚠️, ℹ️, 💡, 🌐, 🔌, etc.) must be replaced with Fluent UI icon components with semantic token colours. Use:
-- ⚠️ warning → `Warning20Regular` with `color: tokens.colorStatusWarningForeground1`
-- ℹ️ info → `Info16Regular` with `color: tokens.colorBrandForeground1`
-- 💡 tip/recommendation → `LightbulbFilament20Regular` with warning foreground colour
-- 🌐 external calls (outbound) → `ArrowUpRight20Regular`
-- 🌐 web resources category → `Globe24Regular` from componentIcons.ts
-In coverage notice lists, replace emoji bullet icons with the corresponding type icon (CloudFlow, Settings [ClassicWorkflowsIcon], BracesVariable [PluginsIcon], Globe) at 14px, and wrap `<Text as="p">` with `display:'flex', alignItems:'center', gap:'6px'`.
-**Context:** Emoji render inconsistently across operating systems and do not adapt to light/dark themes. Fluent UI icons with semantic tokens adapt correctly.
-**Example:**
-- Wrong: `<Text>⚠️ This plugin has no filter</Text>`
-- Right: `<span style={{ display:'flex', alignItems:'center', gap:'6px' }}><Warning20Regular style={{ color: tokens.colorStatusWarningForeground1 }} /><Text>This plugin has no filter</Text></span>`
+Promoted → PATTERN-020 in patterns-ui.md ([2026-03-14])
 
 ---
 
@@ -614,34 +529,13 @@ In coverage notice lists, replace emoji bullet icons with the corresponding type
 
 ## [2026-03-09] — HTML export icons: navIcon/alertIcon helpers; never emoji in exported HTML
 
-**Affects:** Developer, Reviewer
-**Severity:** High
-**Rule:** In the HTML export (`HtmlTemplates.ts`):
-- Navigation sidebar: use `navIcon(key)` helper (returns inline SVG string, `currentColor`). CSS for `.nav-links a` must be `display:flex; align-items:center; gap:8px`.
-- Alert boxes: use `alertIcon('info'|'warning')` helper. CSS for `.alert strong` must be `display:flex; align-items:center; gap:6px`.
-- Section headings with icons: use `style="display:flex;align-items:center;gap:10px;"` on the `<h2>`.
-- Never use emoji in exported HTML.
-Markdown exports (`MarkdownReporter.ts`, `MarkdownFormatter.ts`) MAY keep emoji (⚠️, ✅, ❌, ℹ️) — they are standard in Markdown format.
-**Context:** Emoji in HTML export are platform-dependent and inconsistent. The navIcon/alertIcon SVG helpers ensure consistent rendering and theme-adaptive colour via `currentColor`.
-**Example:**
-- Wrong: `<h2>⚠️ Warnings</h2>` in HtmlTemplates.ts
-- Right: `<h2 style="display:flex;align-items:center;gap:10px;">${alertIcon('warning')} Warnings</h2>`
+Promoted → PATTERN-021 in patterns-ui.md ([2026-03-14])
 
 ---
 
 ## [2026-03-09] — Two-pass discovery: Pass 2 must be silent; snap to 100% after it completes
 
-**Affects:** Developer, Reviewer
-**Severity:** High
-**Rule:** When a discovery class performs two passes over different-sized item sets (e.g. Pass 1: entity names → metadata, Pass 2: IDs → content/XML), do NOT call `onProgress` during Pass 2 with a denominator from Pass 1. This causes >100% progress when Pass 2 has more items than Pass 1. Use the pattern confirmed in WebResourceDiscovery and FormDiscovery:
-- Pass 1 owns all progress reports: `onProgress: (done) => this.onProgress?.(done, N)`
-- Pass 2 is silent: no `onProgress` calls during its loop
-- After Pass 2 completes: `this.onProgress?.(N, N)` to snap to 100%
-If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the relevant discovery class is using two-pass halving incorrectly.
-**Context:** The bug manifested as "189%" in the progress screen during WebResource and Form discovery. The fix is always: let Pass 1 own all the progress denominator; silence Pass 2; snap to done after.
-**Example:**
-- Wrong: `// Pass 2: onProgress: (done) => this.onProgress?.(done, N)` — double-counts against Pass 1's N
-- Right: Pass 2 has no onProgress; after Pass 2: `this.onProgress?.(N, N)`
+Promoted → PATTERN-022 in patterns-dataverse.md ([2026-03-14])
 
 ---
 
@@ -695,13 +589,7 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 
 ## [2026-03-08] — N+1 query patterns must be replaced with a single batched pass
 
-**Affects:** Developer, Reviewer
-**Severity:** High
-**Rule:** Never call `client.query()` inside a loop per item (N+1 anti-pattern). Always collect all IDs first, then fetch in one batched pass using `withAdaptiveBatch`. Group results into a Map keyed by ID, then look up values when building domain objects.
-**Context:** EnvironmentVariableDiscovery had a `getValuesForDefinition(id)` call per definition inside a loop. GlobalChoiceDiscovery called `queryMetadata()` per choice ID. CustomAPIDiscovery called `getRequestParameters(id)` and `getResponseProperties(id)` per API. All three were fixed by collecting all IDs and fetching in one batched pass.
-**Example:**
-- Wrong: `for (const id of ids) { const value = await client.query('table', { filter: \`id eq ${id}\` }) }`
-- Right: Collect all ids → `withAdaptiveBatch(ids, async (batch) => { const filter = batch.map(id => \`id eq ${id}\`).join(' or '); return client.query(...) })` → group by id in a Map
+Promoted → PATTERN-002 in patterns-dataverse.md ([2026-03-14])
 
 ---
 
@@ -866,24 +754,10 @@ If you see ">100%" in the UI (e.g. "276 of 146 items processed (189%)"), the rel
 
 ## [2026-03-13] — Never reimplement shared utilities — check src/core/utils/ and src/hooks/ first
 
-**Affects:** All agents (especially developer)
-**Severity:** Blocker
-**Rule:** Before writing any GUID normalisation, OData filter building, expand/collapse state, ownership metadata extraction, or display name resolution, check whether a shared utility already exists.
-
-Key utilities:
-- `src/core/utils/guid.ts` — `normalizeGuid(id)`, `normalizeBatch(ids[])`
-- `src/core/utils/metadata.ts` — `extractOwnershipMetadata(record)`
-- `src/core/utils/odata.ts` — `buildOrFilter()` (already existed; was being bypassed)
-- `src/core/utils/entityName.ts` — `resolveEntityName(value)` (normalises `null`, `''`, `'none'`)
-- `src/hooks/useExpandable.ts` — `useExpandable()` (expand/collapse state + toggle)
-- `src/hooks/useListFilter.ts` — shared filter/search logic for all list components
+Promoted → patterns-general.md D1–D6 ([2026-03-14])
 
 ---
 
 ## [2026-03-13] — buildOrFilter() must be used for all OData OR-filter construction
 
-**Affects:** Developer, Reviewer
-**Severity:** Blocker
-**Rule:** Never construct OData OR-filters manually with `.map(id => \`field eq ${id}\`).join(' or ')`. Always use `buildOrFilter(batch, fieldName, options)` from `src/core/utils/odata.ts`.
-
-**Context:** Audit found 35+ manual filter constructions in CustomApiDiscovery, EnvironmentVariableDiscovery, ConnectionReferenceDiscovery, AppDiscovery, FieldSecurityProfileDiscovery that bypass the existing utility. These are being fixed in commit 5 of the fix/ui-and-logic-batch2 branch.
+Promoted → patterns-general.md D2 ([2026-03-14])

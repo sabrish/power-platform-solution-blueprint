@@ -120,27 +120,9 @@ const getComponentLabel = (phase: ProgressPhase): string => {
 
 **Source:** UI_PATTERNS.md
 **Applies to:** Developer (UI)
+**Superseded by:** PATTERN-001 (nameColumn/row specs) and AUDIT-005/006/007 (overflow protection checklist items). See those for the canonical rules and code examples.
 
-Long text in list rows wraps; it does not truncate with ellipsis. Use `TruncatedText` for grid cells (which handles the word-break approach). Key CSS values:
-
-```typescript
-// Column containing long text
-nameColumn: {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '2px',
-  minWidth: 0,               // enables wrapping
-  wordBreak: 'break-word',
-}
-
-// Grid rows with wrapping text
-row: {
-  alignItems: 'start',       // not 'center' — multi-line content needs top alignment
-  gridTemplateColumns: '24px minmax(200px, 2fr) auto auto',
-}
-```
-
-For detail panels: `minWidth: 0`, `wordBreak: 'break-word'`, `overflowWrap: 'anywhere'`.
+Key rule: long text in list rows wraps — it does not truncate. `TruncatedText` must NOT be used in card-row list rows (it hard-codes `whiteSpace: 'nowrap'`). Use `wordBreak: 'break-word'` directly via `useCardRowStyles`.
 
 ---
 
