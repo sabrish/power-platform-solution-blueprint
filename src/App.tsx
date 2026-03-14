@@ -35,6 +35,9 @@ const useStyles = makeStyles({
       padding: tokens.spacingVerticalL,
     },
   },
+  retryButton: {
+    marginTop: tokens.spacingVerticalS,
+  },
   header: {
     marginBottom: tokens.spacingVerticalL,
     display: 'flex',
@@ -243,7 +246,7 @@ function App() {
                 appearance="secondary"
                 size="small"
                 onClick={handleGenerate}
-                style={{ marginTop: tokens.spacingVerticalS }}
+                className={styles.retryButton}
               >
                 Retry
               </Button>
