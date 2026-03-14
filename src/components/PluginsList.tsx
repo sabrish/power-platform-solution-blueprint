@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   Text,
   Badge,
@@ -16,6 +16,8 @@ import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-ico
 import type { PluginStep } from '../core';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
+import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
+import { useExpandable } from '../hooks/useExpandable';
 
 // These must exactly match PluginDiscovery.getStageName() output (no hyphens)
 // 'Asynchronous' is NOT a stage — it is a mode. Asynchronous plugins use stage 50 (PostOperation).
@@ -33,6 +35,13 @@ const formatStageLabel = (stageName: string): string => {
     default: return stageName;
   }
 };
+
+const FILTER_SPECS = [
+  { name: 'stage', getKey: (p: PluginStep) => p.stageName },
+  { name: 'mode', getKey: (p: PluginStep) => p.modeName },
+  { name: 'state', getKey: (p: PluginStep) => p.state },
+  { name: 'message', getKey: (p: PluginStep) => p.message },
+] satisfies FilterSpec<PluginStep>[];
 
 const useStyles = makeStyles({
   pluginRow: {
@@ -59,12 +68,7 @@ export function PluginsList({
 }: PluginsListProps): JSX.Element {
   const styles = useStyles();
   const shared = useCardRowStyles();
-  const [expandedPluginId, setExpandedPluginId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeStageFilters, setActiveStageFilters] = useState<Set<string>>(new Set());
-  const [activeModeFilters, setActiveModeFilters] = useState<Set<string>>(new Set());
-  const [activeStateFilters, setActiveStateFilters] = useState<Set<string>>(new Set());
-  const [selectedMessage, setSelectedMessage] = useState<string>('');
+  const { expandedId, toggleExpand } = useExpandable();
 
   // Filter plugins by entity if specified
   const filteredPlugins = useMemo(() => {
@@ -83,6 +87,33 @@ export function PluginsList({
       return a.rank - b.rank;
     });
   }, [filteredPlugins]);
+
+  const { filteredItems, searchQuery, setSearchQuery, toggleKey, clearFilter, activeFilters } =
+    useListFilter(
+      sortedPlugins,
+      (p, q) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.entity?.toLowerCase().includes(q) ?? false) ||
+        p.assemblyName.toLowerCase().includes(q) ||
+        p.typeName.toLowerCase().includes(q),
+      FILTER_SPECS
+    );
+
+  // Derive active filter sets from the hook
+  const activeStageFilters = activeFilters['stage'] ?? new Set<string>();
+  const activeModeFilters = activeFilters['mode'] ?? new Set<string>();
+  const activeStateFilters = activeFilters['state'] ?? new Set<string>();
+  const activeMessageFilters = activeFilters['message'] ?? new Set<string>();
+
+  // Single-select message dropdown: the active set has at most one key
+  const selectedMessage = activeMessageFilters.size === 1 ? [...activeMessageFilters][0] : '';
+
+  const handleMessageSelect = useCallback((_: unknown, data: { optionValue?: string }) => {
+    clearFilter('message');
+    if (data.optionValue) {
+      toggleKey('message', data.optionValue);
+    }
+  }, [clearFilter, toggleKey]);
 
   // Sorted unique message names in the base dataset (for the message dropdown)
   const availableMessages = useMemo(() => {
@@ -110,68 +141,6 @@ export function PluginsList({
     return counts;
   }, [sortedPlugins]);
 
-  // Apply ToggleButton filters then search
-  const toggleFilteredPlugins = useMemo(() => {
-    let filtered = sortedPlugins;
-    if (selectedMessage) {
-      filtered = filtered.filter((p) => p.message === selectedMessage);
-    }
-    if (activeStageFilters.size > 0) {
-      filtered = filtered.filter((p) => activeStageFilters.has(p.stageName));
-    }
-    if (activeModeFilters.size > 0) {
-      filtered = filtered.filter((p) => activeModeFilters.has(p.modeName));
-    }
-    if (activeStateFilters.size > 0) {
-      filtered = filtered.filter((p) => activeStateFilters.has(p.state));
-    }
-    return filtered;
-  }, [sortedPlugins, selectedMessage, activeStageFilters, activeModeFilters, activeStateFilters]);
-
-  // Apply search filter
-  const searchedPlugins = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return toggleFilteredPlugins;
-    return toggleFilteredPlugins.filter((p) =>
-      p.name.toLowerCase().includes(q) ||
-      (p.entity?.toLowerCase().includes(q) ?? false) ||
-      p.assemblyName.toLowerCase().includes(q) ||
-      p.typeName.toLowerCase().includes(q)
-    );
-  }, [toggleFilteredPlugins, searchQuery]);
-
-  const toggleStageFilter = useCallback((stage: string) => {
-    setActiveStageFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(stage)) {
-        next.delete(stage);
-      } else {
-        next.add(stage);
-      }
-      return next;
-    });
-  }, []);
-
-  const toggleModeFilter = useCallback((mode: string) => {
-    setActiveModeFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(mode)) next.delete(mode); else next.add(mode);
-      return next;
-    });
-  }, []);
-
-  const toggleStateFilter = useCallback((state: string) => {
-    setActiveStateFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(state)) {
-        next.delete(state);
-      } else {
-        next.add(state);
-      }
-      return next;
-    });
-  }, []);
-
   const getStageBadgeColor = (stageName: string): 'brand' | 'informative' | 'success' | 'severe' => {
     switch (stageName) {
       case 'PreValidation': return 'brand';
@@ -181,10 +150,6 @@ export function PluginsList({
       default: return 'brand';
     }
   };
-
-  const toggleExpand = useCallback((pluginId: string) => {
-    setExpandedPluginId(prev => prev === pluginId ? null : pluginId);
-  }, []);
 
   const renderPluginDetails = (plugin: PluginStep): React.ReactElement => (
     <div className={shared.expandedDetails}>
@@ -297,14 +262,14 @@ export function PluginsList({
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search plugins..."
-        filteredCount={searchedPlugins.length}
+        filteredCount={filteredItems.length}
         totalCount={sortedPlugins.length}
         itemLabel="plugins"
       >
         <FilterGroup
           label="Message:"
           hasActiveFilters={selectedMessage !== ''}
-          onClear={() => setSelectedMessage('')}
+          onClear={() => clearFilter('message')}
         >
           <Dropdown
             size="small"
@@ -312,7 +277,7 @@ export function PluginsList({
             aria-label="Filter by message"
             value={selectedMessage || 'All'}
             selectedOptions={selectedMessage ? [selectedMessage] : []}
-            onOptionSelect={(_, data) => setSelectedMessage(data.optionValue === '' ? '' : (data.optionValue ?? ''))}
+            onOptionSelect={handleMessageSelect}
           >
             <Option value="">All</Option>
             {availableMessages.map((msg) => (
@@ -323,7 +288,7 @@ export function PluginsList({
         <FilterGroup
           label="Stage:"
           hasActiveFilters={activeStageFilters.size > 0}
-          onClear={() => setActiveStageFilters(new Set())}
+          onClear={() => clearFilter('stage')}
         >
           {STAGE_VALUES.map((stage) => (
             <ToggleButton
@@ -333,7 +298,7 @@ export function PluginsList({
               size="small"
               checked={activeStageFilters.has(stage)}
               disabled={stageCounts[stage] === 0}
-              onClick={() => toggleStageFilter(stage)}
+              onClick={() => toggleKey('stage', stage)}
             >
               {formatStageLabel(stage)}
             </ToggleButton>
@@ -342,7 +307,7 @@ export function PluginsList({
         <FilterGroup
           label="Mode:"
           hasActiveFilters={activeModeFilters.size > 0}
-          onClear={() => setActiveModeFilters(new Set())}
+          onClear={() => clearFilter('mode')}
         >
           {MODE_VALUES.map((mode) => (
             <ToggleButton
@@ -352,7 +317,7 @@ export function PluginsList({
               size="small"
               checked={activeModeFilters.has(mode)}
               disabled={modeCounts[mode] === 0}
-              onClick={() => toggleModeFilter(mode)}
+              onClick={() => toggleKey('mode', mode)}
             >
               {mode}
             </ToggleButton>
@@ -361,7 +326,7 @@ export function PluginsList({
         <FilterGroup
           label="State:"
           hasActiveFilters={activeStateFilters.size > 0}
-          onClear={() => setActiveStateFilters(new Set())}
+          onClear={() => clearFilter('state')}
         >
           {STATE_VALUES.map((state) => (
             <ToggleButton
@@ -371,18 +336,18 @@ export function PluginsList({
               size="small"
               checked={activeStateFilters.has(state)}
               disabled={stateCounts[state] === 0}
-              onClick={() => toggleStateFilter(state)}
+              onClick={() => toggleKey('state', state)}
             >
               {state}
             </ToggleButton>
           ))}
         </FilterGroup>
       </FilterBar>
-      {searchedPlugins.length === 0 && sortedPlugins.length > 0 ? (
+      {filteredItems.length === 0 && sortedPlugins.length > 0 ? (
         <EmptyState type="search" />
       ) : null}
-      {searchedPlugins.map((plugin) => {
-        const isExpanded = expandedPluginId === plugin.id;
+      {filteredItems.map((plugin) => {
+        const isExpanded = expandedId === plugin.id;
         return (
           <div key={plugin.id}>
             <div
