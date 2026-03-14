@@ -1,5 +1,5 @@
 import type { BlueprintResult } from '../core';
-import { isSystemEntity, isSystemRelationship } from './systemFilters.js';
+import { isSystemEntity, isSystemRelationship } from '../core/utils/systemFilters.js';
 
 /**
  * Generates dbdiagram.io compatible code from a BlueprintResult
