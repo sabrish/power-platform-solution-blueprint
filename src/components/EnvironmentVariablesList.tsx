@@ -30,7 +30,9 @@ const useStyles = makeStyles({
   },
   row: {
     display: 'grid',
-    gridTemplateColumns: `${tokens.spacingHorizontalXXL} 32px minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto`,
+    // chevron | name | value | eye | type(80px) | default(72px) | required/managed(96px)
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) 32px 80px 72px 96px`,
+    alignItems: 'start',
   },
   eyeIconColumn: {
     display: 'flex',
@@ -344,15 +346,15 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
               <div className={shared.chevron}>
                 {isExpanded ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
               </div>
-              <div className={styles.eyeIconColumn}>
-                {renderRevealButton(envVar)}
-              </div>
               <div className={shared.nameColumn}>
                 <Text weight="semibold">{envVar.displayName}</Text>
                 <Text className={shared.codeText}>{envVar.schemaName}</Text>
               </div>
               <div className={styles.valueTextCell}>
                 {renderValueText(envVar)}
+              </div>
+              <div className={styles.eyeIconColumn}>
+                {renderRevealButton(envVar)}
               </div>
               <Badge appearance="filled" shape="rounded" size="small" color={getTypeColor(envVar.typeName)}>
                 {envVar.typeName}
