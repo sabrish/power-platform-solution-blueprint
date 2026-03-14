@@ -22,6 +22,7 @@ const useStyles = makeStyles({
   row: {
     display: 'grid',
     gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(120px, 1fr) auto`,
+    alignItems: 'start',
   },
   /** Connector display name column — AUDIT-006: full overflow protection required */
   connectorColumn: {

@@ -18,6 +18,7 @@ const useStyles = makeStyles({
     display: 'grid',
     gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto`,
     gap: tokens.spacingHorizontalM,
+    alignItems: 'start',
   },
 });
 

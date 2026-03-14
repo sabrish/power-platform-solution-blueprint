@@ -14,6 +14,7 @@ import {
   TableBody,
   TableCell,
   TableCellLayout,
+  makeStyles,
 } from '@fluentui/react-components';
 import {
   Code20Regular,
@@ -24,6 +25,94 @@ import {
 import type { CustomAPI, CustomAPIParameter } from '../core';
 import { formatDate } from '../utils/dateFormat';
 
+const useStyles = makeStyles({
+  root: {
+    maxWidth: '1400px',
+    padding: tokens.spacingVerticalXL,
+  },
+  header: {
+    marginBottom: tokens.spacingVerticalXL,
+  },
+  headerTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalM,
+    marginBottom: tokens.spacingVerticalS,
+  },
+  description: {
+    color: tokens.colorNeutralForeground3,
+    marginBottom: tokens.spacingVerticalS,
+  },
+  badgeRow: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalS,
+    flexWrap: 'wrap',
+  },
+  divider: {
+    marginBottom: tokens.spacingVerticalXL,
+  },
+  card: {
+    marginBottom: tokens.spacingVerticalXL,
+  },
+  cardBody: {
+    padding: tokens.spacingVerticalM,
+  },
+  configGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalM,
+  },
+  cardHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+  },
+  monoName: {
+    fontFamily: 'monospace',
+    fontWeight: '500' as const,
+  },
+  monoSmall: {
+    fontFamily: 'monospace',
+    fontSize: tokens.fontSizeBase200,
+  },
+  monoBody: {
+    fontFamily: 'monospace',
+    fontSize: tokens.fontSizeBase200,
+  },
+  subtle: {
+    color: tokens.colorNeutralForeground3,
+  },
+  emptyCell: {
+    padding: tokens.spacingVerticalM,
+    textAlign: 'center' as const,
+    color: tokens.colorNeutralForeground3,
+  },
+  codeBlock: {
+    display: 'block',
+    padding: tokens.spacingVerticalS,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+    fontFamily: 'monospace',
+    fontSize: tokens.fontSizeBase200,
+  },
+  usageLabel: {
+    display: 'block',
+    marginBottom: tokens.spacingVerticalXS,
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  usageEndpoint: {
+    marginBottom: tokens.spacingVerticalM,
+  },
+  usageType: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+  },
+  captionLabel: {
+    color: tokens.colorNeutralForeground3,
+  },
+});
+
 interface CustomAPIDetailViewProps {
   api: CustomAPI;
 }
@@ -32,13 +121,11 @@ interface CustomAPIDetailViewProps {
  * Detailed view of a Custom API with request/response parameters
  */
 export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
+  const styles = useStyles();
+
   const renderParameterTable = (parameters: CustomAPIParameter[], title: string, emptyMessage: string) => {
     if (parameters.length === 0) {
-      return (
-        <div style={{ padding: '20px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-          {emptyMessage}
-        </div>
-      );
+      return <div className={styles.emptyCell}>{emptyMessage}</div>;
     }
 
     return (
@@ -57,7 +144,7 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
             <TableRow key={param.id}>
               <TableCell>
                 <TableCellLayout>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{param.uniqueName}</span>
+                  <span className={styles.monoName}>{param.uniqueName}</span>
                 </TableCellLayout>
               </TableCell>
               <TableCell>
@@ -83,19 +170,15 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
               <TableCell>
                 <TableCellLayout>
                   {param.logicalEntityName ? (
-                    <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                      {param.logicalEntityName}
-                    </span>
+                    <span className={styles.monoSmall}>{param.logicalEntityName}</span>
                   ) : (
-                    <span style={{ color: tokens.colorNeutralForeground3 }}>-</span>
+                    <span className={styles.subtle}>-</span>
                   )}
                 </TableCellLayout>
               </TableCell>
               <TableCell>
                 <TableCellLayout>
-                  {param.description || (
-                    <span style={{ color: tokens.colorNeutralForeground3 }}>No description</span>
-                  )}
+                  {param.description || <span className={styles.subtle}>No description</span>}
                 </TableCellLayout>
               </TableCell>
             </TableRow>
@@ -106,28 +189,22 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1400px' }}>
+    <div className={styles.root}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <Code20Regular style={{ fontSize: '24px', color: tokens.colorBrandForeground1 }} />
-          <Title3 style={{ fontFamily: 'monospace' }}>{api.uniqueName}</Title3>
+      <div className={styles.header}>
+        <div className={styles.headerTitle}>
+          <Code20Regular style={{ color: tokens.colorBrandForeground1 }} />
+          <Title3 className={styles.monoName}>{api.uniqueName}</Title3>
         </div>
         {api.description && (
-          <Body1 style={{ color: tokens.colorNeutralForeground3, marginBottom: '12px' }}>
-            {api.description}
-          </Body1>
+          <Body1 className={styles.description}>{api.description}</Body1>
         )}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div className={styles.badgeRow}>
           <Badge appearance="filled" shape="rounded" color={api.isFunction ? 'brand' : 'danger'} size="large">
             {api.isFunction ? (
-              <>
-                <ArrowRight20Regular /> Function (Read-Only)
-              </>
+              <><ArrowRight20Regular /> Function (Read-Only)</>
             ) : (
-              <>
-                <ArrowSync20Regular /> Action (Can Modify Data)
-              </>
+              <><ArrowSync20Regular /> Action (Can Modify Data)</>
             )}
           </Badge>
           <Badge
@@ -151,48 +228,48 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
         </div>
       </div>
 
-      <Divider style={{ marginBottom: '24px' }} />
+      <Divider className={styles.divider} />
 
       {/* API Configuration */}
-      <Card style={{ marginBottom: '24px' }}>
+      <Card className={styles.card}>
         <CardHeader header={<strong>Configuration</strong>} />
-        <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className={styles.configGrid}>
           <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Unique Name</Caption1>
-            <Body1 style={{ fontFamily: 'monospace', fontSize: '13px' }}>{api.uniqueName}</Body1>
+            <Caption1 className={styles.captionLabel}>Unique Name</Caption1>
+            <Body1 className={styles.monoBody}>{api.uniqueName}</Body1>
           </div>
           <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Display Name</Caption1>
+            <Caption1 className={styles.captionLabel}>Display Name</Caption1>
             <Body1>{api.displayName}</Body1>
           </div>
           <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Binding Type</Caption1>
+            <Caption1 className={styles.captionLabel}>Binding Type</Caption1>
             <Body1>{api.bindingType}</Body1>
           </div>
           <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Bound Entity</Caption1>
+            <Caption1 className={styles.captionLabel}>Bound Entity</Caption1>
             <Body1>
               {api.boundEntityLogicalName ? (
-                <span style={{ fontFamily: 'monospace' }}>{api.boundEntityLogicalName}</span>
+                <span className={styles.monoSmall}>{api.boundEntityLogicalName}</span>
               ) : (
-                <span style={{ color: tokens.colorNeutralForeground3 }}>None</span>
+                <span className={styles.subtle}>None</span>
               )}
             </Body1>
           </div>
           <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Execution Privilege</Caption1>
+            <Caption1 className={styles.captionLabel}>Execution Privilege</Caption1>
             <Body1>{api.executionPrivilege}</Body1>
           </div>
           <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Plugin Step Type</Caption1>
+            <Caption1 className={styles.captionLabel}>Plugin Step Type</Caption1>
             <Body1>{api.allowedCustomProcessingStepType}</Body1>
           </div>
           <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Owner</Caption1>
+            <Caption1 className={styles.captionLabel}>Owner</Caption1>
             <Body1>{api.owner}</Body1>
           </div>
           <div>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Last Modified</Caption1>
+            <Caption1 className={styles.captionLabel}>Last Modified</Caption1>
             <Body1>
               {formatDate(api.modifiedOn)} by {api.modifiedBy}
             </Body1>
@@ -201,10 +278,10 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
       </Card>
 
       {/* Request Parameters (Input) */}
-      <Card style={{ marginBottom: '24px' }}>
+      <Card className={styles.card}>
         <CardHeader
           header={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className={styles.cardHeaderRow}>
               <strong>Request Parameters (Input)</strong>
               <Badge appearance="tint" shape="circular" size="small">
                 {api.requestParameters.length}
@@ -212,20 +289,16 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
             </div>
           }
         />
-        <div style={{ padding: '16px' }}>
-          {renderParameterTable(
-            api.requestParameters,
-            'Request Parameters',
-            'No input parameters defined'
-          )}
+        <div className={styles.cardBody}>
+          {renderParameterTable(api.requestParameters, 'Request Parameters', 'No input parameters defined')}
         </div>
       </Card>
 
       {/* Response Properties (Output) */}
-      <Card style={{ marginBottom: '24px' }}>
+      <Card className={styles.card}>
         <CardHeader
           header={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className={styles.cardHeaderRow}>
               <strong>Response Properties (Output)</strong>
               <Badge appearance="tint" shape="circular" size="small" color="success">
                 {api.responseProperties.length}
@@ -233,31 +306,18 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
             </div>
           }
         />
-        <div style={{ padding: '16px' }}>
-          {renderParameterTable(
-            api.responseProperties,
-            'Response Properties',
-            'No output properties defined'
-          )}
+        <div className={styles.cardBody}>
+          {renderParameterTable(api.responseProperties, 'Response Properties', 'No output properties defined')}
         </div>
       </Card>
 
       {/* Usage Information */}
       <Card>
         <CardHeader header={<strong>Usage Information</strong>} />
-        <div style={{ padding: '16px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <strong style={{ display: 'block', marginBottom: '8px' }}>Endpoint Pattern:</strong>
-            <code
-              style={{
-                display: 'block',
-                padding: '12px',
-                backgroundColor: tokens.colorNeutralBackground2,
-                borderRadius: '4px',
-                fontFamily: 'monospace',
-                fontSize: '13px',
-              }}
-            >
+        <div className={styles.cardBody}>
+          <div className={styles.usageEndpoint}>
+            <strong className={styles.usageLabel}>Endpoint Pattern:</strong>
+            <code className={styles.codeBlock}>
               {api.isFunction ? 'GET ' : 'POST '}
               {api.bindingType === 'Global'
                 ? `/api/data/v9.2/${api.uniqueName}`
@@ -266,19 +326,12 @@ export function CustomAPIDetailView({ api }: CustomAPIDetailViewProps) {
                   : `/api/data/v9.2/${api.boundEntityLogicalName}/${api.uniqueName}`}
             </code>
           </div>
-
-          <div style={{ fontSize: '13px', color: tokens.colorNeutralForeground2 }}>
+          <div className={styles.usageType}>
             <strong>Type: </strong>
             {api.isFunction ? (
-              <>
-                This is a <strong>Function</strong> (read-only operation). Use GET requests to invoke
-                it. Functions cannot modify data.
-              </>
+              <>This is a <strong>Function</strong> (read-only operation). Use GET requests to invoke it. Functions cannot modify data.</>
             ) : (
-              <>
-                This is an <strong>Action</strong> (can modify data). Use POST requests to invoke it.
-                Actions can create, update, or delete data.
-              </>
+              <>This is an <strong>Action</strong> (can modify data). Use POST requests to invoke it. Actions can create, update, or delete data.</>
             )}
           </div>
         </div>
