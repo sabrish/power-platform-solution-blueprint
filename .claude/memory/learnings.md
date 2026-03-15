@@ -164,6 +164,8 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 - Wrong: `pnpm typecheck` passes → commit (skipping build)
 - Right: `pnpm typecheck && pnpm build` — both must pass before committing any source change
 
+**Repeat violations:** 2026-03-14 — Developer agent ran only `pnpm typecheck` before committing, skipping `pnpm build`. The build caught errors typecheck did not. This is a recurring pattern; enforcement must be stricter in the pre-commit gate.
+
 ---
 
 ## [2026-02-26, updated 2026-03-13] — Version numbers in five files must always match at release time
