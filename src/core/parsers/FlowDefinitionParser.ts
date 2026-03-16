@@ -1,4 +1,5 @@
 import type { FlowDefinition, ExternalCall, DataverseAction } from '../types/blueprint.js';
+import { debugLog } from '../utils/debugLogger.js';
 
 /**
  * Parses Power Automate flow definitions from clientdata JSON
@@ -140,6 +141,15 @@ export class FlowDefinitionParser {
         trigger.metadata?.entityName ||
         null;
 
+      if (triggerEntity === null) {
+        debugLog('flow-parse', 'Dataverse trigger — triggerEntity=null (all paths missed)', {
+          triggerKind, apiId,
+          'parameters': trigger.inputs?.parameters,
+          'body': trigger.inputs?.body,
+          'metadata': trigger.metadata,
+        });
+      }
+
       // Filter conditions — try modern connector path first, then legacy paths
       const filterExpr =
         trigger.inputs?.parameters?.['subscriptionRequest/filterexpression'] ||
@@ -153,6 +163,12 @@ export class FlowDefinitionParser {
     } else if (triggerKind.includes('recurrence') || triggerKind.includes('schedule')) {
       triggerType = 'Scheduled';
       triggerEvent = 'Scheduled';
+    } else {
+      debugLog('flow-parse', `triggerType=Other (no pattern matched)`, {
+        triggerKind, apiId,
+        'trigger.type': trigger.type,
+        'inputs.host': trigger.inputs?.host,
+      });
     }
 
     return { type: triggerType, event: triggerEvent, entity: triggerEntity, conditions };
