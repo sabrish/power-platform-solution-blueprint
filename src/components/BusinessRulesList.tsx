@@ -349,7 +349,7 @@ export function BusinessRulesList({
       {searchedRules.map((rule) => {
         const isExpanded = expandedRuleId === rule.id;
         const stateBadgeProps = getStateBadgeProps(rule.state);
-        const conditionCount = rule.definition.conditionGroups[0]?.conditions.length ?? 0;
+        const conditionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
         const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
 
         return (

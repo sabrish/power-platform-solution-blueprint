@@ -18,8 +18,9 @@ const useStyles = makeStyles({
     lineHeight: '1.5',
   },
   fieldMatchFires: {
-    backgroundColor: tokens.colorPaletteGreenBackground1,
-    border: `1px solid ${tokens.colorPaletteGreenBorderActive}`,
+    backgroundColor: tokens.colorNeutralBackground2,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderLeft: `3px solid ${tokens.colorPaletteGreenForeground1}`,
   },
   fieldMatchNoFire: {
     opacity: 0.55,
@@ -27,8 +28,9 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke2}`,
   },
   fieldMatchNoFilter: {
-    backgroundColor: tokens.colorPaletteRedBackground1,
-    border: `1px solid ${tokens.colorPaletteRedBorderActive}`,
+    backgroundColor: tokens.colorNeutralBackground2,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderLeft: `3px solid ${tokens.colorPaletteRedForeground1}`,
   },
   matchVerdict: { fontWeight: tokens.fontWeightSemibold, marginBottom: '2px' },
   noFilterAdvisory: { fontSize: tokens.fontSizeBase100, color: tokens.colorPaletteRedForeground1 },

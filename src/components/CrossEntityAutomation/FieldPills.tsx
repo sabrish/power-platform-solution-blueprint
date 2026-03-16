@@ -14,7 +14,7 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase100,
     padding: `0 ${tokens.spacingHorizontalXS}`,
     borderRadius: tokens.borderRadiusSmall,
-    backgroundColor: tokens.colorPaletteGreenBackground2,
+    backgroundColor: tokens.colorNeutralBackground1,
     color: tokens.colorPaletteGreenForeground2,
     border: `1px solid ${tokens.colorPaletteGreenBorder2}`,
     fontWeight: tokens.fontWeightSemibold,

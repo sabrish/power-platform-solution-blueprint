@@ -57,7 +57,11 @@ export async function processClassicWorkflows(
 
     return workflows;
   } catch (error) {
-    // Don't fail the entire generation if classic workflows fail
+    stepWarnings.push({
+      step: 'Classic Workflows',
+      message: `Classic workflow discovery failed: ${error instanceof Error ? error.message : String(error)}`,
+      partial: false,
+    });
     return [];
   }
 }

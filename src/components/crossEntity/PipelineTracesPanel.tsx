@@ -5,22 +5,6 @@ import { EmptyState } from '../EmptyState';
 import { EntityPipelineRow, EntityMessagePipelineRow } from '../CrossEntityAutomation';
 import type { CrossEntityAnalysisResult } from '../../core';
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Entity accent colour palette — cycles per entity in display order.
-   AUDIT-003 exception: intentional hardcoded hex values — Fluent UI tokens
-   do not provide a cycling multi-entity palette. Values match Fluent UI brand
-   colours: blue=colorBrandBackground, green=colorPaletteGreenBackground2,
-   orange=colorPaletteMarigoldBackground2, purple=colorPaletteVioletBackground2,
-   teal=colorPaletteTealBackground2, pink=colorPaletteMagentaBackground2,
-   hot pink=colorPaletteHotPinkBackground2, dark teal=colorPaletteDarkGreenBackground2
-───────────────────────────────────────────────────────────────────────── */
-const ENTITY_COLORS = [
-  '#0078d4', '#107c10', '#ca5010', '#8764b8',
-  '#038387', '#c239b3', '#e3008c', '#004b50',
-];
-function entityColor(index: number): string {
-  return ENTITY_COLORS[index % ENTITY_COLORS.length];
-}
 
 const useStyles = makeStyles({
   pipelineList: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS },
@@ -29,9 +13,10 @@ const useStyles = makeStyles({
 
 export interface PipelineTracesPanelProps {
   analysis: CrossEntityAnalysisResult;
+  entityColorMap: Map<string, string>;
 }
 
-export function PipelineTracesPanel({ analysis }: PipelineTracesPanelProps): JSX.Element {
+export function PipelineTracesPanel({ analysis, entityColorMap }: PipelineTracesPanelProps): JSX.Element {
   const styles = useStyles();
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(() => {
     const first = Array.from(analysis.entityViews.keys())[0];
@@ -48,17 +33,6 @@ export function PipelineTracesPanel({ analysis }: PipelineTracesPanelProps): JSX
       return next;
     });
   }, []);
-
-  // Stable colour index map: alphabetical sort of all pipeline keys
-  const stableColorMap = new Map(
-    Array.from(analysis.allEntityPipelines.keys())
-      .sort((a, b) => {
-        const pa = analysis.allEntityPipelines.get(a)!;
-        const pb = analysis.allEntityPipelines.get(b)!;
-        return pa.entityDisplayName.localeCompare(pb.entityDisplayName);
-      })
-      .map((key, i) => [key, i])
-  );
 
   const visibleEntries = Array.from(analysis.allEntityPipelines.entries())
     .sort(([, a], [, b]) => a.entityDisplayName.localeCompare(b.entityDisplayName))
@@ -126,7 +100,7 @@ export function PipelineTracesPanel({ analysis }: PipelineTracesPanelProps): JSX
         <div className={styles.pipelineList}>
           {visibleEntries.map(([logicalName, pipeline]) => {
             const entityView = analysis.entityViews.get(logicalName);
-            const color = entityColor(stableColorMap.get(logicalName) ?? 0);
+            const color = entityColorMap.get(logicalName) ?? '#0078d4';
             return entityView ? (
               <EntityPipelineRow
                 key={logicalName}
