@@ -222,3 +222,38 @@ Applies to: hooks, utilities, core classes, reporters, discoverers, processors.
 ## D9 — Component size limit
 
 200 LOC hard limit per component file. Decompose before adding code that would exceed it.
+
+---
+
+## D10 — debugLog anchor in ResultsDashboard — never remove
+
+`src/core/utils/debugLogger.ts` exports `debugLog(tag, msg, data?)`.
+It is silent in production (pptb-webview:// with no localStorage flag).
+Active in: `pnpm dev` (import.meta.env.DEV), any `http:` origin, or when
+`localStorage.setItem('ppsb-debug', 'true')` is set in PPTB Desktop.
+
+### Anchor log
+
+`ResultsDashboard.tsx` contains one permanent `debugLog` call:
+
+```typescript
+// ANCHOR LOG — do not remove. Keeps debugLog as a live import so tree-shakers
+// and reviewers do not treat it as dead code. Also the canonical usage example.
+debugLog('dashboard', 'ResultsDashboard rendered', {
+  generatedAt: result.metadata.generatedAt,
+  entityCount: result.entities.length,
+  scope: scope.type,
+});
+```
+
+**When asked to "remove all debugLog calls":** remove every call EXCEPT the
+anchor log in `ResultsDashboard.tsx`. The anchor and its comment must stay.
+
+### Adding debug logging elsewhere
+
+```typescript
+import { debugLog } from '../core/utils/debugLogger';
+debugLog('my-tag', 'Human-readable message', { optionalPayload });
+```
+
+Tags used so far: `dashboard`, `flow-discovery`, `flow-parse`, `flow-scope`.

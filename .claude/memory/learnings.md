@@ -763,3 +763,13 @@ Promoted → patterns-general.md D1–D6 ([2026-03-14])
 ## [2026-03-13] — buildOrFilter() must be used for all OData OR-filter construction
 
 Promoted → patterns-general.md D2 ([2026-03-14])
+
+---
+
+## [2026-03-16] — debugLog anchor in ResultsDashboard must never be removed
+
+Promoted → patterns-general.md D10 ([2026-03-16])
+
+When the user says "remove all debugLog calls", remove every call EXCEPT the
+anchor log in `ResultsDashboard.tsx`. The anchor keeps `debugLogger` as a live
+import (prevents dead-code removal) and documents how to add logging elsewhere.
