@@ -113,7 +113,7 @@ export interface ResultsDashboardProps {
   onStartOver: () => void;
 }
 
-export function ResultsDashboard({ result, scope, onStartOver }: ResultsDashboardProps) {
+export function ResultsDashboard({ result, scope, onStartOver }: ResultsDashboardProps): JSX.Element {
   const styles = useStyles();
 
   const defaultSelectedKey = getDefaultTabKey(result);

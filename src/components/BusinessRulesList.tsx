@@ -68,7 +68,7 @@ export interface BusinessRulesListProps {
 export function BusinessRulesList({
   businessRules,
   entityLogicalName,
-}: BusinessRulesListProps) {
+}: BusinessRulesListProps): JSX.Element {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
