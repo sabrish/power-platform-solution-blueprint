@@ -751,7 +751,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
 
       const headers = ['Name', 'Scope', 'Context', 'State', 'Conditions', 'Actions', 'Modified'];
       const rows = rules.map(rule => {
-        const conditionCount = rule.definition.conditionGroups[0]?.conditions.length ?? 0;
+        const conditionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
         const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
         return [
           rule.name,
@@ -1921,7 +1921,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
 
       const headers = ['Name', 'Scope', 'Context', 'State', 'Conditions', 'Actions'];
       const rows = entity.businessRules.map(rule => {
-        const conditionCount = rule.definition.conditionGroups[0]?.conditions.length ?? 0;
+        const conditionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
         const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
         return [
           rule.name,

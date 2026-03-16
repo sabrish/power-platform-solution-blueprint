@@ -947,7 +947,7 @@ ${rows}
       const stateBadge = br.state === 'Active'
         ? '<span class="badge badge-success">Active</span>'
         : '<span class="badge badge-warning">Draft</span>';
-      const conditionCount = br.definition.conditionGroups[0]?.conditions.length ?? 0;
+      const conditionCount = br.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
       const actionCount = br.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + br.definition.elseActions.length;
       return `<tr>
         <td>${this.htmlEscape(br.name)}</td>
@@ -1173,7 +1173,7 @@ ${rows}
         <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
       </tr>`).join('');
 
-      const firstGroupConditionCount = conditionGroups[0]?.conditions.length ?? 0;
+      const totalConditionCount = conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
       const totalActionCount = conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + elseActions.length;
 
       return `<div class="accordion-item">
@@ -1186,7 +1186,7 @@ ${rows}
         <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${this.htmlEscape(rule.state)}</span>
         <span class="badge">${this.htmlEscape(rule.scope)}</span>
         <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.htmlEscape(rule.definition.executionContext)}</span>
-        ${firstGroupConditionCount > 0 ? `<span class="badge">${firstGroupConditionCount} condition${firstGroupConditionCount !== 1 ? 's' : ''}</span>` : ''}
+        ${totalConditionCount > 0 ? `<span class="badge">${totalConditionCount} condition${totalConditionCount !== 1 ? 's' : ''}</span>` : ''}
         ${totalActionCount > 0 ? `<span class="badge">${totalActionCount} action${totalActionCount !== 1 ? 's' : ''}</span>` : ''}
       </div>
       ${rule.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.htmlEscape(rule.description)}</div>` : ''}
