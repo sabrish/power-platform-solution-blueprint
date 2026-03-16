@@ -222,52 +222,75 @@ export class BusinessRuleParser {
       return conds;
     };
 
-    // ── Step 4: Extract all if/else-if blocks iteratively ──────────────────────
+    // ── Step 4: Extract if/else-if blocks using balanced parenthesis counting ──
+    //
+    // The regex approach cannot reliably:
+    //   (a) match null guards with multi-variable conditions like
+    //       if (((v1)==null||(v1)==undefined||...)||(v4)==undefined...){return;}
+    //       because [^)]* stops at the first inner ')'.
+    //   (b) locate a standalone if(condExpr) that sits mid-line (not at ^ and
+    //       not preceded by '} else'), which happens when the compiled JS is
+    //       a single line with variable declarations before the main if block.
+    //   (c) extract condExpr for deeply nested conditions like
+    //       v7((v5),(v6),function(...){...}) where nesting exceeds one level.
+    //
+    // Solution: scan for \bif\s*\( with a balanced-paren counter to locate and
+    // extract each block; skip null guards identified by {return;} bodies.
 
     const conditionGroups: import('../types/blueprint.js').ConditionGroup[] = [];
     const elseActions: Action[] = [];
 
-    // Find the first real if statement after null guard
-    // Null guard pattern: if(vX==null || vY==null ...) { return; }
-    // Skip it and find the next if statement
-    const nullGuardMatch = js.match(/if\s*\([^)]*==\s*(?:null|undefined)[^)]*\)\s*\{\s*return\s*;?\s*\}/);
-    let startPos = nullGuardMatch ? nullGuardMatch.index! + nullGuardMatch[0].length : 0;
+    const ifScanRe = /\bif\s*\(/g;
+    while (true) {
+      const sm = ifScanRe.exec(js);
+      if (!sm) break;
 
-    // Find all if/else-if blocks from startPos onwards
-    const ifElseRe = /(?:^|}\s*else\s+)if\s*\(([^)]+(?:\([^)]*\))*[^)]*)\)\s*\{/g;
-    ifElseRe.lastIndex = startPos;
+      // Skip 'else if(' — we detect the else block separately below
+      const precursor = js.slice(Math.max(0, sm.index - 15), sm.index);
+      if (/else\s+$/.test(precursor)) continue;
 
-    let match: RegExpExecArray | null;
-    const blocks: Array<{ condExpr: string; startPos: number }> = [];
+      // Extract the full condition using balanced parenthesis counting
+      const parenOpen = sm.index + sm[0].length - 1; // position of '('
+      const parenClose = BusinessRuleParser.findMatchingParen(js, parenOpen);
+      if (parenClose === -1) break;
 
-    while ((match = ifElseRe.exec(js)) !== null) {
-      blocks.push({ condExpr: match[1], startPos: match.index + match[0].length });
-    }
+      const condExpr = js.slice(parenOpen + 1, parenClose);
 
-    // Parse each block
-    for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
-      const nextBlockStart = blocks[i + 1]?.startPos ?? js.length;
-
-      // Extract the block body — everything from block.startPos to the next block (or closing brace)
-      let blockBody = js.substring(block.startPos, nextBlockStart);
-
-      // Check if this is the unconditional else: "else if(true)"
-      if (block.condExpr.trim() === 'true') {
-        // This is the final else block — all actions here are elseActions
-        elseActions.push(...this.parseActionsFromBlock(blockBody, resolveField));
-        break;
+      // Skip null guard: body is {return;} / {return false;} / {return undefined;}
+      const afterParen = js.slice(parenClose + 1, parenClose + 25);
+      if (/^\s*\{\s*return[\s;]/.test(afterParen)) {
+        ifScanRe.lastIndex = parenClose + 1;
+        continue;
       }
 
-      // Parse the condition
-      const conditions = parseCondition(block.condExpr);
+      // Main condition block — extract THEN body
+      const braceOpen = js.indexOf('{', parenClose + 1);
+      if (braceOpen === -1) break;
+      const braceClose = BusinessRuleParser.findMatchingBrace(js, braceOpen);
+      const thenBody = js.slice(braceOpen + 1, braceClose !== -1 ? braceClose : js.length);
 
-      // Parse actions from this block
-      const actions = this.parseActionsFromBlock(blockBody, resolveField);
-
+      const conditions = parseCondition(condExpr);
+      const actions = this.parseActionsFromBlock(thenBody, resolveField);
       if (conditions.length > 0 || actions.length > 0) {
         conditionGroups.push({ conditions, actions });
       }
+
+      // Look for } else if(true) { immediately after the THEN block
+      if (braceClose !== -1) {
+        const afterBlock = js.slice(braceClose);
+        const elseMatch = /^\s*\}\s*else\s+if\s*\(\s*true\s*\)\s*\{/.exec(afterBlock);
+        if (elseMatch) {
+          const elseBraceOpen = braceClose + elseMatch[0].lastIndexOf('{');
+          const elseBraceClose = BusinessRuleParser.findMatchingBrace(js, elseBraceOpen);
+          const elseBody = js.slice(
+            elseBraceOpen + 1,
+            elseBraceClose !== -1 ? elseBraceClose : js.length,
+          );
+          elseActions.push(...this.parseActionsFromBlock(elseBody, resolveField));
+        }
+      }
+
+      break; // One main if block per business rule
     }
 
     // If no condition groups found, try the legacy single-condition fallback
@@ -815,5 +838,25 @@ export class BusinessRuleParser {
     const pattern = new RegExp(`<parameter[^>]*name="${paramName}"[^>]*>([^<]*)<\\/parameter>`, 'i');
     const match = pattern.exec(actionXml);
     return match ? match[1] : null;
+  }
+
+  /** Find the position of the ')' that closes the '(' at openPos, counting nested parens. */
+  private static findMatchingParen(js: string, openPos: number): number {
+    let depth = 0;
+    for (let i = openPos; i < js.length; i++) {
+      if (js[i] === '(') depth++;
+      else if (js[i] === ')') { if (--depth === 0) return i; }
+    }
+    return -1;
+  }
+
+  /** Find the position of the '}' that closes the '{' at openPos, counting nested braces. */
+  private static findMatchingBrace(js: string, openPos: number): number {
+    let depth = 0;
+    for (let i = openPos; i < js.length; i++) {
+      if (js[i] === '{') depth++;
+      else if (js[i] === '}') { if (--depth === 0) return i; }
+    }
+    return -1;
   }
 }
