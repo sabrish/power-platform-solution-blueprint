@@ -15,6 +15,7 @@ import type {
 } from '../types/crossEntityTrace.js';
 import { ClassicWorkflowXamlParser } from '../parsers/ClassicWorkflowXamlParser.js';
 import { resolveEntityName } from '../utils/entityName.js';
+import { debugLog } from '../utils/debugLogger.js';
 
 /**
  * Performs 4-layer cross-entity automation analysis:
@@ -159,9 +160,24 @@ export class CrossEntityAnalyzer {
 
         // Flows triggered on this entity for this message
         for (const flow of bp.flows) {
-          if (flow.definition.triggerType !== 'Dataverse') continue;
+          if (flow.definition.triggerType !== 'Dataverse') {
+            debugLog('flow-scope', `SKIP (non-Dataverse) [${message}] ${flow.name}`, {
+              id: flow.id, entity: entityKey,
+              triggerType: flow.definition.triggerType,
+              'flow.entity': flow.entity,
+              'triggerEntity': flow.definition.triggerEntity,
+            });
+            continue;
+          }
           const flowTriggerEntity = flow.definition.triggerEntity?.toLowerCase();
-          if (flowTriggerEntity && flowTriggerEntity !== entityKey) continue;
+          if (flowTriggerEntity && flowTriggerEntity !== entityKey) {
+            debugLog('flow-scope', `SKIP (entity mismatch) [${message}] ${flow.name}`, {
+              id: flow.id, bpEntity: entityKey,
+              flowTriggerEntity,
+              triggerType: flow.definition.triggerType,
+            });
+            continue;
+          }
           if (!this.triggerMatchesOperation(flow.definition.triggerEvent, message)) continue;
           const conditionFields = this.extractFieldsFromTriggerCondition(flow.definition.triggerConditions);
           const firesForAllUpdates = message === 'Update' && conditionFields.length === 0;
@@ -453,6 +469,15 @@ export class CrossEntityAnalyzer {
         : (() => {
             return 'Solution Flow';
           })();
+      debugLog('flow-scope', `[unbound] ${flow.name} → label="${sourceDisplayName}"`, {
+        id: flow.id,
+        'flow.entity': flow.entity,
+        'triggerEntity': flow.definition.triggerEntity,
+        triggerType: flow.definition.triggerType,
+        resolvedEntityName: entityName,
+        sourceEntity,
+        sourceDisplayName,
+      });
       for (const action of flow.definition.dataverseActions ?? []) {
         if (!action.isUnbound) continue;
         addLink(sourceEntity, sourceDisplayName, flow, action);
@@ -591,6 +616,15 @@ export class CrossEntityAnalyzer {
         sourceEntity = '(unscoped)';
         sourceDisplayName = 'Solution Flow';
       }
+      debugLog('flow-scope', `[entry-point] ${flow.name} → label="${sourceDisplayName}"`, {
+        id: flow.id,
+        'flow.entity': flow.entity,
+        'triggerEntity': flow.definition.triggerEntity,
+        triggerType,
+        resolvedEntityName: entityName,
+        sourceEntity,
+        sourceDisplayName,
+      });
 
       for (const action of flow.definition.dataverseActions ?? []) {
         if (action.isUnbound) continue; // handled separately in collectUnboundChainLinks
