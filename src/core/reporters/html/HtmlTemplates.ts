@@ -1938,14 +1938,29 @@ ${rows}
       ${this.htmlPipelineTraces(analysis)}`;
 
     // Global Chain Map — matches the React UI "Global Chain Map" tab
-    const chainRows = analysis.chainLinks.map(l => `<tr>
-      <td>${this.htmlEscape(l.sourceEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.sourceEntity)}</small></td>
-      <td>${this.htmlEscape(l.automationName)}<br/><span class="badge badge-${l.automationType === 'Flow' ? 'success' : 'warning'}">${this.htmlEscape(l.automationType)}</span></td>
-      <td>→</td>
-      <td>${this.htmlEscape(l.targetEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.targetEntity)}</small></td>
-      <td><span class="badge badge-${l.operation === 'Create' ? 'success' : l.operation === 'Delete' ? 'danger' : 'warning'}">${this.htmlEscape(l.operation)}</span></td>
-      <td><span class="badge badge-${l.isAsynchronous ? 'success' : 'warning'}">${l.isAsynchronous ? 'Async' : 'Sync'}</span></td>
-    </tr>`).join('');
+    const chainRows = analysis.chainLinks.map(l => {
+      const sourceTriggerCell = l.sourceEntity === '(custom-action)'
+        ? `Custom Action<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.sourceEntityDisplayName.replace('Custom Action: ', ''))}</small>`
+        : l.sourceEntity.startsWith('(')
+        ? `<em style="color:#666">(unbound)</em>`
+        : `${this.htmlEscape(l.sourceEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.sourceEntity)}</small>`;
+      const triggerOpCell = l.triggerOperation === 'Action' && l.triggerCustomActionName
+        ? `Custom Action<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.triggerCustomActionName)}</small>`
+        : l.triggerOperation === 'CreateOrUpdate' ? 'Create or Update'
+        : this.htmlEscape(l.triggerOperation);
+      const targetCell = l.targetEntity !== '(unbound)'
+        ? `${this.htmlEscape(l.targetEntityDisplayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(l.targetEntity)}</small>`
+        : `${this.htmlEscape(l.targetEntityDisplayName)}<br/><small style="font-family:monospace;color:#666;font-style:italic">No entity target</small>`;
+      return `<tr>
+        <td>${sourceTriggerCell}</td>
+        <td>${this.htmlEscape(l.automationName)}<br/><span class="badge badge-${l.automationType === 'Flow' ? 'success' : 'warning'}">${this.htmlEscape(l.automationType)}</span></td>
+        <td>${triggerOpCell}</td>
+        <td><span class="badge badge-${l.isAsynchronous ? 'success' : 'warning'}">${l.isAsynchronous ? 'Async' : 'Sync'}</span></td>
+        <td>→</td>
+        <td>${targetCell}</td>
+        <td><span class="badge badge-${l.operation === 'Create' ? 'success' : l.operation === 'Delete' ? 'danger' : 'warning'}">${this.htmlEscape(l.operation)}</span></td>
+      </tr>`;
+    }).join('');
     const globalChainHtml = analysis.chainLinks.length > 0 ? `
       <h3>Global Chain Map (${analysis.chainLinks.length})</h3>
       <p style="color:#666;margin-bottom:12px;">All detected cross-entity write operations. Synchronous operations may impact performance.</p>
@@ -1953,12 +1968,13 @@ ${rows}
         <table class="data-table sortable" id="cross-entity-table">
           <thead>
             <tr>
-              <th scope="col" onclick="sortTable('cross-entity-table', 0)">Source Entity <span class="sort-indicator"></span></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 0)">Source Trigger <span class="sort-indicator"></span></th>
               <th scope="col" onclick="sortTable('cross-entity-table', 1)">Automation <span class="sort-indicator"></span></th>
-              <th scope="col"></th>
-              <th scope="col" onclick="sortTable('cross-entity-table', 3)">Target Entity <span class="sort-indicator"></span></th>
-              <th scope="col" onclick="sortTable('cross-entity-table', 4)">Operation <span class="sort-indicator"></span></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 2)">Trigger Operation <span class="sort-indicator"></span></th>
               <th scope="col">Mode</th>
+              <th scope="col"></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 5)">Target Entity <span class="sort-indicator"></span></th>
+              <th scope="col" onclick="sortTable('cross-entity-table', 6)">Target Operation <span class="sort-indicator"></span></th>
             </tr>
           </thead>
           <tbody>${chainRows}</tbody>
@@ -2045,7 +2061,7 @@ ${rows}
             name: entryPoint.automationName,
             type: entryPoint.automationType,
             affectedEntities: [],
-            triggerType: entryPoint.isScheduled ? 'Scheduled' : entryPoint.isOnDemand ? 'Manual' : 'Dataverse',
+            triggerType: entryPoint.triggerOperation === 'Scheduled' ? 'Scheduled' : entryPoint.triggerOperation === 'Manual' ? 'Manual' : 'Dataverse',
             hasExternalCalls: false,
           });
         }

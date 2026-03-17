@@ -26,6 +26,10 @@ export interface CrossEntityEntryPoint {
   /** For on-demand classic workflows */
   isOnDemand: boolean;
   confidence: 'High' | 'Medium' | 'Low';
+  /** What event triggers this automation (Create/Update/Delete/CreateOrUpdate/Assign/Grant/Revoke/StatusChange/Manual/Scheduled/Action/Unknown) */
+  triggerOperation: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Assign' | 'Grant' | 'Revoke' | 'StatusChange' | 'Manual' | 'Scheduled' | 'Action' | 'Unknown';
+  /** Custom action / SDK message name when triggerOperation is 'Action' */
+  triggerCustomActionName?: string;
   /**
    * For 'Action' operations: the Dataverse custom action / bound API unique name.
    * Internal effects on the target entity are unknown — shown in chain with informational note.
@@ -152,6 +156,11 @@ export interface CrossEntityChainLink {
   targetEntityDisplayName: string;
   automationName: string;
   automationType: 'Flow' | 'ClassicWorkflow';
+  /** What event triggers this automation */
+  triggerOperation: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Assign' | 'Grant' | 'Revoke' | 'StatusChange' | 'Manual' | 'Scheduled' | 'Action' | 'Unknown';
+  /** Custom action / SDK message name when triggerOperation is 'Action' */
+  triggerCustomActionName?: string;
+  /** What the automation does to the target entity */
   operation: 'Create' | 'Update' | 'Delete' | 'Action';
   isAsynchronous: boolean;
   /**

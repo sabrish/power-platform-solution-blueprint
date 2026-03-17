@@ -3,7 +3,6 @@ import type { Flow } from '../types/blueprint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import type { IDiscoverer } from './IDiscoverer.js';
 import { FlowDefinitionParser } from '../parsers/FlowDefinitionParser.js';
-import { debugLog } from '../utils/debugLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
 import { normalizeGuid } from '../utils/guid.js';
@@ -138,15 +137,7 @@ export class FlowDiscovery implements IDiscoverer<Flow> {
   }
 
   private mapToFlow(record: WorkflowMetaRecord, clientdata: string | null): Flow {
-    const definition = FlowDefinitionParser.parse(clientdata);
-    debugLog('flow-discovery', `mapToFlow: ${record.name}`, {
-      workflowid: record.workflowid,
-      primaryentity: record.primaryentity,
-      scope: record.scope,
-      triggerType: definition.triggerType,
-      triggerEntity: definition.triggerEntity,
-      hasClientdata: clientdata !== null,
-    });
+    const definition = FlowDefinitionParser.parse(clientdata, record.name);
 
     let state: Flow['state'] = 'Draft';
     if (record.statecode === 1) state = 'Active';

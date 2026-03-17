@@ -137,7 +137,7 @@ Capture the correction first, then resume the current task.
 
 ## Release Workflow
 
-`/release v[X.Y.Z]` — full release sequence; see `.claude/skills/release.md`. **NEVER run `git push` yourself** — always hand the git commands to the project owner.
+`/release v[X.Y.Z]` — full release sequence; see `.claude/commands/release.md`. **NEVER run `git push` yourself** — always hand the git commands to the project owner.
 
 ## Communication Style
 

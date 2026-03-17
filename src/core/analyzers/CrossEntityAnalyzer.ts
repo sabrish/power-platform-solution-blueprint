@@ -15,7 +15,6 @@ import type {
 } from '../types/crossEntityTrace.js';
 import { ClassicWorkflowXamlParser } from '../parsers/ClassicWorkflowXamlParser.js';
 import { resolveEntityName } from '../utils/entityName.js';
-import { debugLog } from '../utils/debugLogger.js';
 
 /**
  * Performs 4-layer cross-entity automation analysis:
@@ -102,6 +101,8 @@ export class CrossEntityAnalyzer {
           targetEntityDisplayName: targetDisplayName,
           automationName: ep.automationName,
           automationType: ep.automationType,
+          triggerOperation: ep.triggerOperation,
+          ...(ep.triggerCustomActionName ? { triggerCustomActionName: ep.triggerCustomActionName } : {}),
           operation: ep.operation,
           isAsynchronous: ep.isAsynchronous,
           ...(ep.customActionApiName ? { customActionApiName: ep.customActionApiName } : {}),
@@ -161,21 +162,10 @@ export class CrossEntityAnalyzer {
         // Flows triggered on this entity for this message
         for (const flow of bp.flows) {
           if (flow.definition.triggerType !== 'Dataverse') {
-            debugLog('flow-scope', `SKIP (non-Dataverse) [${message}] ${flow.name}`, {
-              id: flow.id, entity: entityKey,
-              triggerType: flow.definition.triggerType,
-              'flow.entity': flow.entity,
-              'triggerEntity': flow.definition.triggerEntity,
-            });
             continue;
           }
           const flowTriggerEntity = flow.definition.triggerEntity?.toLowerCase();
           if (flowTriggerEntity && flowTriggerEntity !== entityKey) {
-            debugLog('flow-scope', `SKIP (entity mismatch) [${message}] ${flow.name}`, {
-              id: flow.id, bpEntity: entityKey,
-              flowTriggerEntity,
-              triggerType: flow.definition.triggerType,
-            });
             continue;
           }
           if (!this.triggerMatchesOperation(flow.definition.triggerEvent, message)) continue;
@@ -426,6 +416,12 @@ export class CrossEntityAnalyzer {
       const key = `${flow.id}:${action.customActionApiName ?? action.actionName}`;
       if (seen.has(key)) return;
       seen.add(key);
+      const unboundTriggerOp: CrossEntityChainLink['triggerOperation'] =
+        sourceEntity === '(scheduled)' ? 'Scheduled'
+        : sourceEntity === '(manual)' ? 'Manual'
+        : sourceEntity === '(custom-action)' ? 'Action'
+        : flow.definition.triggerEvent as CrossEntityChainLink['triggerOperation'];
+
       links.push({
         sourceEntity,
         sourceEntityDisplayName: sourceDisplayName,
@@ -433,6 +429,8 @@ export class CrossEntityAnalyzer {
         targetEntityDisplayName: 'Unbound Custom Action / API',
         automationName: flow.name,
         automationType: 'Flow',
+        triggerOperation: unboundTriggerOp,
+        ...(flow.definition.triggerCustomActionName ? { triggerCustomActionName: flow.definition.triggerCustomActionName } : {}),
         operation: 'Action',
         isAsynchronous: true,
         ...(action.customActionApiName ? { customActionApiName: action.customActionApiName } : {}),
@@ -458,29 +456,23 @@ export class CrossEntityAnalyzer {
       const entityName =
         resolveEntityName(flow.entity) ??
         resolveEntityName(flow.definition.triggerEntity);
+      const customActionName = flow.definition.triggerCustomActionName ?? null;
       const sourceEntity = entityName?.toLowerCase()
         ?? (flow.definition.triggerType === 'Scheduled' ? '(scheduled)'
           : flow.definition.triggerType === 'Manual' ? '(manual)'
+          : (flow.definition.triggerType === 'Dataverse' && customActionName) ? '(custom-action)'
           : '(unscoped)');
       const sourceDisplayName = entityName
         ? entityDisplayMap.get(sourceEntity) || entityName
         : flow.definition.triggerType === 'Scheduled' ? 'Scheduled Flow'
         : flow.definition.triggerType === 'Manual' ? 'Manual / On-Demand Flow'
-        : (() => {
-            return 'Solution Flow';
-          })();
-      debugLog('flow-scope', `[unbound] ${flow.name} → label="${sourceDisplayName}"`, {
-        id: flow.id,
-        'flow.entity': flow.entity,
-        'triggerEntity': flow.definition.triggerEntity,
-        triggerType: flow.definition.triggerType,
-        resolvedEntityName: entityName,
-        sourceEntity,
-        sourceDisplayName,
-      });
-      for (const action of flow.definition.dataverseActions ?? []) {
-        if (!action.isUnbound) continue;
-        addLink(sourceEntity, sourceDisplayName, flow, action);
+        : (flow.definition.triggerType === 'Dataverse' && customActionName) ? `Custom Action: ${customActionName}`
+        : 'Solution Flow';
+      const unboundActions = (flow.definition.dataverseActions ?? []).filter(a => a.isUnbound);
+      if (unboundActions.length > 0) {
+        for (const action of unboundActions) {
+          addLink(sourceEntity, sourceDisplayName, flow, action);
+        }
       }
     }
 
@@ -562,6 +554,8 @@ export class CrossEntityAnalyzer {
             isScheduled: flow.definition.triggerType === 'Scheduled',
             isOnDemand: flow.definition.triggerType === 'Manual',
             confidence: action.confidence,
+            triggerOperation: flow.definition.triggerEvent as CrossEntityEntryPoint['triggerOperation'],
+            ...(flow.definition.triggerCustomActionName ? { triggerCustomActionName: flow.definition.triggerCustomActionName } : {}),
             ...(action.customActionApiName ? { customActionApiName: action.customActionApiName } : {}),
           });
         }
@@ -572,6 +566,8 @@ export class CrossEntityAnalyzer {
             flow,
             sourceEntity,
             sourceDisplayName,
+            flow.definition.triggerEvent as CrossEntityEntryPoint['triggerOperation'],
+            flow.definition.triggerCustomActionName,
             flow.definition.childFlowIds,
             allFlowsById,
             new Set([flow.id.toLowerCase()]),
@@ -603,6 +599,7 @@ export class CrossEntityAnalyzer {
       let sourceEntity: string;
       let sourceDisplayName: string;
 
+      const customActionName = flow.definition.triggerCustomActionName ?? null;
       if (entityName) {
         sourceEntity = entityName.toLowerCase();
         sourceDisplayName = entityDisplayMap.get(sourceEntity) || entityName;
@@ -612,19 +609,18 @@ export class CrossEntityAnalyzer {
       } else if (triggerType === 'Manual') {
         sourceEntity = '(manual)';
         sourceDisplayName = 'Manual / On-Demand Flow';
+      } else if (triggerType === 'Dataverse' && customActionName) {
+        sourceEntity = '(custom-action)';
+        sourceDisplayName = `Custom Action: ${customActionName}`;
       } else {
         sourceEntity = '(unscoped)';
         sourceDisplayName = 'Solution Flow';
       }
-      debugLog('flow-scope', `[entry-point] ${flow.name} → label="${sourceDisplayName}"`, {
-        id: flow.id,
-        'flow.entity': flow.entity,
-        'triggerEntity': flow.definition.triggerEntity,
-        triggerType,
-        resolvedEntityName: entityName,
-        sourceEntity,
-        sourceDisplayName,
-      });
+      const triggerOp: CrossEntityEntryPoint['triggerOperation'] =
+        triggerType === 'Scheduled' ? 'Scheduled'
+        : triggerType === 'Manual' ? 'Manual'
+        : (triggerType === 'Dataverse' && !!customActionName) ? 'Action'
+        : flow.definition.triggerEvent as CrossEntityEntryPoint['triggerOperation'];
 
       for (const action of flow.definition.dataverseActions ?? []) {
         if (action.isUnbound) continue; // handled separately in collectUnboundChainLinks
@@ -645,6 +641,8 @@ export class CrossEntityAnalyzer {
           isScheduled: triggerType === 'Scheduled',
           isOnDemand: triggerType === 'Manual',
           confidence: action.confidence,
+          triggerOperation: triggerOp,
+          ...(flow.definition.triggerCustomActionName ? { triggerCustomActionName: flow.definition.triggerCustomActionName } : {}),
           ...(action.customActionApiName ? { customActionApiName: action.customActionApiName } : {}),
         });
       }
@@ -655,6 +653,8 @@ export class CrossEntityAnalyzer {
           flow,
           sourceEntity,
           sourceDisplayName,
+          triggerOp,
+          flow.definition.triggerCustomActionName,
           flow.definition.childFlowIds,
           allFlowsById,
           new Set([flow.id.toLowerCase()]),
@@ -669,6 +669,14 @@ export class CrossEntityAnalyzer {
 
       const sourceEntity = wf.entity.toLowerCase();
       const sourceDisplayName = entityDisplayMap.get(sourceEntity) || sourceEntity;
+
+      const wfTriggerOp: CrossEntityEntryPoint['triggerOperation'] =
+        wf.onDemand ? 'Manual'
+        : wf.triggerOnCreate && !wf.triggerOnUpdate && !wf.triggerOnDelete ? 'Create'
+        : !wf.triggerOnCreate && wf.triggerOnUpdate && !wf.triggerOnDelete ? 'Update'
+        : !wf.triggerOnCreate && !wf.triggerOnUpdate && wf.triggerOnDelete ? 'Delete'
+        : wf.triggerOnCreate && wf.triggerOnUpdate ? 'CreateOrUpdate'
+        : 'Unknown';
 
       const xamlSteps = ClassicWorkflowXamlParser.parse(wf.xaml);
       for (const step of xamlSteps) {
@@ -687,6 +695,7 @@ export class CrossEntityAnalyzer {
           isScheduled: false,
           isOnDemand: wf.onDemand,
           confidence: step.confidence,
+          triggerOperation: wfTriggerOp,
         });
       }
     }
@@ -702,6 +711,8 @@ export class CrossEntityAnalyzer {
     parentFlow: Flow,
     sourceEntity: string,
     sourceDisplayName: string,
+    triggerOperation: CrossEntityEntryPoint['triggerOperation'],
+    triggerCustomActionName: string | undefined,
     childFlowIds: string[],
     allFlowsById: Map<string, { flow: Flow; sourceEntity: string }>,
     visited: Set<string>,
@@ -736,6 +747,8 @@ export class CrossEntityAnalyzer {
           isOnDemand: childFlow.definition.triggerType === 'Manual',
           // Downgrade confidence for child flows (we don't know if parent always calls child)
           confidence: action.confidence === 'High' ? 'Medium' : action.confidence,
+          triggerOperation,
+          ...(triggerCustomActionName ? { triggerCustomActionName } : {}),
           ...(action.customActionApiName ? { customActionApiName: action.customActionApiName } : {}),
         });
       }
@@ -746,6 +759,8 @@ export class CrossEntityAnalyzer {
           childFlow,
           sourceEntity,
           sourceDisplayName,
+          triggerOperation,
+          triggerCustomActionName,
           childFlow.definition.childFlowIds,
           allFlowsById,
           visited,

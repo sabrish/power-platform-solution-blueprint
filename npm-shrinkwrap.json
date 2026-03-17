@@ -1,12 +1,12 @@
 {
   "name": "@sabrish/power-platform-solution-blueprint",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@sabrish/power-platform-solution-blueprint",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "license": "MIT",
       "dependencies": {
         "@fluentui/react-components": "^9.47.0",

@@ -1342,16 +1342,27 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     // Chain links table
     sections.push('## Chain Links');
     sections.push('');
-    const chainHeaders = ['Source Entity', 'Automation', 'Type', '→', 'Target Entity', 'Operation', 'Mode'];
-    const chainRows = analysis.chainLinks.map(l => [
-      l.sourceEntityDisplayName,
-      l.automationName,
-      l.automationType,
-      '→',
-      l.targetEntityDisplayName,
-      l.operation,
-      l.isAsynchronous ? 'Async' : 'Sync',
-    ]);
+    const chainHeaders = ['Source Trigger', 'Automation', 'Type', 'Trigger Operation', 'Mode', '→', 'Target Entity', 'Target Operation'];
+    const chainRows = analysis.chainLinks.map(l => {
+      const sourceTrigger = l.sourceEntity === '(custom-action)'
+        ? l.sourceEntityDisplayName.replace('Custom Action: ', '') + ' (Custom Action)'
+        : l.sourceEntity.startsWith('(') ? '(unbound)'
+        : `${l.sourceEntityDisplayName} (\`${l.sourceEntity}\`)`;
+      const triggerOp = l.triggerOperation === 'Action' && l.triggerCustomActionName
+        ? `Custom Action (${l.triggerCustomActionName})`
+        : l.triggerOperation === 'CreateOrUpdate' ? 'Create or Update'
+        : l.triggerOperation;
+      return [
+        sourceTrigger,
+        l.automationName,
+        l.automationType,
+        triggerOp,
+        l.isAsynchronous ? 'Async' : 'Sync',
+        '→',
+        l.targetEntity !== '(unbound)' ? `${l.targetEntityDisplayName} (\`${l.targetEntity}\`)` : 'Unbound',
+        l.operation,
+      ];
+    });
     sections.push(MarkdownFormatter.formatTable(chainHeaders, chainRows));
     sections.push('');
 
@@ -1422,7 +1433,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
             name: entryPoint.automationName,
             type: entryPoint.automationType,
             affectedEntities: [],
-            triggerType: entryPoint.isScheduled ? 'Scheduled' : entryPoint.isOnDemand ? 'Manual' : 'Dataverse',
+            triggerType: entryPoint.triggerOperation === 'Scheduled' ? 'Scheduled' : entryPoint.triggerOperation === 'Manual' ? 'Manual' : 'Dataverse',
             hasExternalCalls: false,
           });
         }
@@ -1508,12 +1519,12 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     lines.push(`<summary><strong>${entryPoint.automationName}</strong> (${entryPoint.automationType} — ${entryPoint.operation} from ${entryPoint.sourceEntityDisplayName})</summary>`);
     lines.push('');
     lines.push(`**Source:** ${entryPoint.sourceEntityDisplayName} (\`${entryPoint.sourceEntity}\`)`);
-    lines.push(`**Operation:** ${entryPoint.operation}`);
+    lines.push(`**Trigger Operation:** ${entryPoint.triggerOperation === 'CreateOrUpdate' ? 'Create or Update' : entryPoint.triggerOperation}`);
+    if (entryPoint.triggerCustomActionName) lines.push(`**Trigger Action:** \`${entryPoint.triggerCustomActionName}\``);
+    lines.push(`**Target Operation:** ${entryPoint.operation}`);
     lines.push(`**Type:** ${entryPoint.automationType}`);
     lines.push(`**Mode:** ${entryPoint.isAsynchronous ? 'Asynchronous' : 'Synchronous'}`);
     lines.push(`**Confidence:** ${entryPoint.confidence}`);
-    if (entryPoint.isScheduled) lines.push('**Scheduled:** Yes');
-    if (entryPoint.isOnDemand) lines.push('**On Demand:** Yes');
     if (entryPoint.fields.length > 0) {
       lines.push(`**Fields Set:** \`${entryPoint.fields.join('`, `')}\``);
     }
