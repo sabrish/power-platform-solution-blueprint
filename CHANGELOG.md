@@ -5,6 +5,16 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-03-17
+
+### Changed
+- **Cross-Entity Automation chain map redesigned** — trigger operation column added to show the specific operation (`Create`, `Update`, `Delete`) that causes the downstream automation; message code support expanded to handle all response scenario codes
+
+### Fixed
+- **Debug logging removed from production paths** — all `debugLog` calls removed from `FlowDefinitionParser.ts`, `FlowDiscovery.ts`, and `CrossEntityAnalyzer.ts`; conditional debug logger remains available opt-in via `ppsb-debug` localStorage flag for development diagnostics
+
+---
+
 ## [1.1.1] - 2026-03-17
 
 ### Added

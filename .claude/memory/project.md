@@ -18,7 +18,8 @@
 
 ## Current Version
 
-**v1.1.1** (pending release 2026-03-17) — patch: business rules IF/THEN/ELSE, conditionCount fix, DRY/SOLID refactoring, debug logger, Custom APIs click fix, env vars eye icon fix, CDS Default Solution filter fix, HTML cross-entity structure fix
+**v1.1.2** (pending git release 2026-03-17) — patch: cross-entity chain map redesign (trigger operation column, message code support), debug logging cleanup
+**v1.1.1** (released 2026-03-17) — patch: business rules IF/THEN/ELSE, conditionCount fix, DRY/SOLID refactoring, debug logger, Custom APIs click fix, env vars eye icon fix, CDS Default Solution filter fix, HTML cross-entity structure fix
 **v1.1.0** (released 2026-03-12) — minor: pipeline-first Cross-Entity Automation view, external API call detection, HTML/Markdown export parity, and AUDIT compliance fixes
 **v1.0.1** (released 2026-03-11) — patch: discovery pagination fix + OData injection guards
 **v1.0.0** (released 2026-03-11)
@@ -92,28 +93,21 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
-### Release v1.1.1 — In Progress (2026-03-17)
+### Release v1.1.2 — Documentation Finalized (2026-03-17)
 
-**Status:** Documentation and version files updated; awaiting project owner to run npm/git commands.
+**Status:** Documentation and version files complete; awaiting project owner for git operations.
 
 **Completed this session:**
-- Code review: Approved with comments (no blockers)
-- Security audit: CLEAR
-- CHANGELOG.md: `## [1.1.1] - 2026-03-17` entry written
-- README.md: version badge updated to `1.1.1`
-- `src/core/reporters/JsonReporter.ts`: `toolVersion` updated to `'1.1.1'`
-- `docs/user-guide.md` line 3: updated to `v1.1.1`
-- CHANGELOG comparison links: `[1.1.1]` entry added
+- CHANGELOG.md: `## [1.1.2] - 2026-03-17` entry created from latest commits (cross-entity chain map redesign, debug logging cleanup)
+- README.md: version badge updated to `1.1.2`
+- Verified all four files match: `package.json`, `npm-shrinkwrap.json`, `CHANGELOG.md`, `README.md` all show v1.1.2
 
 **Pending — project owner must run:**
-1. `npm version 1.1.1 --no-git-tag-version` — updates `package.json` + `npm-shrinkwrap.json`
-2. `pnpm typecheck && pnpm build` — build verification
-3. Stage and commit: `git add package.json npm-shrinkwrap.json CHANGELOG.md README.md src/core/reporters/JsonReporter.ts docs/user-guide.md`
-4. `git commit -m "chore: release v1.1.1"`
-5. `gh pr create ...` — create PR to main
-6. After PR merge: `git tag v1.1.1 -m "Release v1.1.1"` then push tag
-
-**Note:** `[PPSB-DIAG]` debug logs intentionally retained per project owner decision. Issue 3 (flow mislabelling) remains open for future diagnosis.
+1. `pnpm typecheck && pnpm build` — build verification
+2. Stage and commit: `git add CHANGELOG.md README.md`
+3. `git commit -m "chore: release v1.1.2"`
+4. `gh pr create ...` — create PR to main
+5. After PR merge: `git tag v1.1.2 -m "Release v1.1.2"` then push tag
 
 ### Released in v1.1.0 (2026-03-12)
 
