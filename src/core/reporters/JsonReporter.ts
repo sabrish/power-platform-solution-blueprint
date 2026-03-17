@@ -1,3 +1,4 @@
+import { version } from '../../../package.json';
 import type { BlueprintResult } from '../types/blueprint.js';
 import type { IReporter } from './IReporter.js';
 
@@ -22,7 +23,7 @@ interface JsonExportWrapper {
  * - Version control (git diff friendly)
  */
 export class JsonReporter implements IReporter<string> {
-  private readonly toolVersion = '1.1.1';
+  private readonly toolVersion = version;
 
   /**
    * Generate JSON export of blueprint
