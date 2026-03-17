@@ -14,7 +14,8 @@ export class FlowDefinitionParser {
   /**
    * Parse flow definition from clientdata JSON string
    */
-  static parse(clientdata: string | null): FlowDefinition {
+  static parse(clientdata: string | null, flowName?: string): FlowDefinition {
+    const label = flowName ?? '(unknown)';
     const defaultDefinition: FlowDefinition = {
       triggerType: 'Other',
       triggerEvent: 'Unknown',
@@ -28,7 +29,7 @@ export class FlowDefinitionParser {
     };
 
     if (!clientdata) {
-      debugLog('flow-parse', 'clientdata is null — returning default definition');
+      debugLog('flow-parse', `[${label}] clientdata is null — returning default definition`);
       return defaultDefinition;
     }
 
@@ -50,10 +51,13 @@ export class FlowDefinitionParser {
       // Extract scope/run as information
       const scopeType = this.extractScopeType(data);
 
-      debugLog('flow-parse', `parse complete: ${trigger.type}/${trigger.event}`, {
+      debugLog('flow-parse', `[${label}] parse complete: ${trigger.type}/${trigger.event}`, {
         triggerEntity: trigger.entity,
         actionsCount,
         dataverseActionsCount: dataverseActions.length,
+        dataverseActions: dataverseActions.length > 0
+          ? dataverseActions.map(a => `${a.operation}→${a.targetEntity || '[unbound]'} (${a.confidence})`)
+          : undefined,
         externalCallsCount: externalCalls.length,
         childFlowIdsCount: childFlowIds.length,
         scopeType,
@@ -64,6 +68,7 @@ export class FlowDefinitionParser {
         triggerEvent: trigger.event,
         triggerEntity: trigger.entity,
         triggerConditions: trigger.conditions,
+        ...(trigger.customActionName ? { triggerCustomActionName: trigger.customActionName } : {}),
         scopeType,
         actionsCount,
         externalCalls,
@@ -72,7 +77,7 @@ export class FlowDefinitionParser {
         ...(childFlowIds.length > 0 ? { childFlowIds } : {}),
       };
     } catch (error) {
-      debugLog('flow-parse', 'JSON parse failed', { error: error instanceof Error ? error.message : String(error) });
+      debugLog('flow-parse', `[${label}] JSON parse failed`, { error: error instanceof Error ? error.message : String(error) });
       return defaultDefinition;
     }
   }
@@ -85,12 +90,13 @@ export class FlowDefinitionParser {
     event: FlowDefinition['triggerEvent'];
     entity: string | null;
     conditions: string | null;
+    customActionName: string | null;
   } {
     const properties = data?.properties;
     const definition = properties?.definition;
 
     if (!definition || !definition.triggers) {
-      return { type: 'Other', event: 'Unknown', entity: null, conditions: null };
+      return { type: 'Other', event: 'Unknown', entity: null, conditions: null, customActionName: null };
     }
 
     // Get first trigger (flows typically have one trigger)
@@ -99,7 +105,7 @@ export class FlowDefinitionParser {
 
     if (!trigger) {
       debugLog('flow-parse', `no trigger found (triggerKey="${triggerKey}")`);
-      return { type: 'Other', event: 'Unknown', entity: null, conditions: null };
+      return { type: 'Other', event: 'Unknown', entity: null, conditions: null, customActionName: null };
     }
 
     debugLog('flow-parse', `trigger: key="${triggerKey}" type="${trigger.type}"`, {
@@ -111,6 +117,7 @@ export class FlowDefinitionParser {
     let triggerEvent: FlowDefinition['triggerEvent'] = 'Unknown';
     let triggerEntity: string | null = null;
     let conditions: string | null = null;
+    let customActionName: string | null = null;
 
     const triggerKind = trigger.type?.toLowerCase() || '';
 
@@ -128,27 +135,67 @@ export class FlowDefinitionParser {
       triggerType = 'Dataverse';
 
       // Modern Dataverse connector: event is a numeric message code in parameters
-      // 1 = Create, 2 = Delete, 3 = Update, 4 = CreateOrUpdate
+      // 1 = Create, 2 = Delete, 3 = Update, 4 = CreateOrUpdate, 5 = Assign, 8 = SetState
       const messageCode = trigger.inputs?.parameters?.['subscriptionRequest/message'];
+      debugLog('flow-parse', `Dataverse message code: ${messageCode ?? '(absent)'}`);
       if (messageCode !== undefined && messageCode !== null) {
         const code = Number(messageCode);
         if (code === 1) triggerEvent = 'Create';
         else if (code === 2) triggerEvent = 'Delete';
         else if (code === 3) triggerEvent = 'Update';
         else if (code === 4) triggerEvent = 'CreateOrUpdate';
+        else if (code === 5) triggerEvent = 'Assign';
+        else if (code === 6) triggerEvent = 'Grant';
+        else if (code === 7) triggerEvent = 'Revoke';
+        else if (code === 8) triggerEvent = 'StatusChange';
       } else {
-        // Legacy connector: infer event from trigger type string
-        if (triggerKind.includes('create')) {
-          triggerEvent = 'Create';
-        } else if (triggerKind.includes('update')) {
-          triggerEvent = 'Update';
-        } else if (triggerKind.includes('delete')) {
-          triggerEvent = 'Delete';
+        // Fallback 1: older format stores message as plain 'message' (no subscriptionRequest/ prefix)
+        const legacyCode = trigger.inputs?.parameters?.message;
+        if (legacyCode !== undefined && legacyCode !== null) {
+          const code = Number(legacyCode);
+          if (code === 1) triggerEvent = 'Create';
+          else if (code === 2) triggerEvent = 'Delete';
+          else if (code === 3) triggerEvent = 'Update';
+          else if (code === 4) triggerEvent = 'CreateOrUpdate';
+          else if (code === 5) triggerEvent = 'Assign';
+          else if (code === 6) triggerEvent = 'Grant';
+          else if (code === 7) triggerEvent = 'Revoke';
+          else if (code === 8) triggerEvent = 'StatusChange';
+        } else {
+          // Fallback 2: sdkMessageName string (subscriptionRequest/sdkmessagename)
+          const rawSdkMsg = trigger.inputs?.parameters?.['subscriptionRequest/sdkmessagename'];
+          const sdkMsg = rawSdkMsg ? String(rawSdkMsg).toLowerCase() : '';
+          if (sdkMsg === 'create') triggerEvent = 'Create';
+          else if (sdkMsg === 'update') triggerEvent = 'Update';
+          else if (sdkMsg === 'delete') triggerEvent = 'Delete';
+          else if (sdkMsg === 'createorupdate') triggerEvent = 'CreateOrUpdate';
+          else if (sdkMsg === 'assign') triggerEvent = 'Assign';
+          else if (sdkMsg === 'grantaccess') triggerEvent = 'Grant';
+          else if (sdkMsg === 'revokeaccess') triggerEvent = 'Revoke';
+          else if (sdkMsg === 'setstate') triggerEvent = 'StatusChange';
+          else if (sdkMsg.length > 0) {
+            // Non-standard SDK message = custom action bound to entity
+            triggerEvent = 'Action';
+            customActionName = String(rawSdkMsg);
+          } else if (triggerKind.includes('create')) triggerEvent = 'Create';
+          else if (triggerKind.includes('update')) triggerEvent = 'Update';
+          else if (triggerKind.includes('delete')) triggerEvent = 'Delete';
+          else {
+            // Log parameter keys and relevant values to aid future diagnosis
+            const params = trigger.inputs?.parameters ?? {};
+            const paramKeys = Object.keys(params);
+            debugLog('flow-parse', `Dataverse trigger event Unknown — param keys: [${paramKeys.join(', ')}]`, {
+              sdkmessagename: params['subscriptionRequest/sdkmessagename'],
+              catalog: params['catalog'],
+              category: params['category'],
+            });
+          }
         }
       }
 
-      // Entity extraction — try modern connector path first, then legacy paths
-      triggerEntity =
+      // Entity extraction — try modern connector path first, then legacy paths.
+      // Normalize 'none' (Dataverse sentinel for global/unbound trigger) to null.
+      const rawTriggerEntity =
         trigger.inputs?.parameters?.['subscriptionRequest/entityname'] ||
         trigger.inputs?.body?.EntityLogicalName ||
         trigger.inputs?.parameters?.EntityLogicalName ||
@@ -156,13 +203,24 @@ export class FlowDefinitionParser {
         trigger.inputs?.parameters?.entityLogicalName ||
         trigger.metadata?.entityName ||
         null;
+      triggerEntity = (rawTriggerEntity && String(rawTriggerEntity).toLowerCase() !== 'none')
+        ? String(rawTriggerEntity)
+        : null;
 
       if (triggerEntity === null) {
-        debugLog('flow-parse', 'Dataverse trigger — triggerEntity=null (all paths missed)', {
+        // "When an action is performed" trigger — entity is null (global custom action).
+        // Extract the custom action schema name so callers can label the source correctly.
+        const rawActionName =
+          trigger.inputs?.parameters?.['subscriptionRequest/catalog/actionname'] ||
+          trigger.inputs?.parameters?.['subscriptionRequest/actionname'] ||
+          null;
+        if (rawActionName && typeof rawActionName === 'string') {
+          customActionName = rawActionName;
+        }
+        debugLog('flow-parse', 'Dataverse trigger — triggerEntity=null', {
           triggerKind, apiId,
+          customActionName,
           parameters: trigger.inputs?.parameters,
-          body: trigger.inputs?.body,
-          metadata: trigger.metadata,
         });
       } else {
         debugLog('flow-parse', `Dataverse trigger — triggerEntity="${triggerEntity}"`, {
@@ -188,6 +246,31 @@ export class FlowDefinitionParser {
     } else if (triggerKind.includes('manual') || triggerKind.includes('request')) {
       triggerType = 'Manual';
       triggerEvent = 'Manual';
+
+      // Some manual flows are bound to an entity (e.g. MDA command bar flows).
+      // The entity type may appear in various places in the trigger inputs schema.
+      const schema = trigger.inputs?.schema?.properties;
+      const entityType =
+        schema?.body?.properties?.entity?.properties?.entityType?.default ||
+        schema?.entity?.properties?.entityType?.default ||
+        schema?.entity?.schema?.properties?.entityType?.default ||
+        trigger.inputs?.host?.schema?.properties?.entityLogicalName?.default ||
+        null;
+
+      if (entityType && typeof entityType === 'string' && entityType.toLowerCase() !== 'none') {
+        triggerEntity = entityType.toLowerCase();
+        debugLog('flow-parse', `Manual trigger — entity-bound triggerEntity="${triggerEntity}"`, {
+          resolvedFrom: schema?.body?.properties?.entity?.properties?.entityType?.default ? 'schema.body.entity.entityType' :
+            schema?.entity?.properties?.entityType?.default ? 'schema.entity.entityType' :
+            schema?.entity?.schema?.properties?.entityType?.default ? 'schema.entity.schema.entityType' :
+            'host.schema.entityLogicalName',
+        });
+      } else {
+        debugLog('flow-parse', `Manual trigger — no entity binding found`, {
+          schemaKeys: schema ? Object.keys(schema) : null,
+          hostKeys: trigger.inputs?.host ? Object.keys(trigger.inputs.host) : null,
+        });
+      }
     } else if (triggerKind.includes('recurrence') || triggerKind.includes('schedule')) {
       triggerType = 'Scheduled';
       triggerEvent = 'Scheduled';
@@ -199,7 +282,7 @@ export class FlowDefinitionParser {
       });
     }
 
-    return { type: triggerType, event: triggerEvent, entity: triggerEntity, conditions };
+    return { type: triggerType, event: triggerEvent, entity: triggerEntity, conditions, customActionName };
   }
 
   /**
@@ -395,12 +478,6 @@ export class FlowDefinitionParser {
     Object.keys(definition.actions).forEach((actionKey) => {
       processAction(definition.actions[actionKey], actionKey);
     });
-
-    debugLog('flow-parse', `extractDataverseActions: ${dataverseActions.length} action(s) found`,
-      dataverseActions.length > 0
-        ? dataverseActions.map(a => `${a.operation}→${a.targetEntity || '[unbound]'} (${a.confidence})`)
-        : undefined
-    );
 
     return dataverseActions;
   }

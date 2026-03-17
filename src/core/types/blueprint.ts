@@ -244,9 +244,11 @@ export interface Flow {
  */
 export interface FlowDefinition {
   triggerType: 'Dataverse' | 'Manual' | 'Scheduled' | 'Other';
-  triggerEvent: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Manual' | 'Scheduled' | 'Unknown';
+  triggerEvent: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Assign' | 'Grant' | 'Revoke' | 'StatusChange' | 'Action' | 'Manual' | 'Scheduled' | 'Unknown';
   triggerEntity: string | null;
   triggerConditions: string | null;
+  /** Dataverse custom action schema name when triggered by "When an action is performed" with no entity binding */
+  triggerCustomActionName?: string;
   scopeType: 'User' | 'BusinessUnit' | 'Organization' | 'Unknown';
   actionsCount: number;
   externalCalls: ExternalCall[];

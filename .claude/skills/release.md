@@ -15,6 +15,8 @@ Invoke the **reviewer** agent.
 - The reviewer must return ✅ Approved or ⚠️ Approved with comments to proceed
 - If ❌ Changes required: stop, report blockers, wait for fixes before re-running
 
+**Progress:** Step 1 complete ✅ — Code review passed. / ❌ Step 1 failed — [blockers]. Release halted.
+
 ---
 
 ## Step 2: Security Audit
@@ -23,6 +25,8 @@ Invoke the **security-auditor** agent.
 - Scope: full sweep — source code AND .claude/ folder
 - If any CRITICAL or HIGH findings: stop, report findings, do not proceed
 - MEDIUM or LOW findings: report but may proceed at project owner's discretion
+
+**Progress:** Step 2 complete ✅ — Security audit passed. / ❌ Step 2 failed — [findings]. Release halted.
 
 ---
 
@@ -40,6 +44,8 @@ This updates **both** `package.json` and `npm-shrinkwrap.json` to the target
 version automatically. Do not proceed to Step 3b until the developer confirms
 both files are updated.
 
+**Progress:** Step 3a complete ✅ — package.json and npm-shrinkwrap.json updated to vX.Y.Z.
+
 ### Step 3b — Document-updater agent: Documentation
 
 Invoke the **document-updater** agent with these exact tasks:
@@ -56,6 +62,8 @@ Invoke the **document-updater** agent with these exact tasks:
 Do not proceed to Step 4 until the document-updater confirms all four files
 are consistent.
 
+**Progress:** Step 3b complete ✅ — CHANGELOG.md and README.md updated. All four files consistent on vX.Y.Z. / ❌ Step 3b failed — version mismatch: [detail]. Release halted.
+
 ---
 
 ## Step 4: Build Verification
@@ -64,6 +72,8 @@ Invoke the **developer** agent with these exact tasks, in this exact order:
 
 1. `pnpm typecheck` — must pass with zero errors. Stop if any errors.
 2. `pnpm build` — must complete successfully. Stop if it fails.
+
+**Progress:** Step 4 complete ✅ — Typecheck passed. Build succeeded. / ❌ Step 4 failed — [typecheck/build error]. Release halted.
 
 ---
 

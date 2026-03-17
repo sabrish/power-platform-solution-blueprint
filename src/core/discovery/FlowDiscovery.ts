@@ -138,7 +138,7 @@ export class FlowDiscovery implements IDiscoverer<Flow> {
   }
 
   private mapToFlow(record: WorkflowMetaRecord, clientdata: string | null): Flow {
-    const definition = FlowDefinitionParser.parse(clientdata);
+    const definition = FlowDefinitionParser.parse(clientdata, record.name);
     debugLog('flow-discovery', `mapToFlow: ${record.name}`, {
       workflowid: record.workflowid,
       primaryentity: record.primaryentity,
