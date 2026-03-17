@@ -164,7 +164,9 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 - Wrong: `pnpm typecheck` passes → commit (skipping build)
 - Right: `pnpm typecheck && pnpm build` — both must pass before committing any source change
 
-**Repeat violations:** 2026-03-14 — Developer agent ran only `pnpm typecheck` before committing, skipping `pnpm build`. The build caught errors typecheck did not. This is a recurring pattern; enforcement must be stricter in the pre-commit gate.
+**Repeat violations:**
+- 2026-03-14 — Developer ran only `pnpm typecheck`, skipped `pnpm build`. Build caught errors.
+- 2026-03-17 — Developer ran `pnpm typecheck` TWICE in same session instead of running the full `pnpm typecheck && pnpm build` command. This is a critical escalation: the developer is explicitly choosing to run only typecheck as a verification step, even after being corrected multiple times. **ENFORCEMENT:** The full command must be run as an atomic unit. There is no legitimate scenario for running typecheck-only to verify code is ready for commit. If typecheck passes but build fails, the responsibility is on the developer for not running the full verification. The `/pre-commit` gate MUST enforce this.
 
 ---
 
