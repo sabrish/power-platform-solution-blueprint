@@ -1,5 +1,4 @@
 import type { FlowDefinition, ExternalCall, DataverseAction } from '../types/blueprint.js';
-import { debugLog } from '../utils/debugLogger.js';
 
 /**
  * Parses Power Automate flow definitions from clientdata JSON
@@ -14,8 +13,7 @@ export class FlowDefinitionParser {
   /**
    * Parse flow definition from clientdata JSON string
    */
-  static parse(clientdata: string | null, flowName?: string): FlowDefinition {
-    const label = flowName ?? '(unknown)';
+  static parse(clientdata: string | null, _flowName?: string): FlowDefinition {
     const defaultDefinition: FlowDefinition = {
       triggerType: 'Other',
       triggerEvent: 'Unknown',
@@ -29,7 +27,6 @@ export class FlowDefinitionParser {
     };
 
     if (!clientdata) {
-      debugLog('flow-parse', `[${label}] clientdata is null — returning default definition`);
       return defaultDefinition;
     }
 
@@ -51,18 +48,6 @@ export class FlowDefinitionParser {
       // Extract scope/run as information
       const scopeType = this.extractScopeType(data);
 
-      debugLog('flow-parse', `[${label}] parse complete: ${trigger.type}/${trigger.event}`, {
-        triggerEntity: trigger.entity,
-        actionsCount,
-        dataverseActionsCount: dataverseActions.length,
-        dataverseActions: dataverseActions.length > 0
-          ? dataverseActions.map(a => `${a.operation}→${a.targetEntity || '[unbound]'} (${a.confidence})`)
-          : undefined,
-        externalCallsCount: externalCalls.length,
-        childFlowIdsCount: childFlowIds.length,
-        scopeType,
-      });
-
       return {
         triggerType: trigger.type,
         triggerEvent: trigger.event,
@@ -76,8 +61,7 @@ export class FlowDefinitionParser {
         dataverseActions,
         ...(childFlowIds.length > 0 ? { childFlowIds } : {}),
       };
-    } catch (error) {
-      debugLog('flow-parse', `[${label}] JSON parse failed`, { error: error instanceof Error ? error.message : String(error) });
+    } catch {
       return defaultDefinition;
     }
   }
@@ -104,13 +88,8 @@ export class FlowDefinitionParser {
     const trigger = definition.triggers[triggerKey];
 
     if (!trigger) {
-      debugLog('flow-parse', `no trigger found (triggerKey="${triggerKey}")`);
       return { type: 'Other', event: 'Unknown', entity: null, conditions: null, customActionName: null };
     }
-
-    debugLog('flow-parse', `trigger: key="${triggerKey}" type="${trigger.type}"`, {
-      apiId: (trigger.inputs?.host?.apiId || ''),
-    });
 
     // Determine trigger type
     let triggerType: FlowDefinition['triggerType'] = 'Other';
@@ -137,7 +116,6 @@ export class FlowDefinitionParser {
       // Modern Dataverse connector: event is a numeric message code in parameters
       // 1 = Create, 2 = Delete, 3 = Update, 4 = CreateOrUpdate, 5 = Assign, 8 = SetState
       const messageCode = trigger.inputs?.parameters?.['subscriptionRequest/message'];
-      debugLog('flow-parse', `Dataverse message code: ${messageCode ?? '(absent)'}`);
       if (messageCode !== undefined && messageCode !== null) {
         const code = Number(messageCode);
         if (code === 1) triggerEvent = 'Create';
@@ -181,14 +159,7 @@ export class FlowDefinitionParser {
           else if (triggerKind.includes('update')) triggerEvent = 'Update';
           else if (triggerKind.includes('delete')) triggerEvent = 'Delete';
           else {
-            // Log parameter keys and relevant values to aid future diagnosis
-            const params = trigger.inputs?.parameters ?? {};
-            const paramKeys = Object.keys(params);
-            debugLog('flow-parse', `Dataverse trigger event Unknown — param keys: [${paramKeys.join(', ')}]`, {
-              sdkmessagename: params['subscriptionRequest/sdkmessagename'],
-              catalog: params['catalog'],
-              category: params['category'],
-            });
+            // triggerEvent remains 'Unknown'
           }
         }
       }
@@ -217,23 +188,6 @@ export class FlowDefinitionParser {
         if (rawActionName && typeof rawActionName === 'string') {
           customActionName = rawActionName;
         }
-        debugLog('flow-parse', 'Dataverse trigger — triggerEntity=null', {
-          triggerKind, apiId,
-          customActionName,
-          parameters: trigger.inputs?.parameters,
-        });
-      } else {
-        debugLog('flow-parse', `Dataverse trigger — triggerEntity="${triggerEntity}"`, {
-          triggerKind, apiId,
-          resolvedFrom: (
-            trigger.inputs?.parameters?.['subscriptionRequest/entityname'] ? 'subscriptionRequest/entityname' :
-            trigger.inputs?.body?.EntityLogicalName ? 'body.EntityLogicalName' :
-            trigger.inputs?.parameters?.EntityLogicalName ? 'parameters.EntityLogicalName' :
-            trigger.inputs?.parameters?.entityName ? 'parameters.entityName' :
-            trigger.inputs?.parameters?.entityLogicalName ? 'parameters.entityLogicalName' :
-            'metadata.entityName'
-          ),
-        });
       }
 
       // Filter conditions — try modern connector path first, then legacy paths
@@ -259,27 +213,10 @@ export class FlowDefinitionParser {
 
       if (entityType && typeof entityType === 'string' && entityType.toLowerCase() !== 'none') {
         triggerEntity = entityType.toLowerCase();
-        debugLog('flow-parse', `Manual trigger — entity-bound triggerEntity="${triggerEntity}"`, {
-          resolvedFrom: schema?.body?.properties?.entity?.properties?.entityType?.default ? 'schema.body.entity.entityType' :
-            schema?.entity?.properties?.entityType?.default ? 'schema.entity.entityType' :
-            schema?.entity?.schema?.properties?.entityType?.default ? 'schema.entity.schema.entityType' :
-            'host.schema.entityLogicalName',
-        });
-      } else {
-        debugLog('flow-parse', `Manual trigger — no entity binding found`, {
-          schemaKeys: schema ? Object.keys(schema) : null,
-          hostKeys: trigger.inputs?.host ? Object.keys(trigger.inputs.host) : null,
-        });
       }
     } else if (triggerKind.includes('recurrence') || triggerKind.includes('schedule')) {
       triggerType = 'Scheduled';
       triggerEvent = 'Scheduled';
-    } else {
-      debugLog('flow-parse', `triggerType=Other (no pattern matched)`, {
-        triggerKind, apiId,
-        'trigger.type': trigger.type,
-        'inputs.host': trigger.inputs?.host,
-      });
     }
 
     return { type: triggerType, event: triggerEvent, entity: triggerEntity, conditions, customActionName };
