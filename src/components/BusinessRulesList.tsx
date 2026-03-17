@@ -28,6 +28,15 @@ const useStyles = makeStyles({
   ruleRow: {
     display: 'grid',
     gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto`,
+    alignItems: 'start',
+  },
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    marginBottom: tokens.spacingVerticalS,
+    paddingLeft: tokens.spacingHorizontalM,
+    borderLeft: `3px solid ${tokens.colorBrandForeground1}`,
   },
   conditionItem: {
     padding: tokens.spacingVerticalS,
@@ -59,7 +68,7 @@ export interface BusinessRulesListProps {
 export function BusinessRulesList({
   businessRules,
   entityLogicalName,
-}: BusinessRulesListProps) {
+}: BusinessRulesListProps): JSX.Element {
   const styles = useStyles();
   const shared = useCardRowStyles();
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
@@ -138,7 +147,8 @@ export function BusinessRulesList({
     return colors[actionType] ?? tokens.colorNeutralStroke1;
   };
 
-  const renderRuleDetails = (rule: BusinessRule): JSX.Element => (
+  const renderRuleDetails = (rule: BusinessRule): JSX.Element => {
+    return (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>{rule.name}</Title3>
@@ -191,29 +201,58 @@ export function BusinessRulesList({
           </Badge>
         </div>
 
-        {/* Conditions Section */}
-        {rule.definition.conditions.length > 0 && (
-          <div className={shared.section}>
-            <Title3>IF (Conditions)</Title3>
-            <Text weight="semibold" style={{ marginBottom: tokens.spacingVerticalS }}>
-              {rule.definition.conditionLogic}
-            </Text>
-            {rule.definition.conditions.map((condition, idx) => (
-              <div key={idx} className={styles.conditionItem}>
-                <Text>
-                  {idx > 0 && <strong>{condition.logicOperator} </strong>}
-                  <span className={shared.codeText}>{condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
-                </Text>
+        {/* Condition Groups */}
+        {rule.definition.conditionGroups.map((group, groupIdx) => (
+          <div key={groupIdx}>
+            {/* Conditions Section */}
+            {group.conditions.length > 0 && (
+              <div className={shared.section}>
+                <div className={styles.sectionHeader}>
+                  <Text weight="semibold">{groupIdx === 0 ? 'IF' : 'ELSE IF'}</Text>
+                </div>
+                {group.conditions.map((condition, idx) => (
+                  <div key={idx} className={styles.conditionItem}>
+                    <Text>
+                      {idx > 0 && <strong>{condition.logicOperator} </strong>}
+                      <span className={shared.codeText}>{condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
+                    </Text>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {/* Actions Section */}
-        {rule.definition.actions.length > 0 && (
+            {/* THEN Actions Section */}
+            {group.actions.length > 0 && (
+              <div className={shared.section}>
+                <div className={styles.sectionHeader}>
+                  <Text weight="semibold">THEN</Text>
+                </div>
+                {group.actions.map((action, idx) => (
+                  <div
+                    key={idx}
+                    className={styles.actionItem}
+                    style={{ borderLeftColor: getActionBorderColor(action.type) }}
+                  >
+                    <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
+                    <Text>
+                      <span className={shared.codeText}>{action.field}</span>
+                      {action.value && <> = <strong>{action.value}</strong></>}
+                      {action.message && <>: <em>{action.message}</em></>}
+                    </Text>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* ELSE Actions Section */}
+        {rule.definition.elseActions.length > 0 && (
           <div className={shared.section}>
-            <Title3>THEN (Actions)</Title3>
-            {rule.definition.actions.map((action, idx) => (
+            <div className={styles.sectionHeader}>
+              <Text weight="semibold">ELSE</Text>
+            </div>
+            {rule.definition.elseActions.map((action, idx) => (
               <div
                 key={idx}
                 className={styles.actionItem}
@@ -240,7 +279,8 @@ export function BusinessRulesList({
         )}
       </Card>
     </div>
-  );
+    );
+  };
 
   // Empty state
   if (filteredRules.length === 0) {
@@ -311,8 +351,8 @@ export function BusinessRulesList({
       {searchedRules.map((rule) => {
         const isExpanded = expandedRuleId === rule.id;
         const stateBadgeProps = getStateBadgeProps(rule.state);
-        const conditionCount = rule.definition.conditions.length;
-        const actionCount = rule.definition.actions.length;
+        const conditionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
+        const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
 
         return (
           <div key={rule.id}>

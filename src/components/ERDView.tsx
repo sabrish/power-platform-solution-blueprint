@@ -28,24 +28,16 @@ import {
 import type { ERDDefinition, BlueprintResult } from '../core';
 import { generateDbDiagramCode } from '../utils/dbDiagramGenerator';
 import { EmptyState } from './EmptyState';
-
-// ─── Tooltip sizing constants ─────────────────────────────────────────────────
-// Named constants used in makeStyles — raw pixels are required for these
-// layout-constraint values since no equivalent spacing tokens exist.
-const EDGE_TOOLTIP_MAX_WIDTH = '300px';   // edge hover: wider to show full attribute path
-const NODE_TOOLTIP_MAX_WIDTH = '240px';   // node hover: narrower; content is shorter
-// Fluent UI v9 does not expose zIndex tokens. 1000 is below browser popups (1100+)
-// but above the Cytoscape canvas (z-index ~auto) and the graph overlays (z-index 5–10).
-const TOOLTIP_Z_INDEX = 1000;
-
-// ─── Layout names ────────────────────────────────────────────────────────────
-type LayoutName = 'cose' | 'breadthfirst';
-type IsolateHops = 1 | 2 | 3;
-
-const LAYOUT_LABELS: Record<LayoutName, string> = {
-  cose: 'Smart',
-  breadthfirst: 'Hierarchical',
-};
+import {
+  EDGE_TOOLTIP_MAX_WIDTH,
+  NODE_TOOLTIP_MAX_WIDTH,
+  TOOLTIP_Z_INDEX,
+  LAYOUT_LABELS,
+  type LayoutName,
+} from './ERDView/constants';
+import { buildCytoscapeStylesheet } from './ERDView/cytoscapeStylesheet';
+import { downloadAsSVG } from './ERDView/erdExport';
+import { getNHopCollection, type IsolateHops } from './ERDView/graphTraversal';
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const useStyles = makeStyles({
@@ -198,187 +190,6 @@ const useStyles = makeStyles({
     },
   },
 });
-
-// ─── Cytoscape stylesheet ────────────────────────────────────────────────────
-function buildCytoscapeStylesheet(): cytoscape.StylesheetJson {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return [
-    {
-      selector: 'node',
-      style: {
-        'background-color': 'data(color)',
-        'border-color': 'data(strokeColor)',
-        'border-width': 2,
-        'color': 'data(textColor)',
-        'label': 'data(label)',
-        'text-valign': 'center' as const,
-        'text-halign': 'center' as const,
-        'font-size': '10px',
-        'font-weight': 'bold',
-        'width': '120px',
-        'height': '36px',
-        'shape': 'round-rectangle' as const,
-        'text-wrap': 'ellipsis' as const,
-        'text-max-width': '110px',
-      },
-    },
-    {
-      selector: 'node.highlighted',
-      style: {
-        'border-width': 3,
-        'border-color': '#0078d4',
-        'z-index': 10,
-      },
-    },
-    {
-      selector: 'node.faded',
-      style: { opacity: 0.2 },
-    },
-    {
-      selector: 'node.isolated-hidden',
-      style: { display: 'none' as const },
-    },
-    {
-      selector: 'node.pub-hidden',
-      style: { display: 'none' as const },
-    },
-    {
-      selector: 'edge',
-      style: {
-        'width': 1.5,
-        'line-color': '#aaa',
-        'target-arrow-color': '#aaa',
-        'target-arrow-shape': 'triangle' as const,
-        'curve-style': 'bezier' as const,
-        'label': 'data(label)',
-        'font-size': '8px',
-        'color': '#666',
-        'text-background-color': '#fff',
-        'text-background-opacity': 0.85,
-        'text-background-padding': '2px',
-        'text-max-width': '80px',
-        'text-wrap': 'ellipsis' as const,
-      },
-    },
-    {
-      selector: 'edge.label-hidden',
-      style: { 'label': '' },
-    },
-    {
-      selector: 'edge[type = "N-N"]',
-      style: {
-        'line-style': 'dashed' as const,
-        'source-arrow-shape': 'triangle' as const,
-        'source-arrow-color': '#aaa',
-      },
-    },
-    {
-      selector: 'edge.hovered',
-      style: {
-        'width': 3,
-        'line-color': '#0078d4',
-        'target-arrow-color': '#0078d4',
-        'source-arrow-color': '#0078d4',
-        'z-index': 10,
-      },
-    },
-    {
-      selector: 'edge.faded',
-      style: { opacity: 0.08 },
-    },
-    {
-      selector: 'edge.isolated-hidden',
-      style: { display: 'none' as const },
-    },
-    {
-      selector: 'edge.pub-hidden',
-      style: { display: 'none' as const },
-    },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ] as any;
-}
-
-// ─── SVG export helper ───────────────────────────────────────────────────────
-function downloadAsSVG(cy: Core): void {
-  const ext = cy.elements(':visible').boundingBox({ includeLabels: false });
-  if (!ext || !isFinite(ext.x1)) return;
-
-  const pad = 50;
-  const W = Math.ceil(ext.x2 - ext.x1 + pad * 2);
-  const H = Math.ceil(ext.y2 - ext.y1 + pad * 2);
-  const ox = -ext.x1 + pad;
-  const oy = -ext.y1 + pad;
-
-  const escXml = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  // Edges first (nodes render on top)
-  const edgeParts: string[] = [];
-  cy.edges(':visible').forEach((e) => {
-    const src = cy.getElementById(e.data('source') as string);
-    const tgt = cy.getElementById(e.data('target') as string);
-    if (src.empty() || tgt.empty()) return;
-    const sx = (src.position().x + ox).toFixed(1);
-    const sy = (src.position().y + oy).toFixed(1);
-    const tx = (tgt.position().x + ox).toFixed(1);
-    const ty = (tgt.position().y + oy).toFixed(1);
-    const dash = e.data('type') === 'N-N' ? ' stroke-dasharray="6,3"' : '';
-    edgeParts.push(
-      `<line x1="${sx}" y1="${sy}" x2="${tx}" y2="${ty}" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"${dash}/>`
-    );
-  });
-
-  // Nodes
-  const nodeParts: string[] = [];
-  cy.nodes(':visible').forEach((n) => {
-    const pos = n.position();
-    const w = n.width();
-    const h = n.height();
-    const x = (pos.x + ox - w / 2).toFixed(1);
-    const y = (pos.y + oy - h / 2).toFixed(1);
-    const cx = (pos.x + ox).toFixed(1);
-    const cy2 = (pos.y + oy + 4).toFixed(1);
-    const fill = n.data('color') as string;
-    const stroke = n.data('strokeColor') as string;
-    const tc = n.data('textColor') as string;
-    const lbl = escXml(n.data('label') as string);
-    nodeParts.push(
-      `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${fill}" stroke="${stroke}" stroke-width="2"/>` +
-      `<text x="${cx}" y="${cy2}" text-anchor="middle" fill="${tc}" font-size="10" font-weight="bold" font-family="system-ui,sans-serif">${lbl}</text>`
-    );
-  });
-
-  const svg = [
-    `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
-    `<defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#aaa"/></marker></defs>`,
-    `<rect width="${W}" height="${H}" fill="#fafafa"/>`,
-    ...edgeParts,
-    ...nodeParts,
-    `</svg>`,
-  ].join('\n');
-
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'entity-relationship-diagram.svg';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ─── N-hop neighborhood ───────────────────────────────────────────────────────
-function getNHopCollection(cy: Core, nodeId: string, hops: IsolateHops) {
-  const start = cy.getElementById(nodeId);
-  let collected: cytoscape.CollectionReturnValue = start;
-  let frontier: cytoscape.CollectionReturnValue = start;
-  for (let i = 0; i < hops; i++) {
-    const next = frontier.neighborhood();
-    collected = collected.union(next);
-    frontier = next;
-  }
-  return collected;
-}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface NodeInfo {

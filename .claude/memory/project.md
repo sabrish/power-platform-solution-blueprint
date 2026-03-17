@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-12
+**Last updated:** 2026-03-17
 
 ---
 
@@ -18,6 +18,7 @@
 
 ## Current Version
 
+**v1.1.1** (pending release 2026-03-17) — patch: business rules IF/THEN/ELSE, conditionCount fix, DRY/SOLID refactoring, debug logger, Custom APIs click fix, env vars eye icon fix, CDS Default Solution filter fix, HTML cross-entity structure fix
 **v1.1.0** (released 2026-03-12) — minor: pipeline-first Cross-Entity Automation view, external API call detection, HTML/Markdown export parity, and AUDIT compliance fixes
 **v1.0.1** (released 2026-03-11) — patch: discovery pagination fix + OData injection guards
 **v1.0.0** (released 2026-03-11)
@@ -25,58 +26,13 @@
 
 ---
 
-## What is Working (as of v1.1.0)
+## What is Working (as of v1.1.1)
 
-### Core Discovery
-- Entity schema discovery (fields, relationships, keys, alternate keys)
-- Plugin discovery with full registration details and execution order
-- Power Automate flow discovery with trigger and connection analysis
-- Business rule discovery with full compiled-JS parser (all condition and action types)
-- Classic workflow discovery with migration recommendations
-- Business Process Flow documentation (stages and steps)
-- JavaScript web resource analysis with external call detection
-- Custom API documentation with parameters
-- Environment variable discovery and value tracking
-- Connection reference discovery with premium connector detection
-- Global choice documentation
-- Security role discovery with permission matrices
-- Field security profile discovery
-- Attribute masking rule discovery
-- Column security profile discovery
-- Forms and web resources discovery (including `rootcomponentbehavior` handling)
+**Stable baseline (v1.0+):** Full Dataverse component discovery — entities, plugins, flows, business rules, classic workflows, BPFs, web resources, custom APIs, environment variables, connection references, global choices, security roles, field security profiles, attribute masking, column security profiles, forms, canvas apps, custom pages, model-driven apps. Scope selector (publisher + solution multi-select), entity list with flag filter bar (AND logic), Component Browser card-row accordion (PATTERN-001), universal search/filter on all tabs, Results Dashboard, interactive Cytoscape.js ERD with pan/zoom and PNG/SVG export, JSON/Markdown/HTML/ZIP export.
 
-### UI
-- Scope Selector: By Publisher (multi-select) and By Solution (default, multi-select)
-- Entity list with flag-based filter bar (AND logic) and search
-- Component Browser with card-row expandable pattern (PATTERN-001)
-- Plugin Packages tab grouping plugin steps by assembly
-- Clickable Dashboard summary cards that select the corresponding Component Browser tab
-- Compact Component Browser tabs (icon + count when unselected; full label + count when selected)
-- Universal search/filter bar on every component list tab
-- Results Dashboard with tabbed view
-- Interactive ERD: Cytoscape.js force-directed graph with pan/zoom, node isolation, publisher filter, edge hover (relationship name + attribute), PNG/SVG export
-- Export: JSON, Markdown, HTML, ZIP (all static imports — dynamic imports broken under pptb-webview://)
-- Real-time progress reporting with phase-specific labels
-- Canvas Apps, Custom Pages, and Model-Driven Apps tabs in the Component Browser (metadata discovery)
-- Cross-Entity Automation Trace tab with pipeline accordion, branch blocks, field-match analysis
-- Full WCAG 2.1 accessibility pass on all interactive card-row elements
-- Centralised `componentIcons.ts` — single source of truth for all component/tab icons
-- `useListFilter` hook — shared filter/search logic across all component lists
-- `useCardRowStyles` hook — shared card-row styles ensuring AUDIT-005/006 compliance
-- Cross-Entity Automation view redesigned as pipeline-first accordion: automation nodes as top-level items, entities as children; inbound flows shown with ← badge
-- External API call detection on flow steps: HTTP actions and connector calls surfaced in the UI
-- Entities with external calls automatically included in the default Cross-Entity Automation view
-- HTML and Markdown export parity: external calls and Manual trigger pipelines now render correctly in both formats
-- Token sweep, `useCallback`, `EmptyState`, and full AUDIT compliance fixes applied across all list components
+**v1.1.0:** Pipeline-first Cross-Entity Automation view (automation nodes top-level, entities as children with ← inbound badge), external API call detection on flow steps, HTML/Markdown export parity for external calls and Manual trigger pipelines, full AUDIT-001–013 compliance sweep across all components.
 
-### Key fixes since v0.7.2
-- Business rule parser completely rewritten — covers all condition/action patterns including `controls.forEach` delegate, double-wrapped parens, date-derived variables
-- HTML export: SyntaxError fix (`\n` escaping), Edge storage shim, Mermaid pinned to 10.9.1, `startOnLoad: false`, tooltip XSS defence (`_esc()`), ERD data in JSON data-block
-- ERD replaced: Mermaid static diagram → Cytoscape.js interactive graph
-- DB diagram (dbdiagram.io export): attribute-less entities now get fallback columns from relationship data
-- Security role privilege matrix reads `depthValue` (numeric) correctly
-- Entity badge counts, filter bar visibility, AND filter logic, managed/custom badges all corrected
-- Classic workflow migration log `console.warn` removed from production
+**Business rule parser (v1.1.0):** Full IF/THEN/ELSE structure (`conditionGroups: ConditionGroup[]`, `elseActions: Action[]`); handles all condition/action types including `controls.forEach` delegate and date-derived variables.
 
 ---
 
@@ -94,16 +50,19 @@ Data:           Microsoft Dataverse (Cloud)
 src/
   core/
     dataverse/        PptbDataverseClient.ts
-    discovery/        12+ component discovery services
+    discovery/        12+ component discovery services (all implement IDiscoverer<T>)
     analyzers/        PerformanceAnalyzer, WorkflowMigrationAnalyzer, CrossEntityMapper, ExternalDependencyAggregator
     generators/       ERDGenerator.ts, BlueprintGenerator.ts
+      processors/     16 component processors extracted from BlueprintGenerator
     reporters/        MarkdownReporter, JsonReporter, HtmlReporter, ZipPackager
     exporters/        Export-format helpers
     parsers/          FlowDefinitionParser, JavaScriptParser, BusinessRuleParser
     types/            Shared TypeScript interfaces and types
-    utils/            Shared utility functions
+    utils/            Shared utility functions (guid, metadata, entityName, grouping, complexity, odata)
   components/         React components
-  hooks/              Custom React hooks
+    CrossEntityAutomation/  Sub-components extracted from CrossEntityAutomationView
+    ERDView/          Sub-components and utilities (constants, stylesheet, export, traversal)
+  hooks/              Custom React hooks (useListFilter, useCardRowStyles, useExpandable)
   types/              TypeScript type definitions
   App.tsx
   main.tsx
@@ -132,6 +91,29 @@ pnpm typecheck  # Type check
 ---
 
 ## In Progress / Known Limitations
+
+### Release v1.1.1 — In Progress (2026-03-17)
+
+**Status:** Documentation and version files updated; awaiting project owner to run npm/git commands.
+
+**Completed this session:**
+- Code review: Approved with comments (no blockers)
+- Security audit: CLEAR
+- CHANGELOG.md: `## [1.1.1] - 2026-03-17` entry written
+- README.md: version badge updated to `1.1.1`
+- `src/core/reporters/JsonReporter.ts`: `toolVersion` updated to `'1.1.1'`
+- `docs/user-guide.md` line 3: updated to `v1.1.1`
+- CHANGELOG comparison links: `[1.1.1]` entry added
+
+**Pending — project owner must run:**
+1. `npm version 1.1.1 --no-git-tag-version` — updates `package.json` + `npm-shrinkwrap.json`
+2. `pnpm typecheck && pnpm build` — build verification
+3. Stage and commit: `git add package.json npm-shrinkwrap.json CHANGELOG.md README.md src/core/reporters/JsonReporter.ts docs/user-guide.md`
+4. `git commit -m "chore: release v1.1.1"`
+5. `gh pr create ...` — create PR to main
+6. After PR merge: `git tag v1.1.1 -m "Release v1.1.1"` then push tag
+
+**Note:** `[PPSB-DIAG]` debug logs intentionally retained per project owner decision. Issue 3 (flow mislabelling) remains open for future diagnosis.
 
 ### Released in v1.1.0 (2026-03-12)
 

@@ -163,6 +163,31 @@ For **bug fixes** and small improvements (typos, docs, obvious defects), you can
 - **Performance**: Follow patterns in `DATAVERSE_OPTIMIZATION_GUIDE.md`
 - **Naming**: Use descriptive names, avoid abbreviations unless well-known
 
+### Interface Naming Convention
+
+Use the `I` prefix **only** for true interface contracts used in dependency inversion:
+- `IDataverseClient` — injected into classes that call Dataverse
+- `IDiscoverer<T>` — polymorphic discovery interface
+
+Do **not** use the `I` prefix on:
+- Hook return shapes (e.g. `UseBlueprintResult`, not `IUseBlueprintResult`)
+- Type aliases or DTOs
+- Props interfaces (e.g. `ScopeSelectorProps`, not `IScopeSelectorProps`)
+
+## File Organisation
+
+**One file, one job.**
+
+Before adding code to an existing file, ask: *does this belong here?*
+
+- A React component file contains **one component**. Sub-components each get their own file.
+- A hook file contains **one hook**.
+- Utility functions that could be reused elsewhere live in `src/core/utils/` or `src/hooks/`, not inside the file that first needed them.
+- A discovery class discovers one component type. A parser parses one thing.
+- **Exception:** When the output format requires self-contained files (e.g. the HTML export must work with zero external dependencies), the TypeScript that generates it may contain all the pieces inline. That is intentional, not bundling.
+
+**The test:** if you have to describe what a file does using the word "and", it probably needs to be split.
+
 ## Testing
 
 Before committing:

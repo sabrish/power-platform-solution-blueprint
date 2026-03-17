@@ -1,7 +1,7 @@
 import type { EntityBlueprint, ERDDefinition, ERDDiagram, PublisherLegend, EntityQuickLink, ERDGraphData, ERDNode, ERDEdge } from '../types/blueprint.js';
 import type { Publisher } from '../types.js';
 import { getPublisherColors } from '../utils/ColorGenerator.js';
-import { isSystemEntity, isSystemRelationship, hasPlatformEntityCustomRelationship, isBPFEntity } from '../../utils/systemFilters.js';
+import { isSystemEntity, isSystemRelationship, hasPlatformEntityCustomRelationship, isBPFEntity } from '../utils/systemFilters.js';
 
 /**
  * Generates Entity Relationship Diagrams (ERD) using Mermaid Class Diagram syntax

@@ -31,6 +31,7 @@ const useStyles = makeStyles({
   row: {
     display: 'grid',
     gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) auto auto auto auto`,
+    alignItems: 'start',
   },
   stagesList: {
     display: 'flex',
@@ -188,7 +189,7 @@ export function BusinessProcessFlowsList({ businessProcessFlows }: BusinessProce
                           color: tokens.colorNeutralForeground3,
                         }}
                       >
-                        Entity: {stage.entity}
+                        Entity: {stage.entity ?? 'None'}
                         {stage.steps.length > 0 && ` • ${stage.steps.length} steps`}
                       </Text>
                     </div>

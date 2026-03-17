@@ -1,8 +1,10 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid, normalizeBatch } from '../utils/guid.js';
 
 interface RawBusinessProcessFlow {
   workflowid: string;
@@ -53,7 +55,7 @@ interface RawProcessStage {
   processstage_processstageparameter?: RawProcessStageParam[];
 }
 
-export class BusinessProcessFlowDiscovery {
+export class BusinessProcessFlowDiscovery implements IDiscoverer<BusinessProcessFlow> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -66,6 +68,10 @@ export class BusinessProcessFlowDiscovery {
     this.client = client;
     this.onProgress = onProgress;
     this.logger = logger;
+  }
+
+  discoverByIds(ids: string[]): Promise<BusinessProcessFlow[]> {
+    return this.getBusinessProcessFlowsByIds(ids);
   }
 
   async getBusinessProcessFlowsByIds(workflowIds: string[]): Promise<BusinessProcessFlow[]> {
@@ -119,14 +125,14 @@ export class BusinessProcessFlowDiscovery {
     if (bpfs.length === 0) return stagesByBpfId;
 
     const bpfIds = bpfs.map(b => b.workflowid);
-    const idToName = new Map(bpfs.map(b => [b.workflowid.toLowerCase().replace(/[{}]/g, ''), b.name]));
+    const idToName = new Map(bpfs.map(b => [normalizeGuid(b.workflowid), b.name]));
 
     try {
       const { results: allStages } = await withAdaptiveBatch<string, RawProcessStage>(
         bpfIds,
         async (batch) => {
           const stageFilter = buildOrFilter(
-            batch.map(id => id.toLowerCase().replace(/[{}]/g, '')),
+            normalizeBatch(batch),
             '_processid_value',
             { guids: true }
           );
@@ -159,15 +165,15 @@ export class BusinessProcessFlowDiscovery {
           step: 'BPF Discovery',
           entitySet: 'processstages (stages)',
           logger: this.logger,
-          getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
+          getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
         }
       );
 
       // Group top-level stages (no parent) by process ID
       for (const record of allStages) {
-        const parentId = (record['_parentprocessstageid_value'] || '').toLowerCase().replace(/[{}]/g, '');
+        const parentId = normalizeGuid(record['_parentprocessstageid_value'] || '');
         if (parentId) continue;
-        const processId = (record['_processid_value'] || '').toLowerCase().replace(/[{}]/g, '');
+        const processId = normalizeGuid(record['_processid_value'] || '');
         if (!stagesByBpfId.has(processId)) stagesByBpfId.set(processId, []);
         stagesByBpfId.get(processId)!.push(record);
       }
@@ -189,14 +195,14 @@ export class BusinessProcessFlowDiscovery {
     if (stages.length === 0) return stepsByStageId;
 
     const stageIds = stages.map(s => s.processstageid);
-    const idToName = new Map(stages.map(s => [s.processstageid.toLowerCase().replace(/[{}]/g, ''), s.stagename]));
+    const idToName = new Map(stages.map(s => [normalizeGuid(s.processstageid), s.stagename]));
 
     try {
       const { results: allSteps } = await withAdaptiveBatch<string, RawProcessStage>(
         stageIds,
         async (batch) => {
           const stepFilter = buildOrFilter(
-            batch.map(id => id.toLowerCase().replace(/[{}]/g, '')),
+            normalizeBatch(batch),
             '_parentprocessstageid_value',
             { guids: true }
           );
@@ -214,12 +220,12 @@ export class BusinessProcessFlowDiscovery {
           step: 'BPF Discovery',
           entitySet: 'processstages (steps)',
           logger: this.logger,
-          getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
+          getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
         }
       );
 
       for (const step of allSteps) {
-        const parentId = (step['_parentprocessstageid_value'] || '').toLowerCase().replace(/[{}]/g, '');
+        const parentId = normalizeGuid(step['_parentprocessstageid_value'] || '');
         if (!parentId) continue;
         if (!stepsByStageId.has(parentId)) stepsByStageId.set(parentId, []);
         stepsByStageId.get(parentId)!.push(step);
@@ -255,7 +261,7 @@ export class BusinessProcessFlowDiscovery {
           record['__class'].startsWith('StageStep:') &&
           record['stageId']
         ) {
-          const id = String(record['stageId']).toLowerCase().replace(/[{}]/g, '');
+          const id = normalizeGuid(String(record['stageId']));
           if (!stageIds.includes(id)) stageIds.push(id);
         }
         for (const val of Object.values(record)) walk(val);
@@ -315,15 +321,15 @@ export class BusinessProcessFlowDiscovery {
     stagesByBpfId: Map<string, RawProcessStage[]>,
     stepsByStageId: Map<string, RawProcessStage[]>
   ): BusinessProcessFlow {
-    const bpfId = raw.workflowid.toLowerCase().replace(/[{}]/g, '');
+    const bpfId = normalizeGuid(raw.workflowid);
     const rawStages = stagesByBpfId.get(bpfId) || [];
 
     // Sort stages by the order defined in workflow clientdata.
     const stageOrder = this.parseStageOrder(raw.clientdata);
     if (stageOrder.length > 0) {
       rawStages.sort((a, b) => {
-        const aIdx = stageOrder.indexOf(a.processstageid.toLowerCase().replace(/[{}]/g, ''));
-        const bIdx = stageOrder.indexOf(b.processstageid.toLowerCase().replace(/[{}]/g, ''));
+        const aIdx = stageOrder.indexOf(normalizeGuid(a.processstageid));
+        const bIdx = stageOrder.indexOf(normalizeGuid(b.processstageid));
         if (aIdx === -1 && bIdx === -1) return 0;
         if (aIdx === -1) return 1;
         if (bIdx === -1) return -1;
@@ -332,7 +338,7 @@ export class BusinessProcessFlowDiscovery {
     }
 
     const stages = rawStages.map((s, index) => {
-      const stageId = s.processstageid.toLowerCase().replace(/[{}]/g, '');
+      const stageId = normalizeGuid(s.processstageid);
 
       // Source 1: expanded processstageparameter records
       const expandedParams = s.processstage_processstageparameter || [];

@@ -13,9 +13,7 @@ import type {
   FileNode,
   MarkdownExport,
   PluginStep,
-  Flow,
   BusinessRule,
-  WebResource,
   PerformanceRisk,
   ExternalEndpoint,
   ERDDefinition,
@@ -26,17 +24,26 @@ import type {
   CrossEntityEntityView,
   CrossEntityTrace,
   AutomationActivation,
-  PipelineStep,
 } from '../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../types/classicWorkflow.js';
 import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
-import type { CustomAPI } from '../types/customApi.js';
 import type { CanvasApp } from '../types/canvasApp.js';
 import type { CustomPage } from '../types/customPage.js';
 import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
-import MarkdownFormatter from './markdown/MarkdownFormatter.js';
+import { MarkdownFormatter } from './markdown/MarkdownFormatter.js';
+import {
+  groupPluginsByAssembly,
+  groupFlowsByEntity,
+  groupBusinessRulesByEntity,
+  groupClassicWorkflowsByEntity,
+  groupBpfsByEntity,
+  groupWebResourcesByType,
+  groupCustomAPIsByBinding,
+} from '../utils/grouping.js';
+import { calculateComplexityScore } from '../utils/complexity.js';
+import type { IReporter } from './IReporter.js';
 
-export class MarkdownReporter {
+export class MarkdownReporter implements IReporter<MarkdownExport> {
   /**
    * Generate complete markdown export from blueprint result
    */
@@ -623,7 +630,7 @@ export class MarkdownReporter {
     }
 
     // Group by assembly -> entity -> message
-    const grouped = this.groupPluginsByAssembly(result.plugins);
+    const grouped = groupPluginsByAssembly(result.plugins);
 
     for (const [assemblyName, entities] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(assemblyName, 2));
@@ -665,7 +672,7 @@ export class MarkdownReporter {
       const warnHeaders = ['Plugin', 'Entity', 'Message', 'Stage'];
       const warnRows = syncWithExternal.map(p => [
         p.name,
-        p.entity,
+        p.entity ?? 'Global',
         p.message,
         p.stageName,
       ]);
@@ -694,7 +701,7 @@ export class MarkdownReporter {
     }
 
     // Group by entity -> trigger type
-    const grouped = this.groupFlowsByEntity(result.flows);
+    const grouped = groupFlowsByEntity(result.flows);
 
     for (const [entityName, flows] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(entityName || 'Manual/Scheduled Flows', 2));
@@ -736,22 +743,26 @@ export class MarkdownReporter {
     }
 
     // Group by entity
-    const grouped = this.groupBusinessRulesByEntity(result.businessRules);
+    const grouped = groupBusinessRulesByEntity(result.businessRules);
 
     for (const [entityName, rules] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(entityName, 2));
       sections.push('');
 
       const headers = ['Name', 'Scope', 'Context', 'State', 'Conditions', 'Actions', 'Modified'];
-      const rows = rules.map(rule => [
-        rule.name,
-        rule.scopeName,
-        rule.definition.executionContext,
-        rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
-        rule.definition.conditions.length.toString(),
-        rule.definition.actions.length.toString(),
-        this.formatDate(rule.modifiedOn),
-      ]);
+      const rows = rules.map(rule => {
+        const conditionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
+        const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
+        return [
+          rule.name,
+          rule.scopeName,
+          rule.definition.executionContext,
+          rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
+          conditionCount.toString(),
+          actionCount.toString(),
+          this.formatDate(rule.modifiedOn),
+        ];
+      });
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
@@ -763,25 +774,42 @@ export class MarkdownReporter {
           sections.push(`**Condition Logic:** \`${rule.definition.conditionLogic}\``);
           sections.push('');
         }
-        if (rule.definition.conditions.length > 0) {
-          sections.push('**Conditions**');
-          sections.push('');
-          const cHeaders = ['#', 'Field', 'Operator', 'Value', 'Logic'];
-          const cRows = rule.definition.conditions.map((c, i) => [
-            (i + 1).toString(),
-            c.field,
-            c.operator,
-            c.value,
-            c.logicOperator,
-          ]);
-          sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
-          sections.push('');
-        }
-        if (rule.definition.actions.length > 0) {
-          sections.push('**Actions**');
+
+        // Render each condition group
+        rule.definition.conditionGroups.forEach((group, groupIdx) => {
+          if (group.conditions.length > 0) {
+            sections.push(MarkdownFormatter.formatHeading(groupIdx === 0 ? 'IF: Conditions' : 'ELSE IF: Conditions', 4));
+            sections.push('');
+            const cHeaders = ['#', 'Field', 'Operator', 'Value', 'Logic'];
+            const cRows = group.conditions.map((c, i) => [
+              (i + 1).toString(),
+              c.field,
+              c.operator,
+              c.value,
+              c.logicOperator,
+            ]);
+            sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
+            sections.push('');
+          }
+          if (group.actions.length > 0) {
+            sections.push(MarkdownFormatter.formatHeading('THEN: Actions', 4));
+            sections.push('');
+            const aHeaders = ['Type', 'Field', 'Value / Message'];
+            const aRows = group.actions.map(a => [
+              a.type,
+              a.field,
+              a.value ?? a.message ?? '',
+            ]);
+            sections.push(MarkdownFormatter.formatTable(aHeaders, aRows));
+            sections.push('');
+          }
+        });
+
+        if (rule.definition.elseActions.length > 0) {
+          sections.push(MarkdownFormatter.formatHeading('ELSE: Actions', 4));
           sections.push('');
           const aHeaders = ['Type', 'Field', 'Value / Message'];
-          const aRows = rule.definition.actions.map(a => [
+          const aRows = rule.definition.elseActions.map(a => [
             a.type,
             a.field,
             a.value ?? a.message ?? '',
@@ -814,7 +842,7 @@ export class MarkdownReporter {
     }
 
     // Group by entity
-    const grouped = this.groupClassicWorkflowsByEntity(result.classicWorkflows);
+    const grouped = groupClassicWorkflowsByEntity(result.classicWorkflows);
 
     for (const [entityName, workflows] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(entityName, 2));
@@ -861,7 +889,7 @@ export class MarkdownReporter {
     }
 
     // Group by type
-    const grouped = this.groupWebResourcesByType(result.webResources);
+    const grouped = groupWebResourcesByType(result.webResources);
 
     for (const [typeName, resources] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(`${typeName} Files`, 2));
@@ -918,7 +946,7 @@ export class MarkdownReporter {
     }
 
     // Group by binding type
-    const grouped = this.groupCustomAPIsByBinding(result.customAPIs);
+    const grouped = groupCustomAPIsByBinding(result.customAPIs);
 
     for (const [bindingType, apis] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(`${bindingType} APIs`, 2));
@@ -1126,7 +1154,7 @@ export class MarkdownReporter {
     }
 
     // Group by primary entity
-    const grouped = this.groupBpfsByEntity(result.businessProcessFlows);
+    const grouped = groupBpfsByEntity(result.businessProcessFlows);
 
     for (const [entityName, bpfs] of grouped) {
       sections.push(MarkdownFormatter.formatHeading(entityName, 2));
@@ -1327,57 +1355,118 @@ export class MarkdownReporter {
     sections.push(MarkdownFormatter.formatTable(chainHeaders, chainRows));
     sections.push('');
 
-    // Consolidated pipeline traces
-    const externalOnlyPipelines = Array.from(analysis.allEntityPipelines.entries())
-      .filter(([logicalName, p]) => p.hasExternalInteraction && !analysis.entityViews.has(logicalName));
+    // Pipeline-first view: automations as top-level headings, entities as bullet lists
+    sections.push('## Automation Pipelines');
+    sections.push('');
+    sections.push('Each automation listed below, with the entities it affects and the direction of interaction.');
+    sections.push('');
 
-    if (analysis.entityViews.size > 0 || externalOnlyPipelines.length > 0) {
-      sections.push('## Pipeline Traces');
-      sections.push('');
-      sections.push('Per-entity activation analysis — which automations fire (or don\'t) when an external source writes to the entity.');
-      sections.push('');
+    // Collect all unique automations
+    const automationMap = new Map<string, {
+      id: string;
+      name: string;
+      type: 'Flow' | 'ClassicWorkflow' | 'BusinessRule' | 'Plugin';
+      affectedEntities: Array<{
+        logicalName: string;
+        displayName: string;
+        direction: 'inbound' | 'outbound' | 'both';
+        operations: string[];
+        isAsync: boolean;
+        hasExternalCalls: boolean;
+      }>;
+      triggerType: 'Dataverse' | 'Manual' | 'Scheduled' | 'Mixed';
+      hasExternalCalls: boolean;
+    }>();
 
-      // Entities with inbound cross-entity entry points
-      for (const [logicalName, view] of analysis.entityViews) {
-        sections.push(`### ${view.entityDisplayName}`);
-        sections.push('');
-        sections.push(`**Entity:** \`${view.entityLogicalName}\` | **Entry Points:** ${view.traces.length}`);
-        sections.push('');
-        for (const trace of view.traces) {
-          sections.push(this.formatTraceDetails(trace));
-        }
-        // Manual/On-Demand pipelines for this entity
-        const entityPipeline = analysis.allEntityPipelines.get(logicalName);
-        const manualPipelines = entityPipeline?.messagePipelines.filter(mp => mp.message === 'Manual') ?? [];
-        if (manualPipelines.length > 0) {
-          sections.push('#### On-Demand / Manual Pipeline');
-          sections.push('');
-          for (const mp of manualPipelines) {
-            sections.push(this.formatPipelineSteps(mp.steps));
+    // Scan all entity pipelines to extract automations
+    for (const [entityLogicalName, pipeline] of analysis.allEntityPipelines.entries()) {
+      // Outbound automations (this entity triggers the automation)
+      for (const mp of pipeline.messagePipelines) {
+        for (const step of mp.steps) {
+          const key = `${step.automationType}-${step.automationId}`;
+          if (!automationMap.has(key)) {
+            automationMap.set(key, {
+              id: step.automationId,
+              name: step.automationName,
+              type: step.automationType,
+              affectedEntities: [],
+              triggerType: mp.message === 'Manual' ? 'Manual' : 'Dataverse',
+              hasExternalCalls: false,
+            });
           }
+          const auto = automationMap.get(key)!;
+          const existing = auto.affectedEntities.find(e => e.logicalName === entityLogicalName);
+          if (existing) {
+            if (!existing.operations.includes(mp.message)) existing.operations.push(mp.message);
+            if (!existing.direction.includes('outbound')) existing.direction = existing.direction === 'inbound' ? 'both' : 'outbound';
+          } else {
+            auto.affectedEntities.push({
+              logicalName: entityLogicalName,
+              displayName: pipeline.entityDisplayName,
+              direction: 'outbound',
+              operations: [mp.message],
+              isAsync: step.mode === 'Async',
+              hasExternalCalls: step.hasExternalCalls ?? false,
+            });
+          }
+          if (step.hasExternalCalls) auto.hasExternalCalls = true;
         }
       }
 
-      // Entities with external API calls but no inbound cross-entity writes
-      if (externalOnlyPipelines.length > 0) {
-        sections.push('### Entities with External API Calls');
-        sections.push('');
-        sections.push('These entities have automations that call external APIs or use non-Dataverse connectors but receive no detected cross-entity writes.');
-        sections.push('');
-        for (const [, pipeline] of externalOnlyPipelines) {
-          sections.push(`#### ${pipeline.entityDisplayName}`);
-          sections.push('');
-          sections.push(`**Entity:** \`${pipeline.entityLogicalName}\``);
-          sections.push('');
-          for (const mp of pipeline.messagePipelines) {
-            if (mp.steps.some(s => s.hasExternalCalls)) {
-              const msgLabel = mp.message === 'Manual' ? 'On-Demand / Manual' : mp.message;
-              sections.push(`**${msgLabel} Pipeline:**`);
-              sections.push('');
-              sections.push(this.formatPipelineSteps(mp.steps));
-            }
-          }
+      // Inbound automations (other entities write to this entity)
+      for (const entryPoint of pipeline.inboundEntryPoints) {
+        const key = `${entryPoint.automationType}-${entryPoint.automationId}`;
+        if (!automationMap.has(key)) {
+          automationMap.set(key, {
+            id: entryPoint.automationId,
+            name: entryPoint.automationName,
+            type: entryPoint.automationType,
+            affectedEntities: [],
+            triggerType: entryPoint.isScheduled ? 'Scheduled' : entryPoint.isOnDemand ? 'Manual' : 'Dataverse',
+            hasExternalCalls: false,
+          });
         }
+        const auto = automationMap.get(key)!;
+        const existing = auto.affectedEntities.find(e => e.logicalName === entityLogicalName);
+        if (existing) {
+          if (!existing.operations.includes(entryPoint.operation)) existing.operations.push(entryPoint.operation);
+          if (!existing.direction.includes('inbound')) existing.direction = existing.direction === 'outbound' ? 'both' : 'inbound';
+        } else {
+          auto.affectedEntities.push({
+            logicalName: entityLogicalName,
+            displayName: pipeline.entityDisplayName,
+            direction: 'inbound',
+            operations: [entryPoint.operation],
+            isAsync: entryPoint.isAsynchronous,
+            hasExternalCalls: false,
+          });
+        }
+      }
+    }
+
+    if (automationMap.size > 0) {
+      // Sort automations alphabetically
+      const sortedAutomations = Array.from(automationMap.values())
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const auto of sortedAutomations) {
+        const triggerLabel = auto.triggerType === 'Manual' ? 'Manual / On-Demand'
+          : auto.triggerType === 'Scheduled' ? 'Scheduled'
+          : 'Dataverse Trigger';
+        const extLabel = auto.hasExternalCalls ? ' | **External calls detected**' : '';
+        sections.push(`### ${auto.name}`);
+        sections.push('');
+        sections.push(`**Type:** ${auto.type} | **Trigger:** ${triggerLabel}${extLabel}`);
+        sections.push('');
+        sections.push('**Affected Entities:**');
+        sections.push('');
+        for (const e of auto.affectedEntities) {
+          const dirSymbol = e.direction === 'inbound' ? '←' : e.direction === 'outbound' ? '→' : '↔';
+          const extEntityLabel = e.hasExternalCalls ? ' _[External calls]_' : '';
+          const mode = e.isAsync ? 'Async' : 'Sync';
+          sections.push(`- ${dirSymbol} **${e.displayName}** (\`${e.logicalName}\`) — ${e.operations.join(', ')} — ${mode}${extEntityLabel}`);
+        }
+        sections.push('');
       }
     }
 
@@ -1477,36 +1566,6 @@ export class MarkdownReporter {
   /**
    * Format a list of pipeline steps as a markdown table + external call details
    */
-  private formatPipelineSteps(steps: PipelineStep[]): string {
-    const lines: string[] = [];
-    const headers = ['#', 'Automation', 'Type', 'Stage', 'Mode', 'Filter', 'Downstream'];
-    const rows = steps.map((step, i) => {
-      const filter = step.firesForAllUpdates
-        ? '⚠️ No filter'
-        : step.filteringAttributes.length > 0
-          ? step.filteringAttributes.slice(0, 3).join(', ') + (step.filteringAttributes.length > 3 ? ` +${step.filteringAttributes.length - 3}` : '')
-          : '—';
-      const ds = step.downstream
-        ? `→ ${step.downstream.targetEntityDisplayName} (${step.downstream.operation})`
-        : '—';
-      const extMark = step.hasExternalCalls ? ' ⤷' : '';
-      return [String(i + 1), `${step.automationName}${extMark}`, step.automationType, step.stageName ?? '—', step.mode, filter, ds];
-    });
-    lines.push(MarkdownFormatter.formatTable(headers, rows));
-    // External call details below table
-    for (const step of steps) {
-      if (step.connectionReferences && step.connectionReferences.length > 0) {
-        lines.push(`- **${step.automationName}** connectors: ${step.connectionReferences.join(', ')}`);
-      }
-      if (step.externalCallSummaries && step.externalCallSummaries.length > 0) {
-        for (const call of step.externalCallSummaries) {
-          lines.push(`  - \`${call.method ? `${call.method} ` : ''}${call.url || call.domain}\``);
-        }
-      }
-    }
-    lines.push('');
-    return lines.join('\n');
-  }
 
   /**
    * Format firing status for markdown
@@ -1861,14 +1920,18 @@ export class MarkdownReporter {
       sections.push('');
 
       const headers = ['Name', 'Scope', 'Context', 'State', 'Conditions', 'Actions'];
-      const rows = entity.businessRules.map(rule => [
-        rule.name,
-        rule.scopeName,
-        rule.definition.executionContext,
-        rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
-        rule.definition.conditions.length.toString(),
-        rule.definition.actions.length.toString(),
-      ]);
+      const rows = entity.businessRules.map(rule => {
+        const conditionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
+        const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
+        return [
+          rule.name,
+          rule.scopeName,
+          rule.definition.executionContext,
+          rule.state === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Draft', 'warning'),
+          conditionCount.toString(),
+          actionCount.toString(),
+        ];
+      });
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
@@ -2100,7 +2163,7 @@ export class MarkdownReporter {
   /**
    * Generate simple ASCII visualization of plugin execution pipeline
    */
-  private generateSimplePipelineASCII(byStage: Map<number, any[]>, businessRules: BusinessRule[]): string {
+  private generateSimplePipelineASCII(byStage: Map<number, PluginStep[]>, businessRules: BusinessRule[]): string {
     const lines: string[] = [];
     lines.push('Execution Order:');
     lines.push('');
@@ -2211,7 +2274,7 @@ export class MarkdownReporter {
 
     // Calculate complexity for each entity
     const scores = result.entities.map(entity => {
-      const score = this.calculateComplexityScore(entity, result);
+      const score = calculateComplexityScore(entity, result);
       return {
         entity: entity.entity.LogicalName,
         displayName: entity.entity.DisplayName?.UserLocalizedLabel?.Label || entity.entity.LogicalName,
@@ -2601,166 +2664,7 @@ export class MarkdownReporter {
     return 'Unknown';
   }
 
-  /**
-   * Group plugins by assembly -> entity
-   */
-  private groupPluginsByAssembly(plugins: PluginStep[]): Map<string, Map<string, PluginStep[]>> {
-    const grouped = new Map<string, Map<string, PluginStep[]>>();
 
-    for (const plugin of plugins) {
-      if (!grouped.has(plugin.assemblyName)) {
-        grouped.set(plugin.assemblyName, new Map());
-      }
-
-      const entities = grouped.get(plugin.assemblyName)!;
-      if (!entities.has(plugin.entity)) {
-        entities.set(plugin.entity, []);
-      }
-
-      entities.get(plugin.entity)!.push(plugin);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group flows by entity
-   */
-  private groupFlowsByEntity(flows: Flow[]): Map<string, Flow[]> {
-    const grouped = new Map<string, Flow[]>();
-
-    for (const flow of flows) {
-      const entity = flow.entity || 'Manual/Scheduled';
-      if (!grouped.has(entity)) {
-        grouped.set(entity, []);
-      }
-      grouped.get(entity)!.push(flow);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group business rules by entity
-   */
-  private groupBusinessRulesByEntity(rules: BusinessRule[]): Map<string, BusinessRule[]> {
-    const grouped = new Map<string, BusinessRule[]>();
-
-    for (const rule of rules) {
-      if (!grouped.has(rule.entity)) {
-        grouped.set(rule.entity, []);
-      }
-      grouped.get(rule.entity)!.push(rule);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group classic workflows by entity
-   */
-  private groupClassicWorkflowsByEntity(workflows: ClassicWorkflow[]): Map<string, ClassicWorkflow[]> {
-    const grouped = new Map<string, ClassicWorkflow[]>();
-
-    for (const workflow of workflows) {
-      if (!grouped.has(workflow.entity)) {
-        grouped.set(workflow.entity, []);
-      }
-      grouped.get(workflow.entity)!.push(workflow);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group web resources by type
-   */
-  private groupWebResourcesByType(resources: WebResource[]): Map<string, WebResource[]> {
-    const grouped = new Map<string, WebResource[]>();
-
-    for (const resource of resources) {
-      if (!grouped.has(resource.typeName)) {
-        grouped.set(resource.typeName, []);
-      }
-      grouped.get(resource.typeName)!.push(resource);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group custom APIs by binding type
-   */
-  private groupCustomAPIsByBinding(apis: CustomAPI[]): Map<string, CustomAPI[]> {
-    const grouped = new Map<string, CustomAPI[]>();
-
-    for (const api of apis) {
-      if (!grouped.has(api.bindingType)) {
-        grouped.set(api.bindingType, []);
-      }
-      grouped.get(api.bindingType)!.push(api);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Group BPFs by primary entity
-   */
-  private groupBpfsByEntity(bpfs: BusinessProcessFlow[]): Map<string, BusinessProcessFlow[]> {
-    const grouped = new Map<string, BusinessProcessFlow[]>();
-
-    for (const bpf of bpfs) {
-      const entity = bpf.primaryEntityDisplayName || bpf.primaryEntity;
-      if (!grouped.has(entity)) {
-        grouped.set(entity, []);
-      }
-      grouped.get(entity)!.push(bpf);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Calculate complexity score for entity
-   */
-  private calculateComplexityScore(entity: EntityBlueprint, _result: BlueprintResult): {
-    total: number;
-    level: 'Low' | 'Medium' | 'High';
-    breakdown: {
-      attributes: number;
-      plugins: number;
-      flows: number;
-      businessRules: number;
-      forms: number;
-    };
-  } {
-    const breakdown = {
-      attributes: entity.entity.Attributes?.length || 0,
-      plugins: entity.plugins.length,
-      flows: entity.flows.length,
-      businessRules: entity.businessRules.length,
-      forms: entity.forms.length,
-    };
-
-    const total =
-      breakdown.attributes * 1 +
-      breakdown.plugins * 5 +
-      breakdown.flows * 3 +
-      breakdown.businessRules * 2 +
-      breakdown.forms * 2;
-
-    let level: 'Low' | 'Medium' | 'High';
-    if (total <= 50) {
-      level = 'Low';
-    } else if (total <= 150) {
-      level = 'Medium';
-    } else {
-      level = 'High';
-    }
-
-    return { total, level, breakdown };
-  }
 
   /**
    * Generate security overview with special permissions matrix

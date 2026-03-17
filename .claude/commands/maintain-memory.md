@@ -1,8 +1,3 @@
----
-name: maintain-memory
-description: Trim project.md to keep it lean and signal-rich. Run every 3-4 sessions.
----
-
 /agent document-updater
 
 Maintenance pass on .claude/memory/project.md.
@@ -24,3 +19,9 @@ Before writing anything:
 - Wait for my approval
 
 After approval, write the updated file and confirm the new line count.
+
+```
+Maintenance complete.
+project.md trimmed ✅
+Line count under 150 ✅
+```

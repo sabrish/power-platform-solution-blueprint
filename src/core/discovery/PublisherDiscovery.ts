@@ -1,5 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { Publisher } from '../types.js';
+import { normalizeGuid } from '../utils/guid.js';
 
 /** Exact shape of each row returned by the solutions expand query */
 interface SolutionPublisherRow {
@@ -45,7 +46,7 @@ export class PublisherDiscovery {
       for (const solution of result.value) {
         const pub = solution.publisherid;
         if (!pub?.publisherid) continue;
-        const normalizedId = pub.publisherid.toLowerCase().replace(/[{}]/g, '');
+        const normalizedId = normalizeGuid(pub.publisherid);
         if (seen.has(normalizedId)) continue;
         seen.add(normalizedId);
         publishers.push({ ...pub, publisherid: normalizedId });

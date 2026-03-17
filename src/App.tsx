@@ -35,6 +35,9 @@ const useStyles = makeStyles({
       padding: tokens.spacingVerticalL,
     },
   },
+  retryButton: {
+    marginTop: tokens.spacingVerticalS,
+  },
   header: {
     marginBottom: tokens.spacingVerticalL,
     display: 'flex',
@@ -117,7 +120,7 @@ function App() {
   const [selectedScope, setSelectedScope] = useState<ScopeSelection | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const { generate, result, progress, recentFetches, isGenerating, isCancelling, error, cancel, reset, blueprintGenerator } = useBlueprint(
+  const { generate, result, progress, recentFetches, isGenerating, isCancelling, error, cancel, reset } = useBlueprint(
     selectedScope!
   );
 
@@ -214,7 +217,6 @@ function App() {
         result={result}
         scope={selectedScope}
         onStartOver={handleChangeSelection}
-        blueprintGenerator={blueprintGenerator!}
       />
     );
   }
@@ -244,7 +246,7 @@ function App() {
                 appearance="secondary"
                 size="small"
                 onClick={handleGenerate}
-                style={{ marginTop: tokens.spacingVerticalS }}
+                className={styles.retryButton}
               >
                 Retry
               </Button>

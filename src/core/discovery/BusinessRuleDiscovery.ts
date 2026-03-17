@@ -1,9 +1,11 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { BusinessRule } from '../types/blueprint.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { BusinessRuleParser } from '../parsers/BusinessRuleParser.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
+import { normalizeBatch } from '../utils/guid.js';
 
 interface BusinessRuleRecord {
   workflowid: string;
@@ -25,7 +27,7 @@ interface BusinessRuleRecord {
 /**
  * Discovers Business Rules (client/server-side logic)
  */
-export class BusinessRuleDiscovery {
+export class BusinessRuleDiscovery implements IDiscoverer<BusinessRule> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -43,12 +45,16 @@ export class BusinessRuleDiscovery {
   /**
    * Get business rules by workflow IDs
    */
+  discoverByIds(ids: string[]): Promise<BusinessRule[]> {
+    return this.getBusinessRulesByIds(ids);
+  }
+
   async getBusinessRulesByIds(brIds: string[]): Promise<BusinessRule[]> {
     if (brIds.length === 0) {
       return [];
     }
 
-    const cleanIds = brIds.map(id => id.replace(/[{}]/g, '').toLowerCase());
+    const cleanIds = normalizeBatch(brIds);
     const invalidIndex = cleanIds.findIndex(id => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id));
     if (invalidIndex !== -1) {
       throw new TypeError(`Invalid workflow ID: ${brIds[invalidIndex]}`);

@@ -1,7 +1,10 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { EnvironmentVariable, EnvironmentVariableValue } from '../types/environmentVariable.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid } from '../utils/guid.js';
 
 /**
  * Raw Environment Variable Definition from Dataverse
@@ -42,7 +45,7 @@ interface RawEnvironmentVariableValue {
 /**
  * Discovers Environment Variables
  */
-export class EnvironmentVariableDiscovery {
+export class EnvironmentVariableDiscovery implements IDiscoverer<EnvironmentVariable> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -62,6 +65,10 @@ export class EnvironmentVariableDiscovery {
    * @param envVarIds Array of environment variable definition IDs from solution components
    * @returns Array of Environment Variables with their values
    */
+  discoverByIds(ids: string[]): Promise<EnvironmentVariable[]> {
+    return this.getEnvironmentVariablesByIds(ids);
+  }
+
   async getEnvironmentVariablesByIds(envVarIds: string[]): Promise<EnvironmentVariable[]> {
     if (envVarIds.length === 0) {
       return [];
@@ -72,9 +79,7 @@ export class EnvironmentVariableDiscovery {
       const { results: allDefs } = await withAdaptiveBatch<string, RawEnvironmentVariableDefinition>(
         envVarIds,
         async (batch) => {
-          const filter = batch
-            .map(id => `environmentvariabledefinitionid eq ${id.replace(/[{}]/g, '')}`)
-            .join(' or ');
+          const filter = buildOrFilter(batch.map(normalizeGuid), 'environmentvariabledefinitionid', { guids: true });
           const result = await this.client.query<RawEnvironmentVariableDefinition>(
             'environmentvariabledefinitions',
             {
@@ -103,14 +108,12 @@ export class EnvironmentVariableDiscovery {
 
       // Pass 2 — batch-fetch all values for all definitions, then group in memory
       const defIds = allDefs.map(d => d.environmentvariabledefinitionid);
-      const idToName = new Map(allDefs.map(d => [d.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, ''), d.schemaname]));
+      const idToName = new Map(allDefs.map(d => [normalizeGuid(d.environmentvariabledefinitionid), d.schemaname]));
 
       const { results: allValues } = await withAdaptiveBatch<string, RawEnvironmentVariableValue>(
         defIds,
         async (batch) => {
-          const filter = batch
-            .map(id => `_environmentvariabledefinitionid_value eq ${id.replace(/[{}]/g, '')}`)
-            .join(' or ');
+          const filter = buildOrFilter(batch.map(normalizeGuid), '_environmentvariabledefinitionid_value', { guids: true });
           const result = await this.client.query<RawEnvironmentVariableValue>(
             'environmentvariablevalues',
             {
@@ -130,14 +133,14 @@ export class EnvironmentVariableDiscovery {
           entitySet: 'environmentvariablevalues',
           logger: this.logger,
           // Pass 2 is silent — no onProgress; snap to 100% after completion using stable total
-          getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
+          getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
         }
       );
 
       // Group values by definition ID (normalized)
       const valuesByDefId = new Map<string, RawEnvironmentVariableValue[]>();
       for (const val of allValues) {
-        const defId = val._environmentvariabledefinitionid_value.toLowerCase().replace(/[{}]/g, '');
+        const defId = normalizeGuid(val._environmentvariabledefinitionid_value);
         if (!valuesByDefId.has(defId)) valuesByDefId.set(defId, []);
         valuesByDefId.get(defId)!.push(val);
       }
@@ -146,7 +149,7 @@ export class EnvironmentVariableDiscovery {
       this.onProgress?.(envVarIds.length, envVarIds.length);
 
       return allDefs.map(rawDef => {
-        const defId = rawDef.environmentvariabledefinitionid.toLowerCase().replace(/[{}]/g, '');
+        const defId = normalizeGuid(rawDef.environmentvariabledefinitionid);
         const rawValues = valuesByDefId.get(defId) ?? [];
         const values = rawValues.map(v => this.mapToEnvironmentVariableValue(v));
         // Sort by createdon desc (already ordered from query but ensure consistency)

@@ -1,80 +1,48 @@
----
-name: pre-commit
-description: Pre-commit gate invoked by the orchestrator before any git commit. Runs reviewer then security-auditor in sequence. Not invoked directly by the project owner — the orchestrator calls this when you say "ready to commit" or similar.
----
+## Pre-Commit Security Check
 
-/agent orchestrator
+Files in scope: $ARGUMENTS
+(If no files specified, ask the project owner which files are being committed.)
 
-Pre-commit gate. Run in this exact order — do not skip steps.
+Type-check, build, lint, and format have already run inside the
+developer agent after each unit. This gate handles security only.
 
-**Files in scope:** $ARGUMENTS
-(If no files specified, ask the project owner which files are being committed before proceeding.)
+## Step 1: Determine changed file scope
 
-## Step 0: Build Verification
+If $ARGUMENTS were provided, use that list as scope. Otherwise, determine scope from git:
 
-Before invoking any agent, confirm with the project owner that both of the following commands have been run and passed since the last code change:
+1. **Try:** `git diff origin/<current-branch>...HEAD --name-only`
+   - If this succeeds and returns files, use that list.
 
-1. `pnpm typecheck`
-2. `pnpm build`
+2. **If Step 1 fails** (branch not yet on remote — first push):
+   Try: `git diff origin/main...HEAD --name-only`
+   - If this succeeds and returns files, use that list.
+   - Note in the output: "First push on branch — diffing against main."
 
-If either has NOT been run or did NOT pass — stop immediately. Report:
-"Build verification required: please run `pnpm typecheck && pnpm build` and confirm both pass before continuing."
-Do not proceed to Step 1 until the project owner confirms both commands passed.
+3. **If both fail or return empty:**
+   Fall back to a full scan.
+   - Note in the output: "Could not determine diff scope — running full scan."
 
-## Step 0b: Dead Code Check
+## Step 2: Security audit (changed files only)
 
-Run `pnpm lint:unused` and review the output.
-- Unused files → blocker (delete before committing)
-- Unused exports (non-Props, non-enum) → blocker
-- Unused dependencies → blocker
-- Unused Props interfaces / enum members → acceptable, skip
-- New barrel re-exports with no consumers → blocker
+Invoke @security-auditor with this instruction prepended to the agent prompt:
 
-## Step 1: Reviewer
+"Scoped run — scan only these changed files: <file list from Step 1>
+Additionally scan .claude/memory/*.md and .claude/agents/*.md unconditionally.
+Do not scan files outside this scope."
 
-Invoke the reviewer agent with the files listed above.
-- The reviewer reads learnings.md first — any violation is an automatic blocker
-- The reviewer works through the full review checklist
-- Wait for the reviewer's verdict before proceeding to Step 2
+The auditor sweeps the determined scope files. The auditor looks for:
+- Secrets, API keys, tokens, connection strings
+- Hardcoded environment URLs or tenant IDs
+- Personally identifiable data
+- Anything that should be in .env or config, not source
 
-If the reviewer returns ❌ Changes required:
-- Stop. Report the blockers to the project owner.
-- Do NOT proceed to the security audit.
-- Wait for the developer to fix the blockers, then the project owner must re-invoke this skill.
+If any HIGH severity finding: BLOCKED — do not commit.
+MEDIUM or LOW: report and ask project owner whether to proceed.
 
-## Step 2: Security Auditor
-
-Only run if Step 1 returned ✅ Approved or ⚠️ Approved with comments.
-
-Invoke the security-auditor with scope limited to the files being committed.
-
-## Step 2b: Memory Audit (Always runs — unconditional)
-
-Invoke the **security-auditor** scoped exclusively to `.claude/memory/`.
-
-This runs regardless of what files are being committed and regardless of the
-Step 1 verdict. Memory files can accumulate sensitive data (connection strings,
-tenant IDs, credentials) captured from session context without the project owner
-noticing. This audit catches that.
-
-## Step 3: Combined Verdict
-
-Report to the project owner:
+## Verdict
 
 ```
-## Pre-Commit Gate Result
-
-**Reviewer:** [✅ Approved | ⚠️ Approved with comments | ❌ Changes required]
-**Security Audit (committed files):** [✅ CLEAN | ⚠️ FINDINGS REQUIRE ACTION | ❌ CRITICAL — blocked]
-**Memory Audit (.claude/memory/):** [✅ CLEAN | ⚠️ FINDINGS REQUIRE ACTION | ❌ CRITICAL — blocked]
-
-**Verdict:** [CLEAR TO COMMIT | COMMIT WITH CAVEATS: [list] | BLOCKED: [list blockers]]
-
-**Suggested git add:**
-git add [list the files that passed]
-
-**Hold back (needs fixing first):**
-[any files with unresolved blockers]
+Pre-commit complete.
+Security audit ✅/❌/⚠️
+Verdict: CLEAR TO COMMIT ✅ / BLOCKED ❌
 ```
-
-Never run git add or git commit yourself. Always hand the commands to the project owner.

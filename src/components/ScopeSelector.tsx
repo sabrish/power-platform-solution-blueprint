@@ -8,26 +8,18 @@ import {
   Radio,
   RadioGroup,
   Checkbox,
-  Dropdown,
-  Option,
-  OptionGroup,
-  Tag,
   MessageBar,
   MessageBarBody,
   MessageBarTitle,
   makeStyles,
   tokens,
   Tooltip,
-  Field,
 } from '@fluentui/react-components';
-import {
-  PptbDataverseClient,
-  PublisherDiscovery,
-  SolutionDiscovery,
-  type Publisher,
-  type Solution,
-} from '../core';
+import type { Publisher, Solution } from '../core';
 import type { ScopeType, ScopeSelection, PublisherScopeMode } from '../types/scope';
+import { useScopeData } from '../hooks/useScopeData';
+import { PublisherScopePanel } from './scope/PublisherScopePanel';
+import { SolutionScopePanel } from './scope/SolutionScopePanel';
 import { Footer } from './Footer';
 
 const useStyles = makeStyles({
@@ -79,41 +71,6 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
   },
-  radioContent: {
-    marginLeft: '28px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
-  },
-  dropdown: {
-    minWidth: '400px',
-  },
-  selectedItems: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: tokens.spacingHorizontalS,
-    marginTop: tokens.spacingVerticalS,
-  },
-  solutionInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  secondaryText: {
-    color: tokens.colorNeutralForeground3,
-    fontSize: tokens.fontSizeBase200,
-  },
-  disabledOptionText: {
-    color: tokens.colorNeutralForeground4,
-    fontSize: tokens.fontSizeBase200,
-    fontStyle: 'italic',
-  },
-  subOptions: {
-    marginTop: tokens.spacingVerticalM,
-    paddingLeft: tokens.spacingHorizontalL,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: tokens.spacingVerticalM,
-  },
   checkboxContainer: {
     marginTop: tokens.spacingVerticalL,
     paddingTop: tokens.spacingVerticalL,
@@ -143,11 +100,6 @@ const useStyles = makeStyles({
   errorContainer: {
     marginBottom: tokens.spacingVerticalL,
   },
-  hint: {
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground3,
-    marginTop: tokens.spacingVerticalXS,
-  },
 });
 
 export interface ScopeSelectorProps {
@@ -158,11 +110,8 @@ export interface ScopeSelectorProps {
 export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps) {
   const styles = useStyles();
 
-  // Data state
-  const [publishers, setPublishers] = useState<Publisher[]>([]);
-  const [solutions, setSolutions] = useState<Solution[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Data fetching — delegated to useScopeData hook
+  const { publishers, solutions, isLoading: loading, error, retry: handleRetry } = useScopeData();
 
   // Selection state
   const [scopeType, setScopeType] = useState<ScopeType>('solution');
@@ -170,12 +119,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   const [publisherScopeMode, setPublisherScopeMode] = useState<PublisherScopeMode>('all-solutions');
   const [selectedSolutionIds, setSelectedSolutionIds] = useState<string[]>([]);
   const [includeSystem, setIncludeSystem] = useState(true);
-  const [includeSystemFields, setIncludeSystemFields] = useState(false); // Default: exclude system fields
-
-  // Load data on mount
-  useEffect(() => {
-    loadData();
-  }, []);
+  const [includeSystemFields, setIncludeSystemFields] = useState(false);
 
   // Reset selections when scope type changes
   useEffect(() => {
@@ -195,84 +139,45 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
   // Selecting the Default Solution/Publisher is not recommended — it contains all
   // unmanaged customisations made directly in the environment. (Refs: GitHub issue #34)
   const defaultPublisherUniqueName = useMemo(() => {
-    const defaultSol = solutions.find(s => s.uniquename === 'Default');
+    const defaultSol = solutions.find((s) => s.uniquename === 'Default');
     return defaultSol?.publisherid.uniquename ?? null;
   }, [solutions]);
 
-  const isDefaultSolution = useCallback(
-    (sol: Solution) => sol.uniquename === 'Default',
-    []
-  );
+  // Known system publisher friendly names to exclude regardless of uniquename.
+  // The CDS Default Publisher has an auto-generated uniquename (e.g. cr114, cr23a)
+  // that varies per environment, so we match by friendly name as a fallback.
+  const EXCLUDED_PUBLISHER_NAMES = ['CDS Default Publisher'] as const;
 
   const isDefaultPublisher = useCallback(
-    (pub: Publisher) => !!defaultPublisherUniqueName && pub.uniquename === defaultPublisherUniqueName,
+    (pub: Publisher) =>
+      (!!defaultPublisherUniqueName && pub.uniquename === defaultPublisherUniqueName) ||
+      EXCLUDED_PUBLISHER_NAMES.includes(
+        pub.friendlyname as (typeof EXCLUDED_PUBLISHER_NAMES)[number]
+      ),
     [defaultPublisherUniqueName]
   );
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      if (!window.toolboxAPI || !window.dataverseAPI) {
-        throw new Error('PPTB Desktop API not available. Please run this tool inside PPTB Desktop.');
-      }
-
-      // Get environment URL from tool context
-      const toolContext = await window.toolboxAPI.getToolContext();
-      const environmentUrl = toolContext?.connectionUrl || 'Current Environment';
-
-      const client = new PptbDataverseClient(window.dataverseAPI, environmentUrl);
-      const publisherDiscovery = new PublisherDiscovery(client);
-      const solutionDiscovery = new SolutionDiscovery(client);
-
-      const [publishersData, solutionsData] = await Promise.all([
-        publisherDiscovery.getPublishers(),
-        solutionDiscovery.getSolutions(),
-      ]);
-
-      setPublishers(publishersData);
-      setSolutions(solutionsData);
-
-      if (publishersData.length === 0 && solutionsData.length === 0) {
-        setError('No custom publishers or solutions found in this environment.');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRetry = () => {
-    loadData();
-  };
-
-  const handleScopeTypeChange = (_: unknown, data: { value: string }) => {
-    setScopeType(data.value as ScopeType);
-  };
-
-  const handlePublisherScopeModeChange = (ev: unknown, data: { value: string }) => {
-    // Prevent event bubbling to parent RadioGroup
-    if (ev && typeof ev === 'object' && 'stopPropagation' in ev && typeof ev.stopPropagation === 'function') {
-      ev.stopPropagation();
-    }
-    setPublisherScopeMode(data.value as PublisherScopeMode);
-  };
+  const isDefaultSolution = useCallback(
+    (sol: Solution) =>
+      sol.uniquename === 'Default' ||
+      sol.friendlyname === 'Common Data Services Default Solution' ||
+      (!!sol.publisherid &&
+        ((!!defaultPublisherUniqueName &&
+          sol.publisherid.uniquename === defaultPublisherUniqueName) ||
+          EXCLUDED_PUBLISHER_NAMES.includes(
+            sol.publisherid.friendlyname as (typeof EXCLUDED_PUBLISHER_NAMES)[number]
+          ))),
+    [defaultPublisherUniqueName]
+  );
 
   // Filtered solutions based on selected publishers
   const filteredSolutions = useMemo(() => {
     if (scopeType !== 'publisher' || selectedPublisherIds.length === 0) {
       return [];
     }
-
-    // Get the unique names of selected publishers
     const selectedPublisherUniqueNames = publishers
       .filter((p) => selectedPublisherIds.includes(p.publisherid))
       .map((p) => p.uniquename);
-
-    // Filter solutions where the publisher's unique name matches
     return solutions.filter((solution) =>
       selectedPublisherUniqueNames.includes(solution.publisherid.uniquename)
     );
@@ -292,7 +197,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     return false;
   };
 
-  const handleContinue = () => {
+  const handleContinue = (): void => {
     if (!isValidSelection()) return;
 
     let scope: ScopeSelection;
@@ -300,17 +205,14 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
     if (scopeType === 'publisher') {
       const selectedPubs = publishers.filter((p) => selectedPublisherIds.includes(p.publisherid));
 
-      // ALWAYS use solution IDs - we have them in both modes
       let solutionIds: string[];
       let solutionNames: string[];
 
       if (publisherScopeMode === 'specific-solutions') {
-        // User selected specific solutions
         const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
         solutionIds = selectedSolutionIds;
         solutionNames = selectedSols.map((s) => s.friendlyname);
       } else {
-        // All solutions from selected publishers
         solutionIds = filteredSolutions.map((s) => s.solutionid);
         solutionNames = filteredSolutions.map((s) => s.friendlyname);
       }
@@ -324,7 +226,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         solutionIds,
         solutionNames,
         includeSystem,
-        excludeSystemFields: !includeSystemFields, // Invert for internal use
+        excludeSystemFields: !includeSystemFields,
       };
     } else {
       const selectedSols = solutions.filter((s) => selectedSolutionIds.includes(s.solutionid));
@@ -333,7 +235,7 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
         solutionIds: selectedSolutionIds,
         solutionNames: selectedSols.map((s) => s.friendlyname),
         includeSystem,
-        excludeSystemFields: !includeSystemFields, // Invert for internal use
+        excludeSystemFields: !includeSystemFields,
       };
     }
 
@@ -370,7 +272,12 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
               <MessageBarTitle>Failed to load data</MessageBarTitle>
               {error}
               <br />
-              <Button appearance="secondary" size="small" onClick={handleRetry} className={styles.retryButton}>
+              <Button
+                appearance="secondary"
+                size="small"
+                onClick={handleRetry}
+                className={styles.retryButton}
+              >
                 Retry
               </Button>
             </MessageBarBody>
@@ -379,256 +286,51 @@ export function ScopeSelector({ onScopeSelected, onCancel }: ScopeSelectorProps)
       )}
 
       <div className={styles.section}>
-        <RadioGroup value={scopeType} onChange={handleScopeTypeChange} className={styles.radioGroup}>
+        <RadioGroup
+          value={scopeType}
+          onChange={(_, data) => setScopeType(data.value as ScopeType)}
+          className={styles.radioGroup}
+        >
           {/* Option A: By Publisher */}
           <div className={styles.radioOption}>
-            <Radio value="publisher" label="By Publisher" disabled={loading || publishers.length === 0} />
+            <Radio
+              value="publisher"
+              label="By Publisher"
+              disabled={loading || publishers.length === 0}
+            />
             {scopeType === 'publisher' && (
-              <div className={styles.radioContent}>
-                <Field hint={`Select one or more publishers. ${selectedPublisherIds.length} selected.`}>
-                  <Dropdown
-                    className={styles.dropdown}
-                    placeholder="Select publishers..."
-                    multiselect
-                    selectedOptions={selectedPublisherIds}
-                    onOptionSelect={(_, data) => {
-                      setSelectedPublisherIds(
-                        (data.selectedOptions ?? []).filter(id => {
-                          const pub = publishers.find(p => p.publisherid === id);
-                          return !pub || !isDefaultPublisher(pub);
-                        })
-                      );
-                    }}
-                    disabled={loading}
-                  >
-                    {publishers.filter(p => !isDefaultPublisher(p)).map((publisher) => (
-                      <Option
-                        key={publisher.publisherid}
-                        value={publisher.publisherid}
-                        text={publisher.friendlyname}
-                      >
-                        <div className={styles.solutionInfo}>
-                          <Text>{publisher.friendlyname}</Text>
-                          <Text className={styles.secondaryText}>Prefix: {publisher.customizationprefix}</Text>
-                        </div>
-                      </Option>
-                    ))}
-                    {publishers.some(p => isDefaultPublisher(p)) && (
-                      <OptionGroup label="Not Recommended">
-                        {publishers.filter(p => isDefaultPublisher(p)).map((publisher) => (
-                          <Option
-                            key={publisher.publisherid}
-                            value={publisher.publisherid}
-                            text={publisher.friendlyname}
-                            disabled
-                          >
-                            <div className={styles.solutionInfo}>
-                              <Text>{publisher.friendlyname}</Text>
-                              <Text className={styles.disabledOptionText}>
-                                Default Publisher — contains all direct environment customisations.
-                              </Text>
-                            </div>
-                          </Option>
-                        ))}
-                      </OptionGroup>
-                    )}
-                  </Dropdown>
-                </Field>
-
-                {selectedPublisherIds.length > 0 && (
-                  <div className={styles.selectedItems}>
-                    {selectedPublisherIds.map((pubId) => {
-                      const publisher = publishers.find((p) => p.publisherid === pubId);
-                      return publisher ? (
-                        <Tag
-                          key={pubId}
-                          dismissible
-                          dismissIcon={{
-                            onClick: () =>
-                              setSelectedPublisherIds(selectedPublisherIds.filter((id) => id !== pubId)),
-                          }}
-                          secondaryText={`Prefix: ${publisher.customizationprefix}`}
-                        >
-                          {publisher.friendlyname}
-                        </Tag>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-
-                {selectedPublisherIds.length > 0 && (
-                  <div className={styles.subOptions}>
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <RadioGroup
-                        value={publisherScopeMode}
-                        onChange={handlePublisherScopeModeChange}
-                        layout="horizontal"
-                      >
-                        <Radio
-                          value="all-solutions"
-                          label={`All solutions from selected publisher${selectedPublisherIds.length > 1 ? 's' : ''}`}
-                        />
-                        <Radio value="specific-solutions" label="Specific solutions only" />
-                      </RadioGroup>
-                    </div>
-
-                    {publisherScopeMode === 'specific-solutions' && (
-                      <>
-                        <Field
-                          hint={`Select solutions from chosen publishers. ${selectedSolutionIds.length}/${filteredSolutions.length} selected.`}
-                        >
-                          <Dropdown
-                            className={styles.dropdown}
-                            placeholder="Select solutions..."
-                            multiselect
-                            selectedOptions={selectedSolutionIds}
-                            onOptionSelect={(_, data) => {
-                              setSelectedSolutionIds(
-                                (data.selectedOptions ?? []).filter(id => {
-                                  const sol = solutions.find(s => s.solutionid === id);
-                                  return !sol || !isDefaultSolution(sol);
-                                })
-                              );
-                            }}
-                            disabled={loading || filteredSolutions.length === 0}
-                          >
-                            {filteredSolutions.filter(s => !isDefaultSolution(s)).map((solution) => (
-                              <Option
-                                key={solution.solutionid}
-                                value={solution.solutionid}
-                                text={solution.friendlyname}
-                              >
-                                <div className={styles.solutionInfo}>
-                                  <Text>{solution.friendlyname}</Text>
-                                  <Text className={styles.secondaryText}>v{solution.version} | {solution.publisherid.friendlyname}</Text>
-                                </div>
-                              </Option>
-                            ))}
-                            {filteredSolutions.some(s => isDefaultSolution(s)) && (
-                              <OptionGroup label="Not Recommended">
-                                {filteredSolutions.filter(s => isDefaultSolution(s)).map((solution) => (
-                                  <Option
-                                    key={solution.solutionid}
-                                    value={solution.solutionid}
-                                    text={solution.friendlyname}
-                                    disabled
-                                  >
-                                    <div className={styles.solutionInfo}>
-                                      <Text>{solution.friendlyname}</Text>
-                                      <Text className={styles.disabledOptionText}>
-                                        Default Solution — contains all direct environment customisations.
-                                      </Text>
-                                    </div>
-                                  </Option>
-                                ))}
-                              </OptionGroup>
-                            )}
-                          </Dropdown>
-                        </Field>
-
-                        {selectedSolutionIds.length > 0 && (
-                          <div className={styles.selectedItems}>
-                            {selectedSolutionIds.map((solId) => {
-                              const solution = solutions.find((s) => s.solutionid === solId);
-                              return solution ? (
-                                <Tag
-                                  key={solId}
-                                  dismissible
-                                  dismissIcon={{
-                                    onClick: () =>
-                                      setSelectedSolutionIds(selectedSolutionIds.filter((id) => id !== solId)),
-                                  }}
-                                  secondaryText={`v${solution.version}`}
-                                >
-                                  {solution.friendlyname}
-                                </Tag>
-                              ) : null;
-                            })}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <PublisherScopePanel
+                publishers={publishers}
+                solutions={solutions}
+                filteredSolutions={filteredSolutions}
+                selectedPublisherIds={selectedPublisherIds}
+                onPublisherIdsChange={setSelectedPublisherIds}
+                publisherScopeMode={publisherScopeMode}
+                onPublisherScopeModeChange={setPublisherScopeMode}
+                selectedSolutionIds={selectedSolutionIds}
+                onSolutionIdsChange={setSelectedSolutionIds}
+                isDefaultPublisher={isDefaultPublisher}
+                isDefaultSolution={isDefaultSolution}
+                disabled={loading}
+              />
             )}
           </div>
 
           {/* Option B: By Solution */}
           <div className={styles.radioOption}>
-            <Radio value="solution" label="By Solution (Recommended)" disabled={loading || solutions.length === 0} />
+            <Radio
+              value="solution"
+              label="By Solution (Recommended)"
+              disabled={loading || solutions.length === 0}
+            />
             {scopeType === 'solution' && (
-              <div className={styles.radioContent}>
-                <Field hint={`Select one or more solutions. ${selectedSolutionIds.length} selected.`}>
-                  <Dropdown
-                    className={styles.dropdown}
-                    placeholder="Select solutions..."
-                    multiselect
-                    selectedOptions={selectedSolutionIds}
-                    onOptionSelect={(_, data) => {
-                      setSelectedSolutionIds(
-                        (data.selectedOptions ?? []).filter(id => {
-                          const sol = solutions.find(s => s.solutionid === id);
-                          return !sol || !isDefaultSolution(sol);
-                        })
-                      );
-                    }}
-                    disabled={loading}
-                  >
-                    {solutions.filter(s => !isDefaultSolution(s)).map((solution) => (
-                      <Option
-                        key={solution.solutionid}
-                        value={solution.solutionid}
-                        text={solution.friendlyname}
-                      >
-                        <div className={styles.solutionInfo}>
-                          <Text>{solution.friendlyname}</Text>
-                          <Text className={styles.secondaryText}>v{solution.version} | {solution.publisherid.friendlyname}</Text>
-                        </div>
-                      </Option>
-                    ))}
-                    {solutions.some(s => isDefaultSolution(s)) && (
-                      <OptionGroup label="Not Recommended">
-                        {solutions.filter(s => isDefaultSolution(s)).map((solution) => (
-                          <Option
-                            key={solution.solutionid}
-                            value={solution.solutionid}
-                            text={solution.friendlyname}
-                            disabled
-                          >
-                            <div className={styles.solutionInfo}>
-                              <Text>{solution.friendlyname}</Text>
-                              <Text className={styles.disabledOptionText}>
-                                Default Solution — contains all direct environment customisations.
-                              </Text>
-                            </div>
-                          </Option>
-                        ))}
-                      </OptionGroup>
-                    )}
-                  </Dropdown>
-                </Field>
-
-                {selectedSolutionIds.length > 0 && (
-                  <div className={styles.selectedItems}>
-                    {selectedSolutionIds.map((solId) => {
-                      const solution = solutions.find((s) => s.solutionid === solId);
-                      return solution ? (
-                        <Tag
-                          key={solId}
-                          dismissible
-                          dismissIcon={{
-                            onClick: () => setSelectedSolutionIds(selectedSolutionIds.filter((id) => id !== solId)),
-                          }}
-                          secondaryText={`v${solution.version}`}
-                        >
-                          {solution.friendlyname}
-                        </Tag>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-              </div>
+              <SolutionScopePanel
+                solutions={solutions}
+                selectedSolutionIds={selectedSolutionIds}
+                onSolutionIdsChange={setSelectedSolutionIds}
+                isDefaultSolution={isDefaultSolution}
+                disabled={loading}
+              />
             )}
           </div>
         </RadioGroup>

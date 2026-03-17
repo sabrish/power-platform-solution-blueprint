@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       applyTheme(isDark ? 'dark' : 'light');
     };
 
-    const pptbAPI = (window as any).toolboxAPI;
+    const pptbAPI = window.toolboxAPI;
 
     // Read initial theme
     if (pptbAPI?.utils?.getCurrentTheme) {
@@ -39,9 +39,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
 
     // Re-read theme whenever settings are saved
-    const handleEvent = (_event: any, payload: any) => {
-      if (payload?.event === 'settings:updated' && payload?.data?.theme) {
-        applyTheme(payload.data.theme as 'light' | 'dark');
+    const handleEvent = (_event: unknown, payload: unknown) => {
+      const p = payload as { event?: unknown; data?: { theme?: unknown } } | null | undefined;
+      if (p?.event === 'settings:updated' && p.data?.theme) {
+        applyTheme(p.data.theme as 'light' | 'dark');
       }
     };
     pptbAPI?.events?.on(handleEvent);

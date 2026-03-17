@@ -1,4 +1,5 @@
 import type { FlowDefinition, ExternalCall, DataverseAction } from '../types/blueprint.js';
+import { debugLog } from '../utils/debugLogger.js';
 
 /**
  * Parses Power Automate flow definitions from clientdata JSON
@@ -27,6 +28,7 @@ export class FlowDefinitionParser {
     };
 
     if (!clientdata) {
+      debugLog('flow-parse', 'clientdata is null — returning default definition');
       return defaultDefinition;
     }
 
@@ -48,6 +50,15 @@ export class FlowDefinitionParser {
       // Extract scope/run as information
       const scopeType = this.extractScopeType(data);
 
+      debugLog('flow-parse', `parse complete: ${trigger.type}/${trigger.event}`, {
+        triggerEntity: trigger.entity,
+        actionsCount,
+        dataverseActionsCount: dataverseActions.length,
+        externalCallsCount: externalCalls.length,
+        childFlowIdsCount: childFlowIds.length,
+        scopeType,
+      });
+
       return {
         triggerType: trigger.type,
         triggerEvent: trigger.event,
@@ -61,6 +72,7 @@ export class FlowDefinitionParser {
         ...(childFlowIds.length > 0 ? { childFlowIds } : {}),
       };
     } catch (error) {
+      debugLog('flow-parse', 'JSON parse failed', { error: error instanceof Error ? error.message : String(error) });
       return defaultDefinition;
     }
   }
@@ -86,8 +98,13 @@ export class FlowDefinitionParser {
     const trigger = definition.triggers[triggerKey];
 
     if (!trigger) {
+      debugLog('flow-parse', `no trigger found (triggerKey="${triggerKey}")`);
       return { type: 'Other', event: 'Unknown', entity: null, conditions: null };
     }
+
+    debugLog('flow-parse', `trigger: key="${triggerKey}" type="${trigger.type}"`, {
+      apiId: (trigger.inputs?.host?.apiId || ''),
+    });
 
     // Determine trigger type
     let triggerType: FlowDefinition['triggerType'] = 'Other';
@@ -140,6 +157,27 @@ export class FlowDefinitionParser {
         trigger.metadata?.entityName ||
         null;
 
+      if (triggerEntity === null) {
+        debugLog('flow-parse', 'Dataverse trigger — triggerEntity=null (all paths missed)', {
+          triggerKind, apiId,
+          parameters: trigger.inputs?.parameters,
+          body: trigger.inputs?.body,
+          metadata: trigger.metadata,
+        });
+      } else {
+        debugLog('flow-parse', `Dataverse trigger — triggerEntity="${triggerEntity}"`, {
+          triggerKind, apiId,
+          resolvedFrom: (
+            trigger.inputs?.parameters?.['subscriptionRequest/entityname'] ? 'subscriptionRequest/entityname' :
+            trigger.inputs?.body?.EntityLogicalName ? 'body.EntityLogicalName' :
+            trigger.inputs?.parameters?.EntityLogicalName ? 'parameters.EntityLogicalName' :
+            trigger.inputs?.parameters?.entityName ? 'parameters.entityName' :
+            trigger.inputs?.parameters?.entityLogicalName ? 'parameters.entityLogicalName' :
+            'metadata.entityName'
+          ),
+        });
+      }
+
       // Filter conditions — try modern connector path first, then legacy paths
       const filterExpr =
         trigger.inputs?.parameters?.['subscriptionRequest/filterexpression'] ||
@@ -153,6 +191,12 @@ export class FlowDefinitionParser {
     } else if (triggerKind.includes('recurrence') || triggerKind.includes('schedule')) {
       triggerType = 'Scheduled';
       triggerEvent = 'Scheduled';
+    } else {
+      debugLog('flow-parse', `triggerType=Other (no pattern matched)`, {
+        triggerKind, apiId,
+        'trigger.type': trigger.type,
+        'inputs.host': trigger.inputs?.host,
+      });
     }
 
     return { type: triggerType, event: triggerEvent, entity: triggerEntity, conditions };
@@ -351,6 +395,12 @@ export class FlowDefinitionParser {
     Object.keys(definition.actions).forEach((actionKey) => {
       processAction(definition.actions[actionKey], actionKey);
     });
+
+    debugLog('flow-parse', `extractDataverseActions: ${dataverseActions.length} action(s) found`,
+      dataverseActions.length > 0
+        ? dataverseActions.map(a => `${a.operation}→${a.targetEntity || '[unbound]'} (${a.confidence})`)
+        : undefined
+    );
 
     return dataverseActions;
   }

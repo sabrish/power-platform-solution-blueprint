@@ -1,8 +1,3 @@
----
-name: release
-description: Full release sequence invoked by the orchestrator. Runs reviewer, security-auditor, document-updater (version bump), and developer (typecheck/build/shrinkwrap) in order. Not invoked directly by the project owner — the orchestrator calls this when you say "prepare a release" or "cut a release".
----
-
 /agent orchestrator
 
 Release sequence for Power Platform Solution Blueprint (PPSB).
@@ -77,14 +72,13 @@ Invoke the **developer** agent with these exact tasks, in this exact order:
 Confirm all four steps passed, then print the following — do not run any of these:
 
 ```
-## Release v[VERSION] — Ready to Publish
-
-All checks passed:
-✅ Code review
-✅ Security audit
-✅ Version bump — package.json, npm-shrinkwrap.json, CHANGELOG.md, README.md all show v[VERSION]
-✅ pnpm typecheck — zero errors
-✅ pnpm build — succeeded
+Release complete.
+Code review ✅
+Security audit ✅
+Version bump ✅
+pnpm typecheck ✅
+pnpm build ✅
+Verdict: READY TO PUBLISH ✅
 
 Run these commands to publish:
 

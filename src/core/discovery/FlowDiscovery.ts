@@ -1,9 +1,12 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { Flow } from '../types/blueprint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { FlowDefinitionParser } from '../parsers/FlowDefinitionParser.js';
+import { debugLog } from '../utils/debugLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid } from '../utils/guid.js';
 
 interface WorkflowMetaRecord {
   workflowid: string;
@@ -27,7 +30,7 @@ interface WorkflowClientDataRecord {
   clientdata: string | null;
 }
 
-export class FlowDiscovery {
+export class FlowDiscovery implements IDiscoverer<Flow> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -40,6 +43,10 @@ export class FlowDiscovery {
     this.client = client;
     this.onProgress = onProgress;
     this.logger = logger;
+  }
+
+  discoverByIds(ids: string[]): Promise<Flow[]> {
+    return this.getFlowsByIds(ids);
   }
 
   async getFlowsByIds(workflowIds: string[]): Promise<Flow[]> {
@@ -95,18 +102,18 @@ export class FlowDiscovery {
           Math.floor(workflowIds.length / 2) + Math.floor(done / 2),
           workflowIds.length
         ),
-        getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase().replace(/[{}]/g, '')) ?? id).join(', '),
+        getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
       }
     );
 
     // Normalise workflowid (lowercase, no braces) for consistent map keys
     for (const r of cdRecords) {
-      clientDataMap.set(r.workflowid.toLowerCase().replace(/[{}]/g, ''), r.clientdata ?? null);
+      clientDataMap.set(normalizeGuid(r.workflowid), r.clientdata ?? null);
     }
 
     this.onProgress?.(workflowIds.length, workflowIds.length);
     return metaRecords.map(r =>
-      this.mapToFlow(r, clientDataMap.get(r.workflowid.toLowerCase().replace(/[{}]/g, '')) ?? null)
+      this.mapToFlow(r, clientDataMap.get(normalizeGuid(r.workflowid)) ?? null)
     );
   }
 
@@ -132,6 +139,14 @@ export class FlowDiscovery {
 
   private mapToFlow(record: WorkflowMetaRecord, clientdata: string | null): Flow {
     const definition = FlowDefinitionParser.parse(clientdata);
+    debugLog('flow-discovery', `mapToFlow: ${record.name}`, {
+      workflowid: record.workflowid,
+      primaryentity: record.primaryentity,
+      scope: record.scope,
+      triggerType: definition.triggerType,
+      triggerEntity: definition.triggerEntity,
+      hasClientdata: clientdata !== null,
+    });
 
     let state: Flow['state'] = 'Draft';
     if (record.statecode === 1) state = 'Active';

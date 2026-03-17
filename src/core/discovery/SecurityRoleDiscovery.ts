@@ -9,8 +9,10 @@
  */
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid, normalizeBatch } from '../utils/guid.js';
 
 export interface SecurityRole {
   roleid: string;
@@ -140,7 +142,7 @@ interface RawPrivilege {
   accessright: number;
 }
 
-export class SecurityRoleDiscovery {
+export class SecurityRoleDiscovery implements IDiscoverer<SecurityRole> {
   constructor(
     private client: IDataverseClient,
     private onProgress?: (current: number, total: number) => void,
@@ -151,9 +153,13 @@ export class SecurityRoleDiscovery {
    * Batch-fetch security roles by ID using withAdaptiveBatch.
    * Uses `roleid eq <guid>` OData filters — same pattern as FlowDiscovery and ClassicWorkflowDiscovery.
    */
+  discoverByIds(ids: string[]): Promise<SecurityRole[]> {
+    return this.getSecurityRoles(ids);
+  }
+
   async getSecurityRoles(roleIds: string[]): Promise<SecurityRole[]> {
     if (roleIds.length === 0) return [];
-    const cleanIds = roleIds.map(id => id.replace(/[{}]/g, ''));
+    const cleanIds = normalizeBatch(roleIds);
 
     const { results } = await withAdaptiveBatch<string, RawRole>(
       cleanIds,
@@ -207,8 +213,8 @@ export class SecurityRoleDiscovery {
 
     // Pass 1 — batch roleprivilegescollection queries (5 roles per batch)
     // Including roleid in the response so we can group by role
-    const roleIds = roles.map(r => r.roleid.replace(/[{}]/g, ''));
-    const roleIdToName = new Map(roles.map(r => [r.roleid.replace(/[{}]/g, '').toLowerCase(), r.name]));
+    const roleIds = normalizeBatch(roles.map(r => r.roleid));
+    const roleIdToName = new Map(roles.map(r => [normalizeGuid(r.roleid), r.name]));
     const rolePrivRows: RawRolePrivRow[] = [];
 
     const { results: privRows } = await withAdaptiveBatch<string, RawRolePrivRow>(
@@ -241,7 +247,7 @@ export class SecurityRoleDiscovery {
     }
 
     // Collect ALL unique privilege IDs across all roles
-    const uniquePrivilegeIds = [...new Set(rolePrivRows.map(r => r.privilegeid.replace(/[{}]/g, '')))];
+    const uniquePrivilegeIds = [...new Set(rolePrivRows.map(r => normalizeGuid(r.privilegeid)))];
 
     // Pass 2 — query privileges table ONCE for all unique IDs
     const privilegeNameMap = new Map<string, { name: string; accessright: number }>();
@@ -274,10 +280,10 @@ export class SecurityRoleDiscovery {
 
     // Build role details from the maps
     return roles.map((role, i) => {
-      const key = role.roleid.toLowerCase().replace(/[{}]/g, '');
+      const key = normalizeGuid(role.roleid);
       const assignments = rolePrivMap.get(key) ?? [];
       const privileges: RolePrivilege[] = assignments.map(a => {
-        const meta = privilegeNameMap.get(a.privilegeId.toLowerCase().replace(/[{}]/g, ''));
+        const meta = privilegeNameMap.get(normalizeGuid(a.privilegeId));
         return {
           privilegeid: a.privilegeId,
           privilegename: meta?.name ?? '',

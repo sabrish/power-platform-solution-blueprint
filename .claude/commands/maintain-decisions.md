@@ -1,8 +1,3 @@
----
-name: maintain-decisions
-description: Prune decisions.md by collapsing settled decisions to summaries. Run every major version.
----
-
 /agent document-updater
 
 Maintenance pass on .claude/memory/decisions.md.
@@ -28,3 +23,10 @@ After all approvals:
 - Append the full original entries to docs/architecture.md under a section called
   "## Architecture Decision Records (Archived)" — create the section if it doesn't exist
 - Report: how many decisions reviewed, how many collapsed, new line counts for both files
+
+```
+Maintenance complete.
+Entries reviewed ✅
+Decisions collapsed ✅/⏭️ (if none ready)
+Archived to docs/architecture.md ✅
+```

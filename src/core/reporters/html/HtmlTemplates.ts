@@ -947,13 +947,15 @@ ${rows}
       const stateBadge = br.state === 'Active'
         ? '<span class="badge badge-success">Active</span>'
         : '<span class="badge badge-warning">Draft</span>';
+      const conditionCount = br.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
+      const actionCount = br.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + br.definition.elseActions.length;
       return `<tr>
         <td>${this.htmlEscape(br.name)}</td>
         <td>${this.htmlEscape(br.scopeName)}</td>
         <td>${this.htmlEscape(br.definition.executionContext)}</td>
         <td>${stateBadge}</td>
-        <td>${br.definition.conditions.length}</td>
-        <td>${br.definition.actions.length}</td>
+        <td>${conditionCount}</td>
+        <td>${actionCount}</td>
       </tr>`;
     }).join('\n');
 
@@ -1133,22 +1135,46 @@ ${rows}
 
     const items = businessRules.map((rule, i) => {
       const entityDisplay = this.htmlEscape(rule.entityDisplayName || rule.entity);
-      const conditions = rule.definition.conditions ?? [];
-      const actions = rule.definition.actions ?? [];
+      const conditionGroups = rule.definition.conditionGroups ?? [];
+      const elseActions = rule.definition.elseActions ?? [];
       const id = `br-${i}`;
 
-      const condRows = conditions.map(c => `<tr>
-        <td><code>${this.htmlEscape(c.field)}</code></td>
-        <td>${this.htmlEscape(c.operator)}</td>
-        <td>${c.value ? this.htmlEscape(c.value) : '—'}</td>
-        <td>${this.htmlEscape(c.logicOperator)}</td>
-      </tr>`).join('');
+      // Build condition/action tables for each group
+      const groupSections = conditionGroups.map((group, groupIdx) => {
+        const condRows = group.conditions.map(c => `<tr>
+          <td><code>${this.htmlEscape(c.field)}</code></td>
+          <td>${this.htmlEscape(c.operator)}</td>
+          <td>${c.value ? this.htmlEscape(c.value) : '—'}</td>
+          <td>${this.htmlEscape(c.logicOperator)}</td>
+        </tr>`).join('');
 
-      const actRows = actions.map(a => `<tr>
+        const actionRows = group.actions.map(a => `<tr>
+          <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
+          <td><code>${this.htmlEscape(a.field)}</code></td>
+          <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
+        </tr>`).join('');
+
+        const header = groupIdx === 0 ? 'IF' : 'ELSE IF';
+        return `
+          <div>
+            <h5 style="margin-bottom:6px">${header}: Conditions${groupIdx === 0 && rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.htmlEscape(rule.definition.conditionLogic)})</span>` : ''}</h5>
+            ${group.conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Field</th><th scope="col">Operator</th><th scope="col">Value</th><th scope="col">Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
+          </div>
+          <div>
+            <h5 style="margin-bottom:6px">THEN: Actions</h5>
+            ${group.actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${actionRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
+          </div>
+        `;
+      }).join('');
+
+      const elseRows = elseActions.map(a => `<tr>
         <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
         <td><code>${this.htmlEscape(a.field)}</code></td>
         <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
       </tr>`).join('');
+
+      const totalConditionCount = conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
+      const totalActionCount = conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + elseActions.length;
 
       return `<div class="accordion-item">
   <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')">
@@ -1160,23 +1186,20 @@ ${rows}
         <span class="badge badge-${rule.state === 'Active' ? 'success' : 'warning'}">${this.htmlEscape(rule.state)}</span>
         <span class="badge">${this.htmlEscape(rule.scope)}</span>
         <span class="badge badge-${rule.definition.executionContext === 'Server' || rule.definition.executionContext === 'Both' ? 'info' : 'warning'}">${this.htmlEscape(rule.definition.executionContext)}</span>
-        ${conditions.length > 0 ? `<span class="badge">${conditions.length} condition${conditions.length !== 1 ? 's' : ''}</span>` : ''}
-        ${actions.length > 0 ? `<span class="badge">${actions.length} action${actions.length !== 1 ? 's' : ''}</span>` : ''}
+        ${totalConditionCount > 0 ? `<span class="badge">${totalConditionCount} condition${totalConditionCount !== 1 ? 's' : ''}</span>` : ''}
+        ${totalActionCount > 0 ? `<span class="badge">${totalActionCount} action${totalActionCount !== 1 ? 's' : ''}</span>` : ''}
       </div>
       ${rule.description ? `<div style="font-size:0.85em;color:#666;margin-top:2px">${this.htmlEscape(rule.description)}</div>` : ''}
     </div>
   </div>
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
     ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.htmlEscape(rule.definition.parseError)}</div>` : ''}
-    <div style="display:grid;grid-template-columns:minmax(200px,1fr) minmax(200px,1fr);gap:16px;">
-      <div>
-        <h5 style="margin-bottom:6px">Conditions${rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.htmlEscape(rule.definition.conditionLogic)})</span>` : ''}</h5>
-        ${conditions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Field</th><th scope="col">Operator</th><th scope="col">Value</th><th scope="col">Logic</th></tr></thead><tbody>${condRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No conditions detected.</p>'}
-      </div>
-      <div>
-        <h5 style="margin-bottom:6px">Actions</h5>
-        ${actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${actRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No actions detected.</p>'}
-      </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      ${groupSections}
+      ${elseActions.length > 0 ? `<div>
+        <h5 style="margin-bottom:6px">ELSE: Actions</h5>
+        <table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${elseRows}</tbody></table>
+      </div>` : ''}
     </div>
   </div>
 </div>`;
@@ -1961,188 +1984,153 @@ ${rows}
    *   - Entities without inbound entry points → message pipeline step table
    */
   private htmlPipelineTraces(analysis: CrossEntityAnalysisResult): string {
-    const pipelines = Array.from(analysis.allEntityPipelines.entries())
-      .sort(([, a], [, b]) => a.entityDisplayName.localeCompare(b.entityDisplayName));
-    if (pipelines.length === 0) return '<p>No pipeline traces available.</p>';
+    // Collect all unique automations across all entities (pipeline-first view)
+    const automationMap = new Map<string, {
+      id: string;
+      name: string;
+      type: 'Flow' | 'ClassicWorkflow' | 'BusinessRule' | 'Plugin';
+      affectedEntities: Array<{
+        logicalName: string;
+        displayName: string;
+        direction: 'inbound' | 'outbound' | 'both';
+        operations: string[];
+        isAsync: boolean;
+        hasExternalCalls: boolean;
+      }>;
+      triggerType: 'Dataverse' | 'Manual' | 'Scheduled' | 'Mixed';
+      hasExternalCalls: boolean;
+    }>();
 
-    const COLORS = ['#0078d4','#107c10','#ca5010','#8764b8','#038387','#c239b3','#e3008c','#004b50'];
-    const colorMap = new Map(pipelines.map(([k], i) => [k, i]));
-    const entityColor = (key: string) => COLORS[(colorMap.get(key) ?? 0) % COLORS.length];
-
-    const firingBadge = (status: string): string => {
-      if (status === 'WillFire') return '<span class="badge badge-success">Yes</span>';
-      if (status === 'WontFire') return '<span class="badge badge-danger">No (field mismatch)</span>';
-      return '<span class="badge badge-warning">Yes (no filter)</span>';
-    };
-
-    const defaultCount = pipelines.filter(([, p]) => p.hasCrossEntityOutput || p.hasExternalInteraction).length;
-    const allCount = pipelines.length;
-    const checkboxHtml = allCount > defaultCount ? `<div style="margin-bottom:4px;">
-  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:0.9em;">
-    <input type="checkbox" id="cea-show-all" onchange="toggleCeaAllEntities(this.checked)" style="cursor:pointer">
-    Show all entities with automation
-  </label>
-</div>
-<p style="font-size:0.8em;color:#666;margin:0 0 12px">Default: entities with cross-entity writes or external API calls.</p>` : '';
-
-    const items: string[] = [];
-    let idx = 0;
-    for (const [logicalName, pipeline] of pipelines) {
-      const entityView = analysis.entityViews.get(logicalName);
-      const color = entityColor(logicalName);
-      const id = `cea-entity-${idx++}`;
-      const showByDefault = pipeline.hasCrossEntityOutput || pipeline.hasExternalInteraction;
-      const wrapClass = showByDefault ? 'cea-entity' : 'cea-entity cea-entity-no-output';
-      const hiddenAttr = showByDefault ? '' : ' style="display:none"';
-
-      const opBadges = pipeline.messagePipelines
-        .map(mp => {
-          const c = mp.message === 'Create' ? 'success' : mp.message === 'Delete' ? 'danger' : 'warning';
-          return `<span class="badge badge-${c}">${this.htmlEscape(mp.message)}</span>`;
-        }).join(' ');
-      const crossBadge = pipeline.hasCrossEntityOutput ? `<span class="badge badge-info">→ cross-entity</span>` : '';
-      const externalBadge = pipeline.hasExternalInteraction ? `<span class="badge badge-primary">&#8627; External calls</span>` : '';
-
-      let bodyHtml: string;
-      let entryCountHtml = '';
-
-      if (entityView) {
-        // Entity receives cross-entity writes — show full CEA trace
-        entryCountHtml = entityView.traces.length > 1
-          ? `<span style="font-size:0.85em;color:#666;margin-left:8px">${entityView.traces.length} entry points</span>` : '';
-
-        const traceBlocks = entityView.traces.map((trace, ti) => {
-          const { entryPoint, activations, risks } = trace;
-          const tid = `${id}-trace-${ti}`;
-          const actRows = activations.map(act => {
-            const ds = act.downstream
-              ? `→ <strong>${this.htmlEscape(act.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(act.downstream.operation)})`
-              : '';
-            return `<tr>
-              <td>${this.htmlEscape(act.automationName)}</td>
-              <td><span class="badge badge-${act.automationType === 'Plugin' ? 'warning' : 'success'}">${this.htmlEscape(act.automationType)}</span></td>
-              <td>${this.htmlEscape(act.stageName ?? '—')}</td>
-              <td>${this.htmlEscape(act.mode)}</td>
-              <td>${firingBadge(act.firingStatus)}</td>
-              <td style="font-family:monospace;font-size:0.8em">${act.matchedFields.length > 0 ? this.htmlEscape(act.matchedFields.join(', ')) : '—'}</td>
-              <td>${ds}</td>
-            </tr>`;
-          }).join('');
-          const riskHtml = risks.length > 0
-            ? risks.map(r => `<div style="padding:6px 10px;border-left:3px solid ${r.severity === 'High' ? '#d32f2f' : '#f57c00'};background:${r.severity === 'High' ? '#ffebee' : '#fff8e1'};border-radius:3px;margin-bottom:6px;font-size:0.85em"><strong>${this.htmlEscape(r.type)}</strong>: ${this.htmlEscape(r.description)}</div>`).join('')
-            : '';
-          const modeLabel = entryPoint.isAsynchronous ? 'Async' : 'Sync';
-          const header = `${this.htmlEscape(entryPoint.automationName)} <span style="font-weight:normal;color:#666">(${this.htmlEscape(entryPoint.automationType)} — ${this.htmlEscape(entryPoint.operation)} from ${this.htmlEscape(entryPoint.sourceEntityDisplayName)} — ${modeLabel})</span>`;
-          return `<div class="accordion-item" style="margin-bottom:8px;">
-  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${tid}" onclick="toggleAccordion('${tid}')" onkeydown="accordionKeydown(event,'${tid}')" style="font-size:0.9em;">
-    <span class="accordion-icon" id="icon-${tid}">+</span>
-    <span>${header}</span>
-    <span class="badge badge-${entryPoint.confidence === 'High' ? 'success' : entryPoint.confidence === 'Medium' ? 'warning' : 'danger'}" style="margin-left:auto">${this.htmlEscape(entryPoint.confidence)} confidence</span>
-  </div>
-  <div class="accordion-content" id="${tid}" style="display:none;padding:12px;">
-    ${riskHtml}
-    <table class="data-table" style="font-size:0.85em;">
-      <thead><tr><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Fires?</th><th scope="col">Matched Fields</th><th scope="col">Downstream</th></tr></thead>
-      <tbody>${actRows}</tbody>
-    </table>
-    ${entryPoint.fields.length > 0 ? `<p style="margin-top:8px;font-size:0.8em;color:#666"><strong>Fields set by source:</strong> <code>${this.htmlEscape(entryPoint.fields.join(', '))}</code></p>` : ''}
-  </div>
-</div>`;
-        }).join('');
-        // Also show Manual/On-Demand pipelines (flows with no inbound trigger match)
-        const manualPipelines = pipeline.messagePipelines.filter(mp => mp.message === 'Manual');
-        const manualBlocks = manualPipelines.map(mp => {
-          const stepRows = mp.steps.map((step, si) => {
-            const noFilterHtml = step.firesForAllUpdates ? '<span class="badge badge-danger">No filter</span>' : '';
-            const filters = step.filteringAttributes.length > 0 && !step.firesForAllUpdates
-              ? `<span style="font-size:0.8em;color:#666">filters: ${this.htmlEscape(step.filteringAttributes.slice(0, 3).join(', '))}${step.filteringAttributes.length > 3 ? ` +${step.filteringAttributes.length - 3}` : ''}</span>`
-              : '';
-            const ds = step.downstream
-              ? `→ <strong>${this.htmlEscape(step.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(step.downstream.operation)})`
-              : '';
-            const extBadge = step.hasExternalCalls ? '<span class="badge badge-primary" style="margin-left:4px">&#8627; External calls</span>' : '';
-            const connHtml = step.connectionReferences && step.connectionReferences.length > 0
-              ? `<br><span style="font-size:0.8em;color:#666">${step.connectionReferences.map(r => `<span class="badge" style="background:#eee;color:#333;margin:1px">${this.htmlEscape(r)}</span>`).join(' ')}</span>`
-              : '';
-            const urlHtml = step.externalCallSummaries && step.externalCallSummaries.length > 0
-              ? `<br>${step.externalCallSummaries.map(c => `<span style="font-family:monospace;font-size:0.75em;color:#555">${this.htmlEscape(c.method ? `${c.method} ` : '')}${this.htmlEscape(c.url || c.domain)}</span>`).join('<br>')}`
-              : '';
-            return `<tr>
-              <td>${si + 1}</td>
-              <td>${this.htmlEscape(step.automationName)}${extBadge}${connHtml}${urlHtml}</td>
-              <td><span class="badge badge-${step.automationType === 'Plugin' ? 'warning' : 'success'}">${this.htmlEscape(step.automationType)}</span></td>
-              <td>${this.htmlEscape(step.stageName ?? '—')}</td>
-              <td><span class="badge badge-${step.mode === 'Sync' ? 'warning' : 'success'}">${this.htmlEscape(step.mode)}</span></td>
-              <td>${noFilterHtml}${filters}</td>
-              <td>${ds}</td>
-            </tr>`;
-          }).join('');
-          return `<div style="margin-top:12px"><h5 style="margin:4px 0 6px">On-Demand / Manual Pipeline</h5><table class="data-table" style="font-size:0.85em;">
-  <thead><tr><th scope="col">#</th><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Filter</th><th scope="col">Downstream</th></tr></thead>
-  <tbody>${stepRows}</tbody>
-</table></div>`;
-        }).join('');
-        bodyHtml = `<div class="accordion">${traceBlocks}</div>${manualBlocks}`;
-      } else {
-        // Entity has outgoing automation but no inbound entry points — show message pipelines
-        const msgBlocks = pipeline.messagePipelines.map(mp => {
-          const stepRows = mp.steps.map((step, si) => {
-            const noFilterHtml = step.firesForAllUpdates ? '<span class="badge badge-danger">No filter</span>' : '';
-            const filters = step.filteringAttributes.length > 0 && !step.firesForAllUpdates
-              ? `<span style="font-size:0.8em;color:#666">filters: ${this.htmlEscape(step.filteringAttributes.slice(0, 3).join(', '))}${step.filteringAttributes.length > 3 ? ` +${step.filteringAttributes.length - 3}` : ''}</span>`
-              : '';
-            const ds = step.downstream
-              ? `→ <strong>${this.htmlEscape(step.downstream.targetEntityDisplayName)}</strong> (${this.htmlEscape(step.downstream.operation)})`
-              : '';
-            const extBadge = step.hasExternalCalls ? '<span class="badge badge-primary" style="margin-left:4px">&#8627; External calls</span>' : '';
-            const connHtml = step.connectionReferences && step.connectionReferences.length > 0
-              ? `<br><span style="font-size:0.8em;color:#666">${step.connectionReferences.map(r => `<span class="badge" style="background:#eee;color:#333;margin:1px">${this.htmlEscape(r)}</span>`).join(' ')}</span>`
-              : '';
-            const urlHtml = step.externalCallSummaries && step.externalCallSummaries.length > 0
-              ? `<br>${step.externalCallSummaries.map(c => `<span style="font-family:monospace;font-size:0.75em;color:#555">${this.htmlEscape(c.method ? `${c.method} ` : '')}${this.htmlEscape(c.url || c.domain)}</span>`).join('<br>')}`
-              : '';
-            return `<tr>
-              <td>${si + 1}</td>
-              <td>${this.htmlEscape(step.automationName)}${extBadge}${connHtml}${urlHtml}</td>
-              <td><span class="badge badge-${step.automationType === 'Plugin' ? 'warning' : 'success'}">${this.htmlEscape(step.automationType)}</span></td>
-              <td>${this.htmlEscape(step.stageName ?? '—')}</td>
-              <td><span class="badge badge-${step.mode === 'Sync' ? 'warning' : 'success'}">${this.htmlEscape(step.mode)}</span></td>
-              <td>${noFilterHtml}${filters}</td>
-              <td>${ds}</td>
-            </tr>`;
-          }).join('');
-          return `${pipeline.messagePipelines.length > 1 ? `<h5 style="margin:4px 0 6px">${this.htmlEscape(mp.message)} Pipeline</h5>` : ''}<table class="data-table" style="font-size:0.85em;">
-  <thead><tr><th scope="col">#</th><th scope="col">Automation</th><th scope="col">Type</th><th scope="col">Stage</th><th scope="col">Mode</th><th scope="col">Filter</th><th scope="col">Downstream</th></tr></thead>
-  <tbody>${stepRows}</tbody>
-</table>`;
-        }).join('<hr style="margin:8px 0;border:none;border-top:1px solid #eee">');
-        bodyHtml = msgBlocks;
+    // Scan all entity pipelines to extract automations
+    for (const [entityLogicalName, pipeline] of analysis.allEntityPipelines.entries()) {
+      // Outbound automations (this entity triggers the automation)
+      for (const mp of pipeline.messagePipelines) {
+        for (const step of mp.steps) {
+          const key = `${step.automationType}-${step.automationId}`;
+          if (!automationMap.has(key)) {
+            automationMap.set(key, {
+              id: step.automationId,
+              name: step.automationName,
+              type: step.automationType,
+              affectedEntities: [],
+              triggerType: mp.message === 'Manual' ? 'Manual' : 'Dataverse',
+              hasExternalCalls: false,
+            });
+          }
+          const auto = automationMap.get(key)!;
+          const existing = auto.affectedEntities.find(e => e.logicalName === entityLogicalName);
+          if (existing) {
+            if (!existing.operations.includes(mp.message)) existing.operations.push(mp.message);
+            if (!existing.direction.includes('outbound')) existing.direction = existing.direction === 'inbound' ? 'both' : 'outbound';
+          } else {
+            auto.affectedEntities.push({
+              logicalName: entityLogicalName,
+              displayName: pipeline.entityDisplayName,
+              direction: 'outbound',
+              operations: [mp.message],
+              isAsync: step.mode === 'Async',
+              hasExternalCalls: step.hasExternalCalls ?? false,
+            });
+          }
+          if (step.hasExternalCalls) auto.hasExternalCalls = true;
+        }
       }
 
-      const totalSteps = pipeline.messagePipelines.reduce((sum, mp) => sum + mp.steps.length, 0);
-      const stepCount = entityView
-        ? `${entityView.traces.length} ${entityView.traces.length === 1 ? 'entry point' : 'entry points'}`
-        : `${totalSteps} ${totalSteps === 1 ? 'step' : 'steps'}`;
-
-      items.push(`<div class="${wrapClass}"${hiddenAttr}><div class="accordion-item">
-  <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}" onclick="toggleAccordion('${id}')" onkeydown="accordionKeydown(event,'${id}')" style="border-left:4px solid ${color}">
-    <span class="accordion-icon" id="icon-${id}">+</span>
-    <div style="flex:1;min-width:0">
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <strong>${this.htmlEscape(pipeline.entityDisplayName)}</strong>
-        <small style="color:#666;font-family:monospace">${this.htmlEscape(logicalName)}</small>
-        ${opBadges} ${crossBadge} ${externalBadge} ${entryCountHtml}
-      </div>
-    </div>
-    <span style="font-size:0.85em;color:#666;flex-shrink:0">${stepCount}</span>
-  </div>
-  <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
-    ${bodyHtml}
-  </div>
-</div></div>`);
+      // Inbound automations (other entities write to this entity)
+      for (const entryPoint of pipeline.inboundEntryPoints) {
+        const key = `${entryPoint.automationType}-${entryPoint.automationId}`;
+        if (!automationMap.has(key)) {
+          automationMap.set(key, {
+            id: entryPoint.automationId,
+            name: entryPoint.automationName,
+            type: entryPoint.automationType,
+            affectedEntities: [],
+            triggerType: entryPoint.isScheduled ? 'Scheduled' : entryPoint.isOnDemand ? 'Manual' : 'Dataverse',
+            hasExternalCalls: false,
+          });
+        }
+        const auto = automationMap.get(key)!;
+        const existing = auto.affectedEntities.find(e => e.logicalName === entityLogicalName);
+        if (existing) {
+          if (!existing.operations.includes(entryPoint.operation)) existing.operations.push(entryPoint.operation);
+          if (!existing.direction.includes('inbound')) existing.direction = existing.direction === 'outbound' ? 'both' : 'inbound';
+        } else {
+          auto.affectedEntities.push({
+            logicalName: entityLogicalName,
+            displayName: pipeline.entityDisplayName,
+            direction: 'inbound',
+            operations: [entryPoint.operation],
+            isAsync: entryPoint.isAsynchronous,
+            hasExternalCalls: false,
+          });
+        }
+      }
     }
 
-    return `${checkboxHtml}<div class="accordion">${items.join('\n')}</div>`;
+    if (automationMap.size === 0) return '<p>No automation pipelines detected.</p>';
+
+    // Sort automations alphabetically by name
+    const sortedAutomations = Array.from(automationMap.entries())
+      .sort(([, a], [, b]) => a.name.localeCompare(b.name));
+
+    const items: string[] = [];
+    for (const [, auto] of sortedAutomations) {
+      const typeBadge = auto.type === 'Flow' ? 'success' : auto.type === 'ClassicWorkflow' ? 'warning' : 'info';
+      const triggerBadge = auto.triggerType === 'Manual'
+        ? '<span class="badge badge-primary">Manual / On-Demand</span>'
+        : auto.triggerType === 'Scheduled'
+        ? '<span class="badge badge-info">Scheduled</span>'
+        : '<span class="badge badge-success">Dataverse Trigger</span>';
+      const externalBadge = auto.hasExternalCalls
+        ? '<span class="badge badge-primary" style="margin-left:4px">&#8627; External calls</span>'
+        : '';
+
+      const entityRows = auto.affectedEntities.map(e => {
+        const dirBadge = e.direction === 'inbound'
+          ? '<span class="badge badge-info" style="font-size:0.75em">← Inbound</span>'
+          : e.direction === 'outbound'
+          ? '<span class="badge badge-warning" style="font-size:0.75em">→ Outbound</span>'
+          : '<span class="badge badge-danger" style="font-size:0.75em">↔ Both</span>';
+        const opBadges = e.operations.map(op => {
+          const c = op === 'Create' ? 'success' : op === 'Delete' ? 'danger' : 'warning';
+          return `<span class="badge badge-${c}" style="font-size:0.75em">${this.htmlEscape(op)}</span>`;
+        }).join(' ');
+        const extEntityBadge = e.hasExternalCalls
+          ? '<span class="badge badge-primary" style="font-size:0.7em;margin-left:4px">&#8627; External</span>'
+          : '';
+        return `<tr>
+          <td>${this.htmlEscape(e.displayName)}<br/><small style="font-family:monospace;color:#666">${this.htmlEscape(e.logicalName)}</small></td>
+          <td>${dirBadge}</td>
+          <td>${opBadges}</td>
+          <td><span class="badge badge-${e.isAsync ? 'success' : 'warning'}" style="font-size:0.75em">${e.isAsync ? 'Async' : 'Sync'}</span>${extEntityBadge}</td>
+        </tr>`;
+      }).join('');
+
+      items.push(`<details class="accordion-item" style="margin-bottom:12px;">
+  <summary style="font-size:1em;padding:12px;cursor:pointer;background:rgba(255,255,255,0.5);">
+    <strong>${this.htmlEscape(auto.name)}</strong>
+    <span class="badge badge-${typeBadge}" style="margin-left:8px;font-size:0.8em">${this.htmlEscape(auto.type)}</span>
+    ${triggerBadge}
+    ${externalBadge}
+    <span style="font-size:0.85em;color:#666;margin-left:8px">${auto.affectedEntities.length} ${auto.affectedEntities.length === 1 ? 'entity' : 'entities'}</span>
+  </summary>
+  <div style="padding:0 12px 12px 12px;">
+    <table class="data-table" style="font-size:0.85em;">
+      <thead>
+        <tr>
+          <th scope="col">Entity</th>
+          <th scope="col">Direction</th>
+          <th scope="col">Operations</th>
+          <th scope="col">Mode</th>
+        </tr>
+      </thead>
+      <tbody>${entityRows}</tbody>
+    </table>
+  </div>
+</details>`);
+    }
+
+    return `<div id="cea-pipelines-list">${items.join('')}</div>`;
   }
 
   /**

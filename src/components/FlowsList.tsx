@@ -49,6 +49,20 @@ const useStyles = makeStyles({
   },
   codeBreakAll: {
     wordBreak: 'break-all',
+    overflowWrap: 'anywhere',
+  },
+  externalCallHeader: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalS,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  dimCaption: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  brandIcon: {
+    color: tokens.colorBrandForeground1,
   },
 });
 
@@ -221,7 +235,7 @@ export function FlowsList({
             <Title3>External API Calls ({flow.definition.externalCalls.length})</Title3>
             {flow.definition.externalCalls.map((call, idx) => (
               <div key={idx} className={styles.externalCallItem}>
-                <div style={{ display: 'flex', gap: tokens.spacingHorizontalS, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className={styles.externalCallHeader}>
                   <Text weight="semibold">{call.actionName}</Text>
                   <Badge appearance="outline" shape="rounded" size="small">
                     {call.method || 'UNKNOWN'}
@@ -235,10 +249,10 @@ export function FlowsList({
                     {call.confidence}
                   </Badge>
                 </div>
-                <Text className={shared.codeText} style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                <Text className={mergeClasses(shared.codeText, styles.codeBreakAll)}>
                   {call.url}
                 </Text>
-                <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                <Text className={styles.dimCaption}>
                   Domain: {call.domain}
                 </Text>
               </div>
@@ -387,10 +401,10 @@ export function FlowsList({
               </div>
               <Badge {...stateBadgeProps}>{flow.state}</Badge>
               {flow.hasExternalCalls
-                ? <Globe20Regular style={{ color: tokens.colorBrandForeground1 }} title="Makes external calls" />
+                ? <Globe20Regular className={styles.brandIcon} title="Makes external calls" />
                 : <span aria-hidden="true" />
               }
-              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+              <Text className={styles.dimCaption}>
                 {formatDate(flow.modifiedOn)}
               </Text>
             </div>

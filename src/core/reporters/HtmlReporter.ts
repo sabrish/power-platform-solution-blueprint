@@ -19,54 +19,41 @@
  */
 import type { BlueprintResult } from '../types/blueprint.js';
 import { HtmlTemplates } from './html/HtmlTemplates.js';
+import { HTML_TEMPLATE_SECTIONS } from './html/sections/index.js';
+import type { IReporter } from './IReporter.js';
 
-export class HtmlReporter {
-  private templates: HtmlTemplates;
+export class HtmlReporter implements IReporter<string> {
+  private readonly templates: HtmlTemplates;
 
   constructor() {
     this.templates = new HtmlTemplates();
   }
 
   /**
-   * Generate complete HTML blueprint document
+   * Generate complete HTML blueprint document.
+   *
+   * Structural wrappers (head, nav, header, footer, scripts) are rendered directly.
+   * Content sections are driven by the HTML_TEMPLATE_SECTIONS registry — each section
+   * declares its own hasContent() guard and render() method.
+   *
+   * To add a new section: implement IHtmlTemplateSection and append to
+   * src/core/reporters/html/sections/index.ts — no changes here required (Open/Closed).
+   *
    * @param result Complete blueprint result
    * @returns Self-contained HTML string
    */
   generate(result: BlueprintResult): string {
-    // Build all sections
     const head = this.templates.htmlHead(result);
     const nav = this.templates.htmlNavigation();
     const header = this.templates.htmlHeader(result.metadata);
-    const summary = this.templates.htmlSummary(result.summary);
-    const solutions = this.templates.htmlSolutionDistribution(result.solutionDistribution);
-    const erd = this.templates.htmlErdSection(result.erd);
-    const entities = this.templates.htmlEntitiesAccordion(result.entities);
-    const plugins = this.templates.htmlPluginsTable(result.plugins);
-    const flows = this.templates.htmlFlowsTable(result.flows);
-    const businessRules = this.templates.htmlBusinessRulesTable(result.businessRules);
-    const classicWorkflows = this.templates.htmlClassicWorkflowsTable(result.classicWorkflows);
-    const businessProcessFlows = this.templates.htmlBusinessProcessFlowsTable(result.businessProcessFlows);
-    const webResources = this.templates.htmlWebResourcesTable(result.webResources);
-    const customAPIs = this.templates.htmlCustomAPIsTable(result.customAPIs);
-    const environmentVariables = this.templates.htmlEnvironmentVariablesTable(result.environmentVariables);
-    const connectionReferences = this.templates.htmlConnectionReferencesTable(result.connectionReferences);
-    const globalChoices = this.templates.htmlGlobalChoicesTable(result.globalChoices);
-    const customConnectors = this.templates.htmlCustomConnectorsTable(result.customConnectors);
-    const canvasApps = this.templates.htmlCanvasAppsTable(result.canvasApps);
-    const customPages = this.templates.htmlCustomPagesTable(result.customPages);
-    const modelDrivenApps = this.templates.htmlModelDrivenAppsTable(result.modelDrivenApps);
-    const externalDependencies = this.templates.htmlExternalDependenciesSection(result.externalEndpoints);
-    const crossEntity = this.templates.htmlCrossEntitySection(result.crossEntityAnalysis);
-    const security = this.templates.htmlSecuritySection(
-      result.securityRoles,
-      result.fieldSecurityProfiles,
-      result.attributeMaskingRules,
-      result.columnSecurityProfiles
-    );
     const footer = this.templates.htmlFooter();
     const scripts = this.templates.htmlScripts();
 
-    // Combine into complete HTML document
+    const sectionHtml = HTML_TEMPLATE_SECTIONS
+      .filter(s => s.hasContent(result))
+      .map(s => s.render(result))
+      .join('\n    ');
+
     return `<!DOCTYPE html>
 <html lang="en">
 ${head}
@@ -75,27 +62,7 @@ ${head}
   ${nav}
   <main id="main-content">
     ${header}
-    ${summary}
-    ${solutions}
-    ${erd}
-    ${entities}
-    ${plugins}
-    ${flows}
-    ${businessRules}
-    ${classicWorkflows}
-    ${businessProcessFlows}
-    ${webResources}
-    ${customAPIs}
-    ${environmentVariables}
-    ${connectionReferences}
-    ${globalChoices}
-    ${customConnectors}
-    ${canvasApps}
-    ${customPages}
-    ${modelDrivenApps}
-    ${security}
-    ${externalDependencies}
-    ${crossEntity}
+    ${sectionHtml}
   </main>
   ${footer}
   ${scripts}

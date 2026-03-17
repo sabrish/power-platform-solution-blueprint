@@ -16,7 +16,6 @@ import {
 } from '@fluentui/react-components';
 import { Dismiss24Regular } from '@fluentui/react-icons';
 import type { BlueprintResult } from '../core';
-import type { BlueprintGenerator } from '../core';
 import { estimateMarkdownSize, estimateJsonSize, estimateHtmlSize, formatBytes } from '../utils/sizeEstimator';
 import { ExportProgressOverlay } from './ExportProgressOverlay';
 import { useExport } from '../hooks/useExport';
@@ -68,14 +67,13 @@ const useStyles = makeStyles({
 export interface ExportDialogProps {
   isOpen: boolean;
   result: BlueprintResult;
-  blueprintGenerator: BlueprintGenerator;
   onClose: () => void;
 }
 
 /**
  * Dialog for export options and execution
  */
-export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: ExportDialogProps) {
+export function ExportDialog({ isOpen, result, onClose }: ExportDialogProps) {
   const styles = useStyles();
   const [selectedFormats, setSelectedFormats] = useState<string[]>(['html']);
 
@@ -85,7 +83,7 @@ export function ExportDialog({ isOpen, result, blueprintGenerator, onClose }: Ex
     progress,
     error,
     clearError,
-  } = useExport(blueprintGenerator);
+  } = useExport(result);
 
   // Estimate file sizes
   const estimates = useMemo(() => ({

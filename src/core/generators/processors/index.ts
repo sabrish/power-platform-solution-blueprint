@@ -1,0 +1,16 @@
+export { processPlugins } from './PluginProcessor.js';
+export { processFlows } from './FlowProcessor.js';
+export { processBusinessRules } from './BusinessRuleProcessor.js';
+export { processWebResources } from './WebResourceProcessor.js';
+export { processClassicWorkflows } from './ClassicWorkflowProcessor.js';
+export { processBusinessProcessFlows } from './BusinessProcessFlowProcessor.js';
+export { processCustomAPIs } from './CustomAPIProcessor.js';
+export { processEnvironmentVariables } from './EnvironmentVariableProcessor.js';
+export { processConnectionReferences } from './ConnectionReferenceProcessor.js';
+export { processGlobalChoices } from './GlobalChoiceProcessor.js';
+export { processCustomConnectors } from './CustomConnectorProcessor.js';
+export { processSecurityRoles } from './SecurityRoleProcessor.js';
+export { processFieldSecurityProfiles } from './FieldSecurityProfileProcessor.js';
+export { processColumnSecurity } from './ColumnSecurityProcessor.js';
+export { processForms } from './FormProcessor.js';
+export { processApps } from './AppProcessor.js';

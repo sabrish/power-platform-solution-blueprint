@@ -30,7 +30,23 @@ const useStyles = makeStyles({
   },
   row: {
     display: 'grid',
-    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(200px, 2fr) minmax(100px, 1fr) auto auto auto`,
+    // chevron | name(2fr) | eye(fixed) | value(1fr) | type | default | required/managed
+    // fr columns scale with panel width; eye stays fixed between name and value.
+    // Badge columns use min-content: no fixed px.
+    gridTemplateColumns: `${tokens.spacingHorizontalXXL} minmax(0, 2fr) ${tokens.spacingHorizontalXXXL} minmax(0, 1fr) min-content min-content min-content`,
+    alignItems: 'start',
+  },
+  eyeIconColumn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  valueTextCell: {
+    display: 'flex',
+    alignItems: 'center',
+    minWidth: 0,
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
   },
   valueBox: {
     fontFamily: 'Consolas, Monaco, monospace',
@@ -137,7 +153,26 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     });
   }, []);
 
-  const renderValueWithReveal = (envVar: EnvironmentVariable, context: 'row' | 'detail'): JSX.Element => {
+  const renderRevealButton = (envVar: EnvironmentVariable): JSX.Element => {
+    const hasValue = !!(envVar.currentValue || envVar.defaultValue);
+    const isRevealed = revealedIds.has(envVar.id);
+
+    if (!hasValue) {
+      return <div aria-hidden="true" />;
+    }
+
+    return (
+      <Button
+        appearance="subtle"
+        size="small"
+        icon={isRevealed ? <EyeOff20Regular /> : <Eye20Regular />}
+        aria-label={isRevealed ? 'Hide value' : 'Show value'}
+        onClick={(e) => toggleReveal(envVar.id, e)}
+      />
+    );
+  };
+
+  const renderValueText = (envVar: EnvironmentVariable): JSX.Element => {
     const hasValue = !!(envVar.currentValue || envVar.defaultValue);
     const isRevealed = revealedIds.has(envVar.id);
 
@@ -145,39 +180,9 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
       return <Text className={styles.mutedText}>Not set</Text>;
     }
 
-    if (context === 'row') {
-      return (
-        <div className={styles.valueRevealRow}>
-          {isRevealed
-            ? <Text className={shared.codeText}>{envVar.currentValue ?? envVar.defaultValue}</Text>
-            : <Text className={styles.maskedValue}>•••••••</Text>
-          }
-          <Button
-            appearance="subtle"
-            size="small"
-            icon={isRevealed ? <EyeOff20Regular /> : <Eye20Regular />}
-            aria-label={isRevealed ? 'Hide value' : 'Show value'}
-            onClick={(e) => toggleReveal(envVar.id, e)}
-          />
-        </div>
-      );
-    }
-
-    return (
-      <div className={styles.valueRevealRow}>
-        {isRevealed
-          ? <Text className={shared.codeText}>{envVar.currentValue ?? envVar.defaultValue}</Text>
-          : <Text className={styles.maskedValue}>•••••••</Text>
-        }
-        <Button
-          appearance="subtle"
-          size="small"
-          icon={isRevealed ? <EyeOff20Regular /> : <Eye20Regular />}
-          aria-label={isRevealed ? 'Hide value' : 'Show value'}
-          onClick={(e) => toggleReveal(envVar.id, e)}
-        />
-      </div>
-    );
+    return isRevealed
+      ? <Text className={shared.codeText}>{envVar.currentValue ?? envVar.defaultValue}</Text>
+      : <Text className={styles.maskedValue}>•••••••</Text>;
   };
 
   const renderValueBoxWithReveal = (envVar: EnvironmentVariable, valueType: 'current' | 'default'): JSX.Element => {
@@ -195,10 +200,6 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
     return (
       <div className={styles.valueBox}>
         <div className={styles.valueRevealRow}>
-          {isRevealed
-            ? value
-            : <Text className={styles.maskedValue}>•••••••</Text>
-          }
           <Button
             appearance="subtle"
             size="small"
@@ -206,6 +207,10 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
             aria-label={isRevealed ? 'Hide value' : 'Show value'}
             onClick={(e) => toggleReveal(envVar.id, e)}
           />
+          {isRevealed
+            ? value
+            : <Text className={styles.maskedValue}>•••••••</Text>
+          }
         </div>
       </div>
     );
@@ -347,8 +352,11 @@ export function EnvironmentVariablesList({ environmentVariables }: EnvironmentVa
                 <Text weight="semibold">{envVar.displayName}</Text>
                 <Text className={shared.codeText}>{envVar.schemaName}</Text>
               </div>
-              <div className={shared.badgeGroup}>
-                {renderValueWithReveal(envVar, 'row')}
+              <div className={styles.eyeIconColumn}>
+                {renderRevealButton(envVar)}
+              </div>
+              <div className={styles.valueTextCell}>
+                {renderValueText(envVar)}
               </div>
               <Badge appearance="filled" shape="rounded" size="small" color={getTypeColor(envVar.typeName)}>
                 {envVar.typeName}

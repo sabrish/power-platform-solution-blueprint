@@ -1,5 +1,6 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { GlobalChoice, GlobalChoiceOption } from '../types/globalChoice.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import type { ProgressPhase } from '../types/blueprint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
@@ -35,7 +36,7 @@ interface RawGlobalOptionSet {
 /**
  * Discovery service for Global Choices (Option Sets)
  */
-export class GlobalChoiceDiscovery {
+export class GlobalChoiceDiscovery implements IDiscoverer<GlobalChoice> {
   private logger?: FetchLogger;
 
   constructor(
@@ -52,6 +53,10 @@ export class GlobalChoiceDiscovery {
    * each ID must be fetched individually via a direct path query.
    * withAdaptiveBatch with initialBatchSize=1 provides logging and retry for each item.
    */
+  discoverByIds(ids: string[]): Promise<GlobalChoice[]> {
+    return this.discoverGlobalChoices(ids);
+  }
+
   async discoverGlobalChoices(globalChoiceIds: string[]): Promise<GlobalChoice[]> {
     if (globalChoiceIds.length === 0) {
       return [];

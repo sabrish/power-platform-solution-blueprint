@@ -1,6 +1,9 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid } from '../utils/guid.js';
 import type { CustomAPI, CustomAPIParameter } from '../types/customApi.js';
 
 /**
@@ -44,7 +47,7 @@ interface RawCustomAPIParameter {
 /**
  * Discovers Custom APIs
  */
-export class CustomAPIDiscovery {
+export class CustomAPIDiscovery implements IDiscoverer<CustomAPI> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -60,6 +63,10 @@ export class CustomAPIDiscovery {
    * @param customApiIds Array of custom API IDs from solution components
    * @returns Array of Custom APIs with parameters
    */
+  discoverByIds(ids: string[]): Promise<CustomAPI[]> {
+    return this.getCustomAPIsByIds(ids);
+  }
+
   async getCustomAPIsByIds(customApiIds: string[]): Promise<CustomAPI[]> {
     if (customApiIds.length === 0) {
       return [];
@@ -70,7 +77,7 @@ export class CustomAPIDiscovery {
       const { results: allResults } = await withAdaptiveBatch<string, RawCustomAPI>(
         customApiIds,
         async (batch) => {
-          const filter = batch.map((id) => `customapiid eq ${id.replace(/[{}]/g, '')}`).join(' or ');
+          const filter = buildOrFilter(batch.map(normalizeGuid), 'customapiid', { guids: true });
           const result = await this.client.query<RawCustomAPI>('customapis', {
             select: [
               'customapiid',
@@ -109,7 +116,7 @@ export class CustomAPIDiscovery {
       const { results: allRequestParams } = await withAdaptiveBatch<string, RawCustomAPIParameter>(
         allApiIds,
         async (batch) => {
-          const filter = batch.map(id => `_customapiid_value eq ${id.replace(/[{}]/g, '')}`).join(' or ');
+          const filter = buildOrFilter(batch.map(normalizeGuid), '_customapiid_value', { guids: true });
           const result = await this.client.query<RawCustomAPIParameter>('customapirequestparameters', {
             select: [
               'customapirequestparameterid',
@@ -138,7 +145,7 @@ export class CustomAPIDiscovery {
       const { results: allResponseProps } = await withAdaptiveBatch<string, RawCustomAPIParameter>(
         allApiIds,
         async (batch) => {
-          const filter = batch.map(id => `_customapiid_value eq ${id.replace(/[{}]/g, '')}`).join(' or ');
+          const filter = buildOrFilter(batch.map(normalizeGuid), '_customapiid_value', { guids: true });
           const result = await this.client.query<RawCustomAPIParameter>('customapiresponseproperties', {
             select: [
               'customapiresponsepropertyid',
@@ -165,21 +172,21 @@ export class CustomAPIDiscovery {
       // Group parameters by customapiid
       const requestParamsByApiId = new Map<string, RawCustomAPIParameter[]>();
       for (const param of allRequestParams) {
-        const apiId = (param._customapiid_value ?? '').toLowerCase().replace(/[{}]/g, '');
+        const apiId = normalizeGuid(param._customapiid_value ?? '');
         if (!requestParamsByApiId.has(apiId)) requestParamsByApiId.set(apiId, []);
         requestParamsByApiId.get(apiId)!.push(param);
       }
 
       const responsePropsByApiId = new Map<string, RawCustomAPIParameter[]>();
       for (const prop of allResponseProps) {
-        const apiId = (prop._customapiid_value ?? '').toLowerCase().replace(/[{}]/g, '');
+        const apiId = normalizeGuid(prop._customapiid_value ?? '');
         if (!responsePropsByApiId.has(apiId)) responsePropsByApiId.set(apiId, []);
         responsePropsByApiId.get(apiId)!.push(prop);
       }
 
       // Build each CustomAPI using grouped parameter maps
       const customAPIs: CustomAPI[] = allResults.map(rawApi => {
-        const normalizedId = rawApi.customapiid.toLowerCase().replace(/[{}]/g, '');
+        const normalizedId = normalizeGuid(rawApi.customapiid);
         const requestParams = (requestParamsByApiId.get(normalizedId) ?? []).map(p => this.mapToParameter(p, true));
         const responseProps = (responsePropsByApiId.get(normalizedId) ?? []).map(p => this.mapToParameter(p, false));
         return this.mapToCustomAPI(rawApi, requestParams, responseProps);

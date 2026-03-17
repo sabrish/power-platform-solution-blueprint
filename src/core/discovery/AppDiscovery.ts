@@ -1,9 +1,15 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid } from '../utils/guid.js';
 import type { CanvasApp } from '../types/canvasApp.js';
 import type { CustomPage } from '../types/customPage.js';
 import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
+import {
+  CANVAS_APP_TYPE_STANDARD,
+  CANVAS_APP_TYPE_CUSTOM_PAGE,
+} from '../utils/canvasAppType.js';
 
 /**
  * Raw record shape returned from canvasapps OData entity set.
@@ -59,18 +65,18 @@ export class AppDiscovery {
 
     for (const r of records) {
       const base = {
-        id: r.canvasappid.toLowerCase().replace(/[{}]/g, ''),
+        id: normalizeGuid(r.canvasappid),
         name: r.name ?? '',
         displayName: r.displayname ?? r.name ?? '',
         description: r.description || undefined,
         isManaged: r.ismanaged === true,
       };
 
-      if (r.canvasapptype === 2) {
+      if (r.canvasapptype === CANVAS_APP_TYPE_CUSTOM_PAGE) {
         customPages.push(base);
-      } else if (r.canvasapptype === 0 || r.canvasapptype === undefined) {
-        // 0 = Standard canvas app; undefined = field absent (treat as canvas app)
-        // Skip canvasapptype === 1 (Component libraries — not user-facing apps)
+      } else if (r.canvasapptype === CANVAS_APP_TYPE_STANDARD || r.canvasapptype === undefined) {
+        // CANVAS_APP_TYPE_STANDARD = 0; undefined = field absent (treat as canvas app)
+        // Skip CANVAS_APP_TYPE_COMPONENT_LIBRARY = 1 (Component libraries — not user-facing apps)
         canvasApps.push(base);
       }
     }
@@ -87,10 +93,7 @@ export class AppDiscovery {
     const { results } = await withAdaptiveBatch<string, AppModuleRecord>(
       ids,
       async (batch) => {
-        const filter = batch.map(id => {
-          const cleanId = id.replace(/[{}]/g, '');
-          return `appmoduleid eq ${cleanId}`;
-        }).join(' or ');
+        const filter = buildOrFilter(batch.map(normalizeGuid), 'appmoduleid', { guids: true });
 
         const result = await this.client.query<AppModuleRecord>('appmodules', {
           select: ['appmoduleid', 'name', 'uniquename', 'description', 'ismanaged', 'modifiedon'],
@@ -110,7 +113,7 @@ export class AppDiscovery {
     );
 
     return results.map(r => ({
-      id: r.appmoduleid.toLowerCase().replace(/[{}]/g, ''),
+      id: normalizeGuid(r.appmoduleid),
       name: r.uniquename ?? '',
       displayName: r.name ?? r.uniquename ?? '',
       description: r.description || undefined,
@@ -131,10 +134,7 @@ export class AppDiscovery {
     const { results } = await withAdaptiveBatch<string, CanvasAppRecord>(
       ids,
       async (batch) => {
-        const filter = batch.map(id => {
-          const cleanId = id.replace(/[{}]/g, '');
-          return `canvasappid eq ${cleanId}`;
-        }).join(' or ');
+        const filter = buildOrFilter(batch.map(normalizeGuid), 'canvasappid', { guids: true });
 
         const result = await this.client.query<CanvasAppRecord>('canvasapps', {
           select: ['canvasappid', 'displayname', 'name', 'description', 'ismanaged', 'canvasapptype'],

@@ -74,26 +74,30 @@ power-platform-solution-blueprint/
 │   │   │   └── ExternalDependencyAggregator.ts
 │   │   ├── generators/           # ERD and blueprint generation
 │   │   │   ├── ERDGenerator.ts
-│   │   │   └── BlueprintGenerator.ts
+│   │   │   ├── BlueprintGenerator.ts
+│   │   │   └── processors/       # Per-component generation processors
 │   │   ├── reporters/            # Export formats
 │   │   │   ├── MarkdownReporter.ts
 │   │   │   ├── JsonReporter.ts
 │   │   │   ├── HtmlReporter.ts
 │   │   │   └── ZipPackager.ts
-│   │   ├── exporters/            # Export-format helpers
+│   │   ├── exporters/            # Export-format helpers (ExportFacade.ts)
 │   │   ├── parsers/              # Content parsers
 │   │   │   ├── FlowDefinitionParser.ts
 │   │   │   ├── JavaScriptParser.ts
-│   │   │   ├── BusinessRuleParser.ts
+│   │   │   ├── BusinessRuleParser.ts   # IF/ELSE IF/THEN/ELSE chain walker
 │   │   │   └── ClassicWorkflowXamlParser.ts
 │   │   ├── types/                # Shared TypeScript interfaces and types
-│   │   └── utils/                # Shared utility functions
+│   │   └── utils/                # Shared utility functions (debugLogger.ts, etc.)
 │   │
-│   └── components/               # React UI — no business logic
-│       ├── App.tsx
-│       ├── ScopeSelector.tsx
-│       ├── ResultsDashboard.tsx
-│       └── ... (20+ components and hooks)
+│   ├── components/               # React UI — no business logic
+│   │   ├── App.tsx
+│   │   ├── ResultsDashboard.tsx
+│   │   ├── scope/                # SolutionScopePanel, PublisherScopePanel
+│   │   ├── CrossEntityAutomation/ # TracePipeline, ChildEntitySection, OperationBadge, etc.
+│   │   └── ... (20+ components)
+│   │
+│   └── hooks/                    # useCardRowStyles, useListFilter, useExpandable, useScopeData
 │
 ├── docs/                         # Documentation
 ├── CLAUDE.md
@@ -104,6 +108,12 @@ power-platform-solution-blueprint/
 ```
 
 **Why flat structure?** PPTB Desktop requires a single-package layout. The original monorepo (packages/core + packages/pptb-tool) was dismantled in v0.5.1 due to `pptb-webview://` protocol incompatibilities with workspace package references.
+
+### File Organisation Principle
+
+Each file has one reason to change. Sub-components, independent hooks, and reusable utilities each live in their own file. The exception is self-contained output generators (e.g. `HtmlReporter`) where the output format requires everything inline — that is a deliberate design choice.
+
+See `CONTRIBUTING.md` for the full rule.
 
 ---
 
@@ -262,8 +272,8 @@ React 18 application using Vite and Fluent UI v9.
 ```
 App
 ├── ScopeSelector
-│   ├── PublisherSelector (multi-select dropdown)
-│   ├── SolutionSelector (multi-select dropdown)
+│   ├── scope/SolutionScopePanel
+│   ├── scope/PublisherScopePanel
 │   └── SystemEntitiesCheckbox
 │
 └── ResultsDashboard
@@ -287,15 +297,14 @@ App
     │   ├── ExternalDependenciesTab
     │   └── CrossEntityTab
     │       └── CrossEntityAutomationView
+    │           ├── TracePipeline
+    │           │   └── ChildEntitySection (recursive)
+    │           ├── OperationBadge
+    │           ├── DetectionCoverageBanner
+    │           └── FieldMatchVerdict
     └── ExportDialog
         ├── FormatSelector
         └── DownloadButton
-│
-└── ArchitectureView
-    ├── ERDView (CytoscapeERD)
-    ├── CrossEntityAutomationView
-    ├── ExternalDependenciesView
-    └── SolutionDistributionView
 ```
 
 ### State Management
@@ -926,4 +935,4 @@ PPSB architecture emphasizes:
 
 ---
 
-*Last updated: 2026-03-08 — CrossEntityMapper replaced by CrossEntityAnalyzer; ClassicWorkflowXamlParser added to parsers; component hierarchy updated for ArchitectureView shell, CrossEntityAutomationView, FetchDiagnosticsView. Prior: 2026-03-07 — ERDGenerator updated for Cytoscape.js interactive graph (v0.9.0); HtmlReporter notes updated for Mermaid CDN pinning, storage shim, XSS defence, and JSON data-block embedding.*
+*Last updated: 2026-03-17 — Project structure updated for v1.1.1: processors/ subdirectory, CrossEntityAutomation/ and scope/ sub-components, hooks directory, ExportFacade, debugLogger. Component hierarchy expanded for CrossEntityAutomationView sub-tree and ScopeSelector scope/ sub-components. BusinessRuleParser noted as full IF/ELSE IF/THEN/ELSE chain walker. Removed malformed duplicate ArchitectureView block. Prior: 2026-03-08 — CrossEntityMapper replaced by CrossEntityAnalyzer; ClassicWorkflowXamlParser added to parsers; component hierarchy updated for ArchitectureView shell, CrossEntityAutomationView, FetchDiagnosticsView.*

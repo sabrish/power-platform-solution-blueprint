@@ -1,8 +1,3 @@
----
-name: maintain-learnings
-description: Promote stable learnings to pattern files and keep learnings.md lean. Run every 3-4 sessions.
----
-
 /agent skills-learner
 
 Maintenance pass on .claude/memory/learnings.md.
@@ -36,3 +31,10 @@ Rules:
 - If nothing is ready for promotion, say so and stop
 - After finishing, report: how many entries reviewed, how many promoted,
   new line count of learnings.md
+
+```
+Maintenance complete.
+Entries reviewed ✅
+Patterns promoted ✅/⏭️ (if none ready)
+learnings.md updated ✅
+```

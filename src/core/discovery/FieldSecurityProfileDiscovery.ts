@@ -3,6 +3,12 @@
  *
  * Discovers field security profiles and their permissions for entities.
  * Field security profiles control which users can read/update/create specific fields.
+ *
+ * Note: FieldSecurityProfileDiscovery intentionally does not implement IDiscoverer<T>.
+ * Field security profile discovery requires separate profile queries and permissions queries
+ * that do not fit the discoverByIds(ids: string[]) contract.
+ * See IDiscoverer.ts for rationale. If generic orchestration is needed, use the
+ * adapter pattern: FieldSecurityProfileDiscoveryAdapter implements IDiscoverer<T>.
  */
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';

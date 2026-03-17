@@ -1,8 +1,3 @@
----
-name: trim-guides
-description: Remove duplication between root guide files and the domain pattern files. Run when combined pattern count reaches ~20 entries.
----
-
 /agent document-updater
 
 Cross-reference and trim task.
@@ -26,3 +21,10 @@ Before writing anything:
 
 After approval, make only the approved replacements. Do not touch flagged sections.
 Report: lines removed from each file, sections replaced, sections flagged.
+
+```
+Trim complete.
+Sections replaced ✅
+Sections flagged ⚠️ (if applicable)
+Line count reduced ✅
+```

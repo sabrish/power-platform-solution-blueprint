@@ -14,6 +14,8 @@ import type {
   PipelineStep,
 } from '../types/crossEntityTrace.js';
 import { ClassicWorkflowXamlParser } from '../parsers/ClassicWorkflowXamlParser.js';
+import { resolveEntityName } from '../utils/entityName.js';
+import { debugLog } from '../utils/debugLogger.js';
 
 /**
  * Performs 4-layer cross-entity automation analysis:
@@ -138,7 +140,7 @@ export class CrossEntityAnalyzer {
 
         // Plugins
         for (const plugin of bp.plugins) {
-          if (plugin.entity.toLowerCase() !== entityKey) continue;
+          if (plugin.entity?.toLowerCase() !== entityKey) continue;
           if (!this.messageMatchesOperation(plugin.message, message)) continue;
           const isAsync = plugin.mode === 1 || plugin.stage === 50;
           const firesForAllUpdates = message === 'Update' && plugin.filteringAttributes.length === 0;
@@ -158,9 +160,24 @@ export class CrossEntityAnalyzer {
 
         // Flows triggered on this entity for this message
         for (const flow of bp.flows) {
-          if (flow.definition.triggerType !== 'Dataverse') continue;
+          if (flow.definition.triggerType !== 'Dataverse') {
+            debugLog('flow-scope', `SKIP (non-Dataverse) [${message}] ${flow.name}`, {
+              id: flow.id, entity: entityKey,
+              triggerType: flow.definition.triggerType,
+              'flow.entity': flow.entity,
+              'triggerEntity': flow.definition.triggerEntity,
+            });
+            continue;
+          }
           const flowTriggerEntity = flow.definition.triggerEntity?.toLowerCase();
-          if (flowTriggerEntity && flowTriggerEntity !== entityKey) continue;
+          if (flowTriggerEntity && flowTriggerEntity !== entityKey) {
+            debugLog('flow-scope', `SKIP (entity mismatch) [${message}] ${flow.name}`, {
+              id: flow.id, bpEntity: entityKey,
+              flowTriggerEntity,
+              triggerType: flow.definition.triggerType,
+            });
+            continue;
+          }
           if (!this.triggerMatchesOperation(flow.definition.triggerEvent, message)) continue;
           const conditionFields = this.extractFieldsFromTriggerCondition(flow.definition.triggerConditions);
           const firesForAllUpdates = message === 'Update' && conditionFields.length === 0;
@@ -290,9 +307,7 @@ export class CrossEntityAnalyzer {
 
     for (const flow of allFlows) {
       if (blueprintScopedFlowIdsForPipeline.has(flow.id.toLowerCase())) continue;
-      const triggerEntity = (flow.definition.triggerEntity && flow.definition.triggerEntity !== 'none'
-        ? flow.definition.triggerEntity.toLowerCase()
-        : null);
+      const triggerEntity = resolveEntityName(flow.definition.triggerEntity)?.toLowerCase() ?? null;
       if (!triggerEntity) continue;
       const targetBp = blueprintMap.get(triggerEntity);
       if (!targetBp) continue;
@@ -441,9 +456,8 @@ export class CrossEntityAnalyzer {
     for (const flow of allFlows) {
       if (blueprintScopedIds.has(flow.id.toLowerCase())) continue;
       const entityName =
-        (flow.entity && flow.entity !== 'none' ? flow.entity : null) ||
-        (flow.definition.triggerEntity && flow.definition.triggerEntity !== 'none'
-          ? flow.definition.triggerEntity : null);
+        resolveEntityName(flow.entity) ??
+        resolveEntityName(flow.definition.triggerEntity);
       const sourceEntity = entityName?.toLowerCase()
         ?? (flow.definition.triggerType === 'Scheduled' ? '(scheduled)'
           : flow.definition.triggerType === 'Manual' ? '(manual)'
@@ -452,7 +466,18 @@ export class CrossEntityAnalyzer {
         ? entityDisplayMap.get(sourceEntity) || entityName
         : flow.definition.triggerType === 'Scheduled' ? 'Scheduled Flow'
         : flow.definition.triggerType === 'Manual' ? 'Manual / On-Demand Flow'
-        : 'Solution Flow';
+        : (() => {
+            return 'Solution Flow';
+          })();
+      debugLog('flow-scope', `[unbound] ${flow.name} → label="${sourceDisplayName}"`, {
+        id: flow.id,
+        'flow.entity': flow.entity,
+        'triggerEntity': flow.definition.triggerEntity,
+        triggerType: flow.definition.triggerType,
+        resolvedEntityName: entityName,
+        sourceEntity,
+        sourceDisplayName,
+      });
       for (const action of flow.definition.dataverseActions ?? []) {
         if (!action.isUnbound) continue;
         addLink(sourceEntity, sourceDisplayName, flow, action);
@@ -503,7 +528,7 @@ export class CrossEntityAnalyzer {
     for (const flow of allFlows) {
       const id = flow.id.toLowerCase();
       if (!allFlowsById.has(id)) {
-        const rawEntity = flow.entity && flow.entity !== 'none' ? flow.entity : null;
+        const rawEntity = resolveEntityName(flow.entity);
         allFlowsById.set(id, {
           flow,
           sourceEntity: rawEntity?.toLowerCase() ?? '(unscoped)',
@@ -573,10 +598,8 @@ export class CrossEntityAnalyzer {
       // Dataverse returns primaryentity="none" (literal string) for flows without a primary entity.
       const triggerType = flow.definition.triggerType;
       const entityName =
-        (flow.entity && flow.entity !== 'none' ? flow.entity : null) ||
-        (flow.definition.triggerEntity && flow.definition.triggerEntity !== 'none'
-          ? flow.definition.triggerEntity
-          : null);
+        resolveEntityName(flow.entity) ??
+        resolveEntityName(flow.definition.triggerEntity);
       let sourceEntity: string;
       let sourceDisplayName: string;
 
@@ -593,6 +616,15 @@ export class CrossEntityAnalyzer {
         sourceEntity = '(unscoped)';
         sourceDisplayName = 'Solution Flow';
       }
+      debugLog('flow-scope', `[entry-point] ${flow.name} → label="${sourceDisplayName}"`, {
+        id: flow.id,
+        'flow.entity': flow.entity,
+        'triggerEntity': flow.definition.triggerEntity,
+        triggerType,
+        resolvedEntityName: entityName,
+        sourceEntity,
+        sourceDisplayName,
+      });
 
       for (const action of flow.definition.dataverseActions ?? []) {
         if (action.isUnbound) continue; // handled separately in collectUnboundChainLinks
@@ -738,9 +770,9 @@ export class CrossEntityAnalyzer {
 
     // --- Plugins ---
     for (const plugin of targetBp.plugins) {
-      const pluginEntity = plugin.entity.toLowerCase();
+      const pluginEntity = plugin.entity?.toLowerCase();
       const targetEntity = targetBp.entity.LogicalName.toLowerCase();
-      if (pluginEntity !== targetEntity) continue;
+      if (!pluginEntity || pluginEntity !== targetEntity) continue;
 
       if (!this.messageMatchesOperation(plugin.message, ep.operation)) continue;
 
@@ -842,7 +874,8 @@ export class CrossEntityAnalyzer {
       // Skip client-only (form-scoped) BRs — irrelevant to server-side API writes
       if (!isServer) continue;
 
-      const actionFields = br.definition.actions
+      const allActions = br.definition.conditionGroups.flatMap(g => g.actions).concat(br.definition.elseActions);
+      const actionFields = allActions
         .filter(a => a.field)
         .map(a => a.field.toLowerCase());
 

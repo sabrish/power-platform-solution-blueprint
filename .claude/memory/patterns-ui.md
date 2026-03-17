@@ -120,27 +120,9 @@ const getComponentLabel = (phase: ProgressPhase): string => {
 
 **Source:** UI_PATTERNS.md
 **Applies to:** Developer (UI)
+**Superseded by:** PATTERN-001 (nameColumn/row specs) and AUDIT-005/006/007 (overflow protection checklist items). See those for the canonical rules and code examples.
 
-Long text in list rows wraps; it does not truncate with ellipsis. Use `TruncatedText` for grid cells (which handles the word-break approach). Key CSS values:
-
-```typescript
-// Column containing long text
-nameColumn: {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '2px',
-  minWidth: 0,               // enables wrapping
-  wordBreak: 'break-word',
-}
-
-// Grid rows with wrapping text
-row: {
-  alignItems: 'start',       // not 'center' — multi-line content needs top alignment
-  gridTemplateColumns: '24px minmax(200px, 2fr) auto auto',
-}
-```
-
-For detail panels: `minWidth: 0`, `wordBreak: 'break-word'`, `overflowWrap: 'anywhere'`.
+Key rule: long text in list rows wraps — it does not truncate. `TruncatedText` must NOT be used in card-row list rows (it hard-codes `whiteSpace: 'nowrap'`). Use `wordBreak: 'break-word'` directly via `useCardRowStyles`.
 
 ---
 
@@ -366,3 +348,67 @@ ${alertIcon('warning')} <strong>No filter defined</strong>
 ```
 
 Icons use `currentColor` so they inherit the surrounding text colour and work in both light and dark themes.
+
+---
+
+## COMPONENT SIZE LIMIT
+
+Hard limit: 200 LOC per component file.
+At 200 LOC, decompose into sub-components before adding more code.
+Compositor pattern: parent component owns state and wiring only;
+sub-components are purely presentational or single-concern.
+
+---
+
+## LAYER RULE — UI NEVER CONSTRUCTS CORE CLASSES
+
+React components must never instantiate PptbDataverseClient, any Discovery class,
+any Generator class, or any Reporter class directly.
+All data loading goes through a hook (useScopeData, useBlueprint, etc.).
+
+Violation (banned):
+  const client = new PptbDataverseClient(window.dataverseAPI); // inside a component
+
+Correct:
+  const { publishers, solutions } = useScopeData();
+
+---
+
+## FILTER STATE PATTERN
+
+All list components use useListFilter — never independent useState + useCallback pairs
+for filter dimensions.
+Reference correct examples: FlowsList.tsx, BusinessRulesList.tsx, PluginsList.tsx
+
+---
+
+## LOADING STATE PATTERN
+
+Use discriminated union: phase: 'idle' | 'generating' | 'done' | 'error'
+Never use separate isLoading: boolean alongside error state.
+Reference: useBlueprint.ts
+
+---
+
+## EXPORT PATTERN
+
+Named exports on all files except src/App.tsx and src/main.tsx.
+No default exports on core classes, hooks, or utilities.
+
+---
+
+## MEMOISATION POLICY
+
+useMemo:     required for filtered/sorted arrays derived from props or large state
+useCallback: required for handlers passed as props to list items
+React.memo:  apply to list item components that receive stable props
+Do not over-apply — primitive state derivations do not need useMemo.
+
+---
+
+## REGISTRY PATTERN (component tabs)
+
+ResultsDashboard tab logic is driven by COMPONENT_TABS: ComponentTabDefinition[].
+Adding a new component type to the UI = one new entry in that array.
+Never add a new branch to defaultSelectedKey, hasResults(), or tab JSX directly.
+Source: src/components/ComponentTabRegistry.tsx

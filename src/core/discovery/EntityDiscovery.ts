@@ -2,6 +2,14 @@ import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { EntityMetadata } from '../types.js';
 
 /**
+ * Note: EntityDiscovery intentionally does not implement IDiscoverer<T>.
+ * Entity discovery requires metadata API calls, schema discovery, and multi-step
+ * resolution that does not fit the discoverByIds(ids: string[]) contract.
+ * See IDiscoverer.ts for rationale. If generic orchestration is needed, use the
+ * adapter pattern: EntityDiscoveryAdapter implements IDiscoverer<EntityBlueprint>.
+ */
+
+/**
  * Solution component for entity lookup
  */
 interface SolutionComponent {

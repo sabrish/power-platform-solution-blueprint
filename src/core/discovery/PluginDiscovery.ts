@@ -1,8 +1,11 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { PluginStep, ImageDefinition } from '../types.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
+import { normalizeBatch } from '../utils/guid.js';
+import { getPluginStageLabel } from '../utils/pluginStageLabels.js';
 
 interface RawPluginStep {
   sdkmessageprocessingstepid: string;
@@ -31,7 +34,7 @@ interface RawPluginImage {
   messagepropertyname: string;
 }
 
-export class PluginDiscovery {
+export class PluginDiscovery implements IDiscoverer<PluginStep> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -46,6 +49,10 @@ export class PluginDiscovery {
     this.logger = logger;
   }
 
+  discoverByIds(ids: string[]): Promise<PluginStep[]> {
+    return this.getPluginsByIds(ids);
+  }
+
   async getPluginsByIds(pluginIds: string[]): Promise<PluginStep[]> {
     if (pluginIds.length === 0) return [];
 
@@ -55,7 +62,7 @@ export class PluginDiscovery {
         pluginIds,
         async (batch) => {
           const filter = buildOrFilter(
-            batch.map(id => id.replace(/[{}]/g, '')),
+            normalizeBatch(batch),
             'sdkmessageprocessingstepid',
             { guids: true }
           );
@@ -102,7 +109,7 @@ export class PluginDiscovery {
           modeName: this.getModeName(raw.mode),
           rank: raw.rank,
           message: raw.sdkmessageid?.name || 'Unknown',
-          entity: raw.sdkmessagefilterid?.primaryobjecttypecode || 'none',
+          entity: raw.sdkmessagefilterid?.primaryobjecttypecode || null,
           assemblyName: raw.plugintypeid?.assemblyname || 'Unknown',
           typeName: raw.plugintypeid?.typename || 'Unknown',
           pluginTypeId: raw.plugintypeid?.plugintypeid || '',
@@ -168,7 +175,7 @@ export class PluginDiscovery {
       );
 
       for (const raw of allImages) {
-        const stepId = (raw as any)._sdkmessageprocessingstepid_value?.toLowerCase();
+        const stepId = raw._sdkmessageprocessingstepid_value?.toLowerCase();
         if (!stepId) continue;
         const imageType = raw.imagetype === 0 ? 'PreImage' : 'PostImage';
         const image: ImageDefinition = {
@@ -192,14 +199,7 @@ export class PluginDiscovery {
   }
 
   getStageName(stage: number): string {
-    switch (stage) {
-      case 10: return 'PreValidation';
-      case 20: return 'PreOperation';
-      case 30: return 'MainOperation';
-      case 40: return 'PostOperation';
-      case 50: return 'Asynchronous';
-      default: return 'Unknown';
-    }
+    return getPluginStageLabel(stage);
   }
 
   getModeName(mode: number): string {

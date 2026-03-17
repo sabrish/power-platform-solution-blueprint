@@ -25,25 +25,6 @@ export class BusinessRuleParser {
   private static readonly RE_DIRECT_VAL = /var\s+(v\d+)\s*=\s*(v\d+)\.get(?:Value|UtcValue)\(\)/g;
   private static readonly RE_DERIVED_VAR = /var\s+(v\d+)\s*=\s*\(\s*\(\s*\(\s*(v\d+)\s*\)\s*!=\s*undefined/g;
 
-  // Condition patterns
-  private static readonly RE_NOT_EMPTY = /\(*(v\d+)\)*\s*!==?\s*(?:undefined|null|"")/g;
-  private static readonly RE_IS_EMPTY = /\(*(v\d+)\)*\s*===?\s*(?:undefined|null|"")/g;
-  private static readonly RE_EQ_LITERAL = /\(*(v\d+)\)*\s*===?\s*\((true|false|'[^']*'|"[^"]*"|-?\d+(?:\.\d+)?)\)/g;
-  private static readonly RE_STR_OP = /\bv\d+\(\(\s*(v\d+)\s*\)\s*,\s*\(\s*'([^']*)'\s*\)\s*,\s*function[\s\S]{0,500}?indexOf[\s\S]{0,80}?(===|!==)\s*-1/g;
-  private static readonly RE_COMP = /\(*(v\d+)\)*\s*([<>]=?)\s*\(*(v\d+)\)*/g;
-
-  // Action patterns
-  private static readonly RE_REQ_LEVEL = /\(*(v\d+)\)*\.setRequiredLevel\(['"]([^'"]+)['"]\)/g;
-  private static readonly RE_VISIBLE = /\(*(v\d+)\)*\.setVisible\((true|false)\)/g;
-  private static readonly RE_CTRL_VISIBLE = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setVisible\((true|false)\)/g;
-  private static readonly RE_DISABLED = /\(*(v\d+)\)*\.setDisabled\((true|false)\)/g;
-  private static readonly RE_CTRL_DISABLED = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setDisabled\((true|false)\)/g;
-  private static readonly RE_SET_VAL = /\(*(v\d+)\)*\.setValue\(([^)]*)\)/g;
-  private static readonly RE_NOTIF_MSG = /GetResourceString\([^,]+,\s*'([^']+)'\)[^,)]*,\s*'([^'"]+)'/g;
-  private static readonly RE_NOTIF_LIT = /c\.setNotification\('([^']+)',\s*'([^']+)'\)/g;
-  private static readonly RE_CLEANUP = /\{'CId'\s*:\s*'([^']+)'\s*,\s*'SId'\s*:\s*'([^']+)'\}/g;
-  private static readonly RE_CTRL_NOTIF = /(v\d+)\.controls\.forEach[\s\S]{0,300}?c\.setNotification/g;
-
   // XAML parsing patterns
   private static readonly RE_COND_PATTERN = /<condition[^>]*attribute="([^"]*)"[^>]*operator="([^"]*)"[^>]*>[\s\S]*?<value[^>]*>([^<]*)<\/value>/gi;
   private static readonly RE_WF4_COND = /<(?:\w+:)?ConditionExpression[^>]*LeftOperand="([^"]*)"[^>]*Operator="([^"]*)"[^>]*RightOperand="([^"]*)"[^/]*/gi;
@@ -66,7 +47,7 @@ export class BusinessRuleParser {
         try {
           const json = JSON.parse(clientdata) as Record<string, unknown>;
           const result = this.parseJson(json);
-          if (result.conditions.length > 0 || result.actions.length > 0) {
+          if (result.conditionGroups.length > 0 || result.elseActions.length > 0) {
             return result;
           }
         } catch {
@@ -78,8 +59,8 @@ export class BusinessRuleParser {
     // Fall back to XAML
     if (!xaml || xaml.trim() === '') {
       return {
-        conditions: [],
-        actions: [],
+        conditionGroups: [],
+        elseActions: [],
         executionContext: 'Client',
         conditionLogic: 'No conditions defined',
       };
@@ -118,11 +99,11 @@ export class BusinessRuleParser {
       const executionContext = this.determineExecutionContext(finalActions);
       const conditionLogic = this.buildConditionLogic(finalConditions);
 
-      return { conditions: finalConditions, actions: finalActions, executionContext, conditionLogic };
+      return { conditionGroups: [{ conditions: finalConditions, actions: finalActions }], elseActions: [], executionContext, conditionLogic };
     } catch (error) {
       return {
-        conditions: [],
-        actions: [],
+        conditionGroups: [],
+        elseActions: [],
         executionContext: 'Client',
         conditionLogic: 'Unable to parse conditions',
         parseError: error instanceof Error ? error.message : 'Unknown error',
@@ -138,17 +119,20 @@ export class BusinessRuleParser {
    * Parse the standard Dataverse clientdata XML format.
    *
    * clientdata is always XML: <clientdata><clientcode><![CDATA[...]]></clientcode></clientdata>
-   * The CDATA contains compiled JavaScript that implements the rule. We extract conditions
-   * and actions by analysing the variable bindings and method calls in that JS.
+   * The CDATA contains compiled JavaScript that implements the rule with this structure:
+   *   1. var v0 = entity reference
+   *   2. var v1 = v0.attributes.get('field_logical_name')  ← field attribute variables
+   *   3. if(v1==null || v2==null ...) { return; }  ← null guard (skip — not a condition)
+   *   4. var vN = (v1) ? v1.getValue() : null  ← value variable for the condition field
+   *   5. if((vN) === (795390000)) { ... }  ← THE ACTUAL CONDITION (optionset/boolean/lookup equals)
+   *   6. Inside the if block: THEN actions
+   *   7. } else if(true) { ... }  ← ELSE actions (always "else if(true)", never plain "else")
    *
-   * Variable naming pattern Dataverse uses:
-   *   var v0 = entity reference
-   *   var v1 = v0.attributes.get('emailaddress1')  ← field-control variable
-   *   var v4 = (v1) ? v1.getValue() : null          ← value variable
-   *
-   * Conditions come from: value-var != undefined checks (distinct from the guard-return
-   * at the top which checks field-control vars with == undefined).
-   * Actions come from: v2.setRequiredLevel(...), v2.setVisible(...), etc.
+   * We extract:
+   *   - Variable maps: vN → field logical name
+   *   - Conditions: from the main if statement (not the null guard)
+   *   - THEN actions: from the if block
+   *   - ELSE actions: from the else if(true) block
    */
   private static parseClientDataXml(clientdata: string): BusinessRuleDefinition | null {
     const cdataMatch = clientdata.match(BusinessRuleParser.RE_CDATA);
@@ -158,34 +142,30 @@ export class BusinessRuleParser {
 
     let m: RegExpExecArray | null;
 
-    // ── Variable maps ──────────────────────────────────────────────────────────
+    // ── Step 1: Build variable-to-field map ──────────────────────────────────
 
-    // field-control var → field logical name
+    // field-attribute var → field logical name
     // var v1 = v0.attributes.get('emailaddress1');
     const fieldVarMap = new Map<string, string>();
     BusinessRuleParser.RE_FIELD_DECL.lastIndex = 0;
     while ((m = BusinessRuleParser.RE_FIELD_DECL.exec(js)) !== null) fieldVarMap.set(m[1], m[2]);
 
-    // value-var → field-control var
-    // (a) ternary: var v4 = (v1) ? v1.getValue() : null;  also handles getUtcValue/getOptions
+    // ── Step 2: Build value-variable map ──────────────────────────────────────
+
+    // value-var → attribute-var
+    // var v4 = (v1) ? v1.getValue() : null
     const valueVarMap = new Map<string, string>();
     BusinessRuleParser.RE_TERNARY_VAL.lastIndex = 0;
     while ((m = BusinessRuleParser.RE_TERNARY_VAL.exec(js)) !== null) valueVarMap.set(m[1], m[2]);
-    // (b) direct: var v4 = v1.getValue();
     BusinessRuleParser.RE_DIRECT_VAL.lastIndex = 0;
     while ((m = BusinessRuleParser.RE_DIRECT_VAL.exec(js)) !== null) {
       if (!valueVarMap.has(m[1])) valueVarMap.set(m[1], m[2]);
     }
 
-    // derived-var → source value-var  (date normalisation)
-    // var v4 = (((v3) != undefined && ...) ? new Date((v3)...) : null)
+    // derived-var → source value-var (date normalisation)
     const derivedVarMap = new Map<string, string>();
     BusinessRuleParser.RE_DERIVED_VAR.lastIndex = 0;
     while ((m = BusinessRuleParser.RE_DERIVED_VAR.exec(js)) !== null) derivedVarMap.set(m[1], m[2]);
-
-    // Variables that only serve as null-guard sources inside a derived-var computation.
-    // Their != undefined checks are implementation detail, not business-rule conditions.
-    const derivedSources = new Set(derivedVarMap.values());
 
     // Resolve vN → field logical name (derivedVarMap → valueVarMap → fieldVarMap)
     const resolveField = (varName: string): string => {
@@ -195,163 +175,248 @@ export class BusinessRuleParser {
       return fieldVarMap.get(v) ?? varName;
     };
 
-    // ── Conditions ─────────────────────────────────────────────────────────────
+    // ── Step 3: Skip null guard and parse all condition groups ────────────────
 
-    const conditions: Condition[] = [];
-    const seenCondKeys = new Set<string>();
-    const addCondition = (field: string, operator: string, value = '') => {
-      if (/^v\d+$/.test(field)) return; // unresolved variable — skip
-      const key = `${field}|${operator}|${value}`;
-      if (seenCondKeys.has(key)) return;
-      seenCondKeys.add(key);
-      conditions.push({ field, operator, value, logicOperator: 'AND' });
+    // Helper: parse a single condition from an if(...) header
+    const parseCondition = (condExpr: string): Condition[] => {
+      const conds: Condition[] = [];
+
+      // Pattern A: option set equals integer — if((vN) === (795390000))
+      const matchOptionSet = condExpr.match(/^\s*\((v\d+)\)\s*===\s*\((\d+)\)\s*$/);
+      if (matchOptionSet) {
+        const valueVar = matchOptionSet[1];
+        const optionValue = matchOptionSet[2];
+        const field = resolveField(valueVar);
+        if (field !== valueVar) {
+          conds.push({ field, operator: 'equals', value: optionValue, logicOperator: 'AND' });
+        }
+        return conds;
+      }
+
+      // Pattern B: boolean equals true — if((vN)==(true)||...)
+      const matchBool = condExpr.match(/^\s*\((v\d+)\)\s*==\s*\(true\)/);
+      if (matchBool) {
+        const valueVar = matchBool[1];
+        const field = resolveField(valueVar);
+        if (field !== valueVar) {
+          conds.push({ field, operator: 'equals', value: 'true', logicOperator: 'AND' });
+        }
+        return conds;
+      }
+
+      // Pattern C: lookup equals — if(v7((vN),(vM), function(...)))
+      const matchLookup = condExpr.match(/^v\d+\s*\(\s*\((v\d+)\)\s*,\s*\((v\d+)\)/);
+      if (matchLookup) {
+        const valueVar = matchLookup[1];
+        const lookupArrayVar = matchLookup[2];
+        const field = resolveField(valueVar);
+        const arrayDefRegex = new RegExp(`var\\s+${lookupArrayVar.replace('$', '\\$')}\\s*=\\s*\\[.*?name\\s*:\\s*'([^']+)'`, 's');
+        const arrayMatch = js.match(arrayDefRegex);
+        const lookupName = arrayMatch ? arrayMatch[1] : '(lookup record)';
+        if (field !== valueVar) {
+          conds.push({ field, operator: 'equals', value: lookupName, logicOperator: 'AND' });
+        }
+        return conds;
+      }
+
+      return conds;
     };
 
-    // (a) "contains data": value-vars / derived-vars checked with != / !== undefined|null|""
-    // \(* handles any number of wrapping parens: Dataverse uses both (vN) and ((vN))
-    BusinessRuleParser.RE_NOT_EMPTY.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_NOT_EMPTY.exec(js)) !== null) {
-      const varName = m[1];
-      if (!valueVarMap.has(varName) && !derivedVarMap.has(varName)) continue; // guard-clause uses field-control vars
-      if (derivedSources.has(varName)) continue; // null guard inside derived-var computation
-      const field = resolveField(varName);
-      addCondition(field, 'contains data');
+    // ── Step 4: Extract if/else-if blocks using balanced parenthesis counting ──
+    //
+    // The regex approach cannot reliably:
+    //   (a) match null guards with multi-variable conditions like
+    //       if (((v1)==null||(v1)==undefined||...)||(v4)==undefined...){return;}
+    //       because [^)]* stops at the first inner ')'.
+    //   (b) locate a standalone if(condExpr) that sits mid-line (not at ^ and
+    //       not preceded by '} else'), which happens when the compiled JS is
+    //       a single line with variable declarations before the main if block.
+    //   (c) extract condExpr for deeply nested conditions like
+    //       v7((v5),(v6),function(...){...}) where nesting exceeds one level.
+    //
+    // Solution: scan for \bif\s*\( with a balanced-paren counter to locate and
+    // extract each block; skip null guards identified by {return;} bodies.
+
+    const conditionGroups: import('../types/blueprint.js').ConditionGroup[] = [];
+    const elseActions: Action[] = [];
+
+    const ifScanRe = /\bif\s*\(/g;
+    while (true) {
+      const sm = ifScanRe.exec(js);
+      if (!sm) break;
+
+      // Skip 'else if(' — we detect the else block separately below
+      const precursor = js.slice(Math.max(0, sm.index - 15), sm.index);
+      if (/else\s+$/.test(precursor)) continue;
+
+      // Extract the full condition using balanced parenthesis counting
+      const parenOpen = sm.index + sm[0].length - 1; // position of '('
+      const parenClose = BusinessRuleParser.findMatchingParen(js, parenOpen);
+      if (parenClose === -1) break;
+
+      const condExpr = js.slice(parenOpen + 1, parenClose);
+
+      // Skip null guard: body is {return;} / {return false;} / {return undefined;}
+      const afterParen = js.slice(parenClose + 1, parenClose + 25);
+      if (/^\s*\{\s*return[\s;]/.test(afterParen)) {
+        ifScanRe.lastIndex = parenClose + 1;
+        continue;
+      }
+
+      // Main condition block — extract THEN body
+      const braceOpen = js.indexOf('{', parenClose + 1);
+      if (braceOpen === -1) break;
+      const braceClose = BusinessRuleParser.findMatchingBrace(js, braceOpen);
+      const thenBody = js.slice(braceOpen + 1, braceClose !== -1 ? braceClose : js.length);
+
+      const conditions = parseCondition(condExpr);
+      const actions = this.parseActionsFromBlock(thenBody, resolveField);
+      if (conditions.length > 0 || actions.length > 0) {
+        conditionGroups.push({ conditions, actions });
+      }
+
+      // Walk the full else-if chain from the THEN block's closing brace.
+      // Handles: else if(true) = unconditional else, else if(cond) = additional branches,
+      // and plain else { }. Each branch becomes either a new conditionGroup or elseActions.
+      if (braceClose !== -1) {
+        let chainPos = braceClose;
+        while (chainPos < js.length) {
+          const afterChain = js.slice(chainPos);
+          const elseIfMatch = /^\s*\}\s*else\s+if\s*\(/.exec(afterChain);
+          const plainElseMatch = /^\s*\}\s*else\s*\{/.exec(afterChain);
+
+          if (!elseIfMatch && !plainElseMatch) break;
+
+          // Plain else { } — unconditional else actions
+          if (plainElseMatch && (!elseIfMatch || plainElseMatch.index <= elseIfMatch.index)) {
+            const elseBraceOpen = chainPos + plainElseMatch[0].lastIndexOf('{');
+            const elseBraceClose = BusinessRuleParser.findMatchingBrace(js, elseBraceOpen);
+            const elseBody = js.slice(elseBraceOpen + 1, elseBraceClose !== -1 ? elseBraceClose : js.length);
+            elseActions.push(...this.parseActionsFromBlock(elseBody, resolveField));
+            break;
+          }
+
+          // else if(condExpr) { }
+          if (elseIfMatch) {
+            const parenOpenPos = chainPos + elseIfMatch[0].length - 1;
+            const parenClosePos = BusinessRuleParser.findMatchingParen(js, parenOpenPos);
+            if (parenClosePos === -1) break;
+            const elseCondExpr = js.slice(parenOpenPos + 1, parenClosePos);
+            const elseBraceOpen = js.indexOf('{', parenClosePos + 1);
+            if (elseBraceOpen === -1) break;
+            const elseBraceClose = BusinessRuleParser.findMatchingBrace(js, elseBraceOpen);
+            const elseBody = js.slice(elseBraceOpen + 1, elseBraceClose !== -1 ? elseBraceClose : js.length);
+
+            if (/^\s*true\s*$/.test(elseCondExpr)) {
+              // else if(true) = unconditional else
+              elseActions.push(...this.parseActionsFromBlock(elseBody, resolveField));
+              chainPos = elseBraceClose !== -1 ? elseBraceClose : js.length;
+              break;
+            }
+
+            // Genuine condition branch (e.g. else if(v7(...)) or else if((vN)==(true)))
+            const elseConditions = parseCondition(elseCondExpr);
+            const elseCondActions = this.parseActionsFromBlock(elseBody, resolveField);
+            if (elseConditions.length > 0 || elseCondActions.length > 0) {
+              conditionGroups.push({ conditions: elseConditions, actions: elseCondActions });
+            }
+            chainPos = elseBraceClose !== -1 ? elseBraceClose : js.length;
+          }
+        }
+      }
+
+      break; // One main if block per business rule
     }
 
-    // (b) "does not contain data": value-vars checked with == / === undefined|null|""
-    // Early-return guard uses field-control vars (not in valueVarMap) — safely skipped by the filter.
-    BusinessRuleParser.RE_IS_EMPTY.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_IS_EMPTY.exec(js)) !== null) {
-      const varName = m[1];
-      if (!valueVarMap.has(varName) && !derivedVarMap.has(varName)) continue;
-      if (derivedSources.has(varName)) continue;
-      const field = resolveField(varName);
-      addCondition(field, 'does not contain data');
-    }
-
-    // (c) "equals literal": (vN)==(true|false|'string'|number)
-    // Dataverse wraps the literal in parens, e.g. (v3)==(false) for Two Options fields.
-    // The compound boolean check pattern is: (v3)==(false)||((v3)==true&&...)
-    // Only the first clause uses parens around the literal, so this regex fires exactly once per branch.
-    BusinessRuleParser.RE_EQ_LITERAL.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_EQ_LITERAL.exec(js)) !== null) {
-      const varName = m[1];
-      if (!valueVarMap.has(varName) && !derivedVarMap.has(varName)) continue;
-      if (derivedSources.has(varName)) continue;
-      const field = resolveField(varName);
-      const rawVal = m[2].replace(/^['"]|['"]$/g, '');
-      addCondition(field, 'equals', rawVal);
-    }
-
-    // (d) String "contains" / "does not contain" via Dataverse helper comparator function:
-    // var vH = function(op1, op2, e){ return e(op1, op2); };
-    // vH((vN), ('value'), function(op1,op2){ ... op1.toUpperCase().indexOf(op2.toUpperCase()) === -1 ... })
-    // indexOf === -1 → "does not contain"; indexOf !== -1 → "contains"
-    BusinessRuleParser.RE_STR_OP.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_STR_OP.exec(js)) !== null) {
-      const varName = m[1], literal = m[2], cmp = m[3];
-      if (!valueVarMap.has(varName) && !derivedVarMap.has(varName)) continue;
-      if (derivedSources.has(varName)) continue;
-      const field = resolveField(varName);
-      addCondition(field, cmp === '===' ? 'does not contain' : 'contains', literal);
-    }
-
-    // (e) comparison: (vA) < (vB), (vA) > (vB), (vA) <= (vB), (vA) >= (vB)
-    const compOpNames: Record<string, string> = {
-      '<': 'is less than', '>': 'is greater than',
-      '<=': 'is less than or equal to', '>=': 'is greater than or equal to',
-    };
-    const flipOps: Record<string, string> = {
-      '<': 'is greater than', '>': 'is less than',
-      '<=': 'is greater than or equal to', '>=': 'is less than or equal to',
-    };
-    BusinessRuleParser.RE_COMP.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_COMP.exec(js)) !== null) {
-      const lhsVar = m[1], op = m[2], rhsVar = m[3];
-      const lhsField = resolveField(lhsVar);
-      const rhsField = resolveField(rhsVar);
-      if (lhsField === lhsVar && rhsField === rhsVar) continue; // neither side resolved
-      if (lhsField !== lhsVar) {
-        addCondition(lhsField, compOpNames[op] ?? op, rhsField !== rhsVar ? rhsField : rhsVar);
-      } else {
-        addCondition(rhsField, flipOps[op] ?? op, lhsVar);
+    // If no condition groups found, try the legacy single-condition fallback
+    if (conditionGroups.length === 0 && elseActions.length === 0) {
+      // Fallback: parse entire JS as a single block
+      const fallbackConditions = parseCondition(js);
+      const fallbackActions = this.parseActionsFromBlock(js, resolveField);
+      if (fallbackConditions.length > 0 || fallbackActions.length > 0) {
+        conditionGroups.push({ conditions: fallbackConditions, actions: fallbackActions });
       }
     }
 
-    // ── Actions ────────────────────────────────────────────────────────────────
+    if (conditionGroups.length === 0 && elseActions.length === 0) return null;
 
-    const actions: Action[] = [];
+    const firstGroupConditions = conditionGroups[0]?.conditions ?? [];
+    return {
+      conditionGroups,
+      elseActions,
+      executionContext: 'Client',
+      conditionLogic: this.buildConditionLogic(firstGroupConditions),
+    };
+  }
+
+  /**
+   * Parse actions from a JavaScript block.
+   * Extracted as a class method for reuse across condition groups.
+   */
+  private static parseActionsFromBlock(block: string, resolveField: (varName: string) => string): Action[] {
+    const acts: Action[] = [];
 
     // .setRequiredLevel('required' | 'none' | 'recommended')
-    BusinessRuleParser.RE_REQ_LEVEL.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_REQ_LEVEL.exec(js)) !== null)
-      actions.push({ type: 'SetRequired', field: resolveField(m[1]), value: m[2] });
-
-    // .setVisible(true|false) — direct call
-    BusinessRuleParser.RE_VISIBLE.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_VISIBLE.exec(js)) !== null)
-      actions.push({ type: m[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(m[1]) });
+    const reqRe = /\(*(v\d+)\)*\.setRequiredLevel\(['"]([^'"]+)['"]\)/g;
+    let match: RegExpExecArray | null;
+    while ((match = reqRe.exec(block)) !== null) {
+      const level = match[2];
+      const type = level === 'none' ? 'SetOptional' : 'SetRequired';
+      acts.push({ type, field: resolveField(match[1]), value: level });
+    }
 
     // .controls.forEach(function(c,i){ c.setVisible(true|false) }) — delegate pattern
-    BusinessRuleParser.RE_CTRL_VISIBLE.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_CTRL_VISIBLE.exec(js)) !== null)
-      actions.push({ type: m[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(m[1]) });
+    const ctrlVisRe = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setVisible\((true|false)\)/g;
+    while ((match = ctrlVisRe.exec(block)) !== null) {
+      acts.push({ type: match[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(match[1]) });
+    }
 
-    // .setDisabled(true|false) — direct call
-    BusinessRuleParser.RE_DISABLED.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_DISABLED.exec(js)) !== null)
-      actions.push({ type: m[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(m[1]) });
+    // .setVisible(true|false) — direct call
+    const visRe = /\(*(v\d+)\)*\.setVisible\((true|false)\)/g;
+    while ((match = visRe.exec(block)) !== null) {
+      acts.push({ type: match[2] === 'true' ? 'ShowField' : 'HideField', field: resolveField(match[1]) });
+    }
 
     // .controls.forEach(function(c,i){ c.setDisabled(true|false) }) — delegate pattern
-    BusinessRuleParser.RE_CTRL_DISABLED.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_CTRL_DISABLED.exec(js)) !== null)
-      actions.push({ type: m[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(m[1]) });
+    const ctrlDisRe = /(v\d+)\.controls\.forEach[\s\S]{0,150}?c\.setDisabled\((true|false)\)/g;
+    while ((match = ctrlDisRe.exec(block)) !== null) {
+      acts.push({ type: match[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(match[1]) });
+    }
+
+    // .setDisabled(true|false) — direct call
+    const disRe = /\(*(v\d+)\)*\.setDisabled\((true|false)\)/g;
+    while ((match = disRe.exec(block)) !== null) {
+      acts.push({ type: match[2] === 'true' ? 'LockField' : 'UnlockField', field: resolveField(match[1]) });
+    }
 
     // .setValue(value)
-    BusinessRuleParser.RE_SET_VAL.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_SET_VAL.exec(js)) !== null) {
-      const raw = m[2].trim().replace(/^['"]|['"]$/g, '');
-      actions.push({ type: 'SetValue', field: resolveField(m[1]), value: raw || undefined });
+    const setValRe = /\(*(v\d+)\)*\.setValue\(([^)]*)\)/g;
+    while ((match = setValRe.exec(block)) !== null) {
+      const raw = match[2].trim().replace(/^['"]|['"]$/g, '');
+      acts.push({ type: 'SetValue', field: resolveField(match[1]), value: raw || undefined });
     }
 
-    // ShowError: c.setNotification(GetResourceString(guid, 'message'), stepId)
-    // Build stepId → message from GetResourceString fallback args
+    // ShowError: c.setNotification(...)
+    // Build stepId → message map
     const notifMsgMap = new Map<string, string>();
-    BusinessRuleParser.RE_NOTIF_MSG.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_NOTIF_MSG.exec(js)) !== null) notifMsgMap.set(m[2], m[1]);
-    // Literal string fallback: c.setNotification('message', 'stepId')
-    BusinessRuleParser.RE_NOTIF_LIT.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_NOTIF_LIT.exec(js)) !== null) {
-      if (!notifMsgMap.has(m[2])) notifMsgMap.set(m[2], m[1]);
+    const notifMsgRe = /GetResourceString\([^,]+,\s*'([^']+)'\)[^,)]*,\s*'([^'"]+)'/g;
+    while ((match = notifMsgRe.exec(block)) !== null) notifMsgMap.set(match[2], match[1]);
+    const notifLitRe = /c\.setNotification\('([^']+)',\s*'([^']+)'\)/g;
+    while ((match = notifLitRe.exec(block)) !== null) {
+      if (!notifMsgMap.has(match[2])) notifMsgMap.set(match[2], match[1]);
     }
-    // Cleanup array maps field → stepId: {'CId':'fieldname','SId':'stepId'}
+    const cleanupRe = /\{'CId'\s*:\s*'([^']+)'\s*,\s*'SId'\s*:\s*'([^']+)'\}/g;
     const notifSeen = new Set<string>();
-    BusinessRuleParser.RE_CLEANUP.lastIndex = 0;
-    while ((m = BusinessRuleParser.RE_CLEANUP.exec(js)) !== null) {
-      const field = m[1], stepId = m[2];
+    while ((match = cleanupRe.exec(block)) !== null) {
+      const field = match[1], stepId = match[2];
       const key = `${field}|${stepId}`;
       if (!notifSeen.has(key)) {
         notifSeen.add(key);
-        actions.push({ type: 'ShowError', field, message: notifMsgMap.get(stepId) });
-      }
-    }
-    // Fallback: controls.forEach + setNotification without a cleanup array
-    if (notifSeen.size === 0) {
-      BusinessRuleParser.RE_CTRL_NOTIF.lastIndex = 0;
-      while ((m = BusinessRuleParser.RE_CTRL_NOTIF.exec(js)) !== null) {
-        const field = resolveField(m[1]);
-        if (field !== m[1]) actions.push({ type: 'ShowError', field });
+        acts.push({ type: 'ShowError', field, message: notifMsgMap.get(stepId) });
       }
     }
 
-    if (conditions.length === 0 && actions.length === 0) return null;
-
-    return {
-      conditions,
-      actions,
-      executionContext: 'Client',
-      conditionLogic: this.buildConditionLogic(conditions),
-    };
+    return acts;
   }
 
   // ---------------------------------------------------------------------------
@@ -361,6 +426,11 @@ export class BusinessRuleParser {
   private static parseJson(json: Record<string, unknown>): BusinessRuleDefinition {
     const rawConditions = this.findConditionsArray(json);
     const rawActions = this.findActionsArray(json);
+
+    const combinatorRaw = String(
+      json.conditionsCombinator ?? json.conditionCombinator ??
+      json.ConditionsCombinator ?? json.ConditionCombinator ?? 'And'
+    );
 
     const conditions: Condition[] = rawConditions.map(c => ({
       field: String(
@@ -381,10 +451,6 @@ export class BusinessRuleParser {
     }));
 
     // Apply combinator to conditions after the first
-    const combinatorRaw = String(
-      json.conditionsCombinator ?? json.conditionCombinator ??
-      json.ConditionsCombinator ?? json.ConditionCombinator ?? 'And'
-    );
     const isOr = combinatorRaw.toLowerCase() === 'or';
     for (let i = 1; i < conditions.length; i++) {
       conditions[i].logicOperator = isOr ? 'OR' : 'AND';
@@ -415,7 +481,7 @@ export class BusinessRuleParser {
     const executionContext = this.determineExecutionContext(actions);
     const conditionLogic = this.buildConditionLogic(conditions);
 
-    return { conditions, actions, executionContext, conditionLogic };
+    return { conditionGroups: [{ conditions, actions }], elseActions: [], executionContext, conditionLogic };
   }
 
   /**
@@ -807,5 +873,25 @@ export class BusinessRuleParser {
     const pattern = new RegExp(`<parameter[^>]*name="${paramName}"[^>]*>([^<]*)<\\/parameter>`, 'i');
     const match = pattern.exec(actionXml);
     return match ? match[1] : null;
+  }
+
+  /** Find the position of the ')' that closes the '(' at openPos, counting nested parens. */
+  private static findMatchingParen(js: string, openPos: number): number {
+    let depth = 0;
+    for (let i = openPos; i < js.length; i++) {
+      if (js[i] === '(') depth++;
+      else if (js[i] === ')') { if (--depth === 0) return i; }
+    }
+    return -1;
+  }
+
+  /** Find the position of the '}' that closes the '{' at openPos, counting nested braces. */
+  private static findMatchingBrace(js: string, openPos: number): number {
+    let depth = 0;
+    for (let i = openPos; i < js.length; i++) {
+      if (js[i] === '{') depth++;
+      else if (js[i] === '}') { if (--depth === 0) return i; }
+    }
+    return -1;
   }
 }

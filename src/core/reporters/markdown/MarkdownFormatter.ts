@@ -4,7 +4,7 @@
  */
 import type { FileNode } from '../../types/blueprint.js';
 
-export default class MarkdownFormatter {
+export class MarkdownFormatter {
   /**
    * Generate a markdown table with proper alignment
    * @param headers - Table header labels

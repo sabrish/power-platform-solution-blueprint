@@ -13,7 +13,7 @@ import {
 } from '@fluentui/react-components';
 import { Database24Regular } from '@fluentui/react-icons';
 import type { DetailedEntityMetadata, EntityBlueprint, ClassicWorkflow } from '../core';
-import { isSystemRelationship } from '../utils/systemFilters';
+import { isSystemRelationship } from '../core/utils/systemFilters';
 import { FieldsTable } from './FieldsTable';
 import { FormsTable } from './FormsTable';
 import { RelationshipsView } from './RelationshipsView';
