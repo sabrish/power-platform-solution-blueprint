@@ -247,7 +247,11 @@ export interface FlowDefinition {
   triggerEvent: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Assign' | 'Grant' | 'Revoke' | 'StatusChange' | 'Action' | 'Manual' | 'Scheduled' | 'Unknown';
   triggerEntity: string | null;
   triggerConditions: string | null;
-  /** Dataverse custom action schema name when triggered by "When an action is performed" with no entity binding */
+  /**
+   * Dataverse custom action / SDK message name for custom action triggers.
+   * Set when the flow is triggered by a global "When an action is performed" (no entity binding),
+   * or by an entity-bound custom action detected via a non-standard sdkmessagename.
+   */
   triggerCustomActionName?: string;
   scopeType: 'User' | 'BusinessUnit' | 'Organization' | 'Unknown';
   actionsCount: number;

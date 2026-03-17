@@ -94,7 +94,7 @@ export function GlobalChainMapPanel({ analysis }: GlobalChainMapPanelProps): JSX
       const autoCmp = a.automationName.localeCompare(b.automationName);
       if (autoCmp !== 0) return autoCmp;
       // 3. Trigger operation
-      const triggerOrder = ['Create', 'Update', 'Delete', 'CreateOrUpdate', 'Action', 'Manual', 'Scheduled', 'Unknown'];
+      const triggerOrder = ['Create', 'Update', 'Delete', 'CreateOrUpdate', 'Assign', 'Grant', 'Revoke', 'StatusChange', 'Action', 'Manual', 'Scheduled', 'Unknown'];
       const tA = triggerOrder.indexOf(a.triggerOperation);
       const tB = triggerOrder.indexOf(b.triggerOperation);
       if (tA !== tB) return tA - tB;

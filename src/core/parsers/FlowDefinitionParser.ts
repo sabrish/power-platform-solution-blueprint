@@ -114,7 +114,7 @@ export class FlowDefinitionParser {
       triggerType = 'Dataverse';
 
       // Modern Dataverse connector: event is a numeric message code in parameters
-      // 1 = Create, 2 = Delete, 3 = Update, 4 = CreateOrUpdate, 5 = Assign, 8 = SetState
+      // 1 = Create, 2 = Delete, 3 = Update, 4 = CreateOrUpdate, 5 = Assign, 6 = Grant, 7 = Revoke, 8 = StatusChange
       const messageCode = trigger.inputs?.parameters?.['subscriptionRequest/message'];
       if (messageCode !== undefined && messageCode !== null) {
         const code = Number(messageCode);

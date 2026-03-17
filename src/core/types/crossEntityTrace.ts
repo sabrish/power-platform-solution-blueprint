@@ -26,7 +26,7 @@ export interface CrossEntityEntryPoint {
   /** For on-demand classic workflows */
   isOnDemand: boolean;
   confidence: 'High' | 'Medium' | 'Low';
-  /** What event triggers this automation (Create/Update/Delete/Manual/Scheduled/Action) */
+  /** What event triggers this automation (Create/Update/Delete/CreateOrUpdate/Assign/Grant/Revoke/StatusChange/Manual/Scheduled/Action/Unknown) */
   triggerOperation: 'Create' | 'Update' | 'Delete' | 'CreateOrUpdate' | 'Assign' | 'Grant' | 'Revoke' | 'StatusChange' | 'Manual' | 'Scheduled' | 'Action' | 'Unknown';
   /** Custom action / SDK message name when triggerOperation is 'Action' */
   triggerCustomActionName?: string;
