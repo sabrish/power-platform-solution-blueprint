@@ -5,6 +5,29 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-03-17
+
+### Added
+- **Conditional debug logger** (`src/core/utils/debugLogger.ts`) — lightweight `debugLog(tag, msg, data?)` utility active only in dev server, `http:` origins, or when `localStorage.setItem('ppsb-debug', 'true')` is set; completely silent in production PPTB Desktop installs under `pptb-webview://`
+- **Debug logging for flow scope labelling** — `[PPSB:flow-scope]` diagnostic logs added to `CrossEntityAnalyzer.ts` to surface real-world data for flows appearing as "Solution Flow (unscoped)"; opt-in via `ppsb-debug` localStorage flag
+- **Debug logging for flow parse and discovery** — `[PPSB:flow-parse]` and `[PPSB:flow-discovery]` logs in `FlowDefinitionParser.ts` and `FlowDiscovery.ts`; aid diagnosis of trigger-entity resolution edge cases
+
+### Fixed
+- **Business rules: full IF/THEN/ELSE structure** — `BusinessRuleParser` rewritten to produce `conditionGroups: ConditionGroup[]` (IF/ELSE IF blocks) and `elseActions: Action[]`; `BusinessRulesList` now renders IF / ELSE IF / THEN / ELSE labels correctly; HTML and Markdown exports updated to reflect full rule structure
+- **Business rules: conditionCount in HTML and Markdown reporters** — was reading a stale flat `conditions` array; now correctly derived from `conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0)`
+- **Custom APIs row click conflict** — `onSelectAPI` removed from row `onClick`; clicking a row now only toggles expansion; the select action is no longer triggered on every expand
+- **Environment Variables eye icon layout shift** — added dedicated 32 px grid column for the visibility toggle so the grid no longer reflows when the icon is clicked
+- **CDS Default Solution filter** — `ScopeSelector` predicates extended to include `solution.friendlyname === 'Default Solution'` and `solution.friendlyname === 'CDS Default Solution'` alongside the existing `ismanaged === true` guard
+- **HTML cross-entity export structure** — `HtmlTemplates.ts` updated to use pipeline-first layout (automation nodes at top level, entity children with `← inbound` badges) matching the v1.1.0 UI redesign
+- **Missing `JSX.Element` return types** — explicit return type annotations added to `ResultsDashboard` and `BusinessRulesList` `renderRuleDetails` inner function
+
+### Changed
+- **DRY/SOLID refactoring — shared utilities** — extracted `normalizeGuid`/`normalizeBatch` (`guid.ts`), `extractOwnershipMetadata` (`metadata.ts`), `resolveEntityName` (`entityName.ts`), `buildOrFilter` (`odata.ts`), and `calculateComplexityScore` (`complexity.ts`) from inline duplication across 80+ call-sites
+- **DRY/SOLID refactoring — shared hooks** — `useExpandable` hook extracted; `IDiscoverer<T>` interface implemented on 11 discovery classes; all processors in `src/core/generators/processors/` call `discoverByIds()` via the interface
+- **DRY/SOLID refactoring — component extraction** — `CrossEntityAutomation/` sub-components extracted from `CrossEntityAutomationView.tsx`; `ERDView/` utilities (constants, stylesheet, export, traversal) extracted
+
+---
+
 ## [1.1.0] - 2026-03-12
 
 ### Added
@@ -564,6 +587,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **No Telemetry**: No usage data collected or transmitted
 
 
+[1.1.1]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/sabrish/power-platform-solution-blueprint/compare/v0.9.0...v1.0.0

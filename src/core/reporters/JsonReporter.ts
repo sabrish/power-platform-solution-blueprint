@@ -22,7 +22,7 @@ interface JsonExportWrapper {
  * - Version control (git diff friendly)
  */
 export class JsonReporter implements IReporter<string> {
-  private readonly toolVersion = '1.1.0';
+  private readonly toolVersion = '1.1.1';
 
   /**
    * Generate JSON export of blueprint

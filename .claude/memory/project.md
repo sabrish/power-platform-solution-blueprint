@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-14
+**Last updated:** 2026-03-17
 
 ---
 
@@ -18,6 +18,7 @@
 
 ## Current Version
 
+**v1.1.1** (pending release 2026-03-17) — patch: business rules IF/THEN/ELSE, conditionCount fix, DRY/SOLID refactoring, debug logger, Custom APIs click fix, env vars eye icon fix, CDS Default Solution filter fix, HTML cross-entity structure fix
 **v1.1.0** (released 2026-03-12) — minor: pipeline-first Cross-Entity Automation view, external API call detection, HTML/Markdown export parity, and AUDIT compliance fixes
 **v1.0.1** (released 2026-03-11) — patch: discovery pagination fix + OData injection guards
 **v1.0.0** (released 2026-03-11)
@@ -25,7 +26,7 @@
 
 ---
 
-## What is Working (as of v1.1.0)
+## What is Working (as of v1.1.1)
 
 **Stable baseline (v1.0+):** Full Dataverse component discovery — entities, plugins, flows, business rules, classic workflows, BPFs, web resources, custom APIs, environment variables, connection references, global choices, security roles, field security profiles, attribute masking, column security profiles, forms, canvas apps, custom pages, model-driven apps. Scope selector (publisher + solution multi-select), entity list with flag filter bar (AND logic), Component Browser card-row accordion (PATTERN-001), universal search/filter on all tabs, Results Dashboard, interactive Cytoscape.js ERD with pan/zoom and PNG/SVG export, JSON/Markdown/HTML/ZIP export.
 
@@ -91,40 +92,28 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
-### In Progress — UI/Export Bug Fixes and DRY/SOLID Refactoring (Batch 1)
+### Release v1.1.1 — In Progress (2026-03-17)
 
-**Status:** Nearly complete — pending Issue 3 full resolution, pre-commit gate, CHANGELOG, and version bump
+**Status:** Documentation and version files updated; awaiting project owner to run npm/git commands.
 
-**Completed this session (2026-03-13):**
+**Completed this session:**
+- Code review: Approved with comments (no blockers)
+- Security audit: CLEAR
+- CHANGELOG.md: `## [1.1.1] - 2026-03-17` entry written
+- README.md: version badge updated to `1.1.1`
+- `src/core/reporters/JsonReporter.ts`: `toolVersion` updated to `'1.1.1'`
+- `docs/user-guide.md` line 3: updated to `v1.1.1`
+- CHANGELOG comparison links: `[1.1.1]` entry added
 
-1. **Custom APIs row click** (fixed) — `onSelectAPI` removed from row onClick; only calls `toggleExpand`
-2. **Environment Variables eye icon shift** (fixed) — dedicated 32px grid column for visibility toggle
-3. **Flow mislabelling** (PARTIAL) — `resolveEntityName()` fixes 'none' guard; diagnostic `[PPSB-DIAG]` logging added to `CrossEntityAnalyzer.ts` (lines 454, 464, 608, 618) to capture real-world data for flows showing as "Solution Flow (unscoped)"
-4. **CDS Default Solution filter** (fixed) — extended ScopeSelector predicates
-5. **Business Rules IF/THEN/ELSE structure** (fully implemented) — `conditionGroups: ConditionGroup[]` + `elseActions: Action[]` structure; parser handles single/multi group + optional else; UI renders IF/ELSE IF/THEN/ELSE; both HTML and Markdown exports updated
-6. **HTML cross-entity export** (fixed) — pipeline-first structure in HtmlTemplates.ts and MarkdownReporter.ts
+**Pending — project owner must run:**
+1. `npm version 1.1.1 --no-git-tag-version` — updates `package.json` + `npm-shrinkwrap.json`
+2. `pnpm typecheck && pnpm build` — build verification
+3. Stage and commit: `git add package.json npm-shrinkwrap.json CHANGELOG.md README.md src/core/reporters/JsonReporter.ts docs/user-guide.md`
+4. `git commit -m "chore: release v1.1.1"`
+5. `gh pr create ...` — create PR to main
+6. After PR merge: `git tag v1.1.1 -m "Release v1.1.1"` then push tag
 
-**DRY/SOLID refactoring completed:**
-- `src/core/utils/guid.ts` — `normalizeGuid()`, `normalizeBatch()`
-- `src/core/utils/metadata.ts` — `extractOwnershipMetadata()`
-- `src/core/utils/entityName.ts` — `resolveEntityName()`
-- `src/core/utils/grouping.ts` — consolidated grouping functions
-- `src/core/utils/complexity.ts` — `calculateComplexityScore()`
-- `src/core/utils/odata.ts` — `buildOrFilter()`
-- `src/hooks/useExpandable.ts` — shared expand/collapse state
-- `src/core/discovery/IDiscoverer.ts` — interface implemented on 11 discovery classes
-- `src/core/generators/processors/` — 16 processor files split from BlueprintGenerator
-- `src/components/CrossEntityAutomation/` — sub-components extracted from CrossEntityAutomationView.tsx
-- `src/components/ERDView/` — utilities extracted (constants, stylesheet, export, traversal)
-
-**Pending before PR merge:**
-1. **Issue 3 full fix** — awaiting user to run tool and share `[PPSB-DIAG]` console output for flows showing as "Solution Flow (unscoped)"
-2. **Remove `[PPSB-DIAG]` logs** from CrossEntityAnalyzer.ts after Issue 3 is resolved
-3. **Run `/pre-commit`** (reviewer + security-auditor) before creating PR
-4. **Update CHANGELOG.md** for this batch of changes
-5. **Version bump** — this batch warrants a version increment
-
-**Current build state:** `pnpm typecheck && pnpm build` — PASSES (verified 2026-03-13)
+**Note:** `[PPSB-DIAG]` debug logs intentionally retained per project owner decision. Issue 3 (flow mislabelling) remains open for future diagnosis.
 
 ### Released in v1.1.0 (2026-03-12)
 

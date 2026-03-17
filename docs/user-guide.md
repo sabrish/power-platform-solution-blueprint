@@ -1,6 +1,6 @@
 # PPSB User Guide
 
-Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.0
+Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.1
 
 ## Table of Contents
 
