@@ -6,11 +6,31 @@ Files in scope: $ARGUMENTS
 Type-check, build, lint, and format have already run inside the
 developer agent after each unit. This gate handles security only.
 
-## Step 1: Security audit (changed files only)
+## Step 1: Determine changed file scope
 
-Invoke @security-auditor to sweep only the files in $ARGUMENTS.
+If $ARGUMENTS were provided, use that list as scope. Otherwise, determine scope from git:
 
-The auditor looks for:
+1. **Try:** `git diff origin/<current-branch>...HEAD --name-only`
+   - If this succeeds and returns files, use that list.
+
+2. **If Step 1 fails** (branch not yet on remote — first push):
+   Try: `git diff origin/main...HEAD --name-only`
+   - If this succeeds and returns files, use that list.
+   - Note in the output: "First push on branch — diffing against main."
+
+3. **If both fail or return empty:**
+   Fall back to a full scan.
+   - Note in the output: "Could not determine diff scope — running full scan."
+
+## Step 2: Security audit (changed files only)
+
+Invoke @security-auditor with this instruction prepended to the agent prompt:
+
+"Scoped run — scan only these changed files: <file list from Step 1>
+Additionally scan .claude/memory/*.md and .claude/agents/*.md unconditionally.
+Do not scan files outside this scope."
+
+The auditor sweeps the determined scope files. The auditor looks for:
 - Secrets, API keys, tokens, connection strings
 - Hardcoded environment URLs or tenant IDs
 - Personally identifiable data
