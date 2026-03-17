@@ -4,8 +4,14 @@ import { OperationBadge } from './OperationBadge';
 import { TracePipeline } from './TracePipeline';
 import type { CrossEntityEntityView, CrossEntityTrace, CrossEntityAnalysisResult } from '../../core';
 
+// No tokens exist for these values; named constants keep them findable and self-documenting.
+// CHILD_SECTION_INDENT is the visual depth step per nested entity level.
+const CHILD_SECTION_INDENT = '24px';
+// CHILD_SECTION_TOP_NUDGE is a small optical alignment offset between the connector arrow and section header.
+const CHILD_SECTION_TOP_NUDGE = '3px';
+
 const useStyles = makeStyles({
-  childSection: { marginLeft: '24px', marginTop: '3px', marginBottom: tokens.spacingVerticalXS },
+  childSection: { marginLeft: CHILD_SECTION_INDENT, marginTop: CHILD_SECTION_TOP_NUDGE, marginBottom: tokens.spacingVerticalXS },
   childHeader: {
     display: 'flex',
     alignItems: 'center',

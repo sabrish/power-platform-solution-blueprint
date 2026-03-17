@@ -92,7 +92,7 @@ export function TracePipeline({
       {/* Custom action informational note */}
       {trace.entryPoint.operation === 'Action' && (
         <div className={styles.entryFieldsRow} style={{ display: 'flex', alignItems: 'flex-start', gap: tokens.spacingHorizontalXS }}>
-          <Info16Regular style={{ color: tokens.colorBrandForeground1, flexShrink: 0, marginTop: '2px' }} />
+          <Info16Regular style={{ color: tokens.colorBrandForeground1, flexShrink: 0, marginTop: tokens.spacingVerticalXXS }} />
           <Text size={200} style={{ fontStyle: 'italic' }}>
             This entry point calls a bound custom action
             {trace.entryPoint.customActionApiName ? ` (${trace.entryPoint.customActionApiName})` : ''}.

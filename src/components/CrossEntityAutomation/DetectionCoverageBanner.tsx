@@ -17,7 +17,7 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     alignItems: 'start',
   },
-  bannerIcon: { color: tokens.colorBrandForeground1, flexShrink: 0, marginTop: '2px' },
+  bannerIcon: { color: tokens.colorBrandForeground1, flexShrink: 0, marginTop: tokens.spacingVerticalXXS },
   bannerContent: { display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS },
   bannerTitleRow: { display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS },
   bannerListRow: {

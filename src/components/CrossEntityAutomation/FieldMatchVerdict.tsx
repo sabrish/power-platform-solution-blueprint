@@ -32,7 +32,7 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     borderLeft: `3px solid ${tokens.colorPaletteRedForeground1}`,
   },
-  matchVerdict: { fontWeight: tokens.fontWeightSemibold, marginBottom: '2px' },
+  matchVerdict: { fontWeight: tokens.fontWeightSemibold, marginBottom: tokens.spacingVerticalXXS },
   noFilterAdvisory: { fontSize: tokens.fontSizeBase100, color: tokens.colorPaletteRedForeground1 },
 });
 
