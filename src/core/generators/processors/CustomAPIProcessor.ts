@@ -1,7 +1,7 @@
 import type { IDataverseClient } from '../../dataverse/IDataverseClient.js';
 import type { FetchLogger } from '../../utils/FetchLogger.js';
 import type { ProgressInfo, StepWarning } from '../../types/blueprint.js';
-import { CustomAPIDiscovery } from '../../discovery/CustomApiDiscovery.js';
+import { CustomAPIDiscovery } from '../../discovery/CustomAPIDiscovery.js';
 import type { IDiscoverer } from '../../discovery/IDiscoverer.js';
 import type { CustomAPI } from '../../types/customApi.js';
 
