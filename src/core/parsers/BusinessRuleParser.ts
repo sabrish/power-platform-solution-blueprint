@@ -275,18 +275,53 @@ export class BusinessRuleParser {
         conditionGroups.push({ conditions, actions });
       }
 
-      // Look for } else if(true) { immediately after the THEN block
+      // Walk the full else-if chain from the THEN block's closing brace.
+      // Handles: else if(true) = unconditional else, else if(cond) = additional branches,
+      // and plain else { }. Each branch becomes either a new conditionGroup or elseActions.
       if (braceClose !== -1) {
-        const afterBlock = js.slice(braceClose);
-        const elseMatch = /^\s*\}\s*else\s+if\s*\(\s*true\s*\)\s*\{/.exec(afterBlock);
-        if (elseMatch) {
-          const elseBraceOpen = braceClose + elseMatch[0].lastIndexOf('{');
-          const elseBraceClose = BusinessRuleParser.findMatchingBrace(js, elseBraceOpen);
-          const elseBody = js.slice(
-            elseBraceOpen + 1,
-            elseBraceClose !== -1 ? elseBraceClose : js.length,
-          );
-          elseActions.push(...this.parseActionsFromBlock(elseBody, resolveField));
+        let chainPos = braceClose;
+        while (chainPos < js.length) {
+          const afterChain = js.slice(chainPos);
+          const elseIfMatch = /^\s*\}\s*else\s+if\s*\(/.exec(afterChain);
+          const plainElseMatch = /^\s*\}\s*else\s*\{/.exec(afterChain);
+
+          if (!elseIfMatch && !plainElseMatch) break;
+
+          // Plain else { } — unconditional else actions
+          if (plainElseMatch && (!elseIfMatch || plainElseMatch.index <= elseIfMatch.index)) {
+            const elseBraceOpen = chainPos + plainElseMatch[0].lastIndexOf('{');
+            const elseBraceClose = BusinessRuleParser.findMatchingBrace(js, elseBraceOpen);
+            const elseBody = js.slice(elseBraceOpen + 1, elseBraceClose !== -1 ? elseBraceClose : js.length);
+            elseActions.push(...this.parseActionsFromBlock(elseBody, resolveField));
+            break;
+          }
+
+          // else if(condExpr) { }
+          if (elseIfMatch) {
+            const parenOpenPos = chainPos + elseIfMatch[0].length - 1;
+            const parenClosePos = BusinessRuleParser.findMatchingParen(js, parenOpenPos);
+            if (parenClosePos === -1) break;
+            const elseCondExpr = js.slice(parenOpenPos + 1, parenClosePos);
+            const elseBraceOpen = js.indexOf('{', parenClosePos + 1);
+            if (elseBraceOpen === -1) break;
+            const elseBraceClose = BusinessRuleParser.findMatchingBrace(js, elseBraceOpen);
+            const elseBody = js.slice(elseBraceOpen + 1, elseBraceClose !== -1 ? elseBraceClose : js.length);
+
+            if (/^\s*true\s*$/.test(elseCondExpr)) {
+              // else if(true) = unconditional else
+              elseActions.push(...this.parseActionsFromBlock(elseBody, resolveField));
+              chainPos = elseBraceClose !== -1 ? elseBraceClose : js.length;
+              break;
+            }
+
+            // Genuine condition branch (e.g. else if(v7(...)) or else if((vN)==(true)))
+            const elseConditions = parseCondition(elseCondExpr);
+            const elseCondActions = this.parseActionsFromBlock(elseBody, resolveField);
+            if (elseConditions.length > 0 || elseCondActions.length > 0) {
+              conditionGroups.push({ conditions: elseConditions, actions: elseCondActions });
+            }
+            chainPos = elseBraceClose !== -1 ? elseBraceClose : js.length;
+          }
         }
       }
 

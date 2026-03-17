@@ -147,7 +147,8 @@ export function BusinessRulesList({
     return colors[actionType] ?? tokens.colorNeutralStroke1;
   };
 
-  const renderRuleDetails = (rule: BusinessRule): JSX.Element => (
+  const renderRuleDetails = (rule: BusinessRule): JSX.Element => {
+    return (
     <div className={shared.expandedDetails}>
       <Card>
         <Title3>{rule.name}</Title3>
@@ -278,7 +279,8 @@ export function BusinessRulesList({
         )}
       </Card>
     </div>
-  );
+    );
+  };
 
   // Empty state
   if (filteredRules.length === 0) {
