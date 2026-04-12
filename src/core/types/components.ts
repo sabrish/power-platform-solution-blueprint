@@ -27,6 +27,14 @@ export interface ComponentInventory {
   pcfControlIds: string[];
   serviceEndpointIds: string[];
   copilotAgentIds: string[];
+  viewIds: string[];
+  reportIds: string[];
+  duplicateDetectionRuleIds: string[];
+  chartIds: string[];
+  siteMapIds: string[];
+  slaDefinitionIds: string[];
+  virtualTableDataSourceIds: string[];
+  aiModelIds: string[];
 }
 
 /**
@@ -37,6 +45,7 @@ export interface WorkflowInventory {
   businessRuleIds: string[];
   classicWorkflowIds: string[];
   businessProcessFlowIds: string[];
+  dialogIds: string[];
 }
 
 /**
@@ -57,6 +66,7 @@ export interface WorkflowInventoryWithSolutions extends WorkflowInventory {
   // Solution membership
   componentToSolutions: Map<string, string[]>;
   solutionComponentMap: Map<string, Set<string>>;
+  // dialogIds inherited from WorkflowInventory
 }
 
 /**
@@ -92,6 +102,17 @@ export enum ComponentType {
   PluginPackage = 10030,  // Plugin packages
   CustomControl = 66,     // PCF controls
   ServiceEndpoint = 95,   // Service Bus / Event Hub / Webhook endpoints
+  View = 26,              // Saved queries (views)
+  Report = 31,            // SSRS reports
+  DuplicateDetectionRule = 44,  // Duplicate detection rules
+  Chart = 59,             // Saved query visualizations (charts)
+  SiteMap = 62,           // Site maps (navigation structure)
+  SlaDefinition = 152,    // Service Level Agreements
+  VirtualTableDataSource = 166, // Virtual table data sources
+  // AI Builder: types 400, 401, 402 all route to aiModelIds (queried against msdyn_aimodels)
+  AiProjectType = 400,
+  AiProject = 401,
+  AiConfiguration = 402,
 }
 
 /**
@@ -99,6 +120,7 @@ export enum ComponentType {
  */
 export enum WorkflowCategory {
   ClassicWorkflow = 0,
+  Dialog = 1,
   BusinessRule = 2,
   BusinessProcessFlow = 4,
   Flow = 5,

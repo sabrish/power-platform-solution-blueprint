@@ -62,6 +62,15 @@ export interface BlueprintAccumulator {
   pcfControls: import('../../types/pcfControl.js').PcfControl[];
   serviceEndpoints: import('../../types/serviceEndpoint.js').ServiceEndpoint[];
   copilotAgents: import('../../types/copilotAgent.js').CopilotAgent[];
+  duplicateDetectionRules: import('../../types/duplicateDetectionRule.js').DuplicateDetectionRule[];
+  siteMaps: import('../../types/siteMap.js').SiteMap[];
+  slaDefinitions: import('../../types/slaDefinition.js').SlaDefinition[];
+  reports: import('../../types/report.js').Report[];
+  charts: import('../../types/chart.js').Chart[];
+  views: import('../../types/view.js').View[];
+  dialogs: import('../../types/dialog.js').Dialog[];
+  aiModels: import('../../types/aiModel.js').AiModel[];
+  virtualTableDataSources: import('../../types/virtualTableDataSource.js').VirtualTableDataSource[];
   webResources: import('../../types/blueprint.js').WebResource[];
   webResourcesByType: Map<string, import('../../types/blueprint.js').WebResource[]>;
   forms: import('../../types/blueprint.js').FormDefinition[];
@@ -115,6 +124,15 @@ export function createAccumulator(): BlueprintAccumulator {
     pcfControls: [],
     serviceEndpoints: [],
     copilotAgents: [],
+    duplicateDetectionRules: [],
+    siteMaps: [],
+    slaDefinitions: [],
+    reports: [],
+    charts: [],
+    views: [],
+    dialogs: [],
+    aiModels: [],
+    virtualTableDataSources: [],
     webResources: [],
     webResourcesByType: new Map(),
     forms: [],

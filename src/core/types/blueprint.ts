@@ -11,6 +11,15 @@ import type { ModelDrivenApp } from './modelDrivenApp.js';
 import type { PcfControl } from './pcfControl.js';
 import type { ServiceEndpoint } from './serviceEndpoint.js';
 import type { CopilotAgent } from './copilotAgent.js';
+import type { DuplicateDetectionRule } from './duplicateDetectionRule.js';
+import type { SiteMap } from './siteMap.js';
+import type { SlaDefinition } from './slaDefinition.js';
+import type { Report } from './report.js';
+import type { Chart } from './chart.js';
+import type { View } from './view.js';
+import type { Dialog } from './dialog.js';
+import type { AiModel } from './aiModel.js';
+import type { VirtualTableDataSource } from './virtualTableDataSource.js';
 
 /**
  * Progress phases during blueprint generation
@@ -480,6 +489,15 @@ export interface BlueprintSummary {
   totalPcfControls: number;
   totalServiceEndpoints: number;
   totalCopilotAgents: number;
+  totalDuplicateDetectionRules: number;
+  totalSiteMaps: number;
+  totalSlaDefinitions: number;
+  totalReports: number;
+  totalCharts: number;
+  totalViews: number;
+  totalDialogs: number;
+  totalAiModels: number;
+  totalVirtualTableDataSources: number;
 }
 
 /**
@@ -740,6 +758,15 @@ export interface BlueprintResult {
   pcfControls: PcfControl[];
   serviceEndpoints: ServiceEndpoint[];
   copilotAgents: CopilotAgent[];
+  duplicateDetectionRules: DuplicateDetectionRule[];
+  siteMaps: SiteMap[];
+  slaDefinitions: SlaDefinition[];
+  reports: Report[];
+  charts: Chart[];
+  views: View[];
+  dialogs: Dialog[];
+  aiModels: AiModel[];
+  virtualTableDataSources: VirtualTableDataSource[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
   erd?: ERDDefinition;

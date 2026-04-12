@@ -66,6 +66,14 @@ export class SolutionComponentDiscovery {
         pcfControlIds: [],
         serviceEndpointIds: [],
         copilotAgentIds: [],
+        viewIds: [],
+        reportIds: [],
+        duplicateDetectionRuleIds: [],
+        chartIds: [],
+        siteMapIds: [],
+        slaDefinitionIds: [],
+        virtualTableDataSourceIds: [],
+        aiModelIds: [],
       };
 
       // Tracking maps for solution membership
@@ -532,6 +540,14 @@ export class SolutionComponentDiscovery {
       pcfControlIds: [],
       serviceEndpointIds: [],
       copilotAgentIds: [],
+      viewIds: [],
+      reportIds: [],
+      duplicateDetectionRuleIds: [],
+      chartIds: [],
+      siteMapIds: [],
+      slaDefinitionIds: [],
+      virtualTableDataSourceIds: [],
+      aiModelIds: [],
     };
 
     try {
@@ -809,6 +825,7 @@ export class SolutionComponentDiscovery {
           businessRuleIds: [],
           classicWorkflowIds: [],
           businessProcessFlowIds: [],
+          dialogIds: [],
           componentToSolutions: componentToSolutions || new Map(),
           solutionComponentMap: solutionComponentMap || new Map(),
         };
@@ -819,6 +836,7 @@ export class SolutionComponentDiscovery {
         businessRuleIds: [],
         classicWorkflowIds: [],
         businessProcessFlowIds: [],
+        dialogIds: [],
       };
 
       // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
@@ -860,6 +878,9 @@ export class SolutionComponentDiscovery {
             break;
           case WorkflowCategory.BusinessProcessFlow:
             inventory.businessProcessFlowIds.push(workflowId);
+            break;
+          case WorkflowCategory.Dialog:
+            inventory.dialogIds.push(workflowId);
             break;
         }
       }
