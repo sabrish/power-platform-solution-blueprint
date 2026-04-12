@@ -31,6 +31,9 @@ import type { CustomConnector } from '../../types/customConnector.js';
 import type { CanvasApp } from '../../types/canvasApp.js';
 import type { CustomPage } from '../../types/customPage.js';
 import type { ModelDrivenApp } from '../../types/modelDrivenApp.js';
+import type { PcfControl } from '../../types/pcfControl.js';
+import type { ServiceEndpoint } from '../../types/serviceEndpoint.js';
+import type { CopilotAgent } from '../../types/copilotAgent.js';
 
 /**
  * Main HTML Templates class
@@ -3991,6 +3994,138 @@ ${this.embeddedJavaScript()}
       </div>`;
 
     return html;
+  }
+
+  htmlPcfControlsTable(controls: PcfControl[]): string {
+    if (controls.length === 0) {
+      return `<section id="pcf-controls" class="content-section" aria-labelledby="heading-pcf-controls">
+  <h2 id="heading-pcf-controls" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('pcf-controls')} PCF Controls</h2>
+  <div class="empty-state">No PCF controls found</div>
+</section>`;
+    }
+
+    const rows = controls.map(c => {
+      const managedBadge = c.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(c.displayName)}</td>
+  <td>${this.htmlEscape(c.name)}</td>
+  <td>${c.version ? this.htmlEscape(c.version) : '—'}</td>
+  <td>${c.compatibleDataTypes ? this.htmlEscape(c.compatibleDataTypes) : '—'}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="pcf-controls" class="content-section" aria-labelledby="heading-pcf-controls">
+  <h2 id="heading-pcf-controls" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('pcf-controls')} PCF Controls (${controls.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="pcf-controls-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('pcf-controls-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('pcf-controls-table', 1)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('pcf-controls-table', 2)">Version <span class="sort-indicator"></span></th>
+          <th scope="col">Compatible Data Types</th>
+          <th scope="col" onclick="sortTable('pcf-controls-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlServiceEndpointsTable(endpoints: ServiceEndpoint[]): string {
+    if (endpoints.length === 0) {
+      return `<section id="service-endpoints" class="content-section" aria-labelledby="heading-service-endpoints">
+  <h2 id="heading-service-endpoints" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('service-endpoints')} Service Endpoints</h2>
+  <div class="empty-state">No service endpoints found</div>
+</section>`;
+    }
+
+    const rows = endpoints.map(e => {
+      const managedBadge = e.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(e.name)}</td>
+  <td>${this.htmlEscape(e.contract)}</td>
+  <td>${e.url ? `<code>${this.htmlEscape(e.url)}</code>` : '—'}</td>
+  <td>${e.registeredStepCount}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="service-endpoints" class="content-section" aria-labelledby="heading-service-endpoints">
+  <h2 id="heading-service-endpoints" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('service-endpoints')} Service Endpoints (${endpoints.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="service-endpoints-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('service-endpoints-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('service-endpoints-table', 1)">Contract <span class="sort-indicator"></span></th>
+          <th scope="col">URL</th>
+          <th scope="col" onclick="sortTable('service-endpoints-table', 3)">Steps <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('service-endpoints-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlCopilotAgentsTable(agents: CopilotAgent[]): string {
+    if (agents.length === 0) {
+      return `<section id="copilot-agents" class="content-section" aria-labelledby="heading-copilot-agents">
+  <h2 id="heading-copilot-agents" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('copilot-agents')} Copilot Agents</h2>
+  <div class="empty-state">No Copilot Studio agents found</div>
+</section>`;
+    }
+
+    const rows = agents.map(a => {
+      const managedBadge = a.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      const activeBadge = a.isActive
+        ? '<span class="badge badge-success">Active</span>'
+        : '<span class="badge badge-danger">Inactive</span>';
+      const kindLabel = a.kind === 'CopilotAgent' ? 'Copilot Agent' : a.kind === 'ClassicBot' ? 'Classic Bot' : 'Agent';
+      return `<tr>
+  <td>${this.htmlEscape(a.name)}</td>
+  <td>${this.htmlEscape(a.schemaName)}</td>
+  <td>${this.htmlEscape(kindLabel)}</td>
+  <td>${activeBadge}</td>
+  <td>${a.componentCount}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="copilot-agents" class="content-section" aria-labelledby="heading-copilot-agents">
+  <h2 id="heading-copilot-agents" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('copilot-agents')} Copilot Agents (${agents.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="copilot-agents-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 1)">Schema Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 2)">Kind <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 3)">Status <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 4)">Components <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 5)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
   }
 
 }

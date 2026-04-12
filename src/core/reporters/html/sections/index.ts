@@ -32,6 +32,9 @@ import { ModelDrivenAppsSection } from './ModelDrivenAppsSection.js';
 import { SecuritySection } from './SecuritySection.js';
 import { ExternalDependenciesSection } from './ExternalDependenciesSection.js';
 import { CrossEntitySection } from './CrossEntitySection.js';
+import { PcfControlsSection } from './PcfControlsSection.js';
+import { ServiceEndpointsSection } from './ServiceEndpointsSection.js';
+import { CopilotAgentsSection } from './CopilotAgentsSection.js';
 import type { IHtmlTemplateSection } from '../IHtmlTemplateSection.js';
 
 export const HTML_TEMPLATE_SECTIONS: readonly IHtmlTemplateSection[] = [
@@ -53,6 +56,9 @@ export const HTML_TEMPLATE_SECTIONS: readonly IHtmlTemplateSection[] = [
   new CanvasAppsSection(),
   new CustomPagesSection(),
   new ModelDrivenAppsSection(),
+  new PcfControlsSection(),
+  new ServiceEndpointsSection(),
+  new CopilotAgentsSection(),
   new SecuritySection(),
   new ExternalDependenciesSection(),
   new CrossEntitySection(),

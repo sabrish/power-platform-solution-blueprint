@@ -30,6 +30,9 @@ import type { BusinessProcessFlow } from '../types/businessProcessFlow.js';
 import type { CanvasApp } from '../types/canvasApp.js';
 import type { CustomPage } from '../types/customPage.js';
 import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
+import type { PcfControl } from '../types/pcfControl.js';
+import type { ServiceEndpoint } from '../types/serviceEndpoint.js';
+import type { CopilotAgent } from '../types/copilotAgent.js';
 import { MarkdownFormatter } from './markdown/MarkdownFormatter.js';
 import {
   groupPluginsByAssembly,
@@ -69,6 +72,9 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     files.set('summary/all-canvas-apps.md', this.generateAllCanvasApps(result));
     files.set('summary/all-custom-pages.md', this.generateAllCustomPages(result));
     files.set('summary/all-model-driven-apps.md', this.generateAllModelDrivenApps(result));
+    files.set('summary/all-pcf-controls.md', this.generateAllPcfControls(result));
+    files.set('summary/all-service-endpoints.md', this.generateAllServiceEndpoints(result));
+    files.set('summary/all-agents.md', this.generateAllCopilotAgents(result));
 
     if (result.externalEndpoints && result.externalEndpoints.length > 0) {
       files.set('summary/external-integrations.md', this.generateExternalIntegrations(result));
@@ -3057,6 +3063,102 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       a.displayName,
       a.name,
       a.description || '—',
+      a.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      a.modifiedOn ? this.formatDate(a.modifiedOn) : '—',
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-pcf-controls.md
+   */
+  private generateAllPcfControls(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All PCF Controls', 1));
+    sections.push('');
+    sections.push(`**Total PCF Controls:** ${result.summary.totalPcfControls}`);
+    sections.push('');
+
+    if (result.pcfControls.length === 0) {
+      sections.push('No PCF controls found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Display Name', 'Name', 'Version', 'Compatible Types', 'Managed', 'Modified'];
+    const rows = result.pcfControls.map((c: PcfControl) => [
+      c.displayName || c.name,
+      c.name,
+      c.version || '—',
+      c.compatibleDataTypes || '—',
+      c.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      c.modifiedOn ? this.formatDate(c.modifiedOn) : '—',
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-service-endpoints.md
+   */
+  private generateAllServiceEndpoints(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Service Endpoints', 1));
+    sections.push('');
+    sections.push(`**Total Service Endpoints:** ${result.summary.totalServiceEndpoints}`);
+    sections.push('');
+
+    if (result.serviceEndpoints.length === 0) {
+      sections.push('No service endpoints found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Name', 'Contract', 'Steps', 'Managed', 'Modified'];
+    const rows = result.serviceEndpoints.map((e: ServiceEndpoint) => [
+      e.name,
+      e.contract,
+      String(e.registeredStepCount),
+      e.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      e.modifiedOn ? this.formatDate(e.modifiedOn) : '—',
+    ]);
+
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-agents.md
+   */
+  private generateAllCopilotAgents(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('All Copilot Agents', 1));
+    sections.push('');
+    sections.push(`**Total Copilot Agents:** ${result.summary.totalCopilotAgents}`);
+    sections.push('');
+
+    if (result.copilotAgents.length === 0) {
+      sections.push('No Copilot agents found in this scope.');
+      return sections.join('\n');
+    }
+
+    const headers = ['Name', 'Schema Name', 'Kind', 'Active', 'Components', 'Managed', 'Modified'];
+    const rows = result.copilotAgents.map((a: CopilotAgent) => [
+      a.name,
+      a.schemaName,
+      a.kind,
+      a.isActive ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Inactive', 'info'),
+      String(a.componentCount),
       a.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
       a.modifiedOn ? this.formatDate(a.modifiedOn) : '—',
     ]);
