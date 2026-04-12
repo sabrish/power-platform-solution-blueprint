@@ -10,6 +10,9 @@ export type { CustomConnector } from './types/customConnector.js';
 export type { CanvasApp } from './types/canvasApp.js';
 export type { CustomPage } from './types/customPage.js';
 export type { ModelDrivenApp } from './types/modelDrivenApp.js';
+export type { PcfControl } from './types/pcfControl.js';
+export type { ServiceEndpoint, ServiceEndpointContract } from './types/serviceEndpoint.js';
+export type { CopilotAgent, AgentKind } from './types/copilotAgent.js';
 export type {
   ProgressPhase,
   ProgressInfo,

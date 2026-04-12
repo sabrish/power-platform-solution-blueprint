@@ -59,6 +59,9 @@ export interface BlueprintAccumulator {
   canvasApps: import('../../types/canvasApp.js').CanvasApp[];
   customPages: import('../../types/customPage.js').CustomPage[];
   modelDrivenApps: import('../../types/modelDrivenApp.js').ModelDrivenApp[];
+  pcfControls: import('../../types/pcfControl.js').PcfControl[];
+  serviceEndpoints: import('../../types/serviceEndpoint.js').ServiceEndpoint[];
+  copilotAgents: import('../../types/copilotAgent.js').CopilotAgent[];
   webResources: import('../../types/blueprint.js').WebResource[];
   webResourcesByType: Map<string, import('../../types/blueprint.js').WebResource[]>;
   forms: import('../../types/blueprint.js').FormDefinition[];
@@ -109,6 +112,9 @@ export function createAccumulator(): BlueprintAccumulator {
     canvasApps: [],
     customPages: [],
     modelDrivenApps: [],
+    pcfControls: [],
+    serviceEndpoints: [],
+    copilotAgents: [],
     webResources: [],
     webResourcesByType: new Map(),
     forms: [],

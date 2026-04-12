@@ -14,3 +14,6 @@ export { processFieldSecurityProfiles } from './FieldSecurityProfileProcessor.js
 export { processColumnSecurity } from './ColumnSecurityProcessor.js';
 export { processForms } from './FormProcessor.js';
 export { processApps } from './AppProcessor.js';
+export { processPcfControls } from './PcfControlProcessor.js';
+export { processServiceEndpoints } from './ServiceEndpointProcessor.js';
+export { processCopilotAgents } from './CopilotAgentProcessor.js';

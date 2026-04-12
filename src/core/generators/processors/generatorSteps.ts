@@ -26,6 +26,9 @@ import {
   processColumnSecurity,
   processForms,
   processApps,
+  processPcfControls,
+  processServiceEndpoints,
+  processCopilotAgents,
 } from './index.js';
 import { PluginDiscovery } from '../../discovery/PluginDiscovery.js';
 import { FlowDiscovery } from '../../discovery/FlowDiscovery.js';
@@ -365,6 +368,54 @@ const formsStep: ProcessorStep = {
 };
 
 /**
+ * PCF Controls — Step 6.14
+ */
+const pcfControlsStep: ProcessorStep = {
+  name: 'PCF Controls',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.pcfControls = await processPcfControls(
+      ctx.client,
+      ctx.inventory.pcfControlIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Service Endpoints — Step 6.15
+ */
+const serviceEndpointsStep: ProcessorStep = {
+  name: 'Service Endpoints',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.serviceEndpoints = await processServiceEndpoints(
+      ctx.client,
+      ctx.inventory.serviceEndpointIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Copilot Agents — Step 6.16
+ */
+const copilotAgentsStep: ProcessorStep = {
+  name: 'Copilot Agents',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.copilotAgents = await processCopilotAgents(
+      ctx.client,
+      ctx.inventory.copilotAgentIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
  * Ordered registry of all processor steps.
  * BlueprintGenerator iterates this array sequentially.
  *
@@ -388,4 +439,7 @@ export const GENERATOR_STEPS: readonly ProcessorStep[] = [
   columnSecurityStep,
   appsStep,
   formsStep,
+  pcfControlsStep,
+  serviceEndpointsStep,
+  copilotAgentsStep,
 ];

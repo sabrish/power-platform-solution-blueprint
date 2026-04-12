@@ -152,6 +152,7 @@ export class BlueprintGenerator {
         securityRoles, fieldSecurityProfiles, fieldSecurityByEntity,
         attributeMaskingRules, columnSecurityProfiles,
         canvasApps, customPages, modelDrivenApps,
+        pcfControls, serviceEndpoints, copilotAgents,
         webResources, webResourcesByType,
         formsByEntity,
       } = acc;
@@ -236,6 +237,9 @@ export class BlueprintGenerator {
           totalCanvasApps: 0,
           totalCustomPages: 0,
           totalModelDrivenApps: 0,
+          totalPcfControls: 0,
+          totalServiceEndpoints: 0,
+          totalCopilotAgents: 0,
         },
         plugins,
         pluginsByEntity,
@@ -255,6 +259,9 @@ export class BlueprintGenerator {
         canvasApps,
         customPages,
         modelDrivenApps,
+        pcfControls,
+        serviceEndpoints,
+        copilotAgents,
         webResources,
         webResourcesByType,
       };
@@ -308,6 +315,9 @@ export class BlueprintGenerator {
         totalCanvasApps: canvasApps.length,
         totalCustomPages: customPages.length,
         totalModelDrivenApps: modelDrivenApps.length,
+        totalPcfControls: pcfControls.length,
+        totalServiceEndpoints: serviceEndpoints.length,
+        totalCopilotAgents: copilotAgents.length,
       };
 
       // Complete
@@ -351,6 +361,9 @@ export class BlueprintGenerator {
         canvasApps,
         customPages,
         modelDrivenApps,
+        pcfControls,
+        serviceEndpoints,
+        copilotAgents,
         webResources,
         webResourcesByType,
         erd,
