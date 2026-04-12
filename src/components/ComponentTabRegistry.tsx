@@ -32,6 +32,15 @@ import {
   PcfControlsIcon,
   ServiceEndpointsIcon,
   CopilotAgentsIcon,
+  ViewsIcon,
+  ChartsIcon,
+  ReportsIcon,
+  SiteMapsIcon,
+  SlaDefinitionsIcon,
+  DuplicateDetectionRulesIcon,
+  DialogsIcon,
+  AiModelsIcon,
+  VirtualTableDataSourcesIcon,
 } from './componentIcons';
 import { EntityList } from './EntityList';
 import { PluginsList } from './PluginsList';
@@ -54,6 +63,15 @@ import { ModelDrivenAppsList } from './ModelDrivenAppsList';
 import { PcfControlsList } from './PcfControlsList';
 import { ServiceEndpointsList } from './ServiceEndpointsList';
 import { CopilotAgentsList } from './CopilotAgentsList';
+import { ViewsList } from './ViewsList';
+import { ChartsList } from './ChartsList';
+import { ReportsList } from './ReportsList';
+import { SiteMapsList } from './SiteMapsList';
+import { SlaDefinitionsList } from './SlaDefinitionsList';
+import { DuplicateDetectionRulesList } from './DuplicateDetectionRulesList';
+import { DialogsList } from './DialogsList';
+import { AiModelsList } from './AiModelsList';
+import { VirtualTableDataSourcesList } from './VirtualTableDataSourcesList';
 
 export interface ComponentTabDefinition {
   /** Tab value / id — used as React key and TabList value. */
@@ -262,6 +280,78 @@ export const COMPONENT_TABS: ComponentTabDefinition[] = [
     count: (r) => r.summary.totalCopilotAgents,
     render: (r) => <CopilotAgentsList copilotAgents={r.copilotAgents} />,
     hidden: (r) => r.summary.totalCopilotAgents === 0,
+  },
+  {
+    key: 'views',
+    label: 'Views',
+    icon: <ViewsIcon />,
+    count: (r) => r.summary.totalViews,
+    render: (r) => <ViewsList views={r.views} />,
+    hidden: (r) => r.summary.totalViews === 0,
+  },
+  {
+    key: 'charts',
+    label: 'Charts',
+    icon: <ChartsIcon />,
+    count: (r) => r.summary.totalCharts,
+    render: (r) => <ChartsList charts={r.charts} />,
+    hidden: (r) => r.summary.totalCharts === 0,
+  },
+  {
+    key: 'reports',
+    label: 'Reports',
+    icon: <ReportsIcon />,
+    count: (r) => r.summary.totalReports,
+    render: (r) => <ReportsList reports={r.reports} />,
+    hidden: (r) => r.summary.totalReports === 0,
+  },
+  {
+    key: 'siteMaps',
+    label: 'Site Maps',
+    icon: <SiteMapsIcon />,
+    count: (r) => r.summary.totalSiteMaps,
+    render: (r) => <SiteMapsList siteMaps={r.siteMaps} />,
+    hidden: (r) => r.summary.totalSiteMaps === 0,
+  },
+  {
+    key: 'slaDefinitions',
+    label: 'SLA Definitions',
+    icon: <SlaDefinitionsIcon />,
+    count: (r) => r.summary.totalSlaDefinitions,
+    render: (r) => <SlaDefinitionsList slaDefinitions={r.slaDefinitions} />,
+    hidden: (r) => r.summary.totalSlaDefinitions === 0,
+  },
+  {
+    key: 'duplicateDetectionRules',
+    label: 'Duplicate Detection Rules',
+    icon: <DuplicateDetectionRulesIcon />,
+    count: (r) => r.summary.totalDuplicateDetectionRules,
+    render: (r) => <DuplicateDetectionRulesList duplicateDetectionRules={r.duplicateDetectionRules} />,
+    hidden: (r) => r.summary.totalDuplicateDetectionRules === 0,
+  },
+  {
+    key: 'dialogs',
+    label: 'Dialogs',
+    icon: <DialogsIcon />,
+    count: (r) => r.summary.totalDialogs,
+    render: (r) => <DialogsList dialogs={r.dialogs} />,
+    hidden: (r) => r.summary.totalDialogs === 0,
+  },
+  {
+    key: 'aiModels',
+    label: 'AI Models',
+    icon: <AiModelsIcon />,
+    count: (r) => r.summary.totalAiModels,
+    render: (r) => <AiModelsList aiModels={r.aiModels} />,
+    hidden: (r) => r.summary.totalAiModels === 0,
+  },
+  {
+    key: 'virtualTableDataSources',
+    label: 'Virtual Table Data Sources',
+    icon: <VirtualTableDataSourcesIcon />,
+    count: (r) => r.summary.totalVirtualTableDataSources,
+    render: (r) => <VirtualTableDataSourcesList virtualTableDataSources={r.virtualTableDataSources} />,
+    hidden: (r) => r.summary.totalVirtualTableDataSources === 0,
   },
 ];
 

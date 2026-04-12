@@ -89,6 +89,35 @@ export {
   // Copilot Studio Agents — Microsoft: bot/agent icon. Using Bot24Regular.
   Bot24Regular as CopilotAgentsIcon,
 
+  // ── New v1.3.0 component types ─────────────────────────────────────────────
+
+  // Duplicate Detection Rules — table with similarity check. TableSimple24Regular.
+  TableSimple24Regular as DuplicateDetectionRulesIcon,
+
+  // Site Maps — navigation map. Map24Regular.
+  Map24Regular as SiteMapsIcon,
+
+  // SLA Definitions — service level timer. Timer24Regular.
+  Timer24Regular as SlaDefinitionsIcon,
+
+  // Reports — SSRS report / document with chart. ClipboardDataBar24Regular.
+  ClipboardDataBar24Regular as ReportsIcon,
+
+  // Charts — data pie visualization. DataPie24Regular.
+  DataPie24Regular as ChartsIcon,
+
+  // Views — eye / visibility. Eye24Regular.
+  Eye24Regular as ViewsIcon,
+
+  // Dialogs (deprecated) — chat with warning. ChatWarning24Regular.
+  ChatWarning24Regular as DialogsIcon,
+
+  // AI Models — AI sparkle / generative indicator. Sparkle24Regular.
+  Sparkle24Regular as AiModelsIcon,
+
+  // Virtual Table Data Sources — database with link. DatabaseLink24Regular.
+  DatabaseLink24Regular as VirtualTableDataSourcesIcon,
+
   // ── Navigation tabs ────────────────────────────────────────────────────────
 
   Grid24Regular as DashboardIcon,
