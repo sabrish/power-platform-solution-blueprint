@@ -124,6 +124,7 @@
 ## Workflow-Related Component Types
 
 - **29 (Workflow)** - Includes:
+  - Dialogs / deprecated dialog workflows (category = 1) — classified via `WorkflowCategory.Dialog = 1`
   - Classic workflows (category = 0)
   - Business rules (category = 2)
   - Business process flows (category = 4)
@@ -155,8 +156,16 @@ These component types appear in `solutioncomponents` under their documented (or 
 | 66 (Custom Control) | `customcontrols` | `customcontrolid` — PCF controls |
 | 92 (SDK Message Processing Step) | `sdkmessageprocessingsteps` | `sdkmessageprocessingstepid` |
 | 95 (Service Endpoint) | `serviceendpoints` | `serviceendpointid` — Service Bus, Event Hub, Webhooks |
+| 26 (Saved Query / View) | `savedqueries` | `savedqueryid` — classified by `querytype` field |
+| 31 (Report) | `reports` | `reportid` — SSRS and FetchXML reports |
+| 44 (Duplicate Rule) | `duplicaterules` | `duplicateruleid` — duplicate detection rules |
+| 59 (Saved Query Visualization / Chart) | `savedqueryvisualizations` | `savedqueryvisualizationid` |
+| 62 (Site Map) | `sitemaps` | `sitemapid` — navigation structure for model-driven apps |
+| 152 (SLA) | `slas` | `slaid` — service level agreement definitions |
+| 166 (Data Source Mapping / Virtual Table Data Source) | `entitydatasources` | `entitydatasourceid` — SECURITY: never fetch `connectiondefinition` field; always null in output |
 | 300 (Canvas App / Custom Page) | `canvasapps` | `canvasappid` — split post-retrieval by `canvasapptype` (0=Standard, 1=Component Library, 2=Custom Page) |
 | 380 (Environment Variable Definition) | `environmentvariabledefinitions` | `environmentvariabledefinitionid` |
+| 400/401/402 (AI Project Type / AI Project / AI Configuration) | `msdyn_aimodels` | `msdyn_aimodelid` — all three type codes route to aiModelIds; table may not exist in all environments, wrapped in try/catch |
 | 10030 (Plugin Package) | `pluginpackages` | `pluginpackageid` — verified present in solutioncomponents at runtime |
 
 ### Strategy B — objectid intersection (required for broken type codes)
@@ -201,20 +210,30 @@ export enum ComponentType {
   Attribute = 2,
   GlobalOptionSet = 9,
   SecurityRole = 20,
-  Workflow = 29,
+  View = 26,                    // Saved queries / views (savedqueries table)
+  Workflow = 29,                // Includes Dialogs (cat=1), BRs (cat=2), BPFs (cat=4), Flows (cat=5)
+  Report = 31,                  // SSRS and FetchXML reports
+  DuplicateDetectionRule = 44,  // Duplicate detection rules
+  Chart = 59,                   // Saved query visualizations
   SystemForm = 60,
   WebResource = 61,
+  SiteMap = 62,                 // Navigation structure for model-driven apps
   FieldSecurityProfile = 70,
   AppModule = 80,               // Model-driven apps
   PluginType = 90,
   PluginAssembly = 91,
   SdkMessageProcessingStep = 92,  // Plugin steps
   SdkMessageProcessingStepImage = 93,  // Plugin step images
+  SlaDefinition = 152,          // Service Level Agreements
+  VirtualTableDataSource = 166, // Virtual table data sources (entitydatasources); never expose connectiondefinition
   CanvasApp = 300,              // Canvas Apps AND Custom Pages (split by canvasapptype)
   // 371 and 372 are both labeled "Connector" in official docs; 371 = connection references, 372 = custom connectors
   ConnectionReference = 371,
   CustomConnector = 372,
   EnvironmentVariableDefinition = 380,
+  AiProjectType = 400,          // AI Builder — all three codes route to msdyn_aimodels
+  AiProject = 401,
+  AiConfiguration = 402,
   // 10030 and 10076 are undocumented in the official option set but appear in solutioncomponents at runtime
   PluginPackage = 10030,        // NuGet-based plugin packages
   CustomAPI = 10076,            // Custom API definitions

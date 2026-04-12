@@ -24,6 +24,15 @@ PPSB discovers and documents Dataverse environments across a growing range of co
 | PCF Controls | Custom controls built with the Power Apps Component Framework | MD / JSON / HTML / ZIP | Display name, version, compatible data types, managed status |
 | Service Endpoints / Webhooks | External messaging endpoints registered on Dataverse (Service Bus, Event Hub, Webhook) | MD / JSON / HTML / ZIP | Contract type, registered step count, connection mode, message format |
 | Copilot Studio Agents | AI agents and classic bots built in Copilot Studio | MD / JSON / HTML / ZIP | Kind (Copilot Agent / Classic Bot), active status, component count |
+| Duplicate Detection Rules | Rules that identify duplicate records in Dataverse | MD / JSON / HTML / ZIP | Base entity, matching entity, status (Active/Inactive), managed status |
+| Site Maps | Navigation structure definitions for model-driven apps | MD / JSON / HTML / ZIP | App-aware vs. legacy classification, unique name |
+| SLA Definitions | Service level agreement configurations | MD / JSON / HTML / ZIP | SLA type (Standard/Enhanced), status (Draft/Active/Cancelled/Expired) |
+| Reports | SSRS and FetchXML-based reports | MD / JSON / HTML / ZIP | Report type, custom report flag, file name |
+| Charts | Saved query visualizations attached to entity views | MD / JSON / HTML / ZIP | Primary entity, default chart flag |
+| Views | Predefined entity list views and advanced find queries | MD / JSON / HTML / ZIP | View type (Public View, Quick Find, etc.), default view flag, entity |
+| Dialogs (Deprecated) | Legacy Dataverse dialog workflows | MD / JSON / HTML / ZIP | Always shows deprecation warning; status (Draft/Active/Suspended); migrate to canvas apps |
+| AI Models | AI Builder models (Prediction, Object Detection, Form Processing) | MD / JSON / HTML / ZIP | Type codes 400, 401, 402; table may not exist in all environments |
+| Virtual Table Data Sources | External data source connections for virtual tables | MD / JSON / HTML / ZIP | Data source type ID; connectionDefinition is always redacted for security |
 | Security Roles | Role-based access control definitions | MD / JSON / HTML / ZIP | Per-role privilege matrix with depth values (None/Basic/Local/Deep/Global) |
 | Field Security Profiles | Column-level security assignments | MD / JSON / HTML / ZIP | Per-profile column permission matrix |
 | Attribute Masking Rules | Data masking definitions on sensitive columns | MD / JSON / HTML / ZIP | Masked column assignments and masking rule names |
@@ -38,21 +47,12 @@ PPSB discovers and documents Dataverse environments across a growing range of co
 
 | Component | What it is | Notes |
 |---|---|---|
-| AI Models | AI Builder models (Prediction, Object Detection, Form Processing) | Type codes 400, 401, 402 |
 | Allowed MCP Clients | Model Context Protocol client allowlist for Copilot Studio agents | New feature; type code TBD |
 | Catalog | Power Platform Catalog items and packages | Requires Catalog API surface; type code TBD |
-| Dialogs | Legacy Dataverse dialog workflows (deprecated) | Type code 29, category 1; still present in older solutions |
-| Duplicate Detection Rules | Rules that identify duplicate records | Type code 44 |
 | FxExpression | Power Fx formula expressions stored as solution components | Type code TBD; newer Power Platform feature |
-| Model-Driven App Views | Predefined entity list views and advanced find queries | Type code 26 |
-| Charts | Saved query visualizations attached to entity views | Type code 59 |
-| Reports | SSRS and FetchXML-based reports | Type code 31 |
-| Site Maps | Navigation structure definitions for model-driven apps | Type code 62 |
-| SLA Definitions | Service level agreement configurations | Type code 152 |
-| Virtual / Elastic Table Data Sources | External data source connections for virtual tables | Type code 166 |
 | Power Pages (Portal Components) | Customer-facing portal sites built on Power Pages | Requires separate portal API surface |
 | Customer Insights / Journeys | Marketing journeys and customer data platform integration | Requires separate API surface |
 
 ---
-*Last updated: v1.2.0 — 2026-04-12*
+*Last updated: v1.3.0 — 2026-04-12*
 *Component type integer codes: see [COMPONENT_TYPES_REFERENCE.md](./COMPONENT_TYPES_REFERENCE.md)*
