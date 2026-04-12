@@ -21,6 +21,9 @@ PPSB discovers and documents Dataverse environments across a growing range of co
 | Canvas Apps | Low-code apps built with Power Apps Studio | MD / JSON / HTML / ZIP | Metadata only: display name, logical name, description, managed status, modified date |
 | Custom Pages | Modern Power Apps pages used in model-driven apps | MD / JSON / HTML / ZIP | Metadata only: display name, logical name, description, managed status, modified date |
 | Model-Driven Apps | App modules defining navigation, forms, and views | MD / JSON / HTML / ZIP | Metadata only: display name, unique name, description, managed status, modified date |
+| PCF Controls | Custom controls built with the Power Apps Component Framework | MD / JSON / HTML / ZIP | Display name, version, compatible data types, managed status |
+| Service Endpoints / Webhooks | External messaging endpoints registered on Dataverse (Service Bus, Event Hub, Webhook) | MD / JSON / HTML / ZIP | Contract type, registered step count, connection mode, message format |
+| Copilot Studio Agents | AI agents and classic bots built in Copilot Studio | MD / JSON / HTML / ZIP | Kind (Copilot Agent / Classic Bot), active status, component count |
 | Security Roles | Role-based access control definitions | MD / JSON / HTML / ZIP | Per-role privilege matrix with depth values (None/Basic/Local/Deep/Global) |
 | Field Security Profiles | Column-level security assignments | MD / JSON / HTML / ZIP | Per-profile column permission matrix |
 | Attribute Masking Rules | Data masking definitions on sensitive columns | MD / JSON / HTML / ZIP | Masked column assignments and masking rule names |
@@ -35,7 +38,6 @@ PPSB discovers and documents Dataverse environments across a growing range of co
 
 | Component | What it is | Notes |
 |---|---|---|
-| Agents | Copilot Studio AI agents (conversational bots) | Requires Copilot Studio API surface; type code TBD |
 | AI Models | AI Builder models (Prediction, Object Detection, Form Processing) | Type codes 400, 401, 402 |
 | Allowed MCP Clients | Model Context Protocol client allowlist for Copilot Studio agents | New feature; type code TBD |
 | Catalog | Power Platform Catalog items and packages | Requires Catalog API surface; type code TBD |
@@ -45,14 +47,12 @@ PPSB discovers and documents Dataverse environments across a growing range of co
 | Model-Driven App Views | Predefined entity list views and advanced find queries | Type code 26 |
 | Charts | Saved query visualizations attached to entity views | Type code 59 |
 | Reports | SSRS and FetchXML-based reports | Type code 31 |
-| Service Endpoints / Webhooks | External messaging endpoints registered on Dataverse | Type code 95 |
 | Site Maps | Navigation structure definitions for model-driven apps | Type code 62 |
-| PCF Controls | Custom controls built with the Power Apps Component Framework | Type code 66 |
 | SLA Definitions | Service level agreement configurations | Type code 152 |
 | Virtual / Elastic Table Data Sources | External data source connections for virtual tables | Type code 166 |
 | Power Pages (Portal Components) | Customer-facing portal sites built on Power Pages | Requires separate portal API surface |
 | Customer Insights / Journeys | Marketing journeys and customer data platform integration | Requires separate API surface |
 
 ---
-*Last updated: v1.1.0 — 2026-03-12*
+*Last updated: v1.2.0 — 2026-04-12*
 *Component type integer codes: see [COMPONENT_TYPES_REFERENCE.md](./COMPONENT_TYPES_REFERENCE.md)*

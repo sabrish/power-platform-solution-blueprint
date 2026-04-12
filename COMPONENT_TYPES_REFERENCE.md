@@ -152,7 +152,9 @@ These component types appear in `solutioncomponents` under their documented (or 
 | 61 (Web Resource) | `webresourceset` | `webresourceid` |
 | 70 (Field Security Profile) | `fieldsecurityprofiles` | `fieldsecurityprofileid` |
 | 80 (App Module) | `appmodules` | `appmoduleid` |
+| 66 (Custom Control) | `customcontrols` | `customcontrolid` — PCF controls |
 | 92 (SDK Message Processing Step) | `sdkmessageprocessingsteps` | `sdkmessageprocessingstepid` |
+| 95 (Service Endpoint) | `serviceendpoints` | `serviceendpointid` — Service Bus, Event Hub, Webhooks |
 | 300 (Canvas App / Custom Page) | `canvasapps` | `canvasappid` — split post-retrieval by `canvasapptype` (0=Standard, 1=Component Library, 2=Custom Page) |
 | 380 (Environment Variable Definition) | `environmentvariabledefinitions` | `environmentvariabledefinitionid` |
 | 10030 (Plugin Package) | `pluginpackages` | `pluginpackageid` — verified present in solutioncomponents at runtime |
@@ -170,6 +172,7 @@ These component types store `solutionid = Default Solution` on every record rega
 | 371 (Connection Reference) | `connectionreferences` | `connectionreferenceid` | Type 371 absent from solutioncomponents in tested environments; objectids appear under undocumented codes |
 | 372 (Custom Connector) | `connectors` | `connectorid` | Same caveat as 371 |
 | 10076 (Custom API) | `customapis` | `customapiid` | Type 10076 absent from solutioncomponents in tested environments; objectids appear under undocumented codes |
+| N/A (Copilot Studio Agent / Bot) | `bots` | `botid` | No reliable solutioncomponents type code found — discovered via objectid intersection against the solutioncomponents objectid set. In Default Solution mode all records from `bots` are included. The `bots` table may not exist in all environments; wrapped in try/catch. |
 
 ---
 
