@@ -33,6 +33,15 @@ import type { ModelDrivenApp } from '../types/modelDrivenApp.js';
 import type { PcfControl } from '../types/pcfControl.js';
 import type { ServiceEndpoint } from '../types/serviceEndpoint.js';
 import type { CopilotAgent } from '../types/copilotAgent.js';
+import type { DuplicateDetectionRule } from '../types/duplicateDetectionRule.js';
+import type { SiteMap } from '../types/siteMap.js';
+import type { SlaDefinition } from '../types/slaDefinition.js';
+import type { Report } from '../types/report.js';
+import type { Chart } from '../types/chart.js';
+import type { View } from '../types/view.js';
+import type { Dialog } from '../types/dialog.js';
+import type { AiModel } from '../types/aiModel.js';
+import type { VirtualTableDataSource } from '../types/virtualTableDataSource.js';
 import { MarkdownFormatter } from './markdown/MarkdownFormatter.js';
 import {
   groupPluginsByAssembly,
@@ -75,6 +84,15 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     files.set('summary/all-pcf-controls.md', this.generateAllPcfControls(result));
     files.set('summary/all-service-endpoints.md', this.generateAllServiceEndpoints(result));
     files.set('summary/all-agents.md', this.generateAllCopilotAgents(result));
+    files.set('summary/all-views.md', this.generateAllViews(result));
+    files.set('summary/all-charts.md', this.generateAllCharts(result));
+    files.set('summary/all-reports.md', this.generateAllReports(result));
+    files.set('summary/all-site-maps.md', this.generateAllSiteMaps(result));
+    files.set('summary/all-sla-definitions.md', this.generateAllSlaDefinitions(result));
+    files.set('summary/all-duplicate-detection-rules.md', this.generateAllDuplicateDetectionRules(result));
+    files.set('summary/all-dialogs.md', this.generateAllDialogs(result));
+    files.set('summary/all-ai-models.md', this.generateAllAiModels(result));
+    files.set('summary/all-virtual-table-data-sources.md', this.generateAllVirtualTableDataSources(result));
 
     if (result.externalEndpoints && result.externalEndpoints.length > 0) {
       files.set('summary/external-integrations.md', this.generateExternalIntegrations(result));
@@ -3166,6 +3184,251 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     sections.push(MarkdownFormatter.formatTable(headers, rows));
     sections.push('');
 
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-views.md
+   */
+  private generateAllViews(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All Views', 1));
+    sections.push('');
+    sections.push(`**Total Views:** ${result.summary.totalViews}`);
+    sections.push('');
+    if (result.views.length === 0) {
+      sections.push('No views found in this scope.');
+      return sections.join('\n');
+    }
+    const headers = ['Name', 'Entity', 'View Type', 'Default', 'Managed', 'Modified'];
+    const rows = result.views.map((v: View) => [
+      v.name,
+      v.returnedTypeCode,
+      v.queryTypeName,
+      v.isDefault ? MarkdownFormatter.formatBadge('Default', 'info') : '—',
+      v.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      v.modifiedOn ? this.formatDate(v.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-charts.md
+   */
+  private generateAllCharts(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All Charts', 1));
+    sections.push('');
+    sections.push(`**Total Charts:** ${result.summary.totalCharts}`);
+    sections.push('');
+    if (result.charts.length === 0) {
+      sections.push('No charts found in this scope.');
+      return sections.join('\n');
+    }
+    const headers = ['Name', 'Entity', 'Default', 'Managed', 'Modified'];
+    const rows = result.charts.map((c: Chart) => [
+      c.name,
+      c.primaryEntityTypeCode,
+      c.isDefault ? MarkdownFormatter.formatBadge('Default', 'info') : '—',
+      c.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      c.modifiedOn ? this.formatDate(c.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-reports.md
+   */
+  private generateAllReports(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All Reports', 1));
+    sections.push('');
+    sections.push(`**Total Reports:** ${result.summary.totalReports}`);
+    sections.push('');
+    if (result.reports.length === 0) {
+      sections.push('No reports found in this scope.');
+      return sections.join('\n');
+    }
+    const headers = ['Name', 'Type', 'Custom', 'Managed', 'Modified'];
+    const rows = result.reports.map((r: Report) => [
+      r.name,
+      r.reportType,
+      r.isCustomReport ? MarkdownFormatter.formatBadge('Custom Report', 'info') : MarkdownFormatter.formatBadge('Out-of-box', 'info'),
+      r.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      r.modifiedOn ? this.formatDate(r.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-site-maps.md
+   */
+  private generateAllSiteMaps(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All Site Maps', 1));
+    sections.push('');
+    sections.push(`**Total Site Maps:** ${result.summary.totalSiteMaps}`);
+    sections.push('');
+    if (result.siteMaps.length === 0) {
+      sections.push('No site maps found in this scope.');
+      return sections.join('\n');
+    }
+    const headers = ['Name', 'Unique Name', 'App-Aware', 'Managed', 'Modified'];
+    const rows = result.siteMaps.map((s: SiteMap) => [
+      s.name,
+      s.uniqueName,
+      s.isAppAware ? MarkdownFormatter.formatBadge('App-Aware', 'info') : MarkdownFormatter.formatBadge('Legacy', 'info'),
+      s.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      s.modifiedOn ? this.formatDate(s.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-sla-definitions.md
+   */
+  private generateAllSlaDefinitions(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All SLA Definitions', 1));
+    sections.push('');
+    sections.push(`**Total SLA Definitions:** ${result.summary.totalSlaDefinitions}`);
+    sections.push('');
+    if (result.slaDefinitions.length === 0) {
+      sections.push('No SLA definitions found in this scope.');
+      return sections.join('\n');
+    }
+    const headers = ['Name', 'Type', 'Status', 'Managed', 'Modified'];
+    const rows = result.slaDefinitions.map((s: SlaDefinition) => [
+      s.name,
+      s.slaType,
+      s.status === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success')
+        : s.status === 'Draft' ? MarkdownFormatter.formatBadge('Draft', 'info')
+        : s.status === 'Cancelled' ? MarkdownFormatter.formatBadge('Cancelled', 'error')
+        : MarkdownFormatter.formatBadge('Expired', 'warning'),
+      s.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      s.modifiedOn ? this.formatDate(s.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-duplicate-detection-rules.md
+   */
+  private generateAllDuplicateDetectionRules(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All Duplicate Detection Rules', 1));
+    sections.push('');
+    sections.push(`**Total Duplicate Detection Rules:** ${result.summary.totalDuplicateDetectionRules}`);
+    sections.push('');
+    if (result.duplicateDetectionRules.length === 0) {
+      sections.push('No duplicate detection rules found in this scope.');
+      return sections.join('\n');
+    }
+    const headers = ['Name', 'Base Entity', 'Matching Entity', 'Status', 'Managed', 'Modified'];
+    const rows = result.duplicateDetectionRules.map((r: DuplicateDetectionRule) => [
+      r.name,
+      r.baseEntityName,
+      r.matchingEntityName,
+      r.status === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success') : MarkdownFormatter.formatBadge('Inactive', 'warning'),
+      r.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      r.modifiedOn ? this.formatDate(r.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-dialogs.md
+   */
+  private generateAllDialogs(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All Dialogs (Deprecated)', 1));
+    sections.push('');
+    sections.push(`**Total Dialogs:** ${result.summary.totalDialogs}`);
+    sections.push('');
+    if (result.dialogs.length === 0) {
+      sections.push('No deprecated dialog workflows found in this scope.');
+      return sections.join('\n');
+    }
+    sections.push('> ⚠️ **Deprecated Feature** — Dialog workflows are deprecated. Migrate to Model-Driven App forms or Power Automate flows.');
+    sections.push('');
+    const headers = ['Name', 'Primary Entity', 'Status', 'Managed', 'Modified'];
+    const rows = result.dialogs.map((d: Dialog) => [
+      d.name,
+      d.primaryEntityName || '—',
+      d.status === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success')
+        : d.status === 'Suspended' ? MarkdownFormatter.formatBadge('Suspended', 'warning')
+        : MarkdownFormatter.formatBadge('Draft', 'info'),
+      d.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      d.modifiedOn ? this.formatDate(d.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-ai-models.md
+   */
+  private generateAllAiModels(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All AI Models', 1));
+    sections.push('');
+    sections.push(`**Total AI Models:** ${result.summary.totalAiModels}`);
+    sections.push('');
+    if (result.aiModels.length === 0) {
+      sections.push('No AI Builder models found in this scope.');
+      return sections.join('\n');
+    }
+    const headers = ['Name', 'Template ID', 'Status', 'Managed', 'Modified'];
+    const rows = result.aiModels.map((a: AiModel) => [
+      a.name,
+      a.templateId || '—',
+      a.status === 'Active' ? MarkdownFormatter.formatBadge('Active', 'success')
+        : a.status === 'Inactive' ? MarkdownFormatter.formatBadge('Inactive', 'warning')
+        : MarkdownFormatter.formatBadge('Unknown', 'info'),
+      a.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      a.modifiedOn ? this.formatDate(a.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/all-virtual-table-data-sources.md
+   * NOTE: connectionDefinition is not included — it is redacted for security.
+   */
+  private generateAllVirtualTableDataSources(result: BlueprintResult): string {
+    const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatHeading('All Virtual Table Data Sources', 1));
+    sections.push('');
+    sections.push(`**Total Virtual Table Data Sources:** ${result.summary.totalVirtualTableDataSources}`);
+    sections.push('');
+    if (result.virtualTableDataSources.length === 0) {
+      sections.push('No virtual table data sources found in this scope.');
+      return sections.join('\n');
+    }
+    const headers = ['Name', 'Connection', 'Managed', 'Modified'];
+    const rows = result.virtualTableDataSources.map((d: VirtualTableDataSource) => [
+      d.name,
+      d.dataSourceTypeId ? MarkdownFormatter.formatBadge('Configured', 'success') : MarkdownFormatter.formatBadge('Not Configured', 'info'),
+      d.isManaged ? MarkdownFormatter.formatBadge('Managed', 'warning') : MarkdownFormatter.formatBadge('Unmanaged', 'success'),
+      d.modifiedOn ? this.formatDate(d.modifiedOn) : '—',
+    ]);
+    sections.push(MarkdownFormatter.formatTable(headers, rows));
+    sections.push('');
     return sections.join('\n');
   }
 }

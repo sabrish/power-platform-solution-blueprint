@@ -34,6 +34,15 @@ import type { ModelDrivenApp } from '../../types/modelDrivenApp.js';
 import type { PcfControl } from '../../types/pcfControl.js';
 import type { ServiceEndpoint } from '../../types/serviceEndpoint.js';
 import type { CopilotAgent } from '../../types/copilotAgent.js';
+import type { DuplicateDetectionRule } from '../../types/duplicateDetectionRule.js';
+import type { SiteMap } from '../../types/siteMap.js';
+import type { SlaDefinition } from '../../types/slaDefinition.js';
+import type { Report } from '../../types/report.js';
+import type { Chart } from '../../types/chart.js';
+import type { View } from '../../types/view.js';
+import type { Dialog } from '../../types/dialog.js';
+import type { AiModel } from '../../types/aiModel.js';
+import type { VirtualTableDataSource } from '../../types/virtualTableDataSource.js';
 
 /**
  * Main HTML Templates class
@@ -4070,6 +4079,410 @@ ${rows}
           <th scope="col">URL</th>
           <th scope="col" onclick="sortTable('service-endpoints-table', 3)">Steps <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('service-endpoints-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlDuplicateDetectionRulesTable(rules: DuplicateDetectionRule[]): string {
+    if (rules.length === 0) {
+      return `<section id="duplicate-detection-rules" class="content-section" aria-labelledby="heading-duplicate-detection-rules">
+  <h2 id="heading-duplicate-detection-rules" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('duplicate-detection-rules')} Duplicate Detection Rules</h2>
+  <div class="empty-state">No duplicate detection rules found</div>
+</section>`;
+    }
+
+    const rows = rules.map(r => {
+      const statusBadge = r.status === 'Active'
+        ? '<span class="badge badge-success">Active</span>'
+        : '<span class="badge badge-warning">Inactive</span>';
+      const managedBadge = r.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(r.name)}</td>
+  <td>${this.htmlEscape(r.baseEntityName)}</td>
+  <td>${this.htmlEscape(r.matchingEntityName)}</td>
+  <td>${statusBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="duplicate-detection-rules" class="content-section" aria-labelledby="heading-duplicate-detection-rules">
+  <h2 id="heading-duplicate-detection-rules" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('duplicate-detection-rules')} Duplicate Detection Rules (${rules.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="duplicate-detection-rules-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 1)">Base Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 2)">Matching Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 3)">Status <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlSiteMapsTable(siteMaps: SiteMap[]): string {
+    if (siteMaps.length === 0) {
+      return `<section id="site-maps" class="content-section" aria-labelledby="heading-site-maps">
+  <h2 id="heading-site-maps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('site-maps')} Site Maps</h2>
+  <div class="empty-state">No site maps found</div>
+</section>`;
+    }
+
+    const rows = siteMaps.map(s => {
+      const appAwareBadge = s.isAppAware
+        ? '<span class="badge badge-brand">App-Aware</span>'
+        : '<span class="badge">Legacy</span>';
+      const managedBadge = s.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(s.name)}</td>
+  <td><code>${this.htmlEscape(s.uniqueName)}</code></td>
+  <td>${appAwareBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="site-maps" class="content-section" aria-labelledby="heading-site-maps">
+  <h2 id="heading-site-maps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('site-maps')} Site Maps (${siteMaps.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="site-maps-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('site-maps-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('site-maps-table', 1)">Unique Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('site-maps-table', 2)">App-Aware <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('site-maps-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlSlaDefinitionsTable(slaDefinitions: SlaDefinition[]): string {
+    if (slaDefinitions.length === 0) {
+      return `<section id="sla-definitions" class="content-section" aria-labelledby="heading-sla-definitions">
+  <h2 id="heading-sla-definitions" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('sla-definitions')} SLA Definitions</h2>
+  <div class="empty-state">No SLA definitions found</div>
+</section>`;
+    }
+
+    const rows = slaDefinitions.map(s => {
+      const typeBadge = s.slaType === 'Enhanced'
+        ? '<span class="badge badge-brand">Enhanced</span>'
+        : '<span class="badge">Standard</span>';
+      const statusBadgeMap: Record<string, string> = {
+        'Active': '<span class="badge badge-success">Active</span>',
+        'Draft': '<span class="badge badge-info">Draft</span>',
+        'Cancelled': '<span class="badge badge-danger">Cancelled</span>',
+        'Expired': '<span class="badge badge-warning">Expired</span>',
+      };
+      const statusBadge = statusBadgeMap[s.status] ?? `<span class="badge">${this.htmlEscape(s.status)}</span>`;
+      const managedBadge = s.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(s.name)}</td>
+  <td>${typeBadge}</td>
+  <td>${statusBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="sla-definitions" class="content-section" aria-labelledby="heading-sla-definitions">
+  <h2 id="heading-sla-definitions" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('sla-definitions')} SLA Definitions (${slaDefinitions.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="sla-definitions-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('sla-definitions-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('sla-definitions-table', 1)">Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('sla-definitions-table', 2)">Status <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('sla-definitions-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlReportsTable(reports: Report[]): string {
+    if (reports.length === 0) {
+      return `<section id="reports" class="content-section" aria-labelledby="heading-reports">
+  <h2 id="heading-reports" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('reports')} Reports</h2>
+  <div class="empty-state">No reports found</div>
+</section>`;
+    }
+
+    const rows = reports.map(r => {
+      const customBadge = r.isCustomReport
+        ? '<span class="badge badge-info">Custom Report</span>'
+        : '<span class="badge">Out-of-box</span>';
+      const managedBadge = r.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(r.name)}</td>
+  <td>${this.htmlEscape(r.reportType)}</td>
+  <td>${customBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="reports" class="content-section" aria-labelledby="heading-reports">
+  <h2 id="heading-reports" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('reports')} Reports (${reports.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="reports-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('reports-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('reports-table', 1)">Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('reports-table', 2)">Custom <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('reports-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlChartsTable(charts: Chart[]): string {
+    if (charts.length === 0) {
+      return `<section id="charts" class="content-section" aria-labelledby="heading-charts">
+  <h2 id="heading-charts" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('charts')} Charts</h2>
+  <div class="empty-state">No charts found</div>
+</section>`;
+    }
+
+    const rows = charts.map(c => {
+      const defaultBadge = c.isDefault ? '<span class="badge badge-brand">Default</span>' : '';
+      const managedBadge = c.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(c.name)}</td>
+  <td>${this.htmlEscape(c.primaryEntityTypeCode)}</td>
+  <td>${defaultBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="charts" class="content-section" aria-labelledby="heading-charts">
+  <h2 id="heading-charts" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('charts')} Charts (${charts.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="charts-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('charts-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('charts-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('charts-table', 2)">Default <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('charts-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlViewsTable(views: View[]): string {
+    if (views.length === 0) {
+      return `<section id="views" class="content-section" aria-labelledby="heading-views">
+  <h2 id="heading-views" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('views')} Views</h2>
+  <div class="empty-state">No views found</div>
+</section>`;
+    }
+
+    const rows = views.map(v => {
+      const defaultBadge = v.isDefault ? '<span class="badge badge-brand">Default</span>' : '';
+      const managedBadge = v.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(v.name)}</td>
+  <td>${this.htmlEscape(v.returnedTypeCode)}</td>
+  <td>${this.htmlEscape(v.queryTypeName)}</td>
+  <td>${defaultBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="views" class="content-section" aria-labelledby="heading-views">
+  <h2 id="heading-views" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('views')} Views (${views.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="views-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('views-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('views-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('views-table', 2)">View Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('views-table', 3)">Default <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('views-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlDialogsTable(dialogs: Dialog[]): string {
+    if (dialogs.length === 0) {
+      return `<section id="dialogs" class="content-section" aria-labelledby="heading-dialogs">
+  <h2 id="heading-dialogs" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('dialogs')} Dialogs (Deprecated)</h2>
+  <div class="empty-state">No deprecated dialog workflows found</div>
+</section>`;
+    }
+
+    const rows = dialogs.map(d => {
+      const statusBadgeMap: Record<string, string> = {
+        'Active': '<span class="badge badge-success">Active</span>',
+        'Draft': '<span class="badge badge-info">Draft</span>',
+        'Suspended': '<span class="badge badge-warning">Suspended</span>',
+      };
+      const statusBadge = statusBadgeMap[d.status] ?? `<span class="badge">${this.htmlEscape(d.status)}</span>`;
+      const managedBadge = d.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(d.name)}</td>
+  <td>${d.primaryEntityName ? this.htmlEscape(d.primaryEntityName) : '—'}</td>
+  <td>${statusBadge}</td>
+  <td><span class="badge badge-warning">Deprecated</span></td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="dialogs" class="content-section" aria-labelledby="heading-dialogs">
+  <h2 id="heading-dialogs" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('dialogs')} Dialogs — Deprecated (${dialogs.length})</h2>
+  <div class="alert alert-warning">${this.alertIcon('warning')} <strong>Deprecated Feature</strong> — Dialog workflows are deprecated. Migrate to Model-Driven App forms or Power Automate flows.</div>
+  <div class="table-container">
+    <table class="data-table sortable" id="dialogs-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('dialogs-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('dialogs-table', 1)">Primary Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('dialogs-table', 2)">Status <span class="sort-indicator"></span></th>
+          <th scope="col">Deprecation</th>
+          <th scope="col" onclick="sortTable('dialogs-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlAiModelsTable(aiModels: AiModel[]): string {
+    if (aiModels.length === 0) {
+      return `<section id="ai-models" class="content-section" aria-labelledby="heading-ai-models">
+  <h2 id="heading-ai-models" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('ai-models')} AI Models</h2>
+  <div class="empty-state">No AI Builder models found</div>
+</section>`;
+    }
+
+    const rows = aiModels.map(a => {
+      const statusBadgeMap: Record<string, string> = {
+        'Active': '<span class="badge badge-success">Active</span>',
+        'Inactive': '<span class="badge badge-warning">Inactive</span>',
+        'Unknown': '<span class="badge">Unknown</span>',
+      };
+      const statusBadge = statusBadgeMap[a.status] ?? `<span class="badge">${this.htmlEscape(a.status)}</span>`;
+      const templateDisplay = a.templateId
+        ? (a.templateId.length > 20 ? `<code title="${this.htmlEscape(a.templateId)}">${this.htmlEscape(a.templateId.substring(0, 20))}…</code>` : `<code>${this.htmlEscape(a.templateId)}</code>`)
+        : '—';
+      const managedBadge = a.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(a.name)}</td>
+  <td>${templateDisplay}</td>
+  <td>${statusBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="ai-models" class="content-section" aria-labelledby="heading-ai-models">
+  <h2 id="heading-ai-models" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('ai-models')} AI Models (${aiModels.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="ai-models-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('ai-models-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('ai-models-table', 1)">Template ID <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('ai-models-table', 2)">Status <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('ai-models-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlVirtualTableDataSourcesTable(dataSources: VirtualTableDataSource[]): string {
+    if (dataSources.length === 0) {
+      return `<section id="virtual-table-data-sources" class="content-section" aria-labelledby="heading-virtual-table-data-sources">
+  <h2 id="heading-virtual-table-data-sources" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('virtual-table-data-sources')} Virtual Table Data Sources</h2>
+  <div class="empty-state">No virtual table data sources found</div>
+</section>`;
+    }
+
+    const rows = dataSources.map(d => {
+      const connectionBadge = d.dataSourceTypeId
+        ? '<span class="badge badge-success">Configured</span>'
+        : '<span class="badge">Not Configured</span>';
+      const managedBadge = d.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(d.name)}</td>
+  <td>${connectionBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="virtual-table-data-sources" class="content-section" aria-labelledby="heading-virtual-table-data-sources">
+  <h2 id="heading-virtual-table-data-sources" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('virtual-table-data-sources')} Virtual Table Data Sources (${dataSources.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="virtual-table-data-sources-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('virtual-table-data-sources-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('virtual-table-data-sources-table', 1)">Connection <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('virtual-table-data-sources-table', 2)">Managed <span class="sort-indicator"></span></th>
         </tr>
       </thead>
       <tbody>
