@@ -261,6 +261,48 @@ export class SolutionComponentDiscovery {
               inventory.serviceEndpointIds.push(objectId);
             }
             break;
+          case ComponentType.View:
+            if (!inventory.viewIds.includes(objectId)) {
+              inventory.viewIds.push(objectId);
+            }
+            break;
+          case ComponentType.Report:
+            if (!inventory.reportIds.includes(objectId)) {
+              inventory.reportIds.push(objectId);
+            }
+            break;
+          case ComponentType.DuplicateDetectionRule:
+            if (!inventory.duplicateDetectionRuleIds.includes(objectId)) {
+              inventory.duplicateDetectionRuleIds.push(objectId);
+            }
+            break;
+          case ComponentType.Chart:
+            if (!inventory.chartIds.includes(objectId)) {
+              inventory.chartIds.push(objectId);
+            }
+            break;
+          case ComponentType.SiteMap:
+            if (!inventory.siteMapIds.includes(objectId)) {
+              inventory.siteMapIds.push(objectId);
+            }
+            break;
+          case ComponentType.SlaDefinition:
+            if (!inventory.slaDefinitionIds.includes(objectId)) {
+              inventory.slaDefinitionIds.push(objectId);
+            }
+            break;
+          case ComponentType.VirtualTableDataSource:
+            if (!inventory.virtualTableDataSourceIds.includes(objectId)) {
+              inventory.virtualTableDataSourceIds.push(objectId);
+            }
+            break;
+          case ComponentType.AiProjectType:
+          case ComponentType.AiProject:
+          case ComponentType.AiConfiguration:
+            if (!inventory.aiModelIds.includes(objectId)) {
+              inventory.aiModelIds.push(objectId);
+            }
+            break;
         }
       }
 
@@ -729,6 +771,130 @@ export class SolutionComponentDiscovery {
           errorMessage: error instanceof Error ? error.message : String(error),
         });
         // Continue with empty copilotAgentIds — bots table may not exist in all environments
+      }
+
+      // Views (saved queries)
+      const viewsResult = await logQuery<{ savedqueryid: string }>(
+        'savedqueries',
+        { select: ['savedqueryid'] },
+        'Default Solution — Views'
+      );
+      inventory.viewIds = viewsResult.value.map(v => normalizeGuid(v.savedqueryid));
+
+      // Reports
+      const reportsResult = await logQuery<{ reportid: string }>(
+        'reports',
+        { select: ['reportid'] },
+        'Default Solution — Reports'
+      );
+      inventory.reportIds = reportsResult.value.map(r => normalizeGuid(r.reportid));
+
+      // Duplicate Detection Rules
+      const duplicateRulesResult = await logQuery<{ duplicateruleid: string }>(
+        'duplicaterules',
+        { select: ['duplicateruleid'] },
+        'Default Solution — Duplicate Detection Rules'
+      );
+      inventory.duplicateDetectionRuleIds = duplicateRulesResult.value.map(d => normalizeGuid(d.duplicateruleid));
+
+      // Charts (saved query visualizations)
+      const chartsResult = await logQuery<{ savedqueryvisualizationid: string }>(
+        'savedqueryvisualizations',
+        { select: ['savedqueryvisualizationid'] },
+        'Default Solution — Charts'
+      );
+      inventory.chartIds = chartsResult.value.map(c => normalizeGuid(c.savedqueryvisualizationid));
+
+      // Site Maps
+      const siteMapsResult = await logQuery<{ sitemapid: string }>(
+        'sitemaps',
+        { select: ['sitemapid'] },
+        'Default Solution — Site Maps'
+      );
+      inventory.siteMapIds = siteMapsResult.value.map(s => normalizeGuid(s.sitemapid));
+
+      // SLA Definitions
+      const slasResult = await logQuery<{ slaid: string }>(
+        'slas',
+        { select: ['slaid'] },
+        'Default Solution — SLA Definitions'
+      );
+      inventory.slaDefinitionIds = slasResult.value.map(s => normalizeGuid(s.slaid));
+
+      // Virtual Table Data Sources (wrapped in try/catch — may not exist in all environments)
+      const t0VtDataSources = Date.now();
+      try {
+        const vtDataSourcesResult = await this.client.queryAll<{ entitydatasourceid: string }>(
+          'entitydatasources', { select: ['entitydatasourceid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0VtDataSources),
+          step: 'Default Solution — Virtual Table Data Sources',
+          entitySet: 'entitydatasources',
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0VtDataSources,
+          resultCount: vtDataSourcesResult.value.length,
+        });
+        inventory.virtualTableDataSourceIds = vtDataSourcesResult.value.map(v => normalizeGuid(v.entitydatasourceid));
+      } catch (error) {
+        this.logger?.log({
+          timestamp: new Date(t0VtDataSources),
+          step: 'Default Solution — Virtual Table Data Sources',
+          entitySet: 'entitydatasources',
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0VtDataSources,
+          resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with empty virtualTableDataSourceIds — table may not exist
+      }
+
+      // AI Models (wrapped in try/catch — msdyn_aimodels may not exist in all environments)
+      const t0AiModels = Date.now();
+      try {
+        const aiModelsResult = await this.client.queryAll<{ msdyn_aimodelid: string }>(
+          'msdyn_aimodels', { select: ['msdyn_aimodelid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0AiModels),
+          step: 'Default Solution — AI Models',
+          entitySet: 'msdyn_aimodels',
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0AiModels,
+          resultCount: aiModelsResult.value.length,
+        });
+        inventory.aiModelIds = aiModelsResult.value.map(a => normalizeGuid(a.msdyn_aimodelid));
+      } catch (error) {
+        this.logger?.log({
+          timestamp: new Date(t0AiModels),
+          step: 'Default Solution — AI Models',
+          entitySet: 'msdyn_aimodels',
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0AiModels,
+          resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with empty aiModelIds — msdyn_aimodels may not exist in all environments
       }
 
       // Canvas apps and Custom Pages both use component type 300 in solutioncomponents
