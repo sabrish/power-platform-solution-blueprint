@@ -63,6 +63,9 @@ export class SolutionComponentDiscovery {
         customConnectorIds: [],
         securityRoleIds: [],
         fieldSecurityProfileIds: [],
+        pcfControlIds: [],
+        serviceEndpointIds: [],
+        copilotAgentIds: [],
       };
 
       // Tracking maps for solution membership
@@ -240,6 +243,16 @@ export class SolutionComponentDiscovery {
               inventory.pluginPackageIds.push(objectId);
             }
             break;
+          case ComponentType.CustomControl:
+            if (!inventory.pcfControlIds.includes(objectId)) {
+              inventory.pcfControlIds.push(objectId);
+            }
+            break;
+          case ComponentType.ServiceEndpoint:
+            if (!inventory.serviceEndpointIds.includes(objectId)) {
+              inventory.serviceEndpointIds.push(objectId);
+            }
+            break;
         }
       }
 
@@ -381,6 +394,50 @@ export class SolutionComponentDiscovery {
         });
       }
 
+      // Copilot Studio Agents: bot component type code is not reliably documented.
+      // Use Strategy B (objectid intersection): query all bots, keep those whose botid
+      // appears in the solutioncomponents objectid set.
+      const t0Bots = Date.now();
+      try {
+        const allBots = await this.client.queryAll<{ botid: string }>(
+          'bots', { select: ['botid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0Bots),
+          step: 'Solution Component Discovery — Copilot Agents (objectid intersection)',
+          entitySet: 'bots',
+          filterSummary: 'objectid intersection',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0Bots,
+          resultCount: allBots.value.length,
+        });
+        for (const bot of allBots.value) {
+          const id = normalizeGuid(bot.botid);
+          if (scObjectIds.has(id) && !inventory.copilotAgentIds.includes(id)) {
+            inventory.copilotAgentIds.push(id);
+          }
+        }
+      } catch (error) {
+        this.logger?.log({
+          timestamp: new Date(t0Bots),
+          step: 'Solution Component Discovery — Copilot Agents (objectid intersection)',
+          entitySet: 'bots',
+          filterSummary: 'objectid intersection',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0Bots,
+          resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+      }
+
       return {
         ...inventory,
         componentToSolutions,
@@ -472,6 +529,9 @@ export class SolutionComponentDiscovery {
       customConnectorIds: [],
       securityRoleIds: [],
       fieldSecurityProfileIds: [],
+      pcfControlIds: [],
+      serviceEndpointIds: [],
+      copilotAgentIds: [],
     };
 
     try {
@@ -600,6 +660,60 @@ export class SolutionComponentDiscovery {
         'Default Solution — Field Security Profiles'
       );
       inventory.fieldSecurityProfileIds = fieldSecurityProfilesResult.value.map(f => normalizeGuid(f.fieldsecurityprofileid));
+
+      // PCF Controls - all custom controls
+      const pcfControlsResult = await logQuery<{ customcontrolid: string }>(
+        'customcontrols',
+        { select: ['customcontrolid'] },
+        'Default Solution — PCF Controls'
+      );
+      inventory.pcfControlIds = pcfControlsResult.value.map(c => normalizeGuid(c.customcontrolid));
+
+      // Service Endpoints - all service endpoints
+      const serviceEndpointsResult = await logQuery<{ serviceendpointid: string }>(
+        'serviceendpoints',
+        { select: ['serviceendpointid'] },
+        'Default Solution — Service Endpoints'
+      );
+      inventory.serviceEndpointIds = serviceEndpointsResult.value.map(s => normalizeGuid(s.serviceendpointid));
+
+      // Copilot Studio Agents - all bots (wrapped in try/catch — some environments may not have the bots table)
+      const t0Bots = Date.now();
+      try {
+        const botsResult = await this.client.queryAll<{ botid: string }>(
+          'bots', { select: ['botid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0Bots),
+          step: 'Default Solution — Copilot Agents',
+          entitySet: 'bots',
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0Bots,
+          resultCount: botsResult.value.length,
+        });
+        inventory.copilotAgentIds = botsResult.value.map(b => normalizeGuid(b.botid));
+      } catch (error) {
+        this.logger?.log({
+          timestamp: new Date(t0Bots),
+          step: 'Default Solution — Copilot Agents',
+          entitySet: 'bots',
+          filterSummary: '',
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0Bots,
+          resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with empty copilotAgentIds — bots table may not exist in all environments
+      }
 
       // Canvas apps and Custom Pages both use component type 300 in solutioncomponents
       // and live in the canvasapps entity. Splitting is done post-retrieval by apptype.
