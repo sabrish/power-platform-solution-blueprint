@@ -78,6 +78,17 @@ export {
 
   // ── Contextual / inline indicators ────────────────────────────────────────
 
+  // PCF Controls — Microsoft: generic folder in solution explorer. Using Braces24Regular
+  // (code brackets = custom code/framework control).
+  Braces24Regular as PcfControlsIcon,
+
+  // Service Endpoints — Microsoft: generic folder. Using PlugConnected24Regular
+  // (connected endpoint = external integration point).
+  PlugConnected24Regular as ServiceEndpointsIcon,
+
+  // Copilot Studio Agents — Microsoft: bot/agent icon. Using Bot24Regular.
+  Bot24Regular as CopilotAgentsIcon,
+
   // ── Navigation tabs ────────────────────────────────────────────────────────
 
   Grid24Regular as DashboardIcon,

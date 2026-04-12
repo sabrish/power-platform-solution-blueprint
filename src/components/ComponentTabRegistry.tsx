@@ -29,6 +29,9 @@ import {
   CustomPagesIcon,
   CanvasAppsIcon,
   ModelDrivenAppsIcon,
+  PcfControlsIcon,
+  ServiceEndpointsIcon,
+  CopilotAgentsIcon,
 } from './componentIcons';
 import { EntityList } from './EntityList';
 import { PluginsList } from './PluginsList';
@@ -48,6 +51,9 @@ import { FieldSecurityProfilesView } from './FieldSecurityProfilesView';
 import { CustomPagesList } from './CustomPagesList';
 import { CanvasAppsList } from './CanvasAppsList';
 import { ModelDrivenAppsList } from './ModelDrivenAppsList';
+import { PcfControlsList } from './PcfControlsList';
+import { ServiceEndpointsList } from './ServiceEndpointsList';
+import { CopilotAgentsList } from './CopilotAgentsList';
 
 export interface ComponentTabDefinition {
   /** Tab value / id — used as React key and TabList value. */
@@ -232,6 +238,30 @@ export const COMPONENT_TABS: ComponentTabDefinition[] = [
     count: (r) => r.summary.totalModelDrivenApps,
     render: (r) => <ModelDrivenAppsList modelDrivenApps={r.modelDrivenApps} />,
     hidden: (r) => r.summary.totalModelDrivenApps === 0,
+  },
+  {
+    key: 'pcfControls',
+    label: 'PCF Controls',
+    icon: <PcfControlsIcon />,
+    count: (r) => r.summary.totalPcfControls,
+    render: (r) => <PcfControlsList pcfControls={r.pcfControls} />,
+    hidden: (r) => r.summary.totalPcfControls === 0,
+  },
+  {
+    key: 'serviceEndpoints',
+    label: 'Service Endpoints',
+    icon: <ServiceEndpointsIcon />,
+    count: (r) => r.summary.totalServiceEndpoints,
+    render: (r) => <ServiceEndpointsList serviceEndpoints={r.serviceEndpoints} />,
+    hidden: (r) => r.summary.totalServiceEndpoints === 0,
+  },
+  {
+    key: 'copilotAgents',
+    label: 'Agents',
+    icon: <CopilotAgentsIcon />,
+    count: (r) => r.summary.totalCopilotAgents,
+    render: (r) => <CopilotAgentsList copilotAgents={r.copilotAgents} />,
+    hidden: (r) => r.summary.totalCopilotAgents === 0,
   },
 ];
 
