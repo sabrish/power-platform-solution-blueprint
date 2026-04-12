@@ -24,6 +24,9 @@ export interface ComponentInventory {
   customConnectorIds: string[];
   securityRoleIds: string[];
   fieldSecurityProfileIds: string[];
+  pcfControlIds: string[];
+  serviceEndpointIds: string[];
+  copilotAgentIds: string[];
 }
 
 /**
@@ -87,6 +90,8 @@ export enum ComponentType {
   // solutioncomponents objectids. PluginPackage (10030) does appear in solutioncomponents.
   CustomAPI = 10076,
   PluginPackage = 10030,  // Plugin packages
+  CustomControl = 66,     // PCF controls
+  ServiceEndpoint = 95,   // Service Bus / Event Hub / Webhook endpoints
 }
 
 /**

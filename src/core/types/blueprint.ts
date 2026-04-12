@@ -8,6 +8,9 @@ import type { FetchLogEntry } from '../utils/FetchLogger.js';
 import type { CanvasApp } from './canvasApp.js';
 import type { CustomPage } from './customPage.js';
 import type { ModelDrivenApp } from './modelDrivenApp.js';
+import type { PcfControl } from './pcfControl.js';
+import type { ServiceEndpoint } from './serviceEndpoint.js';
+import type { CopilotAgent } from './copilotAgent.js';
 
 /**
  * Progress phases during blueprint generation
@@ -474,6 +477,9 @@ export interface BlueprintSummary {
   totalCanvasApps: number;
   totalCustomPages: number;
   totalModelDrivenApps: number;
+  totalPcfControls: number;
+  totalServiceEndpoints: number;
+  totalCopilotAgents: number;
 }
 
 /**
@@ -731,6 +737,9 @@ export interface BlueprintResult {
   canvasApps: CanvasApp[];
   customPages: CustomPage[];
   modelDrivenApps: ModelDrivenApp[];
+  pcfControls: PcfControl[];
+  serviceEndpoints: ServiceEndpoint[];
+  copilotAgents: CopilotAgent[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
   erd?: ERDDefinition;
