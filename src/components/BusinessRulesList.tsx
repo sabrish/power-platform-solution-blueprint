@@ -10,26 +10,12 @@ import {
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import type { BusinessRule, Action } from '../core';
+import type { BusinessRule } from '../core';
 import { filterDescription } from '../utils/descriptionFilter';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
-
-function formatActionSentence(action: Action): string {
-  const fieldName = action.fieldLabel ?? action.field;
-  switch (action.type) {
-    case 'ShowField':   return `Show field: ${fieldName}`;
-    case 'HideField':   return `Hide field: ${fieldName}`;
-    case 'LockField':   return `Lock field: ${fieldName}`;
-    case 'UnlockField': return `Unlock field: ${fieldName}`;
-    case 'SetRequired': return `Set required: ${fieldName}${action.value ? ` (${action.value})` : ''}`;
-    case 'SetOptional': return `Set optional: ${fieldName}`;
-    case 'SetValue':    return `Set value: ${fieldName} = ${action.value ?? '(clear)'}`;
-    case 'ShowError':   return `Show error on ${fieldName}${action.message ? `: ${action.message}` : ''}`;
-    default:            return `${action.type}: ${fieldName}`;
-  }
-}
+import { formatActionSentence } from '../core/utils/businessRuleFormatting';
 
 const RULE_STATE_VALUES = ['Active', 'Draft'];
 const RULE_SCOPE_VALUES = ['Entity', 'AllForms'];

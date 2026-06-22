@@ -25,6 +25,8 @@ import type {
   GeneratorOptions,
   BlueprintResult,
   EntityBlueprint,
+  BusinessRule,
+  AttributeMetadata,
   ProgressInfo,
   StepWarning,
 } from '../types/blueprint.js';
@@ -172,6 +174,9 @@ export class BlueprintGenerator {
           blueprint.fieldSecurity = fieldSecurity;
         }
       }
+
+      // Enrich business rule field names with display names from already-fetched entity schema
+      this.applyBusinessRuleFieldLabels(entityBlueprints, businessRules);
 
       // STEP 9: Generate ERD and Advanced Analysis
       this.reportProgress({
@@ -639,6 +644,46 @@ export class BlueprintGenerator {
   private reportProgress(progress: ProgressInfo): void {
     if (this.options.onProgress) {
       this.options.onProgress(progress);
+    }
+  }
+
+  /**
+   * Enrich business rule conditions and actions with field display names sourced
+   * from the already-fetched entity schema (AttributeMetadata on each EntityBlueprint).
+   * Zero additional API calls — reuses data collected in processEntities().
+   */
+  private applyBusinessRuleFieldLabels(
+    entityBlueprints: EntityBlueprint[],
+    businessRules: BusinessRule[]
+  ): void {
+    // Build entity → (logicalName → displayLabel) from already-fetched attribute metadata
+    const labelMap = new Map<string, Map<string, string>>();
+    for (const bp of entityBlueprints) {
+      const attrs: AttributeMetadata[] = bp.entity.Attributes ?? [];
+      if (attrs.length === 0) continue;
+      const fieldMap = new Map<string, string>();
+      for (const attr of attrs) {
+        const label = attr.DisplayName?.UserLocalizedLabel?.Label;
+        if (label) fieldMap.set(attr.LogicalName, label);
+      }
+      labelMap.set(bp.entity.LogicalName, fieldMap);
+    }
+
+    // Apply labels to all conditions and actions — no API calls, zero cost
+    for (const rule of businessRules) {
+      const fieldMap = labelMap.get(rule.entity);
+      if (!fieldMap) continue;
+      for (const group of rule.definition.conditionGroups) {
+        for (const cond of group.conditions) {
+          cond.fieldLabel = fieldMap.get(cond.field);
+        }
+        for (const action of group.actions) {
+          action.fieldLabel = fieldMap.get(action.field);
+        }
+      }
+      for (const action of rule.definition.elseActions) {
+        action.fieldLabel = fieldMap.get(action.field);
+      }
     }
   }
 

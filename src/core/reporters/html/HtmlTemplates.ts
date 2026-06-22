@@ -11,7 +11,6 @@ import type {
   PluginStep,
   Flow,
   BusinessRule,
-  Action,
   WebResource,
   ExternalEndpoint,
   SolutionDistribution,
@@ -20,6 +19,7 @@ import type {
   ManyToOneRelationship,
   ManyToManyRelationship,
 } from '../../types/blueprint.js';
+import { formatActionSentence } from '../../utils/businessRuleFormatting.js';
 import type { PrivilegeDetail } from '../../discovery/SecurityRoleDiscovery.js';
 import type { CrossEntityAnalysisResult } from '../../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../../types/classicWorkflow.js';
@@ -1162,7 +1162,7 @@ ${rows}
         </tr>`).join('');
 
         const actionRows = group.actions.map(a => `<tr>
-          <td>${this.formatActionSentence(a)}</td>
+          <td>${this.htmlEscape(formatActionSentence(a))}</td>
         </tr>`).join('');
 
         const header = groupIdx === 0 ? 'IF' : 'ELSE IF';
@@ -1179,7 +1179,7 @@ ${rows}
       }).join('');
 
       const elseRows = elseActions.map(a => `<tr>
-        <td>${this.formatActionSentence(a)}</td>
+        <td>${this.htmlEscape(formatActionSentence(a))}</td>
       </tr>`).join('');
 
       const totalConditionCount = conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
@@ -2156,27 +2156,6 @@ ${rows}
     }
 
     return `<div id="cea-pipelines-list">${items.join('')}</div>`;
-  }
-
-  /**
-   * Format a business rule action as a natural-language sentence for display.
-   * All user-supplied string parts are escaped before insertion.
-   */
-  private formatActionSentence(action: Action): string {
-    const fieldName = this.htmlEscape(action.fieldLabel ?? action.field);
-    const value = action.value ? this.htmlEscape(action.value) : null;
-    const message = action.message ? this.htmlEscape(action.message) : null;
-    switch (action.type) {
-      case 'ShowField':   return `Show field: ${fieldName}`;
-      case 'HideField':   return `Hide field: ${fieldName}`;
-      case 'LockField':   return `Lock field: ${fieldName}`;
-      case 'UnlockField': return `Unlock field: ${fieldName}`;
-      case 'SetRequired': return `Set required: ${fieldName}${value ? ` (${value})` : ''}`;
-      case 'SetOptional': return `Set optional: ${fieldName}`;
-      case 'SetValue':    return `Set value: ${fieldName} = ${value ?? '(clear)'}`;
-      case 'ShowError':   return `Show error on ${fieldName}${message ? `: ${message}` : ''}`;
-      default:            return `${this.htmlEscape(action.type)}: ${fieldName}`;
-    }
   }
 
   /**
