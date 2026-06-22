@@ -515,6 +515,7 @@ export class BlueprintGenerator {
         step: 'Entity Schema',
         entitySet: 'EntityDefinitions',
         filterSummary: displayName,
+        rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/EntityDefinitions?$filter=LogicalName eq '${entity.LogicalName}'`,
         batchIndex: current - 1,
         batchTotal: total,
         batchSize: 1,
