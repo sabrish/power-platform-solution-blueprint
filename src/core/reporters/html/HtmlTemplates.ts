@@ -1183,7 +1183,8 @@ ${rows}
         `;
         }
 
-        const header = groupIdx === 0 ? 'IF' : 'ELSE IF';
+        const priorConditionalCount = conditionGroups.slice(0, groupIdx).filter(g => g.conditions.length > 0).length;
+        const header = priorConditionalCount === 0 ? 'IF' : 'ELSE IF';
         return `
           <div>
             <h5 style="margin-bottom:6px">${header}: Conditions${groupIdx === 0 && rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.htmlEscape(rule.definition.conditionLogic)})</span>` : ''}</h5>

@@ -218,7 +218,13 @@ export function BusinessRulesList({
         </div>
 
         {/* Condition Groups */}
-        {rule.definition.conditionGroups.map((group, groupIdx) => (
+        {rule.definition.conditionGroups.map((group, groupIdx) => {
+          // Count how many groups BEFORE this one had conditions — determines IF vs ELSE IF.
+          // A group preceded only by ALWAYS groups is the first true IF, not an ELSE IF.
+          const priorConditionalCount = rule.definition.conditionGroups
+            .slice(0, groupIdx)
+            .filter(g => g.conditions.length > 0).length;
+          return (
           <div key={groupIdx}>
             {/* Conditions Section */}
             {group.conditions.length === 0 && groupIdx === 0 ? (
@@ -230,7 +236,7 @@ export function BusinessRulesList({
             ) : group.conditions.length > 0 ? (
               <div className={shared.section}>
                 <div className={styles.sectionHeader}>
-                  <Text weight="semibold">{groupIdx === 0 ? 'IF' : 'ELSE IF'}</Text>
+                  <Text weight="semibold">{priorConditionalCount === 0 ? 'IF' : 'ELSE IF'}</Text>
                 </div>
                 {group.conditions.map((condition, idx) => (
                   <div key={idx} className={styles.conditionItem}>
@@ -262,7 +268,8 @@ export function BusinessRulesList({
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {/* ELSE Actions Section */}
         {rule.definition.elseActions.length > 0 && (
