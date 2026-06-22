@@ -93,21 +93,24 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
-### Release v1.1.2 — Documentation Finalized (2026-03-17)
+### Business Rule Parser: JavaScript condition patterns (2026-06-22)
 
-**Status:** Documentation and version files complete; awaiting project owner for git operations.
+**Status:** Ongoing — debug logging phase
 
-**Completed this session:**
-- CHANGELOG.md: `## [1.1.2] - 2026-03-17` entry created from latest commits (cross-entity chain map redesign, debug logging cleanup)
-- README.md: version badge updated to `1.1.2`
-- Verified all four files match: `package.json`, `npm-shrinkwrap.json`, `CHANGELOG.md`, `README.md` all show v1.1.2
+**Current work:**
+Some business rules still show "(condition) defined in rule — pattern not yet recognized" for conditions the parser doesn't handle yet. Tomorrow's plan: add a debug log statement in `BusinessRuleParser.ts` `parseClientDataXml` that captures the raw `condExpr` value when it falls through to the placeholder, so we can see the actual JS expression and add the right pattern.
 
-**Pending — project owner must run:**
-1. `pnpm typecheck && pnpm build` — build verification
-2. Stage and commit: `git add CHANGELOG.md README.md`
-3. `git commit -m "chore: release v1.1.2"`
-4. `gh pr create ...` — create PR to main
-5. After PR merge: `git tag v1.1.2 -m "Release v1.1.2"` then push tag
+**Issues pending:**
+- Issue #40 — to be addressed tomorrow (see GitHub issue #40)
+- Issue #42 — to be addressed tomorrow (see GitHub issue #42)
+
+### Released in v1.1.2 (2026-03-17)
+
+Patch release. Key fixes:
+- Cross-entity chain map redesign (trigger operation column, message code support)
+- Debug logging cleanup
+
+Documentation finalized; code merged to main and tagged.
 
 ### Released in v1.1.0 (2026-03-12)
 

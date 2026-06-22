@@ -799,3 +799,16 @@ import (prevents dead-code removal) and documents how to add logging elsewhere.
 **Example:**
 - ❌ Wrong: `const formatActionSentence = (action) => { /* shared logic */ }` in BusinessRulesList.tsx, duplicated in HtmlTemplates.ts
 - ✅ Right: Export from `src/core/utils/businessRuleFormatting.ts`, import in BusinessRulesList.tsx and HtmlTemplates.ts; HtmlReporter wraps calls with `htmlEscape()`
+
+---
+
+## [2026-06-22] — SolutionComponentDiscovery direct logger calls bypass withAdaptiveBatch environmentUrl option
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** `SolutionComponentDiscovery.ts` makes many direct `this.logger?.log()` calls that bypass `withAdaptiveBatch`. The `environmentUrl` option on `withAdaptiveBatch` only helps calls that go through that utility. Direct logger calls need explicit `rawUrl` fields added individually. When adding any new logging to a discovery class, check whether the call goes through `withAdaptiveBatch` — if it does, the URL is automatically logged; if not, you must supply `rawUrl: this.environmentUrl` as part of the log context.
+**Context:** Discovery classes use `withAdaptiveBatch` (which logs via `FetchLogger`) for batched Dataverse API calls. But many classes also have direct `logger?.log()` calls for progress tracking and intermediate steps. Those direct calls do not receive the `environmentUrl` option that `withAdaptiveBatch` applies, so the logs are incomplete. The fix: add `rawUrl: this.environmentUrl` to the context object in direct logger calls (following the pattern established in FetchLogger).
+**Example:**
+- ❌ Wrong: `this.logger?.log('Processing batch', { batchSize: ids.length });` — missing environment URL
+- ✅ Right: `this.logger?.log('Processing batch', { rawUrl: this.environmentUrl, batchSize: ids.length });`
+- ✅ Also acceptable: Calls through `withAdaptiveBatch` automatically include the URL and need no modification
