@@ -66,6 +66,7 @@ export class ConnectionReferenceDiscovery implements IDiscoverer<ConnectionRefer
           step: 'Connection Reference Discovery',
           entitySet: 'connectionreferences',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           onProgress: (done, total) => this.onProgress?.(done, total),
         }
       );

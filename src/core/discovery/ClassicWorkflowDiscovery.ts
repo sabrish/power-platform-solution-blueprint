@@ -77,6 +77,7 @@ export class ClassicWorkflowDiscovery implements IDiscoverer<ClassicWorkflow> {
           step: 'Classic Workflow Discovery',
           entitySet: 'workflows (metadata)',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
         }
       );
@@ -114,6 +115,7 @@ export class ClassicWorkflowDiscovery implements IDiscoverer<ClassicWorkflow> {
           step: 'Classic Workflow Discovery',
           entitySet: 'workflows (xaml)',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           onProgress: (done, total) => this.onProgress?.(
             Math.floor(uniqueRecords.length / 2) + Math.floor(done / 2),
             total

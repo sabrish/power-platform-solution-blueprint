@@ -61,6 +61,7 @@ export class DialogDiscovery implements IDiscoverer<Dialog> {
         step: 'Dialog Discovery',
         entitySet: 'workflows',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(done, total),
       }
     );

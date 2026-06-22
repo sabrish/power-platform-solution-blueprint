@@ -1024,6 +1024,7 @@ export class SolutionComponentDiscovery {
           step: 'Workflow Classification',
           entitySet: 'workflows',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
         }
       );
 

@@ -59,6 +59,7 @@ export class VirtualTableDataSourceDiscovery implements IDiscoverer<VirtualTable
           step: 'Virtual Table Data Source Discovery',
           entitySet: 'entitydatasources',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           onProgress: (done, total) => this.onProgress?.(done, total),
         }
       );

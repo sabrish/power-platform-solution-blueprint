@@ -72,6 +72,7 @@ export class ViewDiscovery implements IDiscoverer<View> {
         step: 'View Discovery',
         entitySet: 'savedqueries',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(done, total),
       }
     );

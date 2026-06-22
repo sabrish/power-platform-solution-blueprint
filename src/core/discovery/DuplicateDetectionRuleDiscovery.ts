@@ -55,6 +55,7 @@ export class DuplicateDetectionRuleDiscovery implements IDiscoverer<DuplicateDet
         step: 'Duplicate Detection Rule Discovery',
         entitySet: 'duplicaterules',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(done, total),
       }
     );

@@ -10,6 +10,7 @@ import {
   Dropdown,
   Option,
 } from '@fluentui/react-components';
+import { Copy16Regular } from '@fluentui/react-icons';
 import type { FetchLogEntry, FetchStatus } from '../core/utils/FetchLogger.js';
 
 const useStyles = makeStyles({
@@ -342,10 +343,10 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
                         <Button
                           appearance="subtle"
                           size="small"
+                          icon={<Copy16Regular />}
+                          title="Copy URL"
                           onClick={() => { void navigator.clipboard.writeText(entry.rawUrl!); }}
-                        >
-                          Copy
-                        </Button>
+                        />
                       </div>
                     ) : '—'}
                   </td>

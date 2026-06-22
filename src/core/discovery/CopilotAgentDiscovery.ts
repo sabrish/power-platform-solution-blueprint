@@ -64,6 +64,7 @@ export class CopilotAgentDiscovery {
         step: 'Copilot Agent Discovery',
         entitySet: 'bots',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done) => this.onProgress?.(Math.floor(done / 2), ids.length),
       }
     );
@@ -88,6 +89,7 @@ export class CopilotAgentDiscovery {
           step: 'Copilot Agent Discovery — Component Counts',
           entitySet: 'botcomponents',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           onProgress: (done) => this.onProgress?.(Math.floor(ids.length / 2) + Math.floor(done / 2), ids.length),
         }
       );

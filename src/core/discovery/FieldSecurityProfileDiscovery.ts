@@ -124,6 +124,7 @@ export class FieldSecurityProfileDiscovery {
         step: 'Field Security Profile Discovery',
         entitySet: 'fieldpermissions',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
       }
     );
 

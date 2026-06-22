@@ -106,6 +106,7 @@ export class AppDiscovery {
         step: 'Model-Driven App Discovery',
         entitySet: 'appmodules',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: this.onProgress
           ? (done) => this.onProgress!(done, ids.length)
           : undefined,
@@ -147,6 +148,7 @@ export class AppDiscovery {
         step,
         entitySet: 'canvasapps',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: this.onProgress
           ? (done) => this.onProgress!(done, ids.length)
           : undefined,

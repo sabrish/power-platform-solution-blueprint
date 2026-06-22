@@ -50,6 +50,7 @@ export class FormDiscovery {
           step: 'Form Discovery',
           entitySet: 'systemforms (metadata)',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           getBatchLabel: (batch) => batch.join(', '),
           onProgress: (done) => this.onProgress?.(done, N),
         }
@@ -78,6 +79,7 @@ export class FormDiscovery {
           step: 'Form Discovery',
           entitySet: 'systemforms (formxml)',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           getBatchLabel: (batch) => batch.map(id => formIdToName.get(id.toLowerCase()) ?? id).join(', '),
         }
       );

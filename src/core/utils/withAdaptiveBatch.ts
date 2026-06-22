@@ -42,9 +42,14 @@ export interface AdaptiveBatchOptions<TId> {
   getBatchLabel?: (batch: TId[]) => string;
   /**
    * Produce the full OData request URL for the batch — shown as rawUrl in the fetch log.
-   * If omitted, rawUrl is not recorded.
+   * If omitted, falls back to a base URL built from environmentUrl + entitySet when available.
    */
   getRequestUrl?: (batch: TId[]) => string;
+  /**
+   * Dataverse environment URL (e.g. "https://org.crm.dynamics.com").
+   * Used to construct a fallback rawUrl when getRequestUrl is not provided.
+   */
+  environmentUrl?: string;
 }
 
 export interface AdaptiveBatchResult<TResult, TId> {
@@ -72,7 +77,14 @@ export async function withAdaptiveBatch<TId, TResult>(
     onItemFailed,
     getBatchLabel,
     getRequestUrl,
+    environmentUrl,
   } = options;
+
+  const resolveUrl = (batch: TId[]): string | undefined => {
+    if (getRequestUrl) return getRequestUrl(batch);
+    if (environmentUrl && entitySet) return `${environmentUrl}/api/data/v9.2/${entitySet}`;
+    return undefined;
+  };
 
   // When no getBatchLabel is supplied, filterSummary is intentionally empty —
   // the Batch column in the fetch log already shows position (batchIndex/batchTotal).
@@ -110,7 +122,7 @@ export async function withAdaptiveBatch<TId, TResult>(
         step,
         entitySet,
         filterSummary: batchLabelFor(batch),
-        rawUrl: getRequestUrl ? getRequestUrl(batch) : undefined,
+        rawUrl: resolveUrl(batch),
         batchIndex,
         batchTotal: 0,
         batchSize: batch.length,
@@ -135,7 +147,7 @@ export async function withAdaptiveBatch<TId, TResult>(
           step,
           entitySet,
           filterSummary: lbl ? `${lbl} — FAILED` : 'FAILED',
-          rawUrl: getRequestUrl ? getRequestUrl(batch) : undefined,
+          rawUrl: resolveUrl(batch),
           batchIndex,
           batchTotal: 0,
           batchSize: batch.length,
@@ -159,7 +171,7 @@ export async function withAdaptiveBatch<TId, TResult>(
           step,
           entitySet,
           filterSummary: lbl2 ? `${lbl2} → batch ${currentBatchSize}→${newSize}` : `batch ${currentBatchSize}→${newSize}`,
-          rawUrl: getRequestUrl ? getRequestUrl(batch) : undefined,
+          rawUrl: resolveUrl(batch),
           batchIndex,
           batchTotal: 0,
           batchSize: batch.length,

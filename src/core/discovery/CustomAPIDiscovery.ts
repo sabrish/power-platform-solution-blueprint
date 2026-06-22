@@ -105,6 +105,7 @@ export class CustomAPIDiscovery implements IDiscoverer<CustomAPI> {
           step: 'Custom API Discovery',
           entitySet: 'customapis',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           onProgress: this.onProgress,
         }
       );
@@ -138,6 +139,7 @@ export class CustomAPIDiscovery implements IDiscoverer<CustomAPI> {
           step: 'Custom API Parameters',
           entitySet: 'customapirequestparameters',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
         }
       );
 
@@ -166,6 +168,7 @@ export class CustomAPIDiscovery implements IDiscoverer<CustomAPI> {
           step: 'Custom API Parameters',
           entitySet: 'customapiresponseproperties',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
         }
       );
 

@@ -56,6 +56,7 @@ export class CustomConnectorDiscovery {
         step: 'Custom Connector Discovery',
         entitySet: 'connectors',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(done, total),
       }
     );

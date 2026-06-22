@@ -67,6 +67,7 @@ export class SlaDefinitionDiscovery implements IDiscoverer<SlaDefinition> {
         step: 'SLA Definition Discovery',
         entitySet: 'slas',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(done, total),
       }
     );

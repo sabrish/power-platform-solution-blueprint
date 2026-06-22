@@ -99,6 +99,7 @@ export class EnvironmentVariableDiscovery implements IDiscoverer<EnvironmentVari
           step: 'Environment Variable Discovery',
           entitySet: 'environmentvariabledefinitions',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           // Use envVarIds.length as the stable total for both passes
           onProgress: (done) => this.onProgress?.(Math.floor(done / 2), envVarIds.length),
         }
@@ -132,6 +133,7 @@ export class EnvironmentVariableDiscovery implements IDiscoverer<EnvironmentVari
           step: 'Environment Variable Discovery',
           entitySet: 'environmentvariablevalues',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           // Pass 2 is silent — no onProgress; snap to 100% after completion using stable total
           getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
         }

@@ -90,6 +90,7 @@ export class GlobalChoiceDiscovery implements IDiscoverer<GlobalChoice> {
         step: 'Global Choice Discovery',
         entitySet: 'GlobalOptionSetDefinitions',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.('discovering', done, total),
       }
     );

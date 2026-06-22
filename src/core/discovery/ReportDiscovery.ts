@@ -61,6 +61,7 @@ export class ReportDiscovery implements IDiscoverer<Report> {
         step: 'Report Discovery',
         entitySet: 'reports',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(done, total),
       }
     );
