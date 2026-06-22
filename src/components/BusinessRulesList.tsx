@@ -10,11 +10,25 @@ import {
 } from '@fluentui/react-components';
 import { FilterBar, FilterGroup } from './FilterBar';
 import { ChevronDown20Regular, ChevronRight20Regular } from '@fluentui/react-icons';
-import type { BusinessRule } from '../core';
+import type { BusinessRule, Action } from '../core';
 import { filterDescription } from '../utils/descriptionFilter';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
+
+function formatActionSentence(action: Action): string {
+  switch (action.type) {
+    case 'ShowField':   return `Show field: ${action.field}`;
+    case 'HideField':   return `Hide field: ${action.field}`;
+    case 'LockField':   return `Lock field: ${action.field}`;
+    case 'UnlockField': return `Unlock field: ${action.field}`;
+    case 'SetRequired': return `Set required: ${action.field}${action.value ? ` (${action.value})` : ''}`;
+    case 'SetOptional': return `Set optional: ${action.field}`;
+    case 'SetValue':    return `Set value: ${action.field} = ${action.value ?? '(clear)'}`;
+    case 'ShowError':   return `Show error on ${action.field}${action.message ? `: ${action.message}` : ''}`;
+    default:            return `${action.type}: ${action.field}`;
+  }
+}
 
 const RULE_STATE_VALUES = ['Active', 'Draft'];
 const RULE_SCOPE_VALUES = ['Entity', 'AllForms'];
@@ -233,12 +247,7 @@ export function BusinessRulesList({
                     className={styles.actionItem}
                     style={{ borderLeftColor: getActionBorderColor(action.type) }}
                   >
-                    <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
-                    <Text>
-                      <span className={shared.codeText}>{action.field}</span>
-                      {action.value && <> = <strong>{action.value}</strong></>}
-                      {action.message && <>: <em>{action.message}</em></>}
-                    </Text>
+                    <Text>{formatActionSentence(action)}</Text>
                   </div>
                 ))}
               </div>
@@ -258,12 +267,7 @@ export function BusinessRulesList({
                 className={styles.actionItem}
                 style={{ borderLeftColor: getActionBorderColor(action.type) }}
               >
-                <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
-                <Text>
-                  <span className={shared.codeText}>{action.field}</span>
-                  {action.value && <> = <strong>{action.value}</strong></>}
-                  {action.message && <>: <em>{action.message}</em></>}
-                </Text>
+                <Text>{formatActionSentence(action)}</Text>
               </div>
             ))}
           </div>

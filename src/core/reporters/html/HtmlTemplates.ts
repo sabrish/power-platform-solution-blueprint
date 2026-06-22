@@ -11,6 +11,7 @@ import type {
   PluginStep,
   Flow,
   BusinessRule,
+  Action,
   WebResource,
   ExternalEndpoint,
   SolutionDistribution,
@@ -1161,9 +1162,7 @@ ${rows}
         </tr>`).join('');
 
         const actionRows = group.actions.map(a => `<tr>
-          <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
-          <td><code>${this.htmlEscape(a.field)}</code></td>
-          <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
+          <td>${this.formatActionSentence(a)}</td>
         </tr>`).join('');
 
         const header = groupIdx === 0 ? 'IF' : 'ELSE IF';
@@ -1174,15 +1173,13 @@ ${rows}
           </div>
           <div>
             <h5 style="margin-bottom:6px">THEN: Actions</h5>
-            ${group.actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${actionRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
+            ${group.actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th></tr></thead><tbody>${actionRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
           </div>
         `;
       }).join('');
 
       const elseRows = elseActions.map(a => `<tr>
-        <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
-        <td><code>${this.htmlEscape(a.field)}</code></td>
-        <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
+        <td>${this.formatActionSentence(a)}</td>
       </tr>`).join('');
 
       const totalConditionCount = conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
@@ -1210,7 +1207,7 @@ ${rows}
       ${groupSections}
       ${elseActions.length > 0 ? `<div>
         <h5 style="margin-bottom:6px">ELSE: Actions</h5>
-        <table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${elseRows}</tbody></table>
+        <table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th></tr></thead><tbody>${elseRows}</tbody></table>
       </div>` : ''}
     </div>
   </div>
@@ -2159,6 +2156,27 @@ ${rows}
     }
 
     return `<div id="cea-pipelines-list">${items.join('')}</div>`;
+  }
+
+  /**
+   * Format a business rule action as a natural-language sentence for display.
+   * All user-supplied string parts are escaped before insertion.
+   */
+  private formatActionSentence(action: Action): string {
+    const field = this.htmlEscape(action.field);
+    const value = action.value ? this.htmlEscape(action.value) : null;
+    const message = action.message ? this.htmlEscape(action.message) : null;
+    switch (action.type) {
+      case 'ShowField':   return `Show field: ${field}`;
+      case 'HideField':   return `Hide field: ${field}`;
+      case 'LockField':   return `Lock field: ${field}`;
+      case 'UnlockField': return `Unlock field: ${field}`;
+      case 'SetRequired': return `Set required: ${field}${value ? ` (${value})` : ''}`;
+      case 'SetOptional': return `Set optional: ${field}`;
+      case 'SetValue':    return `Set value: ${field} = ${value ?? '(clear)'}`;
+      case 'ShowError':   return `Show error on ${field}${message ? `: ${message}` : ''}`;
+      default:            return `${this.htmlEscape(action.type)}: ${field}`;
+    }
   }
 
   /**
