@@ -14,11 +14,12 @@ export async function processDialogs(
 ): Promise<Dialog[]> {
   if (dialogIds.length === 0) return [];
   try {
-    // Push deprecation warning before discovery — dialogs are a deprecated feature
+    // Push an info notice — dialogs loaded successfully but are a deprecated feature
     stepWarnings.push({
       step: 'Dialogs',
       message: `${dialogIds.length} deprecated Dialog workflow(s) found — migrate to Model-Driven App forms or Power Automate flows.`,
-      partial: false,
+      partial: true,
+      severity: 'info',
     });
 
     onProgress({

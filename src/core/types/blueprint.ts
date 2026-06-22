@@ -734,6 +734,12 @@ export interface StepWarning {
   partial: boolean;
   /** Number of items that could not be fetched */
   failedCount?: number;
+  /**
+   * Severity level — defaults to 'error'.
+   * Use 'info' for advisory notices (e.g. deprecated component found) that are
+   * not failures: they are shown in a separate neutral panel, not as errors.
+   */
+  severity?: 'error' | 'warning' | 'info';
 }
 
 /**
