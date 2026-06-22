@@ -321,6 +321,8 @@ export interface BusinessRuleDefinition {
  */
 export interface Condition {
   field: string;
+  /** Display name of the field, populated post-discovery via attribute metadata. Falls back to `field` if absent. */
+  fieldLabel?: string;
   operator: string;
   value: string;
   logicOperator: 'AND' | 'OR';
@@ -332,6 +334,8 @@ export interface Condition {
 export interface Action {
   type: 'ShowField' | 'HideField' | 'SetValue' | 'SetRequired' | 'SetOptional' | 'LockField' | 'UnlockField' | 'ShowError';
   field: string;
+  /** Display name of the field, populated post-discovery via attribute metadata. Falls back to `field` if absent. */
+  fieldLabel?: string;
   value?: string;
   message?: string;
 }

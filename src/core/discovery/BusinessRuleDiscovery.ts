@@ -43,10 +43,12 @@ export class BusinessRuleDiscovery implements IDiscoverer<BusinessRule> {
   }
 
   /**
-   * Get business rules by workflow IDs
+   * Get business rules by workflow IDs, then enrich conditions/actions with field display names.
    */
-  discoverByIds(ids: string[]): Promise<BusinessRule[]> {
-    return this.getBusinessRulesByIds(ids);
+  async discoverByIds(ids: string[]): Promise<BusinessRule[]> {
+    const businessRules = await this.getBusinessRulesByIds(ids);
+    await this.enrichWithDisplayNames(businessRules);
+    return businessRules;
   }
 
   async getBusinessRulesByIds(brIds: string[]): Promise<BusinessRule[]> {
@@ -113,6 +115,62 @@ export class BusinessRuleDiscovery implements IDiscoverer<BusinessRule> {
       return sorted.map(record => this.mapRecordToBusinessRule(record));
     } catch {
       return [];
+    }
+  }
+
+  /**
+   * Enrich business rule conditions and actions with field display names.
+   * Fetches attribute metadata for each unique entity, then sets `fieldLabel`
+   * on every condition and action where a label is found.
+   * Non-fatal: a failure for one entity falls back to the logical name.
+   */
+  private async enrichWithDisplayNames(rules: BusinessRule[]): Promise<void> {
+    interface AttributeRecord {
+      LogicalName: string;
+      DisplayName?: { UserLocalizedLabel?: { Label?: string } };
+    }
+
+    const entityNames = [...new Set(rules.map(r => r.entity).filter(e => !!e && e !== 'none'))];
+    const labelMap = new Map<string, Map<string, string>>();
+
+    for (const entityName of entityNames) {
+      if (!/^[a-z0-9_]+$/i.test(entityName)) continue;
+      try {
+        const result = await this.client.queryMetadata<AttributeRecord>(
+          `EntityDefinitions(LogicalName='${entityName}')/Attributes`,
+          { select: ['LogicalName', 'DisplayName'] }
+        );
+        const fieldLabels = new Map<string, string>();
+        for (const attr of result.value) {
+          const label = attr.DisplayName?.UserLocalizedLabel?.Label;
+          if (label) {
+            fieldLabels.set(attr.LogicalName, label);
+          }
+        }
+        labelMap.set(entityName, fieldLabels);
+      } catch {
+        // Non-fatal: metadata unavailable for this entity; conditions/actions fall back to logical name
+      }
+    }
+
+    for (const rule of rules) {
+      const fieldLabels = labelMap.get(rule.entity);
+      if (!fieldLabels) continue;
+
+      for (const group of rule.definition.conditionGroups) {
+        for (const condition of group.conditions) {
+          const label = fieldLabels.get(condition.field);
+          if (label) condition.fieldLabel = label;
+        }
+        for (const action of group.actions) {
+          const label = fieldLabels.get(action.field);
+          if (label) action.fieldLabel = label;
+        }
+      }
+      for (const action of rule.definition.elseActions) {
+        const label = fieldLabels.get(action.field);
+        if (label) action.fieldLabel = label;
+      }
     }
   }
 

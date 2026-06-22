@@ -1155,7 +1155,7 @@ ${rows}
       // Build condition/action tables for each group
       const groupSections = conditionGroups.map((group, groupIdx) => {
         const condRows = group.conditions.map(c => `<tr>
-          <td><code>${this.htmlEscape(c.field)}</code></td>
+          <td><code>${this.htmlEscape(c.fieldLabel ?? c.field)}</code></td>
           <td>${this.htmlEscape(c.operator)}</td>
           <td>${c.value ? this.htmlEscape(c.value) : '—'}</td>
           <td>${this.htmlEscape(c.logicOperator)}</td>
@@ -2163,19 +2163,19 @@ ${rows}
    * All user-supplied string parts are escaped before insertion.
    */
   private formatActionSentence(action: Action): string {
-    const field = this.htmlEscape(action.field);
+    const fieldName = this.htmlEscape(action.fieldLabel ?? action.field);
     const value = action.value ? this.htmlEscape(action.value) : null;
     const message = action.message ? this.htmlEscape(action.message) : null;
     switch (action.type) {
-      case 'ShowField':   return `Show field: ${field}`;
-      case 'HideField':   return `Hide field: ${field}`;
-      case 'LockField':   return `Lock field: ${field}`;
-      case 'UnlockField': return `Unlock field: ${field}`;
-      case 'SetRequired': return `Set required: ${field}${value ? ` (${value})` : ''}`;
-      case 'SetOptional': return `Set optional: ${field}`;
-      case 'SetValue':    return `Set value: ${field} = ${value ?? '(clear)'}`;
-      case 'ShowError':   return `Show error on ${field}${message ? `: ${message}` : ''}`;
-      default:            return `${this.htmlEscape(action.type)}: ${field}`;
+      case 'ShowField':   return `Show field: ${fieldName}`;
+      case 'HideField':   return `Hide field: ${fieldName}`;
+      case 'LockField':   return `Lock field: ${fieldName}`;
+      case 'UnlockField': return `Unlock field: ${fieldName}`;
+      case 'SetRequired': return `Set required: ${fieldName}${value ? ` (${value})` : ''}`;
+      case 'SetOptional': return `Set optional: ${fieldName}`;
+      case 'SetValue':    return `Set value: ${fieldName} = ${value ?? '(clear)'}`;
+      case 'ShowError':   return `Show error on ${fieldName}${message ? `: ${message}` : ''}`;
+      default:            return `${this.htmlEscape(action.type)}: ${fieldName}`;
     }
   }
 

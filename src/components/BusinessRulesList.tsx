@@ -17,16 +17,17 @@ import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
 
 function formatActionSentence(action: Action): string {
+  const fieldName = action.fieldLabel ?? action.field;
   switch (action.type) {
-    case 'ShowField':   return `Show field: ${action.field}`;
-    case 'HideField':   return `Hide field: ${action.field}`;
-    case 'LockField':   return `Lock field: ${action.field}`;
-    case 'UnlockField': return `Unlock field: ${action.field}`;
-    case 'SetRequired': return `Set required: ${action.field}${action.value ? ` (${action.value})` : ''}`;
-    case 'SetOptional': return `Set optional: ${action.field}`;
-    case 'SetValue':    return `Set value: ${action.field} = ${action.value ?? '(clear)'}`;
-    case 'ShowError':   return `Show error on ${action.field}${action.message ? `: ${action.message}` : ''}`;
-    default:            return `${action.type}: ${action.field}`;
+    case 'ShowField':   return `Show field: ${fieldName}`;
+    case 'HideField':   return `Hide field: ${fieldName}`;
+    case 'LockField':   return `Lock field: ${fieldName}`;
+    case 'UnlockField': return `Unlock field: ${fieldName}`;
+    case 'SetRequired': return `Set required: ${fieldName}${action.value ? ` (${action.value})` : ''}`;
+    case 'SetOptional': return `Set optional: ${fieldName}`;
+    case 'SetValue':    return `Set value: ${fieldName} = ${action.value ?? '(clear)'}`;
+    case 'ShowError':   return `Show error on ${fieldName}${action.message ? `: ${action.message}` : ''}`;
+    default:            return `${action.type}: ${fieldName}`;
   }
 }
 
@@ -228,7 +229,7 @@ export function BusinessRulesList({
                   <div key={idx} className={styles.conditionItem}>
                     <Text>
                       {idx > 0 && <strong>{condition.logicOperator} </strong>}
-                      <span className={shared.codeText}>{condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
+                      <span className={shared.codeText}>{condition.fieldLabel ?? condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
                     </Text>
                   </div>
                 ))}
