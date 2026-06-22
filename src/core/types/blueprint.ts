@@ -325,6 +325,8 @@ export interface Condition {
   fieldLabel?: string;
   operator: string;
   value: string;
+  /** Human-readable label for the option-set value (e.g. "Cash"), populated when the field has an OptionSet. */
+  valueLabel?: string;
   logicOperator: 'AND' | 'OR';
 }
 

@@ -1154,16 +1154,34 @@ ${rows}
 
       // Build condition/action tables for each group
       const groupSections = conditionGroups.map((group, groupIdx) => {
-        const condRows = group.conditions.map(c => `<tr>
+        const condRows = group.conditions.map(c => {
+          const conditionValue = c.valueLabel
+            ? `${this.htmlEscape(c.valueLabel)} (${this.htmlEscape(c.value)})`
+            : (c.value ? this.htmlEscape(c.value) : '—');
+          return `<tr>
           <td><code>${this.htmlEscape(c.fieldLabel ?? c.field)}</code></td>
           <td>${this.htmlEscape(c.operator)}</td>
-          <td>${c.value ? this.htmlEscape(c.value) : '—'}</td>
+          <td>${conditionValue}</td>
           <td>${this.htmlEscape(c.logicOperator)}</td>
-        </tr>`).join('');
+        </tr>`;
+        }).join('');
 
         const actionRows = group.actions.map(a => `<tr>
           <td>${this.htmlEscape(formatActionSentence(a))}</td>
         </tr>`).join('');
+
+        // No conditions on the first group means the rule always executes
+        if (group.conditions.length === 0 && groupIdx === 0) {
+          return `
+          <div>
+            <h5 style="margin-bottom:6px">ALWAYS</h5>
+          </div>
+          <div>
+            <h5 style="margin-bottom:6px">THEN: Actions</h5>
+            ${group.actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th></tr></thead><tbody>${actionRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
+          </div>
+        `;
+        }
 
         const header = groupIdx === 0 ? 'IF' : 'ELSE IF';
         return `

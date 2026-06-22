@@ -648,34 +648,63 @@ export class BlueprintGenerator {
   }
 
   /**
-   * Enrich business rule conditions and actions with field display names sourced
-   * from the already-fetched entity schema (AttributeMetadata on each EntityBlueprint).
+   * Enrich business rule conditions and actions with field display names and
+   * option-set value labels sourced from the already-fetched entity schema
+   * (AttributeMetadata on each EntityBlueprint).
    * Zero additional API calls — reuses data collected in processEntities().
    */
   private applyBusinessRuleFieldLabels(
     entityBlueprints: EntityBlueprint[],
     businessRules: BusinessRule[]
   ): void {
-    // Build entity → (logicalName → displayLabel) from already-fetched attribute metadata
+    // Build entity → (logicalName → displayLabel) and
+    //              → (logicalName → (numericValue → labelString))
+    // from already-fetched attribute metadata
     const labelMap = new Map<string, Map<string, string>>();
+    const optionMap = new Map<string, Map<string, Map<number, string>>>();
+
     for (const bp of entityBlueprints) {
       const attrs: AttributeMetadata[] = bp.entity.Attributes ?? [];
       if (attrs.length === 0) continue;
+
       const fieldMap = new Map<string, string>();
+      const entityOptionMap = new Map<string, Map<number, string>>();
+
       for (const attr of attrs) {
         const label = attr.DisplayName?.UserLocalizedLabel?.Label;
         if (label) fieldMap.set(attr.LogicalName, label);
+
+        // Build option value → label map for picklist/state/status attributes
+        if (attr.OptionSet?.Options && attr.OptionSet.Options.length > 0) {
+          const valueLabels = new Map<number, string>();
+          for (const opt of attr.OptionSet.Options) {
+            const optLabel = opt.Label?.UserLocalizedLabel?.Label;
+            if (optLabel !== undefined) valueLabels.set(opt.Value, optLabel);
+          }
+          if (valueLabels.size > 0) entityOptionMap.set(attr.LogicalName, valueLabels);
+        }
       }
+
       labelMap.set(bp.entity.LogicalName, fieldMap);
+      if (entityOptionMap.size > 0) optionMap.set(bp.entity.LogicalName, entityOptionMap);
     }
 
     // Apply labels to all conditions and actions — no API calls, zero cost
     for (const rule of businessRules) {
       const fieldMap = labelMap.get(rule.entity);
+      const entityOptionMap = optionMap.get(rule.entity);
       if (!fieldMap) continue;
+
       for (const group of rule.definition.conditionGroups) {
         for (const cond of group.conditions) {
           cond.fieldLabel = fieldMap.get(cond.field);
+
+          // Resolve option-set value label when available
+          const valLabels = entityOptionMap?.get(cond.field);
+          if (valLabels) {
+            const numVal = parseInt(cond.value, 10);
+            if (!isNaN(numVal)) cond.valueLabel = valLabels.get(numVal);
+          }
         }
         for (const action of group.actions) {
           action.fieldLabel = fieldMap.get(action.field);

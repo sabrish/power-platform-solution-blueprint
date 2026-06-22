@@ -221,7 +221,13 @@ export function BusinessRulesList({
         {rule.definition.conditionGroups.map((group, groupIdx) => (
           <div key={groupIdx}>
             {/* Conditions Section */}
-            {group.conditions.length > 0 && (
+            {group.conditions.length === 0 && groupIdx === 0 ? (
+              <div className={shared.section}>
+                <div className={styles.sectionHeader}>
+                  <Text weight="semibold">ALWAYS</Text>
+                </div>
+              </div>
+            ) : group.conditions.length > 0 ? (
               <div className={shared.section}>
                 <div className={styles.sectionHeader}>
                   <Text weight="semibold">{groupIdx === 0 ? 'IF' : 'ELSE IF'}</Text>
@@ -230,12 +236,14 @@ export function BusinessRulesList({
                   <div key={idx} className={styles.conditionItem}>
                     <Text>
                       {idx > 0 && <strong>{condition.logicOperator} </strong>}
-                      <span className={shared.codeText}>{condition.fieldLabel ?? condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
+                      <span className={shared.codeText}>{condition.fieldLabel ?? condition.field}</span>{' '}
+                      {condition.operator}{' '}
+                      <strong>'{condition.valueLabel ? `${condition.valueLabel} (${condition.value})` : condition.value}'</strong>
                     </Text>
                   </div>
                 ))}
               </div>
-            )}
+            ) : null}
 
             {/* THEN Actions Section */}
             {group.actions.length > 0 && (
