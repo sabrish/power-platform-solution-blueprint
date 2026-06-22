@@ -177,49 +177,54 @@ export class BusinessRuleParser {
 
     // ── Step 3: Skip null guard and parse all condition groups ────────────────
 
-    // Helper: parse a single condition from an if(...) header
-    const parseCondition = (condExpr: string): Condition[] => {
-      const conds: Condition[] = [];
+    // Helper: parse a single (non-compound) condition sub-expression.
+    // Returns a Condition or null if the expression is unrecognised.
+    const parseSingleCond = (expr: string): Condition | null => {
+      const t = expr.trim();
 
-      // Pattern A: option set equals integer — if((vN) === (795390000))
-      const matchOptionSet = condExpr.match(/^\s*\((v\d+)\)\s*===\s*\((\d+)\)\s*$/);
-      if (matchOptionSet) {
-        const valueVar = matchOptionSet[1];
-        const optionValue = matchOptionSet[2];
-        const field = resolveField(valueVar);
-        if (field !== valueVar) {
-          conds.push({ field, operator: 'equals', value: optionValue, logicOperator: 'AND' });
+      // Pattern A: integer / option-set comparison — (vN) OP (number)
+      // Handles ===, !==, ==, != so both "equals" and "not equals" work.
+      const matchInt = t.match(/^\s*\((v\d+)\)\s*(===|!==|==|!=)\s*\((\d+)\)\s*$/);
+      if (matchInt) {
+        const field = resolveField(matchInt[1]);
+        if (field !== matchInt[1]) {
+          return { field, operator: matchInt[2].startsWith('!') ? 'not equals' : 'equals', value: matchInt[3], logicOperator: 'AND' };
         }
-        return conds;
+        return null;
       }
 
-      // Pattern B: boolean — if((vN)==(true)||...) or if((vN)===(false)||...)
-      // Handles both == and === (strict) and both true and false values.
-      const matchBool = condExpr.match(/^\s*\((v\d+)\)\s*={2,3}\s*\((true|false)\)/);
+      // Pattern B: boolean — (vN) ==/=== (true|false)
+      const matchBool = t.match(/^\s*\((v\d+)\)\s*={2,3}\s*\((true|false)\)/);
       if (matchBool) {
-        const valueVar = matchBool[1];
-        const boolVal = matchBool[2];
-        const field = resolveField(valueVar);
-        if (field !== valueVar) {
-          conds.push({ field, operator: boolVal === 'true' ? 'is true' : 'is false', value: boolVal, logicOperator: 'AND' });
+        const field = resolveField(matchBool[1]);
+        if (field !== matchBool[1]) {
+          return { field, operator: matchBool[2] === 'true' ? 'is true' : 'is false', value: matchBool[2], logicOperator: 'AND' };
         }
-        return conds;
+        return null;
       }
 
-      // Pattern D: null / undefined check — if((vN) != null) or if((vN) !== undefined)
-      const matchNull = condExpr.match(/^\s*\((v\d+)\)\s*(!==?|===?)\s*(null|undefined)\s*$/);
+      // Pattern D: null / undefined check — (vN) !=/!== null|undefined
+      const matchNull = t.match(/^\s*\((v\d+)\)\s*(!==?|===?)\s*(null|undefined)\s*$/);
       if (matchNull) {
-        const valueVar = matchNull[1];
-        const op = matchNull[2];
-        const field = resolveField(valueVar);
-        if (field !== valueVar) {
-          conds.push({ field, operator: op.startsWith('!') ? 'is not null' : 'is null', value: '', logicOperator: 'AND' });
+        const field = resolveField(matchNull[1]);
+        if (field !== matchNull[1]) {
+          return { field, operator: matchNull[2].startsWith('!') ? 'is not null' : 'is null', value: '', logicOperator: 'AND' };
         }
-        return conds;
+        return null;
       }
 
-      // Pattern C: lookup equals — if(v7((vN),(vM), function(...)))
-      const matchLookup = condExpr.match(/^v\d+\s*\(\s*\((v\d+)\)\s*,\s*\((v\d+)\)/);
+      // Pattern E: string literal — (vN) OP ('value') or (vN) OP ("value")
+      const matchStr = t.match(/^\s*\((v\d+)\)\s*(===|!==|==|!=)\s*\(['"]([^'"]*)['"]\)\s*$/);
+      if (matchStr) {
+        const field = resolveField(matchStr[1]);
+        if (field !== matchStr[1]) {
+          return { field, operator: matchStr[2].startsWith('!') ? 'not equals' : 'equals', value: matchStr[3], logicOperator: 'AND' };
+        }
+        return null;
+      }
+
+      // Pattern C: lookup equals — v7((vN),(vM), function(...))
+      const matchLookup = t.match(/^v\d+\s*\(\s*\((v\d+)\)\s*,\s*\((v\d+)\)/);
       if (matchLookup) {
         const valueVar = matchLookup[1];
         const lookupArrayVar = matchLookup[2];
@@ -228,11 +233,64 @@ export class BusinessRuleParser {
         const arrayMatch = js.match(arrayDefRegex);
         const lookupName = arrayMatch ? arrayMatch[1] : '(lookup record)';
         if (field !== valueVar) {
-          conds.push({ field, operator: 'equals', value: lookupName, logicOperator: 'AND' });
+          return { field, operator: 'equals', value: lookupName, logicOperator: 'AND' };
         }
-        return conds;
+        return null;
       }
 
+      return null;
+    };
+
+    // Helper: split a condition expression at top-level && or || operators.
+    // Returns an array of sub-expressions with the operator that PRECEDES each
+    // (the first entry always carries 'AND' as a placeholder — it is ignored by callers).
+    const splitAtTopLevelOps = (expr: string): Array<{ expr: string; op: 'AND' | 'OR' }> => {
+      const parts: Array<{ expr: string; op: 'AND' | 'OR' }> = [];
+      let depth = 0;
+      let start = 0;
+      let pendingOp: 'AND' | 'OR' = 'AND';
+      for (let i = 0; i < expr.length; i++) {
+        const ch = expr[i];
+        if (ch === '(') { depth++; continue; }
+        if (ch === ')') { depth--; continue; }
+        if (depth === 0 && i + 1 < expr.length) {
+          if (ch === '&' && expr[i + 1] === '&') {
+            parts.push({ expr: expr.slice(start, i).trim(), op: pendingOp });
+            pendingOp = 'AND';
+            start = i + 2;
+            i++;
+          } else if (ch === '|' && expr[i + 1] === '|') {
+            parts.push({ expr: expr.slice(start, i).trim(), op: pendingOp });
+            pendingOp = 'OR';
+            start = i + 2;
+            i++;
+          }
+        }
+      }
+      parts.push({ expr: expr.slice(start).trim(), op: pendingOp });
+      return parts;
+    };
+
+    // Helper: parse a (potentially compound) condition expression.
+    const parseCondition = (condExpr: string): Condition[] => {
+      const conds: Condition[] = [];
+
+      // Pattern F: compound — split on top-level && / || and parse each part
+      const parts = splitAtTopLevelOps(condExpr.trim());
+      if (parts.length > 1) {
+        for (let i = 0; i < parts.length; i++) {
+          const sub = parseSingleCond(parts[i].expr);
+          if (sub) {
+            sub.logicOperator = i === 0 ? 'AND' : parts[i].op;
+            conds.push(sub);
+          }
+        }
+        return conds; // compound — even if empty, do not fall through
+      }
+
+      // Single condition
+      const single = parseSingleCond(condExpr);
+      if (single) conds.push(single);
       return conds;
     };
 
