@@ -94,7 +94,9 @@ export class ServiceEndpointDiscovery implements IDiscoverer<ServiceEndpoint> {
           initialBatchSize: 20,
           step: 'Service Endpoint Discovery — Step Counts',
           entitySet: 'sdkmessageprocessingsteps',
-          logger: this.logger,
+          // logger intentionally omitted: step count is informational, the filter
+          // column (_eventhandlerid_value) is absent in some environments, and
+          // logging retries/failures here pollutes the diagnostics panel.
           onProgress: (done) => this.onProgress?.(Math.floor(ids.length / 2) + Math.floor(done / 2), ids.length),
         }
       );
