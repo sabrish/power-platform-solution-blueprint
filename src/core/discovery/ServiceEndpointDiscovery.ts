@@ -1,9 +1,10 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { ServiceEndpoint, ServiceEndpointContract } from '../types/serviceEndpoint.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { buildOrFilter } from '../utils/odata.js';
-import { normalizeGuid } from '../utils/guid.js';
+import { normalizeGuid, normalizeBatch } from '../utils/guid.js';
 
 interface RawServiceEndpoint {
   serviceendpointid: string;
@@ -22,11 +23,13 @@ interface StepCountRecord {
   _serviceendpointid_value: string;
 }
 
+const ENDPOINT_SELECT = 'serviceendpointid,name,description,contract,connectionmode,messageformat,url,ismanaged,createdon,modifiedon';
+
 /**
  * Discovery service for Service Endpoints (Service Bus, Event Hub, Webhooks).
  * Component type code: 95 (Service Endpoint) — Strategy A.
  */
-export class ServiceEndpointDiscovery {
+export class ServiceEndpointDiscovery implements IDiscoverer<ServiceEndpoint> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -41,16 +44,20 @@ export class ServiceEndpointDiscovery {
     this.logger = logger;
   }
 
+  async discoverByIds(ids: string[]): Promise<ServiceEndpoint[]> {
+    return this.getEndpointsByIds(ids);
+  }
+
   async getEndpointsByIds(ids: string[]): Promise<ServiceEndpoint[]> {
     if (ids.length === 0) return [];
 
+    const cleanIds = normalizeBatch(ids);
+
     // Pass 1 — fetch endpoint metadata
     const { results: rawEndpoints } = await withAdaptiveBatch<string, RawServiceEndpoint>(
-      ids,
+      cleanIds,
       async (batch) => {
-        const filter = batch
-          .map(id => `serviceendpointid eq ${id.replace(/[{}]/g, '')}`)
-          .join(' or ');
+        const filter = buildOrFilter(batch, 'serviceendpointid', { guids: true });
         const result = await this.client.query<RawServiceEndpoint>('serviceendpoints', {
           select: ['serviceendpointid', 'name', 'description', 'contract', 'connectionmode', 'messageformat', 'url', 'ismanaged', 'createdon', 'modifiedon'],
           filter,
@@ -63,6 +70,10 @@ export class ServiceEndpointDiscovery {
         entitySet: 'serviceendpoints',
         logger: this.logger,
         onProgress: (done) => this.onProgress?.(Math.floor(done / 2), ids.length),
+        getRequestUrl: (batch) => {
+          const filter = buildOrFilter(batch, 'serviceendpointid', { guids: true });
+          return `${this.client.getEnvironmentUrl()}/api/data/v9.2/serviceendpoints?$select=${ENDPOINT_SELECT}&$filter=${encodeURIComponent(filter)}`;
+        },
       }
     );
 

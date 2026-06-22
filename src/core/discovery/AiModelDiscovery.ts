@@ -9,13 +9,14 @@ import { normalizeGuid } from '../utils/guid.js';
 interface RawAiModel {
   msdyn_aimodelid: string;
   msdyn_name?: string;
-  msdyn_modelcreationcontext?: string | null;
   msdyn_templateid?: string | null;
   statuscode?: number;
   ismanaged?: boolean;
   createdon?: string;
   modifiedon?: string;
 }
+
+const AI_MODEL_SELECT = 'msdyn_aimodelid,msdyn_name,msdyn_templateid,statuscode,ismanaged,createdon,modifiedon';
 
 const AI_MODEL_STATUS_MAP: Record<number, AiModel['status']> = {
   0: 'Inactive',
@@ -26,6 +27,10 @@ const AI_MODEL_STATUS_MAP: Record<number, AiModel['status']> = {
  * Discovery service for AI Builder Models (msdyn_aimodel).
  * Component type codes: 400 (AI Project Type), 401 (AI Project), 402 (AI Configuration)
  * all route here. Table may not exist in all environments.
+ *
+ * NOTE: msdyn_modelcreationcontext is intentionally excluded from the $select —
+ * it is a large JSON blob that causes HTTP 413 errors on some records, is already
+ * redacted from JSON export, and is not displayed in the UI.
  */
 export class AiModelDiscovery implements IDiscoverer<AiModel> {
   private readonly client: IDataverseClient;
@@ -51,7 +56,7 @@ export class AiModelDiscovery implements IDiscoverer<AiModel> {
         async (batch) => {
           const filter = buildOrFilter(batch, 'msdyn_aimodelid', { guids: true });
           const result = await this.client.query<RawAiModel>('msdyn_aimodels', {
-            select: ['msdyn_aimodelid', 'msdyn_name', 'msdyn_modelcreationcontext', 'msdyn_templateid', 'statuscode', 'ismanaged', 'createdon', 'modifiedon'],
+            select: ['msdyn_aimodelid', 'msdyn_name', 'msdyn_templateid', 'statuscode', 'ismanaged', 'createdon', 'modifiedon'],
             filter,
           });
           return result.value;
@@ -62,6 +67,10 @@ export class AiModelDiscovery implements IDiscoverer<AiModel> {
           entitySet: 'msdyn_aimodels',
           logger: this.logger,
           onProgress: (done, total) => this.onProgress?.(done, total),
+          getRequestUrl: (batch) => {
+            const filter = buildOrFilter(batch, 'msdyn_aimodelid', { guids: true });
+            return `${this.client.getEnvironmentUrl()}/api/data/v9.2/msdyn_aimodels?$select=${AI_MODEL_SELECT}&$filter=${encodeURIComponent(filter)}`;
+          },
         }
       );
 
@@ -78,7 +87,7 @@ export class AiModelDiscovery implements IDiscoverer<AiModel> {
       id: normalizeGuid(raw.msdyn_aimodelid),
       name: raw.msdyn_name || raw.msdyn_aimodelid,
       templateId: raw.msdyn_templateid ?? null,
-      modelCreationContext: raw.msdyn_modelcreationcontext ?? null,
+      modelCreationContext: null,
       status: AI_MODEL_STATUS_MAP[statusCode] ?? 'Unknown',
       statusCode,
       isManaged: raw.ismanaged ?? false,

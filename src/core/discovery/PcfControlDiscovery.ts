@@ -1,7 +1,10 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { PcfControl } from '../types/pcfControl.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
+import { normalizeGuid, normalizeBatch } from '../utils/guid.js';
 
 interface RawPcfControl {
   customcontrolid: string;
@@ -14,11 +17,13 @@ interface RawPcfControl {
   modifiedon?: string;
 }
 
+const PCF_SELECT = 'customcontrolid,name,displayname,compatibledatatypes,version,ismanaged,createdon,modifiedon';
+
 /**
  * Discovery service for PCF (Power Apps Component Framework) custom controls.
  * Component type code: 66 (Custom Control) — Strategy A.
  */
-export class PcfControlDiscovery {
+export class PcfControlDiscovery implements IDiscoverer<PcfControl> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -33,15 +38,19 @@ export class PcfControlDiscovery {
     this.logger = logger;
   }
 
+  async discoverByIds(ids: string[]): Promise<PcfControl[]> {
+    return this.getControlsByIds(ids);
+  }
+
   async getControlsByIds(ids: string[]): Promise<PcfControl[]> {
     if (ids.length === 0) return [];
 
+    const cleanIds = normalizeBatch(ids);
+
     const { results } = await withAdaptiveBatch<string, RawPcfControl>(
-      ids,
+      cleanIds,
       async (batch) => {
-        const filter = batch
-          .map(id => `customcontrolid eq ${id.replace(/[{}]/g, '')}`)
-          .join(' or ');
+        const filter = buildOrFilter(batch, 'customcontrolid', { guids: true });
         const result = await this.client.query<RawPcfControl>('customcontrols', {
           select: ['customcontrolid', 'name', 'displayname', 'compatibledatatypes', 'version', 'ismanaged', 'createdon', 'modifiedon'],
           filter,
@@ -54,6 +63,10 @@ export class PcfControlDiscovery {
         entitySet: 'customcontrols',
         logger: this.logger,
         onProgress: (done, total) => this.onProgress?.(done, total),
+        getRequestUrl: (batch) => {
+          const filter = buildOrFilter(batch, 'customcontrolid', { guids: true });
+          return `${this.client.getEnvironmentUrl()}/api/data/v9.2/customcontrols?$select=${PCF_SELECT}&$filter=${encodeURIComponent(filter)}`;
+        },
       }
     );
 
@@ -62,7 +75,7 @@ export class PcfControlDiscovery {
 
   private mapToPcfControl(raw: RawPcfControl): PcfControl {
     return {
-      id: raw.customcontrolid,
+      id: normalizeGuid(raw.customcontrolid),
       name: raw.name,
       displayName: raw.displayname || raw.name,
       compatibleDataTypes: raw.compatibledatatypes || '',
