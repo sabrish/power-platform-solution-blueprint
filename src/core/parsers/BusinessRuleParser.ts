@@ -193,13 +193,27 @@ export class BusinessRuleParser {
         return conds;
       }
 
-      // Pattern B: boolean equals true — if((vN)==(true)||...)
-      const matchBool = condExpr.match(/^\s*\((v\d+)\)\s*==\s*\(true\)/);
+      // Pattern B: boolean — if((vN)==(true)||...) or if((vN)===(false)||...)
+      // Handles both == and === (strict) and both true and false values.
+      const matchBool = condExpr.match(/^\s*\((v\d+)\)\s*={2,3}\s*\((true|false)\)/);
       if (matchBool) {
         const valueVar = matchBool[1];
+        const boolVal = matchBool[2];
         const field = resolveField(valueVar);
         if (field !== valueVar) {
-          conds.push({ field, operator: 'equals', value: 'true', logicOperator: 'AND' });
+          conds.push({ field, operator: boolVal === 'true' ? 'is true' : 'is false', value: boolVal, logicOperator: 'AND' });
+        }
+        return conds;
+      }
+
+      // Pattern D: null / undefined check — if((vN) != null) or if((vN) !== undefined)
+      const matchNull = condExpr.match(/^\s*\((v\d+)\)\s*(!==?|===?)\s*(null|undefined)\s*$/);
+      if (matchNull) {
+        const valueVar = matchNull[1];
+        const op = matchNull[2];
+        const field = resolveField(valueVar);
+        if (field !== valueVar) {
+          conds.push({ field, operator: op.startsWith('!') ? 'is not null' : 'is null', value: '', logicOperator: 'AND' });
         }
         return conds;
       }
@@ -272,7 +286,12 @@ export class BusinessRuleParser {
       const conditions = parseCondition(condExpr);
       const actions = this.parseActionsFromBlock(thenBody, resolveField);
       if (conditions.length > 0 || actions.length > 0) {
-        conditionGroups.push({ conditions, actions });
+        // When condExpr was non-empty but no pattern matched, emit a placeholder
+        // so the rule displays "IF (condition)" rather than the misleading "ALWAYS".
+        const finalConditions = conditions.length === 0 && condExpr.trim()
+          ? [{ field: '(condition)', operator: 'defined in rule — pattern not yet recognized', value: '', logicOperator: 'AND' as const }]
+          : conditions;
+        conditionGroups.push({ conditions: finalConditions, actions });
       }
 
       // Walk the full else-if chain from the THEN block's closing brace.
@@ -318,7 +337,10 @@ export class BusinessRuleParser {
             const elseConditions = parseCondition(elseCondExpr);
             const elseCondActions = this.parseActionsFromBlock(elseBody, resolveField);
             if (elseConditions.length > 0 || elseCondActions.length > 0) {
-              conditionGroups.push({ conditions: elseConditions, actions: elseCondActions });
+              const finalElseConditions = elseConditions.length === 0 && elseCondExpr.trim()
+                ? [{ field: '(condition)', operator: 'defined in rule — pattern not yet recognized', value: '', logicOperator: 'AND' as const }]
+                : elseConditions;
+              conditionGroups.push({ conditions: finalElseConditions, actions: elseCondActions });
             }
             chainPos = elseBraceClose !== -1 ? elseBraceClose : js.length;
           }
