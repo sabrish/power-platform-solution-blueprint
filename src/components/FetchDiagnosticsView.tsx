@@ -100,19 +100,18 @@ const useStyles = makeStyles({
     whiteSpace: 'pre-wrap' as const,
     marginTop: tokens.spacingVerticalXXS,
   },
-  rawUrl: {
+  rawUrlCell: {
     display: 'flex',
-    alignItems: 'flex-start',
-    gap: tokens.spacingHorizontalXS,
-    marginTop: tokens.spacingVerticalXXS,
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXXS,
   },
   rawUrlText: {
     fontSize: tokens.fontSizeBase100,
     fontFamily: tokens.fontFamilyMonospace,
     color: tokens.colorNeutralForeground3,
     wordBreak: 'break-all' as const,
-    flex: '1',
   },
+  tdUrl: { maxWidth: '360px' },
   noData: {
     padding: tokens.spacingVerticalXXL,
     textAlign: 'center' as const,
@@ -303,6 +302,7 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
               <th className={styles.th}>Step</th>
               <th className={styles.th}>Entity Set</th>
               <th className={styles.th}>Filter / Content</th>
+              <th className={styles.th}>URL</th>
               <th className={styles.th}>Batch</th>
               <th className={styles.th}>Status</th>
               <th className={styles.th}>Attempts</th>
@@ -326,18 +326,6 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
                   <td className={mergeClasses(styles.td, styles.tdMono)}>{entry.entitySet}</td>
                   <td className={mergeClasses(styles.td, styles.tdFilter)}>
                     <Text className={styles.rawUrlText}>{entry.filterSummary}</Text>
-                    {entry.rawUrl && (
-                      <div className={styles.rawUrl}>
-                        <Text className={styles.rawUrlText}>{entry.rawUrl}</Text>
-                        <Button
-                          appearance="subtle"
-                          size="small"
-                          onClick={() => { void navigator.clipboard.writeText(entry.rawUrl!); }}
-                        >
-                          Copy URL
-                        </Button>
-                      </div>
-                    )}
                     {entry.errorMessage && (
                       <div className={styles.errorDetail}>{entry.errorMessage}</div>
                     )}
@@ -346,6 +334,20 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
                         {` Reduced: ${entry.batchSizeBefore} → ${entry.batchSize}`}
                       </Text>
                     )}
+                  </td>
+                  <td className={mergeClasses(styles.td, styles.tdUrl)}>
+                    {entry.rawUrl ? (
+                      <div className={styles.rawUrlCell}>
+                        <Text className={styles.rawUrlText}>{entry.rawUrl}</Text>
+                        <Button
+                          appearance="subtle"
+                          size="small"
+                          onClick={() => { void navigator.clipboard.writeText(entry.rawUrl!); }}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                    ) : '—'}
                   </td>
                   <td className={mergeClasses(styles.td, styles.tdNowrap)}>
                     {entry.batchTotal ? `${entry.batchIndex + 1}/${entry.batchTotal}` : `${entry.batchIndex + 1}`}
