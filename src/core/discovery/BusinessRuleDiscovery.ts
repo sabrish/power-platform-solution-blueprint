@@ -80,6 +80,11 @@ export class BusinessRuleDiscovery implements IDiscoverer<BusinessRule> {
         entitySet: 'workflows (business rules)',
         logger: this.logger,
         onProgress: (done, total) => this.onProgress?.(done, total),
+        getRequestUrl: (batch) => {
+          const select = 'workflowid,name,description,statecode,primaryentity,scope,xaml,clientdata,modifiedon,createdon';
+          const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 2`;
+          return `${this.client.getEnvironmentUrl()}/api/data/v9.2/workflows?$select=${select}&$filter=${encodeURIComponent(filter)}`;
+        },
       }
     );
 

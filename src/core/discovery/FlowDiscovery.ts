@@ -73,6 +73,11 @@ export class FlowDiscovery implements IDiscoverer<Flow> {
         logger: this.logger,
         // Use workflowIds.length as the stable total for both passes
         onProgress: (done) => this.onProgress?.(Math.floor(done / 2), workflowIds.length),
+        getRequestUrl: (batch) => {
+          const select = 'workflowid,name,description,statecode,statuscode,primaryentity,scope,_ownerid_value,_modifiedby_value,modifiedon,createdon';
+          const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 5`;
+          return `${this.client.getEnvironmentUrl()}/api/data/v9.2/workflows?$select=${select}&$filter=${encodeURIComponent(filter)}`;
+        },
       }
     );
 
@@ -102,6 +107,11 @@ export class FlowDiscovery implements IDiscoverer<Flow> {
           workflowIds.length
         ),
         getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
+        getRequestUrl: (batch) => {
+          const select = 'workflowid,clientdata';
+          const filter = `(${buildOrFilter(batch, 'workflowid', { guids: true })}) and category eq 5`;
+          return `${this.client.getEnvironmentUrl()}/api/data/v9.2/workflows?$select=${select}&$filter=${encodeURIComponent(filter)}`;
+        },
       }
     );
 

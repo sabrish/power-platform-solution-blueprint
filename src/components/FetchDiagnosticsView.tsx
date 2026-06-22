@@ -99,6 +99,19 @@ const useStyles = makeStyles({
     whiteSpace: 'pre-wrap' as const,
     marginTop: tokens.spacingVerticalXXS,
   },
+  rawUrl: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: tokens.spacingHorizontalXS,
+    marginTop: tokens.spacingVerticalXXS,
+  },
+  rawUrlText: {
+    fontSize: tokens.fontSizeBase100,
+    fontFamily: tokens.fontFamilyMonospace,
+    color: tokens.colorNeutralForeground3,
+    wordBreak: 'break-all' as const,
+    flex: '1',
+  },
   noData: {
     padding: tokens.spacingVerticalXXL,
     textAlign: 'center' as const,
@@ -168,12 +181,13 @@ export function FetchDiagnosticsView({ entries }: Props) {
   }), [entries]);
 
   function exportCsv() {
-    const header = ['#', 'Step', 'Entity Set', 'Filter', 'Batch', 'Status', 'Attempts', 'Duration (ms)', 'Results', 'Error'];
+    const header = ['#', 'Step', 'Entity Set', 'Filter', 'Raw URL', 'Batch', 'Status', 'Attempts', 'Duration (ms)', 'Results', 'Error'];
     const rows = filtered.map(e => [
       e.id,
       e.step,
       e.entitySet,
       e.filterSummary,
+      e.rawUrl ?? '',
       `${e.batchIndex + 1}/${e.batchTotal || '?'}`,
       e.status,
       e.attempts,
@@ -297,6 +311,18 @@ export function FetchDiagnosticsView({ entries }: Props) {
                   <td className={styles.td} style={{ fontFamily: tokens.fontFamilyMonospace, fontSize: tokens.fontSizeBase100 }}>{entry.entitySet}</td>
                   <td className={styles.td} style={{ maxWidth: '320px', wordBreak: 'break-word' }}>
                     <Text style={{ fontSize: tokens.fontSizeBase100, fontFamily: tokens.fontFamilyMonospace }}>{entry.filterSummary}</Text>
+                    {entry.rawUrl && (
+                      <div className={styles.rawUrl}>
+                        <Text className={styles.rawUrlText}>{entry.rawUrl}</Text>
+                        <Button
+                          appearance="subtle"
+                          size="small"
+                          onClick={() => { void navigator.clipboard.writeText(entry.rawUrl!); }}
+                        >
+                          Copy URL
+                        </Button>
+                      </div>
+                    )}
                     {entry.errorMessage && (
                       <div className={styles.errorDetail}>{entry.errorMessage}</div>
                     )}

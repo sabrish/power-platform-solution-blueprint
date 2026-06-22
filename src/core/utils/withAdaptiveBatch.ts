@@ -40,6 +40,11 @@ export interface AdaptiveBatchOptions<TId> {
    * If omitted, defaults to "items X–Y of Z".
    */
   getBatchLabel?: (batch: TId[]) => string;
+  /**
+   * Produce the full OData request URL for the batch — shown as rawUrl in the fetch log.
+   * If omitted, rawUrl is not recorded.
+   */
+  getRequestUrl?: (batch: TId[]) => string;
 }
 
 export interface AdaptiveBatchResult<TResult, TId> {
@@ -66,6 +71,7 @@ export async function withAdaptiveBatch<TId, TResult>(
     onBatchSizeReduced,
     onItemFailed,
     getBatchLabel,
+    getRequestUrl,
   } = options;
 
   // When no getBatchLabel is supplied, filterSummary is intentionally empty —
@@ -104,6 +110,7 @@ export async function withAdaptiveBatch<TId, TResult>(
         step,
         entitySet,
         filterSummary: batchLabelFor(batch),
+        rawUrl: getRequestUrl ? getRequestUrl(batch) : undefined,
         batchIndex,
         batchTotal: 0,
         batchSize: batch.length,
@@ -128,6 +135,7 @@ export async function withAdaptiveBatch<TId, TResult>(
           step,
           entitySet,
           filterSummary: lbl ? `${lbl} — FAILED` : 'FAILED',
+          rawUrl: getRequestUrl ? getRequestUrl(batch) : undefined,
           batchIndex,
           batchTotal: 0,
           batchSize: batch.length,
@@ -151,6 +159,7 @@ export async function withAdaptiveBatch<TId, TResult>(
           step,
           entitySet,
           filterSummary: lbl2 ? `${lbl2} → batch ${currentBatchSize}→${newSize}` : `batch ${currentBatchSize}→${newSize}`,
+          rawUrl: getRequestUrl ? getRequestUrl(batch) : undefined,
           batchIndex,
           batchTotal: 0,
           batchSize: batch.length,

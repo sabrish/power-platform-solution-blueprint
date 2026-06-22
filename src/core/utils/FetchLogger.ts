@@ -16,6 +16,8 @@ export interface FetchLogEntry {
   entitySet: string;
   /** Human-readable summary of what was fetched in this call */
   filterSummary: string;
+  /** Full OData request URL, if provided by the caller via getRequestUrl */
+  rawUrl?: string;
   batchIndex: number;
   /** 0 = unknown / not batched */
   batchTotal: number;
