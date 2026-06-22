@@ -59,6 +59,10 @@ const useStyles = makeStyles({
     flexWrap: 'wrap',
     marginTop: tokens.spacingVerticalM,
   },
+  rowMeta: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
 });
 
 export interface BusinessRulesListProps {
@@ -373,7 +377,7 @@ export function BusinessRulesList({
                 {rule.scopeName}
               </Badge>
               <Badge {...stateBadgeProps}>{rule.state}</Badge>
-              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+              <Text className={styles.rowMeta}>
                 {conditionCount} cond{conditionCount !== 1 ? 's' : ''}, {actionCount} action{actionCount !== 1 ? 's' : ''}
               </Text>
             </div>

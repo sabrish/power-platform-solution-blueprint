@@ -5,6 +5,7 @@ import {
   Title3,
   Badge,
   makeStyles,
+  mergeClasses,
   tokens,
   Dropdown,
   Option,
@@ -124,6 +125,10 @@ const useStyles = makeStyles({
     justifyContent: 'flex-end',
     marginTop: tokens.spacingVerticalS,
   },
+  summaryCountSuccess: { color: tokens.colorStatusSuccessForeground1 },
+  summaryCountWarning: { color: tokens.colorStatusWarningForeground1 },
+  summaryCountReduced: { color: tokens.colorPaletteYellowForeground1 },
+  summaryCountDanger:  { color: tokens.colorStatusDangerForeground1 },
 });
 
 const STATUS_LABELS: Record<FetchStatus, string> = {
@@ -148,7 +153,7 @@ interface Props {
   entries: FetchLogEntry[];
 }
 
-export function FetchDiagnosticsView({ entries }: Props) {
+export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
   const styles = useStyles();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stepFilter, setStepFilter] = useState<string>('all');
@@ -224,19 +229,19 @@ export function FetchDiagnosticsView({ entries }: Props) {
           <Text className={styles.summaryLabel}>Total Calls</Text>
         </div>
         <div className={styles.summaryItem}>
-          <Text className={styles.summaryCount} style={{ color: tokens.colorStatusSuccessForeground1 }}>{summary.success}</Text>
+          <Text className={mergeClasses(styles.summaryCount, styles.summaryCountSuccess)}>{summary.success}</Text>
           <Text className={styles.summaryLabel}>Success</Text>
         </div>
         <div className={styles.summaryItem}>
-          <Text className={styles.summaryCount} style={{ color: tokens.colorStatusWarningForeground1 }}>{summary.retried}</Text>
+          <Text className={mergeClasses(styles.summaryCount, styles.summaryCountWarning)}>{summary.retried}</Text>
           <Text className={styles.summaryLabel}>Retried</Text>
         </div>
         <div className={styles.summaryItem}>
-          <Text className={styles.summaryCount} style={{ color: tokens.colorPaletteYellowForeground1 }}>{summary.reduced}</Text>
+          <Text className={mergeClasses(styles.summaryCount, styles.summaryCountReduced)}>{summary.reduced}</Text>
           <Text className={styles.summaryLabel}>Batch Reduced</Text>
         </div>
         <div className={styles.summaryItem}>
-          <Text className={styles.summaryCount} style={{ color: tokens.colorStatusDangerForeground1 }}>{summary.failed}</Text>
+          <Text className={mergeClasses(styles.summaryCount, styles.summaryCountDanger)}>{summary.failed}</Text>
           <Text className={styles.summaryLabel}>Failed</Text>
         </div>
         <div className={styles.summaryItem}>
