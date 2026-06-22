@@ -807,9 +807,9 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
             const cHeaders = ['#', 'Field', 'Operator', 'Value', 'Logic'];
             const cRows = group.conditions.map((c, i) => [
               (i + 1).toString(),
-              c.field,
+              c.fieldLabel ?? c.field,
               c.operator,
-              c.value,
+              c.valueLabel ? `${c.valueLabel} (${c.value})` : c.value,
               c.logicOperator,
             ]);
             sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
@@ -821,7 +821,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
             const aHeaders = ['Type', 'Field', 'Value / Message'];
             const aRows = group.actions.map(a => [
               a.type,
-              a.field,
+              a.fieldLabel ?? a.field,
               a.value ?? a.message ?? '',
             ]);
             sections.push(MarkdownFormatter.formatTable(aHeaders, aRows));
@@ -835,7 +835,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
           const aHeaders = ['Type', 'Field', 'Value / Message'];
           const aRows = rule.definition.elseActions.map(a => [
             a.type,
-            a.field,
+            a.fieldLabel ?? a.field,
             a.value ?? a.message ?? '',
           ]);
           sections.push(MarkdownFormatter.formatTable(aHeaders, aRows));

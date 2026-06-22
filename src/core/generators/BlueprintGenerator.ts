@@ -175,8 +175,13 @@ export class BlueprintGenerator {
         }
       }
 
+      // Fetch option set labels for entity attributes used in business rule conditions.
+      // Done as a separate pass via the typed PicklistAttributeMetadata path because
+      // OptionSet cannot be expanded within the Attributes nested expand.
+      const picklistOptions = await this.fetchPicklistOptionLabels(entityBlueprints, businessRules);
+
       // Enrich business rule field names with display names from already-fetched entity schema
-      this.applyBusinessRuleFieldLabels(entityBlueprints, businessRules);
+      this.applyBusinessRuleFieldLabels(entityBlueprints, businessRules, picklistOptions);
 
       // STEP 9: Generate ERD and Advanced Analysis
       this.reportProgress({
@@ -654,54 +659,85 @@ export class BlueprintGenerator {
    * (AttributeMetadata on each EntityBlueprint).
    * Zero additional API calls — reuses data collected in processEntities().
    */
-  private applyBusinessRuleFieldLabels(
+  /**
+   * Fetch picklist option labels for all entities that have business rules.
+   * Uses the PicklistAttributeMetadata type-cast path which supports $expand=OptionSet
+   * at the root level (unlike the Attributes nested-expand which does not).
+   */
+  private async fetchPicklistOptionLabels(
     entityBlueprints: EntityBlueprint[],
     businessRules: BusinessRule[]
+  ): Promise<Map<string, Map<string, Map<number, string>>>> {
+    // entity logicalName → fieldLogicalName → optionValue → label
+    const result = new Map<string, Map<string, Map<number, string>>>();
+
+    const entityNamesWithRules = new Set(businessRules.map(r => r.entity));
+    const bpsWithRules = entityBlueprints.filter(bp => entityNamesWithRules.has(bp.entity.LogicalName));
+    if (bpsWithRules.length === 0) return result;
+
+    interface PicklistAttrRaw {
+      LogicalName: string;
+      OptionSet?: {
+        Options: Array<{ Value: number; Label: { UserLocalizedLabel?: { Label: string } } }>;
+      };
+    }
+
+    const tasks = bpsWithRules.map(bp => async () => {
+      try {
+        const resp = await this.client.queryMetadata<PicklistAttrRaw>(
+          `EntityDefinitions(LogicalName='${bp.entity.LogicalName}')/Attributes/Microsoft.Dynamics.CRM.PicklistAttributeMetadata`,
+          { select: ['LogicalName'], expand: 'OptionSet' }
+        );
+        const entityMap = new Map<string, Map<number, string>>();
+        for (const attr of resp.value ?? []) {
+          if (!attr.OptionSet?.Options?.length) continue;
+          const valMap = new Map<number, string>();
+          for (const opt of attr.OptionSet.Options) {
+            const label = opt.Label?.UserLocalizedLabel?.Label;
+            if (label !== undefined) valMap.set(opt.Value, label);
+          }
+          if (valMap.size > 0) entityMap.set(attr.LogicalName, valMap);
+        }
+        if (entityMap.size > 0) result.set(bp.entity.LogicalName, entityMap);
+      } catch {
+        // Non-critical — business rules for this entity will show raw numeric values
+      }
+    });
+
+    await withConcurrencyLimit(5, tasks);
+    return result;
+  }
+
+  private applyBusinessRuleFieldLabels(
+    entityBlueprints: EntityBlueprint[],
+    businessRules: BusinessRule[],
+    picklistOptions: Map<string, Map<string, Map<number, string>>>
   ): void {
-    // Build entity → (logicalName → displayLabel) and
-    //              → (logicalName → (numericValue → labelString))
-    // from already-fetched attribute metadata
+    // Build entity → (fieldLogicalName → displayLabel) from already-fetched attribute metadata.
+    // Option set value labels come from picklistOptions (fetched via fetchPicklistOptionLabels).
     const labelMap = new Map<string, Map<string, string>>();
-    const optionMap = new Map<string, Map<string, Map<number, string>>>();
 
     for (const bp of entityBlueprints) {
       const attrs: AttributeMetadata[] = bp.entity.Attributes ?? [];
       if (attrs.length === 0) continue;
-
       const fieldMap = new Map<string, string>();
-      const entityOptionMap = new Map<string, Map<number, string>>();
-
       for (const attr of attrs) {
         const label = attr.DisplayName?.UserLocalizedLabel?.Label;
         if (label) fieldMap.set(attr.LogicalName, label);
-
-        // Build option value → label map for picklist/state/status attributes
-        if (attr.OptionSet?.Options && attr.OptionSet.Options.length > 0) {
-          const valueLabels = new Map<number, string>();
-          for (const opt of attr.OptionSet.Options) {
-            const optLabel = opt.Label?.UserLocalizedLabel?.Label;
-            if (optLabel !== undefined) valueLabels.set(opt.Value, optLabel);
-          }
-          if (valueLabels.size > 0) entityOptionMap.set(attr.LogicalName, valueLabels);
-        }
       }
-
       labelMap.set(bp.entity.LogicalName, fieldMap);
-      if (entityOptionMap.size > 0) optionMap.set(bp.entity.LogicalName, entityOptionMap);
     }
 
     // Apply labels to all conditions and actions — no API calls, zero cost
     for (const rule of businessRules) {
       const fieldMap = labelMap.get(rule.entity);
-      const entityOptionMap = optionMap.get(rule.entity);
       if (!fieldMap) continue;
+      const entityOptions = picklistOptions.get(rule.entity);
 
       for (const group of rule.definition.conditionGroups) {
         for (const cond of group.conditions) {
           cond.fieldLabel = fieldMap.get(cond.field);
-
-          // Resolve option-set value label when available
-          const valLabels = entityOptionMap?.get(cond.field);
+          const valLabels = entityOptions?.get(cond.field);
           if (valLabels) {
             const numVal = parseInt(cond.value, 10);
             if (!isNaN(numVal)) cond.valueLabel = valLabels.get(numVal);
