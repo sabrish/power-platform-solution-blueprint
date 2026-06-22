@@ -48,7 +48,7 @@ export class SchemaDiscovery {
           expand: [
             // Attributes - only select properties on base AttributeMetadata
             // Type-specific properties (MaxLength, Targets, etc.) are included automatically
-            'Attributes($select=LogicalName,SchemaName,MetadataId,DisplayName,AttributeType,IsPrimaryId,IsPrimaryName,IsValidForCreate,IsValidForUpdate,IsValidForRead,IsValidForAdvancedFind,IsAuditEnabled,IsSecured,RequiredLevel,Description,IsCustomAttribute,IsManaged,OptionSet)',
+            'Attributes($select=LogicalName,SchemaName,MetadataId,DisplayName,AttributeType,IsPrimaryId,IsPrimaryName,IsValidForCreate,IsValidForUpdate,IsValidForRead,IsValidForAdvancedFind,IsAuditEnabled,IsSecured,RequiredLevel,Description,IsCustomAttribute,IsManaged;$expand=OptionSet)',
             // Relationships
             'ManyToOneRelationships($select=SchemaName,MetadataId,ReferencingEntity,ReferencedEntity,ReferencingAttribute,ReferencedAttribute,CascadeConfiguration,IsCustomRelationship,IsManaged)',
             'OneToManyRelationships($select=SchemaName,MetadataId,ReferencingEntity,ReferencedEntity,ReferencingAttribute,ReferencedAttribute,CascadeConfiguration,IsCustomRelationship,IsManaged)',
