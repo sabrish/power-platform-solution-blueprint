@@ -775,3 +775,27 @@ Promoted → patterns-general.md D10 ([2026-03-16])
 When the user says "remove all debugLog calls", remove every call EXCEPT the
 anchor log in `ResultsDashboard.tsx`. The anchor keeps `debugLogger` as a live
 import (prevents dead-code removal) and documents how to add logging elsewhere.
+
+---
+
+## [2026-06-22] — Never duplicate API calls for metadata already fetched by SchemaDiscovery
+
+**Affects:** Developer, Reviewer
+**Severity:** Blocker
+**Rule:** Before making any new Dataverse API call during blueprint generation (especially in post-processing enrichment steps), check whether the data is already available in the current pipeline. Specifically: attribute metadata (LogicalName, DisplayName, AttributeType, and all other attribute properties) for any entity is ALREADY fetched by SchemaDiscovery and available on `EntityBlueprint.entity.Attributes` (type: `AttributeMetadata[]`). Never re-fetch attribute metadata via a new `queryMetadata` call when it is already present in `entityBlueprints[*].entity.Attributes`.
+**Context:** BusinessRuleDiscovery.enrichWithDisplayNames() made redundant `queryMetadata` calls to fetch attribute display names, even though SchemaDiscovery had already fetched full attribute metadata for all in-scope entities. The fix moved the enrichment to `BlueprintGenerator.applyBusinessRuleFieldLabels()` which builds a label map directly from `entityBlueprints[*].entity.Attributes` — zero additional API calls. This aligns with PATTERN-002 (batch queries) and PATTERN-017 (efficient discovery orchestration).
+**Example:**
+- ❌ Wrong: `for (const entity of entities) { const attrs = await client.queryMetadata('Attributes', { filter: \`_EntityLogicalName eq '${entity}'\` }); }`
+- ✅ Right: `const labelMap = new Map(); for (const bp of entityBlueprints) { for (const attr of bp.entity.Attributes) { labelMap.set(\`${bp.entity.LogicalName}.\${attr.LogicalName}\`, attr.DisplayName); } }`
+
+---
+
+## [2026-06-22] — Never duplicate formatting utilities across components and reporters
+
+**Affects:** Developer, Reviewer
+**Severity:** High
+**Rule:** When the same formatting or utility logic is needed in both a React component (`src/components/`) and an HTML reporter (`src/core/reporters/`), extract it to `src/core/utils/` as a plain-text function. The HTML reporter wraps the output in `this.htmlEscape()`; the React component uses it directly (React handles escaping). Do NOT write duplicate implementations. Pattern: create `src/core/utils/[domain]Formatting.ts`, export the plain-text function, import in both consumers.
+**Context:** `formatActionSentence()` was written twice — once in `BusinessRulesList.tsx` (React component) and once as a private method in `HtmlTemplates.ts` (HTML reporter). Both implementations became stale independently. The fix: extracted to `src/core/utils/businessRuleFormatting.ts` and imported in both places. This extends the DRY principle (patterns-general.md D1–D6) from data-access helpers to formatting and display utilities.
+**Example:**
+- ❌ Wrong: `const formatActionSentence = (action) => { /* shared logic */ }` in BusinessRulesList.tsx, duplicated in HtmlTemplates.ts
+- ✅ Right: Export from `src/core/utils/businessRuleFormatting.ts`, import in BusinessRulesList.tsx and HtmlTemplates.ts; HtmlReporter wraps calls with `htmlEscape()`
