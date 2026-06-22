@@ -129,6 +129,16 @@ const useStyles = makeStyles({
   summaryCountWarning: { color: tokens.colorStatusWarningForeground1 },
   summaryCountReduced: { color: tokens.colorPaletteYellowForeground1 },
   summaryCountDanger:  { color: tokens.colorStatusDangerForeground1 },
+  dropdownSmall: { minWidth: '150px' },
+  dropdownMedium: { minWidth: '180px' },
+  filterCount: { color: tokens.colorNeutralForeground3 },
+  tableScroll: { overflowX: 'auto' as const },
+  tdId: { color: tokens.colorNeutralForeground3 },
+  tdMono: { fontFamily: tokens.fontFamilyMonospace, fontSize: tokens.fontSizeBase100 },
+  tdFilter: { maxWidth: '320px', wordBreak: 'break-word' as const },
+  textReduced: { fontSize: tokens.fontSizeBase100, color: tokens.colorStatusWarningForeground1 },
+  tdNowrap: { whiteSpace: 'nowrap' as const },
+  textPage: { fontSize: tokens.fontSizeBase200 },
 });
 
 const STATUS_LABELS: Record<FetchStatus, string> = {
@@ -256,7 +266,7 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
           value={statusFilter === 'all' ? 'All Statuses' : STATUS_LABELS[statusFilter as FetchStatus]}
           selectedOptions={[statusFilter]}
           onOptionSelect={(_e, d) => { setStatusFilter(d.optionValue ?? 'all'); setPage(0); }}
-          style={{ minWidth: '150px' }}
+          className={styles.dropdownSmall}
         >
           <Option value="all">All Statuses</Option>
           {(['success', 'retried', 'batch-reduced', 'failed', 'skipped'] as FetchStatus[]).map(s => (
@@ -268,13 +278,13 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
           value={stepFilter === 'all' ? 'All Steps' : stepFilter}
           selectedOptions={[stepFilter]}
           onOptionSelect={(_e, d) => { setStepFilter(d.optionValue ?? 'all'); setPage(0); }}
-          style={{ minWidth: '180px' }}
+          className={styles.dropdownMedium}
         >
           <Option value="all">All Steps</Option>
           {uniqueSteps.map(s => <Option key={s} value={s}>{s}</Option>)}
         </Dropdown>
 
-        <Text style={{ color: tokens.colorNeutralForeground3 }}>
+        <Text className={styles.filterCount}>
           {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
           {filtered.length !== entries.length && ` (filtered from ${entries.length})`}
         </Text>
@@ -285,7 +295,7 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
       </div>
 
       {/* Log table */}
-      <div style={{ overflowX: 'auto' }}>
+      <div className={styles.tableScroll}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -302,20 +312,20 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
           </thead>
           <tbody>
             {pageEntries.map(entry => {
-              const rowClass = [
+              const rowClass = mergeClasses(
                 styles.tableRow,
                 entry.status === 'failed' ? styles.errorRow :
                 entry.status === 'retried' ? styles.retriedRow :
                 entry.status === 'batch-reduced' ? styles.reducedRow :
-                '',
-              ].filter(Boolean).join(' ');
+                undefined,
+              );
               return (
                 <tr key={entry.id} className={rowClass}>
-                  <td className={styles.td} style={{ color: tokens.colorNeutralForeground3 }}>{entry.id}</td>
+                  <td className={mergeClasses(styles.td, styles.tdId)}>{entry.id}</td>
                   <td className={styles.td}>{entry.step}</td>
-                  <td className={styles.td} style={{ fontFamily: tokens.fontFamilyMonospace, fontSize: tokens.fontSizeBase100 }}>{entry.entitySet}</td>
-                  <td className={styles.td} style={{ maxWidth: '320px', wordBreak: 'break-word' }}>
-                    <Text style={{ fontSize: tokens.fontSizeBase100, fontFamily: tokens.fontFamilyMonospace }}>{entry.filterSummary}</Text>
+                  <td className={mergeClasses(styles.td, styles.tdMono)}>{entry.entitySet}</td>
+                  <td className={mergeClasses(styles.td, styles.tdFilter)}>
+                    <Text className={styles.rawUrlText}>{entry.filterSummary}</Text>
                     {entry.rawUrl && (
                       <div className={styles.rawUrl}>
                         <Text className={styles.rawUrlText}>{entry.rawUrl}</Text>
@@ -332,12 +342,12 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
                       <div className={styles.errorDetail}>{entry.errorMessage}</div>
                     )}
                     {entry.batchSizeBefore !== undefined && (
-                      <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorStatusWarningForeground1 }}>
+                      <Text className={styles.textReduced}>
                         {` Reduced: ${entry.batchSizeBefore} → ${entry.batchSize}`}
                       </Text>
                     )}
                   </td>
-                  <td className={styles.td} style={{ whiteSpace: 'nowrap' }}>
+                  <td className={mergeClasses(styles.td, styles.tdNowrap)}>
                     {entry.batchTotal ? `${entry.batchIndex + 1}/${entry.batchTotal}` : `${entry.batchIndex + 1}`}
                   </td>
                   <td className={styles.td}>
@@ -346,7 +356,7 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
                     </Badge>
                   </td>
                   <td className={styles.td}>{entry.attempts}</td>
-                  <td className={styles.td} style={{ whiteSpace: 'nowrap' }}>{entry.durationMs}ms</td>
+                  <td className={mergeClasses(styles.td, styles.tdNowrap)}>{entry.durationMs}ms</td>
                   <td className={styles.td}>{entry.resultCount ?? '—'}</td>
                 </tr>
               );
@@ -360,7 +370,7 @@ export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
         <div className={styles.paginationRow}>
           <Button size="small" disabled={safePage === 0} onClick={() => setPage(0)}>«</Button>
           <Button size="small" disabled={safePage === 0} onClick={() => setPage(p => p - 1)}>‹</Button>
-          <Text style={{ fontSize: tokens.fontSizeBase200 }}>
+          <Text className={styles.textPage}>
             Page {safePage + 1} of {pageCount}
           </Text>
           <Button size="small" disabled={safePage >= pageCount - 1} onClick={() => setPage(p => p + 1)}>›</Button>

@@ -20,7 +20,7 @@ interface RawServiceEndpoint {
 }
 
 interface StepCountRecord {
-  _serviceendpointid_value: string;
+  _eventhandlerid_value: string;
 }
 
 const ENDPOINT_SELECT = 'serviceendpointid,name,description,contract,connectionmode,messageformat,url,ismanaged,createdon,modifiedon';
@@ -83,9 +83,9 @@ export class ServiceEndpointDiscovery implements IDiscoverer<ServiceEndpoint> {
       const { results: stepRecords } = await withAdaptiveBatch<string, StepCountRecord>(
         rawEndpoints.map(e => normalizeGuid(e.serviceendpointid)),
         async (batch) => {
-          const filter = buildOrFilter(batch, '_serviceendpointid_value', { guids: true });
+          const filter = buildOrFilter(batch, '_eventhandlerid_value', { guids: true });
           const result = await this.client.query<StepCountRecord>('sdkmessageprocessingsteps', {
-            select: ['_serviceendpointid_value'],
+            select: ['_eventhandlerid_value'],
             filter,
           });
           return result.value;
@@ -99,7 +99,7 @@ export class ServiceEndpointDiscovery implements IDiscoverer<ServiceEndpoint> {
         }
       );
       for (const rec of stepRecords) {
-        const endpointId = normalizeGuid(rec._serviceendpointid_value);
+        const endpointId = normalizeGuid(rec._eventhandlerid_value);
         stepCountMap.set(endpointId, (stepCountMap.get(endpointId) ?? 0) + 1);
       }
     } catch {

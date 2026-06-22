@@ -9,7 +9,6 @@ import { normalizeGuid, normalizeBatch } from '../utils/guid.js';
 interface RawPcfControl {
   customcontrolid: string;
   name: string;
-  displayname?: string;
   compatibledatatypes?: string;
   version?: string;
   ismanaged?: boolean;
@@ -17,7 +16,7 @@ interface RawPcfControl {
   modifiedon?: string;
 }
 
-const PCF_SELECT = 'customcontrolid,name,displayname,compatibledatatypes,version,ismanaged,createdon,modifiedon';
+const PCF_SELECT = 'customcontrolid,name,compatibledatatypes,version,ismanaged,createdon,modifiedon';
 
 /**
  * Discovery service for PCF (Power Apps Component Framework) custom controls.
@@ -52,7 +51,7 @@ export class PcfControlDiscovery implements IDiscoverer<PcfControl> {
       async (batch) => {
         const filter = buildOrFilter(batch, 'customcontrolid', { guids: true });
         const result = await this.client.query<RawPcfControl>('customcontrols', {
-          select: ['customcontrolid', 'name', 'displayname', 'compatibledatatypes', 'version', 'ismanaged', 'createdon', 'modifiedon'],
+          select: ['customcontrolid', 'name', 'compatibledatatypes', 'version', 'ismanaged', 'createdon', 'modifiedon'],
           filter,
         });
         return result.value;
@@ -77,7 +76,7 @@ export class PcfControlDiscovery implements IDiscoverer<PcfControl> {
     return {
       id: normalizeGuid(raw.customcontrolid),
       name: raw.name,
-      displayName: raw.displayname || raw.name,
+      displayName: raw.name,
       compatibleDataTypes: raw.compatibledatatypes || '',
       version: raw.version || '',
       isManaged: raw.ismanaged ?? false,

@@ -9,14 +9,13 @@ import { normalizeGuid } from '../utils/guid.js';
 interface RawAiModel {
   msdyn_aimodelid: string;
   msdyn_name?: string;
-  msdyn_templateid?: string | null;
   statuscode?: number;
   ismanaged?: boolean;
   createdon?: string;
   modifiedon?: string;
 }
 
-const AI_MODEL_SELECT = 'msdyn_aimodelid,msdyn_name,msdyn_templateid,statuscode,ismanaged,createdon,modifiedon';
+const AI_MODEL_SELECT = 'msdyn_aimodelid,msdyn_name,statuscode,ismanaged,createdon,modifiedon';
 
 const AI_MODEL_STATUS_MAP: Record<number, AiModel['status']> = {
   0: 'Inactive',
@@ -56,7 +55,7 @@ export class AiModelDiscovery implements IDiscoverer<AiModel> {
         async (batch) => {
           const filter = buildOrFilter(batch, 'msdyn_aimodelid', { guids: true });
           const result = await this.client.query<RawAiModel>('msdyn_aimodels', {
-            select: ['msdyn_aimodelid', 'msdyn_name', 'msdyn_templateid', 'statuscode', 'ismanaged', 'createdon', 'modifiedon'],
+            select: AI_MODEL_SELECT.split(','),
             filter,
           });
           return result.value;
@@ -86,7 +85,7 @@ export class AiModelDiscovery implements IDiscoverer<AiModel> {
     return {
       id: normalizeGuid(raw.msdyn_aimodelid),
       name: raw.msdyn_name || raw.msdyn_aimodelid,
-      templateId: raw.msdyn_templateid ?? null,
+      templateId: null,
       modelCreationContext: null,
       status: AI_MODEL_STATUS_MAP[statusCode] ?? 'Unknown',
       statusCode,

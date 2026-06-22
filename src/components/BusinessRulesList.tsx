@@ -3,6 +3,7 @@ import {
   Text,
   Badge,
   makeStyles,
+  mergeClasses,
   tokens,
   Card,
   Title3,
@@ -62,6 +63,16 @@ const useStyles = makeStyles({
   rowMeta: {
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground3,
+  },
+  actionItemShowField:   { borderLeftColor: tokens.colorPaletteGreenForeground1 },
+  actionItemHideField:   { borderLeftColor: tokens.colorPaletteRedForeground1 },
+  actionItemSetValue:    { borderLeftColor: tokens.colorBrandForeground1 },
+  actionItemSetRequired: { borderLeftColor: tokens.colorPaletteYellowForeground1 },
+  actionItemLock:        { borderLeftColor: tokens.colorPaletteDarkOrangeForeground1 },
+  actionItemShowError:   { borderLeftColor: tokens.colorPaletteRedForeground1 },
+  parseErrorText: {
+    color: tokens.colorPaletteRedForeground1,
+    marginTop: tokens.spacingVerticalXS,
   },
 });
 
@@ -139,17 +150,17 @@ export function BusinessRulesList({
     return 'informative';
   };
 
-  const getActionBorderColor = (actionType: string): string => {
-    const colors: Record<string, string> = {
-      'ShowField': tokens.colorPaletteGreenForeground1,
-      'HideField': tokens.colorPaletteRedForeground1,
-      'SetValue': tokens.colorBrandForeground1,
-      'SetRequired': tokens.colorPaletteYellowForeground1,
-      'LockField': tokens.colorPaletteDarkOrangeForeground1,
-      'UnlockField': tokens.colorPaletteGreenForeground1,
-      'ShowError': tokens.colorPaletteRedForeground1,
+  const getActionItemClass = (actionType: string): string | undefined => {
+    const classMap: Record<string, string> = {
+      ShowField:   styles.actionItemShowField,
+      HideField:   styles.actionItemHideField,
+      UnlockField: styles.actionItemShowField,
+      SetValue:    styles.actionItemSetValue,
+      SetRequired: styles.actionItemSetRequired,
+      LockField:   styles.actionItemLock,
+      ShowError:   styles.actionItemShowError,
     };
-    return colors[actionType] ?? tokens.colorNeutralStroke1;
+    return classMap[actionType];
   };
 
   const renderRuleDetails = (rule: BusinessRule): JSX.Element => {
@@ -235,8 +246,7 @@ export function BusinessRulesList({
                 {group.actions.map((action, idx) => (
                   <div
                     key={idx}
-                    className={styles.actionItem}
-                    style={{ borderLeftColor: getActionBorderColor(action.type) }}
+                    className={mergeClasses(styles.actionItem, getActionItemClass(action.type))}
                   >
                     <Text>{formatActionSentence(action)}</Text>
                   </div>
@@ -255,8 +265,7 @@ export function BusinessRulesList({
             {rule.definition.elseActions.map((action, idx) => (
               <div
                 key={idx}
-                className={styles.actionItem}
-                style={{ borderLeftColor: getActionBorderColor(action.type) }}
+                className={mergeClasses(styles.actionItem, getActionItemClass(action.type))}
               >
                 <Text>{formatActionSentence(action)}</Text>
               </div>
@@ -267,7 +276,7 @@ export function BusinessRulesList({
         {rule.definition.parseError && (
           <div className={shared.section}>
             <Badge appearance="filled" shape="rounded" color="important">Parse Error</Badge>
-            <Text style={{ color: tokens.colorPaletteRedForeground1, marginTop: tokens.spacingVerticalXS }}>
+            <Text className={styles.parseErrorText}>
               {rule.definition.parseError}
             </Text>
           </div>
