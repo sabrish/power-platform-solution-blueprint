@@ -18,6 +18,7 @@ import type {
   OneToManyRelationship,
   ManyToOneRelationship,
   ManyToManyRelationship,
+  CascadeConfiguration,
 } from '../../types/blueprint.js';
 import { formatActionSentence } from '../../utils/businessRuleFormatting.js';
 import type { PrivilegeDetail } from '../../discovery/SecurityRoleDiscovery.js';
@@ -998,39 +999,121 @@ ${rows}
   private generateRelationshipsSection(type: string, relationships: (OneToManyRelationship | ManyToOneRelationship | ManyToManyRelationship)[]): string {
     if (relationships.length === 0) return '';
 
-    const rows = relationships.slice(0, 20).map(rel => {
-      // Cast to a display-shape covering all three relationship subtypes.
-      // OneToMany/ManyToOne use ReferencingEntity; ManyToMany uses Entity1LogicalName.
-      const r = rel as { SchemaName?: string; ReferencingEntity?: string; ReferencedEntity?: string; ReferencedAttribute?: string; ReferencingAttribute?: string; Entity1LogicalName?: string };
-      const schemaName = r.SchemaName || 'N/A';
-      const referencingEntity = r.ReferencingEntity || r.ReferencedEntity || r.Entity1LogicalName || 'N/A';
-      const referencedAttribute = r.ReferencedAttribute || r.ReferencingAttribute || 'N/A';
-
-      return `<tr>
-        <td>${this.htmlEscape(schemaName)}</td>
-        <td>${this.htmlEscape(referencingEntity)}</td>
-        <td>${this.htmlEscape(referencedAttribute)}</td>
-      </tr>`;
-    }).join('\n');
-
+    const isManyToMany = type === 'Many-to-Many';
+    const shown = relationships.slice(0, 20);
     const moreText = relationships.length > 20 ? `<p class="table-note">Showing 20 of ${relationships.length} relationships</p>` : '';
+
+    if (isManyToMany) {
+      // M:N has no cascade config — flat table is sufficient
+      const rows = shown.map(rel => {
+        const r = rel as { SchemaName?: string; Entity1LogicalName?: string; Entity2LogicalName?: string; IntersectEntityName?: string };
+        return `<tr>
+          <td>${this.htmlEscape(r.SchemaName || 'N/A')}</td>
+          <td>${this.htmlEscape(r.Entity1LogicalName || 'N/A')}</td>
+          <td>${this.htmlEscape(r.Entity2LogicalName || 'N/A')}</td>
+        </tr>`;
+      }).join('\n');
+      return `<div class="relationship-section">
+        <h5>${type} (${relationships.length})</h5>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Schema Name</th>
+              <th scope="col">Entity 1</th>
+              <th scope="col">Entity 2</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${moreText}
+      </div>`;
+    }
+
+    // 1:N and N:1 — accordion rows with cascade configuration in expanded panel
+    const rows = shown.map(rel => {
+      const r = rel as OneToManyRelationship | ManyToOneRelationship;
+      const schemaName = r.SchemaName || 'N/A';
+      const relatedEntity = r.ReferencingEntity || 'N/A';
+      const attribute = r.ReferencingAttribute || 'N/A';
+      const cascade = r.CascadeConfiguration;
+
+      return `<details style="margin-bottom:4px;border:1px solid #e0e0e0;border-radius:4px;">
+        <summary style="padding:8px 12px;cursor:pointer;list-style:none;display:flex;gap:16px;align-items:baseline;" title="Click to see cascade configuration">
+          <span style="font-weight:600;font-family:monospace;font-size:0.85em;flex:2;min-width:0;word-break:break-all">${this.htmlEscape(schemaName)}</span>
+          <span style="flex:1;min-width:0;color:#555">${this.htmlEscape(relatedEntity)}</span>
+          <span style="flex:1;min-width:0;color:#555;font-family:monospace;font-size:0.85em">${this.htmlEscape(attribute)}</span>
+          ${cascade?.Delete ? `<span class="badge ${this.cascadeBadgeClass(cascade.Delete)}" style="font-size:0.75em">Del: ${this.htmlEscape(cascade.Delete)}</span>` : ''}
+        </summary>
+        <div style="padding:8px 12px 12px 12px;">
+          ${cascade ? this.renderCascadeTable(cascade) : '<p style="color:#888;font-size:0.85em">No cascade configuration available</p>'}
+        </div>
+      </details>`;
+    }).join('\n');
 
     return `<div class="relationship-section">
       <h5>${type} (${relationships.length})</h5>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th scope="col">Schema Name</th>
-            <th scope="col">Related Entity</th>
-            <th scope="col">Related Attribute</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
+      ${rows}
       ${moreText}
     </div>`;
+  }
+
+  /** Return a CSS badge class for a cascade value */
+  private cascadeBadgeClass(value?: string): string {
+    switch (value) {
+      case 'Cascade':    return 'badge-error';
+      case 'Restrict':   return 'badge-error';
+      case 'Active':     return 'badge-warning';
+      case 'UserOwned':  return 'badge-warning';
+      case 'RemoveLink': return 'badge-warning';
+      case 'NoCascade':  return 'badge-primary';
+      default:           return 'badge-info';
+    }
+  }
+
+  /** Render a compact cascade configuration table for an expanded relationship row */
+  private renderCascadeTable(cascade: CascadeConfiguration): string {
+    const explanations: Record<string, Record<string, string>> = {
+      Delete:   { Cascade: 'Related records also deleted', Active: 'Active related records deleted', UserOwned: 'User-owned records deleted', RemoveLink: 'Relationship removed, record kept', Restrict: 'Delete blocked if related records exist', NoCascade: 'No automatic action' },
+      Merge:    { Cascade: 'Related records also merged', Active: 'Active related records merged', NoCascade: 'No automatic merge action' },
+      Assign:   { Cascade: 'Related records also assigned', UserOwned: 'User-owned records reassigned', NoCascade: 'No automatic assignment' },
+      Share:    { Cascade: 'Related records also shared', NoCascade: 'No automatic sharing' },
+      Reparent: { Cascade: 'Related records also reparented', NoCascade: 'No automatic reparenting' },
+      Unshare:  { Cascade: 'Related records also unshared', NoCascade: 'No automatic unsharing' },
+    };
+
+    const cascadeActions: Array<{ label: string; key: keyof CascadeConfiguration }> = [
+      { label: 'Delete',   key: 'Delete' },
+      { label: 'Merge',    key: 'Merge' },
+      { label: 'Assign',   key: 'Assign' },
+      { label: 'Share',    key: 'Share' },
+      { label: 'Reparent', key: 'Reparent' },
+      { label: 'Unshare',  key: 'Unshare' },
+    ];
+
+    const rows = cascadeActions
+      .filter(a => cascade[a.key] !== undefined && cascade[a.key] !== null)
+      .map(a => {
+        const val = cascade[a.key]!;
+        const explanation = explanations[a.label]?.[val] ?? val;
+        return `<tr>
+          <td style="font-weight:600;width:80px">${a.label}</td>
+          <td><span class="badge ${this.cascadeBadgeClass(val)}" style="font-size:0.75em">${this.htmlEscape(val)}</span></td>
+          <td style="color:#555;font-size:0.85em">${this.htmlEscape(explanation)}</td>
+        </tr>`;
+      }).join('');
+
+    if (!rows) return '<p style="color:#888;font-size:0.85em">No cascade configuration set</p>';
+
+    return `<table class="data-table" style="font-size:0.85em;margin-top:4px;">
+      <thead>
+        <tr>
+          <th scope="col">Action</th>
+          <th scope="col">Behaviour</th>
+          <th scope="col">Description</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
   }
 
   /**
