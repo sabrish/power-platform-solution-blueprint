@@ -88,4 +88,6 @@ export interface PluginStep {
   impersonatingUserName: string | null;
   stateCode: number;
   state: 'Enabled' | 'Disabled';
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }

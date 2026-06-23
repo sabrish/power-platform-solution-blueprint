@@ -249,6 +249,8 @@ export interface Flow {
   createdOn: string;
   definition: FlowDefinition;
   hasExternalCalls: boolean;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**
@@ -303,6 +305,8 @@ export interface BusinessRule {
   owner: string;
   modifiedOn: string;
   createdOn: string;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**
@@ -394,6 +398,8 @@ export interface WebResource {
   createdOn: string;
   hasExternalCalls: boolean;
   isDeprecated: boolean;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**
@@ -465,6 +471,8 @@ export interface EntityBlueprint {
   executionPipelines?: Map<string, ExecutionPipeline>;
   performanceRisks?: PerformanceRisk[];
   fieldSecurity?: EntityFieldSecurity;
+  /** Solution unique names that include this entity (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**
