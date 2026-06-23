@@ -122,6 +122,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       files.set('summary/solution-distribution.md', this.generateSolutionDistribution(result));
     }
 
+    // Generate shared-components summary (solution-scoped runs only; empty when none are shared)
+    if (result.metadata.scope.type === 'solution') {
+      files.set('summary/shared-components.md', this.generateSharedComponentsSummary(result));
+    }
+
     // Generate security files
     if (result.securityRoles || result.fieldSecurityProfiles || result.attributeMaskingRules || result.columnSecurityProfiles) {
       files.set('security/overview.md', this.generateSecurityOverview(result));
@@ -664,7 +669,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
         sections.push(MarkdownFormatter.formatHeading(entityName, 3));
         sections.push('');
 
-        const headers = ['Name', 'Message', 'State', 'Stage', 'Mode', 'Rank', 'External', 'Solution', 'Description'];
+        const headers = ['Name', 'Message', 'State', 'Stage', 'Mode', 'Rank', 'External', 'Solution', 'Solutions', 'Description'];
         const rows = plugins.map(plugin => [
           plugin.name,
           plugin.message,
@@ -674,6 +679,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
           plugin.rank.toString(),
           this.hasExternalCalls(plugin) ? '🌐' : '',
           this.getPluginSolution(plugin, result),
+          (plugin.referencingSolutions ?? []).join(', '),
           plugin.description || '',
         ]);
 
@@ -731,7 +737,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       sections.push(MarkdownFormatter.formatHeading(entityName || 'Manual/Scheduled Flows', 2));
       sections.push('');
 
-      const headers = ['Name', 'Trigger', 'Scope', 'State', 'External', 'Owner', 'Modified', 'Description'];
+      const headers = ['Name', 'Trigger', 'Scope', 'State', 'External', 'Owner', 'Modified', 'Solutions', 'Description'];
       const rows = flows.map(flow => [
         flow.name,
         `${flow.definition.triggerType} (${flow.definition.triggerEvent})`,
@@ -740,6 +746,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
         flow.hasExternalCalls ? '🌐' : '',
         flow.owner,
         this.formatDate(flow.modifiedOn),
+        (flow.referencingSolutions ?? []).join(', '),
         flow.description || '',
       ]);
 
@@ -773,7 +780,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       sections.push(MarkdownFormatter.formatHeading(entityName, 2));
       sections.push('');
 
-      const headers = ['Name', 'Scope', 'Context', 'State', 'Conditions', 'Actions', 'Modified'];
+      const headers = ['Name', 'Scope', 'Context', 'State', 'Conditions', 'Actions', 'Modified', 'Solutions'];
       const rows = rules.map(rule => {
         const conditionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
         const actionCount = rule.definition.conditionGroups.reduce((sum, g) => sum + g.actions.length, 0) + rule.definition.elseActions.length;
@@ -785,6 +792,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
           conditionCount.toString(),
           actionCount.toString(),
           this.formatDate(rule.modifiedOn),
+          (rule.referencingSolutions ?? []).join(', '),
         ];
       });
 
@@ -925,7 +933,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       sections.push(MarkdownFormatter.formatHeading(`${typeName} Files`, 2));
       sections.push('');
 
-      const headers = ['Name', 'Display Name', 'Size', 'External Calls', 'Deprecated', 'Modified', 'Description'];
+      const headers = ['Name', 'Display Name', 'Size', 'External Calls', 'Deprecated', 'Modified', 'Solutions', 'Description'];
       const rows = resources.map(wr => [
         wr.name,
         wr.displayName,
@@ -933,6 +941,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
         wr.hasExternalCalls ? '🌐' : '',
         wr.isDeprecated ? '⚠️ Yes' : '',
         this.formatDate(wr.modifiedOn),
+        (wr.referencingSolutions ?? []).join(', '),
         wr.description || '',
       ]);
 
@@ -3461,6 +3470,57 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     ]);
     sections.push(MarkdownFormatter.formatTable(headers, rows));
     sections.push('');
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate summary/shared-components.md
+   * Lists components that appear in two or more solutions.
+   */
+  private generateSharedComponentsSummary(result: BlueprintResult): string {
+    const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatHeading('Shared Components', 1));
+    sections.push('');
+    sections.push('Components that appear in two or more solutions.');
+    sections.push('');
+
+    interface SharedItem { name: string; solutions: string[] }
+    const addGroup = (label: string, items: Array<{ name: string; referencingSolutions?: string[] }>) => {
+      const shared = items
+        .filter(i => (i.referencingSolutions?.length ?? 0) > 1)
+        .map(i => ({ name: i.name, solutions: i.referencingSolutions! } as SharedItem));
+      if (shared.length === 0) return;
+      sections.push(MarkdownFormatter.formatHeading(label, 2));
+      sections.push('');
+      const headers = ['Name', 'Solutions'];
+      const rows = shared.map(s => [s.name, s.solutions.join(', ')]);
+      sections.push(MarkdownFormatter.formatTable(headers, rows));
+      sections.push('');
+    };
+
+    addGroup('Flows', result.flows);
+    addGroup('Business Rules', result.businessRules);
+    addGroup('Plugins', result.plugins.map(p => ({ name: p.name, referencingSolutions: p.referencingSolutions })));
+    addGroup('Web Resources', result.webResources);
+    addGroup('Classic Workflows', result.classicWorkflows);
+    addGroup('Business Process Flows', result.businessProcessFlows.map(b => ({ name: b.name, referencingSolutions: b.referencingSolutions })));
+    addGroup('Custom APIs', result.customAPIs.map(a => ({ name: a.displayName || a.uniqueName, referencingSolutions: a.referencingSolutions })));
+    addGroup('Environment Variables', result.environmentVariables.map(e => ({ name: e.displayName || e.schemaName, referencingSolutions: e.referencingSolutions })));
+    addGroup('Connection References', result.connectionReferences.map(c => ({ name: c.displayName || c.name, referencingSolutions: c.referencingSolutions })));
+    addGroup('Canvas Apps', result.canvasApps.map(a => ({ name: a.displayName || a.name, referencingSolutions: a.referencingSolutions })));
+    addGroup('Custom Pages', result.customPages.map(p => ({ name: p.displayName || p.name, referencingSolutions: p.referencingSolutions })));
+    addGroup('Model-Driven Apps', result.modelDrivenApps.map(m => ({ name: m.displayName || m.name, referencingSolutions: m.referencingSolutions })));
+    addGroup('Entities', result.entities.map(e => ({
+      name: e.entity.DisplayName?.UserLocalizedLabel?.Label || e.entity.LogicalName,
+      referencingSolutions: e.referencingSolutions,
+    })));
+
+    if (sections.length <= 3) {
+      sections.push('No components are shared across multiple solutions.');
+      sections.push('');
+    }
+
     return sections.join('\n');
   }
 }
