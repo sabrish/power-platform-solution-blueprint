@@ -5,10 +5,12 @@ import {
   Title3,
   Badge,
   makeStyles,
+  mergeClasses,
   tokens,
   Dropdown,
   Option,
 } from '@fluentui/react-components';
+import { Copy16Regular } from '@fluentui/react-icons';
 import type { FetchLogEntry, FetchStatus } from '../core/utils/FetchLogger.js';
 
 const useStyles = makeStyles({
@@ -99,6 +101,18 @@ const useStyles = makeStyles({
     whiteSpace: 'pre-wrap' as const,
     marginTop: tokens.spacingVerticalXXS,
   },
+  rawUrlCell: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXXS,
+  },
+  rawUrlText: {
+    fontSize: tokens.fontSizeBase100,
+    fontFamily: tokens.fontFamilyMonospace,
+    color: tokens.colorNeutralForeground3,
+    wordBreak: 'break-all' as const,
+  },
+  tdUrl: { maxWidth: '360px' },
   noData: {
     padding: tokens.spacingVerticalXXL,
     textAlign: 'center' as const,
@@ -111,6 +125,20 @@ const useStyles = makeStyles({
     justifyContent: 'flex-end',
     marginTop: tokens.spacingVerticalS,
   },
+  summaryCountSuccess: { color: tokens.colorStatusSuccessForeground1 },
+  summaryCountWarning: { color: tokens.colorStatusWarningForeground1 },
+  summaryCountReduced: { color: tokens.colorPaletteYellowForeground1 },
+  summaryCountDanger:  { color: tokens.colorStatusDangerForeground1 },
+  dropdownSmall: { minWidth: '150px' },
+  dropdownMedium: { minWidth: '180px' },
+  filterCount: { color: tokens.colorNeutralForeground3 },
+  tableScroll: { overflowX: 'auto' as const },
+  tdId: { color: tokens.colorNeutralForeground3 },
+  tdMono: { fontFamily: tokens.fontFamilyMonospace, fontSize: tokens.fontSizeBase100 },
+  tdFilter: { maxWidth: '320px', wordBreak: 'break-word' as const },
+  textReduced: { fontSize: tokens.fontSizeBase100, color: tokens.colorStatusWarningForeground1 },
+  tdNowrap: { whiteSpace: 'nowrap' as const },
+  textPage: { fontSize: tokens.fontSizeBase200 },
 });
 
 const STATUS_LABELS: Record<FetchStatus, string> = {
@@ -135,7 +163,7 @@ interface Props {
   entries: FetchLogEntry[];
 }
 
-export function FetchDiagnosticsView({ entries }: Props) {
+export function FetchDiagnosticsView({ entries }: Props): JSX.Element {
   const styles = useStyles();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stepFilter, setStepFilter] = useState<string>('all');
@@ -168,12 +196,13 @@ export function FetchDiagnosticsView({ entries }: Props) {
   }), [entries]);
 
   function exportCsv() {
-    const header = ['#', 'Step', 'Entity Set', 'Filter', 'Batch', 'Status', 'Attempts', 'Duration (ms)', 'Results', 'Error'];
+    const header = ['#', 'Step', 'Entity Set', 'Filter', 'Raw URL', 'Batch', 'Status', 'Attempts', 'Duration (ms)', 'Results', 'Error'];
     const rows = filtered.map(e => [
       e.id,
       e.step,
       e.entitySet,
       e.filterSummary,
+      e.rawUrl ?? '',
       `${e.batchIndex + 1}/${e.batchTotal || '?'}`,
       e.status,
       e.attempts,
@@ -210,19 +239,19 @@ export function FetchDiagnosticsView({ entries }: Props) {
           <Text className={styles.summaryLabel}>Total Calls</Text>
         </div>
         <div className={styles.summaryItem}>
-          <Text className={styles.summaryCount} style={{ color: tokens.colorStatusSuccessForeground1 }}>{summary.success}</Text>
+          <Text className={mergeClasses(styles.summaryCount, styles.summaryCountSuccess)}>{summary.success}</Text>
           <Text className={styles.summaryLabel}>Success</Text>
         </div>
         <div className={styles.summaryItem}>
-          <Text className={styles.summaryCount} style={{ color: tokens.colorStatusWarningForeground1 }}>{summary.retried}</Text>
+          <Text className={mergeClasses(styles.summaryCount, styles.summaryCountWarning)}>{summary.retried}</Text>
           <Text className={styles.summaryLabel}>Retried</Text>
         </div>
         <div className={styles.summaryItem}>
-          <Text className={styles.summaryCount} style={{ color: tokens.colorPaletteYellowForeground1 }}>{summary.reduced}</Text>
+          <Text className={mergeClasses(styles.summaryCount, styles.summaryCountReduced)}>{summary.reduced}</Text>
           <Text className={styles.summaryLabel}>Batch Reduced</Text>
         </div>
         <div className={styles.summaryItem}>
-          <Text className={styles.summaryCount} style={{ color: tokens.colorStatusDangerForeground1 }}>{summary.failed}</Text>
+          <Text className={mergeClasses(styles.summaryCount, styles.summaryCountDanger)}>{summary.failed}</Text>
           <Text className={styles.summaryLabel}>Failed</Text>
         </div>
         <div className={styles.summaryItem}>
@@ -237,7 +266,7 @@ export function FetchDiagnosticsView({ entries }: Props) {
           value={statusFilter === 'all' ? 'All Statuses' : STATUS_LABELS[statusFilter as FetchStatus]}
           selectedOptions={[statusFilter]}
           onOptionSelect={(_e, d) => { setStatusFilter(d.optionValue ?? 'all'); setPage(0); }}
-          style={{ minWidth: '150px' }}
+          className={styles.dropdownSmall}
         >
           <Option value="all">All Statuses</Option>
           {(['success', 'retried', 'batch-reduced', 'failed', 'skipped'] as FetchStatus[]).map(s => (
@@ -249,13 +278,13 @@ export function FetchDiagnosticsView({ entries }: Props) {
           value={stepFilter === 'all' ? 'All Steps' : stepFilter}
           selectedOptions={[stepFilter]}
           onOptionSelect={(_e, d) => { setStepFilter(d.optionValue ?? 'all'); setPage(0); }}
-          style={{ minWidth: '180px' }}
+          className={styles.dropdownMedium}
         >
           <Option value="all">All Steps</Option>
           {uniqueSteps.map(s => <Option key={s} value={s}>{s}</Option>)}
         </Dropdown>
 
-        <Text style={{ color: tokens.colorNeutralForeground3 }}>
+        <Text className={styles.filterCount}>
           {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
           {filtered.length !== entries.length && ` (filtered from ${entries.length})`}
         </Text>
@@ -266,7 +295,7 @@ export function FetchDiagnosticsView({ entries }: Props) {
       </div>
 
       {/* Log table */}
-      <div style={{ overflowX: 'auto' }}>
+      <div className={styles.tableScroll}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -274,6 +303,7 @@ export function FetchDiagnosticsView({ entries }: Props) {
               <th className={styles.th}>Step</th>
               <th className={styles.th}>Entity Set</th>
               <th className={styles.th}>Filter / Content</th>
+              <th className={styles.th}>URL</th>
               <th className={styles.th}>Batch</th>
               <th className={styles.th}>Status</th>
               <th className={styles.th}>Attempts</th>
@@ -283,30 +313,44 @@ export function FetchDiagnosticsView({ entries }: Props) {
           </thead>
           <tbody>
             {pageEntries.map(entry => {
-              const rowClass = [
+              const rowClass = mergeClasses(
                 styles.tableRow,
                 entry.status === 'failed' ? styles.errorRow :
                 entry.status === 'retried' ? styles.retriedRow :
                 entry.status === 'batch-reduced' ? styles.reducedRow :
-                '',
-              ].filter(Boolean).join(' ');
+                undefined,
+              );
               return (
                 <tr key={entry.id} className={rowClass}>
-                  <td className={styles.td} style={{ color: tokens.colorNeutralForeground3 }}>{entry.id}</td>
+                  <td className={mergeClasses(styles.td, styles.tdId)}>{entry.id}</td>
                   <td className={styles.td}>{entry.step}</td>
-                  <td className={styles.td} style={{ fontFamily: tokens.fontFamilyMonospace, fontSize: tokens.fontSizeBase100 }}>{entry.entitySet}</td>
-                  <td className={styles.td} style={{ maxWidth: '320px', wordBreak: 'break-word' }}>
-                    <Text style={{ fontSize: tokens.fontSizeBase100, fontFamily: tokens.fontFamilyMonospace }}>{entry.filterSummary}</Text>
+                  <td className={mergeClasses(styles.td, styles.tdMono)}>{entry.entitySet}</td>
+                  <td className={mergeClasses(styles.td, styles.tdFilter)}>
+                    <Text className={styles.rawUrlText}>{entry.filterSummary}</Text>
                     {entry.errorMessage && (
                       <div className={styles.errorDetail}>{entry.errorMessage}</div>
                     )}
                     {entry.batchSizeBefore !== undefined && (
-                      <Text style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorStatusWarningForeground1 }}>
+                      <Text className={styles.textReduced}>
                         {` Reduced: ${entry.batchSizeBefore} → ${entry.batchSize}`}
                       </Text>
                     )}
                   </td>
-                  <td className={styles.td} style={{ whiteSpace: 'nowrap' }}>
+                  <td className={mergeClasses(styles.td, styles.tdUrl)}>
+                    {entry.rawUrl ? (
+                      <div className={styles.rawUrlCell}>
+                        <Text className={styles.rawUrlText}>{entry.rawUrl}</Text>
+                        <Button
+                          appearance="subtle"
+                          size="small"
+                          icon={<Copy16Regular />}
+                          title="Copy URL"
+                          onClick={() => { void navigator.clipboard.writeText(entry.rawUrl!); }}
+                        />
+                      </div>
+                    ) : '—'}
+                  </td>
+                  <td className={mergeClasses(styles.td, styles.tdNowrap)}>
                     {entry.batchTotal ? `${entry.batchIndex + 1}/${entry.batchTotal}` : `${entry.batchIndex + 1}`}
                   </td>
                   <td className={styles.td}>
@@ -315,7 +359,7 @@ export function FetchDiagnosticsView({ entries }: Props) {
                     </Badge>
                   </td>
                   <td className={styles.td}>{entry.attempts}</td>
-                  <td className={styles.td} style={{ whiteSpace: 'nowrap' }}>{entry.durationMs}ms</td>
+                  <td className={mergeClasses(styles.td, styles.tdNowrap)}>{entry.durationMs}ms</td>
                   <td className={styles.td}>{entry.resultCount ?? '—'}</td>
                 </tr>
               );
@@ -329,7 +373,7 @@ export function FetchDiagnosticsView({ entries }: Props) {
         <div className={styles.paginationRow}>
           <Button size="small" disabled={safePage === 0} onClick={() => setPage(0)}>«</Button>
           <Button size="small" disabled={safePage === 0} onClick={() => setPage(p => p - 1)}>‹</Button>
-          <Text style={{ fontSize: tokens.fontSizeBase200 }}>
+          <Text className={styles.textPage}>
             Page {safePage + 1} of {pageCount}
           </Text>
           <Button size="small" disabled={safePage >= pageCount - 1} onClick={() => setPage(p => p + 1)}>›</Button>

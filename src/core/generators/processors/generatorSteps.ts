@@ -26,6 +26,18 @@ import {
   processColumnSecurity,
   processForms,
   processApps,
+  processPcfControls,
+  processServiceEndpoints,
+  processCopilotAgents,
+  processDuplicateDetectionRules,
+  processSiteMaps,
+  processSlaDefinitions,
+  processReports,
+  processCharts,
+  processViews,
+  processDialogs,
+  processAiModels,
+  processVirtualTableDataSources,
 } from './index.js';
 import { PluginDiscovery } from '../../discovery/PluginDiscovery.js';
 import { FlowDiscovery } from '../../discovery/FlowDiscovery.js';
@@ -365,6 +377,198 @@ const formsStep: ProcessorStep = {
 };
 
 /**
+ * PCF Controls — Step 6.14
+ */
+const pcfControlsStep: ProcessorStep = {
+  name: 'PCF Controls',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.pcfControls = await processPcfControls(
+      ctx.client,
+      ctx.inventory.pcfControlIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Service Endpoints — Step 6.15
+ */
+const serviceEndpointsStep: ProcessorStep = {
+  name: 'Service Endpoints',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.serviceEndpoints = await processServiceEndpoints(
+      ctx.client,
+      ctx.inventory.serviceEndpointIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Copilot Agents — Step 6.16
+ */
+const copilotAgentsStep: ProcessorStep = {
+  name: 'Copilot Agents',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.copilotAgents = await processCopilotAgents(
+      ctx.client,
+      ctx.inventory.copilotAgentIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Duplicate Detection Rules — Step 6.17
+ */
+const duplicateDetectionRulesStep: ProcessorStep = {
+  name: 'Duplicate Detection Rules',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.duplicateDetectionRules = await processDuplicateDetectionRules(
+      ctx.client,
+      ctx.inventory.duplicateDetectionRuleIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Site Maps — Step 6.18
+ */
+const siteMapsStep: ProcessorStep = {
+  name: 'Site Maps',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.siteMaps = await processSiteMaps(
+      ctx.client,
+      ctx.inventory.siteMapIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * SLA Definitions — Step 6.19
+ */
+const slaDefinitionsStep: ProcessorStep = {
+  name: 'SLA Definitions',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.slaDefinitions = await processSlaDefinitions(
+      ctx.client,
+      ctx.inventory.slaDefinitionIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Reports — Step 6.20
+ */
+const reportsStep: ProcessorStep = {
+  name: 'Reports',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.reports = await processReports(
+      ctx.client,
+      ctx.inventory.reportIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Charts — Step 6.21
+ */
+const chartsStep: ProcessorStep = {
+  name: 'Charts',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.charts = await processCharts(
+      ctx.client,
+      ctx.inventory.chartIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Views — Step 6.22
+ */
+const viewsStep: ProcessorStep = {
+  name: 'Views',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.views = await processViews(
+      ctx.client,
+      ctx.inventory.viewIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Dialogs — Step 6.23 (reads from workflowInventory.dialogIds)
+ */
+const dialogsStep: ProcessorStep = {
+  name: 'Dialogs',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.dialogs = await processDialogs(
+      ctx.client,
+      ctx.workflowInventory.dialogIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * AI Models — Step 6.24
+ */
+const aiModelsStep: ProcessorStep = {
+  name: 'AI Models',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.aiModels = await processAiModels(
+      ctx.client,
+      ctx.inventory.aiModelIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
+ * Virtual Table Data Sources — Step 6.25
+ */
+const virtualTableDataSourcesStep: ProcessorStep = {
+  name: 'Virtual Table Data Sources',
+  async run(ctx: ProcessorContext): Promise<void> {
+    ctx.acc.virtualTableDataSources = await processVirtualTableDataSources(
+      ctx.client,
+      ctx.inventory.virtualTableDataSourceIds,
+      ctx.onProgress,
+      ctx.logger,
+      ctx.stepWarnings
+    );
+  },
+};
+
+/**
  * Ordered registry of all processor steps.
  * BlueprintGenerator iterates this array sequentially.
  *
@@ -388,4 +592,16 @@ export const GENERATOR_STEPS: readonly ProcessorStep[] = [
   columnSecurityStep,
   appsStep,
   formsStep,
+  pcfControlsStep,
+  serviceEndpointsStep,
+  copilotAgentsStep,
+  duplicateDetectionRulesStep,
+  siteMapsStep,
+  slaDefinitionsStep,
+  reportsStep,
+  chartsStep,
+  viewsStep,
+  dialogsStep,
+  aiModelsStep,
+  virtualTableDataSourcesStep,
 ];

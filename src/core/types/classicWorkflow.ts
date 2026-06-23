@@ -31,6 +31,8 @@ export interface ClassicWorkflow {
   modifiedOn: string;
   createdOn: string;
   migrationRecommendation?: MigrationRecommendation;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**

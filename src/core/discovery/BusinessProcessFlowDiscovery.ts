@@ -98,6 +98,7 @@ export class BusinessProcessFlowDiscovery implements IDiscoverer<BusinessProcess
           step: 'BPF Discovery',
           entitySet: 'workflows (BPF)',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           onProgress: (done, total) => this.onProgress?.(done, total),
         }
       );
@@ -165,6 +166,7 @@ export class BusinessProcessFlowDiscovery implements IDiscoverer<BusinessProcess
           step: 'BPF Discovery',
           entitySet: 'processstages (stages)',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
         }
       );
@@ -220,6 +222,7 @@ export class BusinessProcessFlowDiscovery implements IDiscoverer<BusinessProcess
           step: 'BPF Discovery',
           entitySet: 'processstages (steps)',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           getBatchLabel: (batch) => batch.map(id => idToName.get(normalizeGuid(id)) ?? id).join(', '),
         }
       );

@@ -8,4 +8,6 @@ export interface ModelDrivenApp {
   description?: string;
   isManaged: boolean;
   modifiedOn?: string;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }

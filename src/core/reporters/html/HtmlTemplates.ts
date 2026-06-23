@@ -18,7 +18,9 @@ import type {
   OneToManyRelationship,
   ManyToOneRelationship,
   ManyToManyRelationship,
+  CascadeConfiguration,
 } from '../../types/blueprint.js';
+import { formatActionSentence } from '../../utils/businessRuleFormatting.js';
 import type { PrivilegeDetail } from '../../discovery/SecurityRoleDiscovery.js';
 import type { CrossEntityAnalysisResult } from '../../types/crossEntityTrace.js';
 import type { ClassicWorkflow } from '../../types/classicWorkflow.js';
@@ -31,6 +33,18 @@ import type { CustomConnector } from '../../types/customConnector.js';
 import type { CanvasApp } from '../../types/canvasApp.js';
 import type { CustomPage } from '../../types/customPage.js';
 import type { ModelDrivenApp } from '../../types/modelDrivenApp.js';
+import type { PcfControl } from '../../types/pcfControl.js';
+import type { ServiceEndpoint } from '../../types/serviceEndpoint.js';
+import type { CopilotAgent } from '../../types/copilotAgent.js';
+import type { DuplicateDetectionRule } from '../../types/duplicateDetectionRule.js';
+import type { SiteMap } from '../../types/siteMap.js';
+import type { SlaDefinition } from '../../types/slaDefinition.js';
+import type { Report } from '../../types/report.js';
+import type { Chart } from '../../types/chart.js';
+import type { View } from '../../types/view.js';
+import type { Dialog } from '../../types/dialog.js';
+import type { AiModel } from '../../types/aiModel.js';
+import type { VirtualTableDataSource } from '../../types/virtualTableDataSource.js';
 
 /**
  * Main HTML Templates class
@@ -985,39 +999,121 @@ ${rows}
   private generateRelationshipsSection(type: string, relationships: (OneToManyRelationship | ManyToOneRelationship | ManyToManyRelationship)[]): string {
     if (relationships.length === 0) return '';
 
-    const rows = relationships.slice(0, 20).map(rel => {
-      // Cast to a display-shape covering all three relationship subtypes.
-      // OneToMany/ManyToOne use ReferencingEntity; ManyToMany uses Entity1LogicalName.
-      const r = rel as { SchemaName?: string; ReferencingEntity?: string; ReferencedEntity?: string; ReferencedAttribute?: string; ReferencingAttribute?: string; Entity1LogicalName?: string };
-      const schemaName = r.SchemaName || 'N/A';
-      const referencingEntity = r.ReferencingEntity || r.ReferencedEntity || r.Entity1LogicalName || 'N/A';
-      const referencedAttribute = r.ReferencedAttribute || r.ReferencingAttribute || 'N/A';
-
-      return `<tr>
-        <td>${this.htmlEscape(schemaName)}</td>
-        <td>${this.htmlEscape(referencingEntity)}</td>
-        <td>${this.htmlEscape(referencedAttribute)}</td>
-      </tr>`;
-    }).join('\n');
-
+    const isManyToMany = type === 'Many-to-Many';
+    const shown = relationships.slice(0, 20);
     const moreText = relationships.length > 20 ? `<p class="table-note">Showing 20 of ${relationships.length} relationships</p>` : '';
+
+    if (isManyToMany) {
+      // M:N has no cascade config — flat table is sufficient
+      const rows = shown.map(rel => {
+        const r = rel as { SchemaName?: string; Entity1LogicalName?: string; Entity2LogicalName?: string; IntersectEntityName?: string };
+        return `<tr>
+          <td>${this.htmlEscape(r.SchemaName || 'N/A')}</td>
+          <td>${this.htmlEscape(r.Entity1LogicalName || 'N/A')}</td>
+          <td>${this.htmlEscape(r.Entity2LogicalName || 'N/A')}</td>
+        </tr>`;
+      }).join('\n');
+      return `<div class="relationship-section">
+        <h5>${type} (${relationships.length})</h5>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Schema Name</th>
+              <th scope="col">Entity 1</th>
+              <th scope="col">Entity 2</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${moreText}
+      </div>`;
+    }
+
+    // 1:N and N:1 — accordion rows with cascade configuration in expanded panel
+    const rows = shown.map(rel => {
+      const r = rel as OneToManyRelationship | ManyToOneRelationship;
+      const schemaName = r.SchemaName || 'N/A';
+      const relatedEntity = r.ReferencingEntity || 'N/A';
+      const attribute = r.ReferencingAttribute || 'N/A';
+      const cascade = r.CascadeConfiguration;
+
+      return `<details style="margin-bottom:4px;border:1px solid #e0e0e0;border-radius:4px;">
+        <summary style="padding:8px 12px;cursor:pointer;list-style:none;display:flex;gap:16px;align-items:baseline;" title="Click to see cascade configuration">
+          <span style="font-weight:600;font-family:monospace;font-size:0.85em;flex:2;min-width:0;word-break:break-all">${this.htmlEscape(schemaName)}</span>
+          <span style="flex:1;min-width:0;color:#555">${this.htmlEscape(relatedEntity)}</span>
+          <span style="flex:1;min-width:0;color:#555;font-family:monospace;font-size:0.85em">${this.htmlEscape(attribute)}</span>
+          ${cascade?.Delete ? `<span class="badge ${this.cascadeBadgeClass(cascade.Delete)}" style="font-size:0.75em">Del: ${this.htmlEscape(cascade.Delete)}</span>` : ''}
+        </summary>
+        <div style="padding:8px 12px 12px 12px;">
+          ${cascade ? this.renderCascadeTable(cascade) : '<p style="color:#888;font-size:0.85em">No cascade configuration available</p>'}
+        </div>
+      </details>`;
+    }).join('\n');
 
     return `<div class="relationship-section">
       <h5>${type} (${relationships.length})</h5>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th scope="col">Schema Name</th>
-            <th scope="col">Related Entity</th>
-            <th scope="col">Related Attribute</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
+      ${rows}
       ${moreText}
     </div>`;
+  }
+
+  /** Return a CSS badge class for a cascade value */
+  private cascadeBadgeClass(value?: string): string {
+    switch (value) {
+      case 'Cascade':    return 'badge-error';
+      case 'Restrict':   return 'badge-error';
+      case 'Active':     return 'badge-warning';
+      case 'UserOwned':  return 'badge-warning';
+      case 'RemoveLink': return 'badge-warning';
+      case 'NoCascade':  return 'badge-primary';
+      default:           return 'badge-info';
+    }
+  }
+
+  /** Render a compact cascade configuration table for an expanded relationship row */
+  private renderCascadeTable(cascade: CascadeConfiguration): string {
+    const explanations: Record<string, Record<string, string>> = {
+      Delete:   { Cascade: 'Related records also deleted', Active: 'Active related records deleted', UserOwned: 'User-owned records deleted', RemoveLink: 'Relationship removed, record kept', Restrict: 'Delete blocked if related records exist', NoCascade: 'No automatic action' },
+      Merge:    { Cascade: 'Related records also merged', Active: 'Active related records merged', NoCascade: 'No automatic merge action' },
+      Assign:   { Cascade: 'Related records also assigned', UserOwned: 'User-owned records reassigned', NoCascade: 'No automatic assignment' },
+      Share:    { Cascade: 'Related records also shared', NoCascade: 'No automatic sharing' },
+      Reparent: { Cascade: 'Related records also reparented', NoCascade: 'No automatic reparenting' },
+      Unshare:  { Cascade: 'Related records also unshared', NoCascade: 'No automatic unsharing' },
+    };
+
+    const cascadeActions: Array<{ label: string; key: keyof CascadeConfiguration }> = [
+      { label: 'Delete',   key: 'Delete' },
+      { label: 'Merge',    key: 'Merge' },
+      { label: 'Assign',   key: 'Assign' },
+      { label: 'Share',    key: 'Share' },
+      { label: 'Reparent', key: 'Reparent' },
+      { label: 'Unshare',  key: 'Unshare' },
+    ];
+
+    const rows = cascadeActions
+      .filter(a => cascade[a.key] !== undefined && cascade[a.key] !== null)
+      .map(a => {
+        const val = cascade[a.key]!;
+        const explanation = explanations[a.label]?.[val] ?? val;
+        return `<tr>
+          <td style="font-weight:600;width:80px">${a.label}</td>
+          <td><span class="badge ${this.cascadeBadgeClass(val)}" style="font-size:0.75em">${this.htmlEscape(val)}</span></td>
+          <td style="color:#555;font-size:0.85em">${this.htmlEscape(explanation)}</td>
+        </tr>`;
+      }).join('');
+
+    if (!rows) return '<p style="color:#888;font-size:0.85em">No cascade configuration set</p>';
+
+    return `<table class="data-table" style="font-size:0.85em;margin-top:4px;">
+      <thead>
+        <tr>
+          <th scope="col">Action</th>
+          <th scope="col">Behaviour</th>
+          <th scope="col">Description</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
   }
 
   /**
@@ -1036,6 +1132,7 @@ ${rows}
       if (plugin.preImage) images.push(plugin.preImage.imageType);
       if (plugin.postImage) images.push(plugin.postImage.imageType);
       const imagesText = images.length > 0 ? images.join(', ') : 'None';
+      const solutionBadges = this.htmlSolutionBadges(plugin.referencingSolutions);
 
       return `<tr>
   <td>${this.htmlEscape(plugin.name)}</td>
@@ -1046,6 +1143,7 @@ ${rows}
   <td>${this.htmlEscape(plugin.modeName || 'N/A')}</td>
   <td>${String(plugin.rank || 0)}</td>
   <td>${this.htmlEscape(imagesText)}</td>
+  <td>${solutionBadges}</td>
 </tr>`;
     }).join('\n');
 
@@ -1063,6 +1161,7 @@ ${rows}
           <th scope="col" onclick="sortTable('plugins-table', 5)">Mode <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('plugins-table', 6)">Rank <span class="sort-indicator"></span></th>
           <th scope="col">Images</th>
+          <th scope="col">Solutions</th>
         </tr>
       </thead>
       <tbody>
@@ -1087,6 +1186,7 @@ ${rows}
     const rows = flows.map(flow => {
       const entityDisplay = flow.entityDisplayName || flow.entity || 'N/A';
       const hasExternal = flow.hasExternalCalls;
+      const solutionBadges = this.htmlSolutionBadges(flow.referencingSolutions);
 
       return `<tr>
   <td>${this.htmlEscape(flow.name)}</td>
@@ -1096,6 +1196,7 @@ ${rows}
   <td>${this.htmlEscape(flow.definition.scopeType)}</td>
   <td>${flow.definition.actionsCount}</td>
   <td>${hasExternal ? '<span class="badge badge-warning">Yes</span>' : '<span class="badge badge-info">No</span>'}</td>
+  <td>${solutionBadges}</td>
 </tr>`;
     }).join('\n');
 
@@ -1112,6 +1213,7 @@ ${rows}
           <th scope="col" onclick="sortTable('flows-table', 4)">Scope <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('flows-table', 5)">Actions <span class="sort-indicator"></span></th>
           <th scope="col">External Calls</th>
+          <th scope="col">Solutions</th>
         </tr>
       </thead>
       <tbody>
@@ -1138,23 +1240,41 @@ ${rows}
       const conditionGroups = rule.definition.conditionGroups ?? [];
       const elseActions = rule.definition.elseActions ?? [];
       const id = `br-${i}`;
+      const solutionBadges = this.htmlSolutionBadges(rule.referencingSolutions);
 
       // Build condition/action tables for each group
       const groupSections = conditionGroups.map((group, groupIdx) => {
-        const condRows = group.conditions.map(c => `<tr>
-          <td><code>${this.htmlEscape(c.field)}</code></td>
+        const condRows = group.conditions.map(c => {
+          const conditionValue = c.valueLabel
+            ? `${this.htmlEscape(c.valueLabel)} (${this.htmlEscape(c.value)})`
+            : (c.value ? this.htmlEscape(c.value) : '—');
+          return `<tr>
+          <td><code>${this.htmlEscape(c.fieldLabel ?? c.field)}</code></td>
           <td>${this.htmlEscape(c.operator)}</td>
-          <td>${c.value ? this.htmlEscape(c.value) : '—'}</td>
+          <td>${conditionValue}</td>
           <td>${this.htmlEscape(c.logicOperator)}</td>
-        </tr>`).join('');
+        </tr>`;
+        }).join('');
 
         const actionRows = group.actions.map(a => `<tr>
-          <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
-          <td><code>${this.htmlEscape(a.field)}</code></td>
-          <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
+          <td>${this.htmlEscape(formatActionSentence(a))}</td>
         </tr>`).join('');
 
-        const header = groupIdx === 0 ? 'IF' : 'ELSE IF';
+        // No conditions on the first group means the rule always executes
+        if (group.conditions.length === 0 && groupIdx === 0) {
+          return `
+          <div>
+            <h5 style="margin-bottom:6px">ALWAYS</h5>
+          </div>
+          <div>
+            <h5 style="margin-bottom:6px">THEN: Actions</h5>
+            ${group.actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th></tr></thead><tbody>${actionRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
+          </div>
+        `;
+        }
+
+        const priorConditionalCount = conditionGroups.slice(0, groupIdx).filter(g => g.conditions.length > 0).length;
+        const header = priorConditionalCount === 0 ? 'IF' : 'ELSE IF';
         return `
           <div>
             <h5 style="margin-bottom:6px">${header}: Conditions${groupIdx === 0 && rule.definition.conditionLogic ? ` <span style="font-weight:normal;color:#666">(${this.htmlEscape(rule.definition.conditionLogic)})</span>` : ''}</h5>
@@ -1162,15 +1282,13 @@ ${rows}
           </div>
           <div>
             <h5 style="margin-bottom:6px">THEN: Actions</h5>
-            ${group.actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${actionRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
+            ${group.actions.length > 0 ? `<table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th></tr></thead><tbody>${actionRows}</tbody></table>` : '<p style="color:#666;font-size:0.85em">No THEN actions detected.</p>'}
           </div>
         `;
       }).join('');
 
       const elseRows = elseActions.map(a => `<tr>
-        <td><span class="badge badge-${a.type.startsWith('Show') || a.type === 'UnlockField' ? 'success' : a.type.startsWith('Hide') || a.type === 'LockField' ? 'warning' : 'info'}">${this.htmlEscape(a.type)}</span></td>
-        <td><code>${this.htmlEscape(a.field)}</code></td>
-        <td>${a.value ? this.htmlEscape(a.value) : a.message ? this.htmlEscape(a.message) : '—'}</td>
+        <td>${this.htmlEscape(formatActionSentence(a))}</td>
       </tr>`).join('');
 
       const totalConditionCount = conditionGroups.reduce((sum, g) => sum + g.conditions.length, 0);
@@ -1193,12 +1311,13 @@ ${rows}
     </div>
   </div>
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    ${solutionBadges ? `<div style="margin-bottom:8px">${solutionBadges}</div>` : ''}
     ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.htmlEscape(rule.definition.parseError)}</div>` : ''}
     <div style="display:flex;flex-direction:column;gap:16px;">
       ${groupSections}
       ${elseActions.length > 0 ? `<div>
         <h5 style="margin-bottom:6px">ELSE: Actions</h5>
-        <table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th><th scope="col">Field</th><th scope="col">Value / Message</th></tr></thead><tbody>${elseRows}</tbody></table>
+        <table class="data-table" style="font-size:0.85em;"><thead><tr><th scope="col">Action</th></tr></thead><tbody>${elseRows}</tbody></table>
       </div>` : ''}
     </div>
   </div>
@@ -1229,6 +1348,7 @@ ${rows}
     const rows = workflows.map(workflow => {
       const entityDisplay = workflow.entityDisplayName || workflow.entity;
       const complexity = workflow.migrationRecommendation?.complexity || 'Unknown';
+      const solutionBadges = this.htmlSolutionBadges(workflow.referencingSolutions);
 
       return `<tr>
   <td>${this.htmlEscape(workflow.name)}</td>
@@ -1236,6 +1356,7 @@ ${rows}
   <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${this.htmlEscape(workflow.state)}</span></td>
   <td>${this.htmlEscape(workflow.modeName)}</td>
   <td><span class="badge badge-${complexity === 'Critical' ? 'error' : complexity === 'High' ? 'warning' : 'info'}">${this.htmlEscape(complexity)}</span></td>
+  <td>${solutionBadges}</td>
 </tr>`;
     }).join('\n');
 
@@ -1269,6 +1390,7 @@ ${rows}
           <th scope="col" onclick="sortTable('classic-workflows-table', 2)">State <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('classic-workflows-table', 3)">Mode <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('classic-workflows-table', 4)">Complexity <span class="sort-indicator"></span></th>
+          <th scope="col">Solutions</th>
         </tr>
       </thead>
       <tbody>
@@ -1353,6 +1475,7 @@ ${rows}
       const sizeKB = (wr.contentSize / 1024).toFixed(2);
       const hasExternal = wr.hasExternalCalls;
       const deprecated = wr.isDeprecated;
+      const solutionBadges = this.htmlSolutionBadges(wr.referencingSolutions);
 
       return `<tr>
   <td>${this.htmlEscape(wr.name)}</td>
@@ -1361,6 +1484,7 @@ ${rows}
   <td>${sizeKB} KB</td>
   <td>${hasExternal ? '<span class="badge badge-warning">Yes</span>' : 'No'}</td>
   <td>${deprecated ? '<span class="badge badge-error">Yes</span>' : 'No'}</td>
+  <td>${solutionBadges}</td>
 </tr>`;
     }).join('\n');
 
@@ -1376,6 +1500,7 @@ ${rows}
           <th scope="col" onclick="sortTable('web-resources-table', 3)">Size <span class="sort-indicator"></span></th>
           <th scope="col">External Calls</th>
           <th scope="col">Deprecated</th>
+          <th scope="col">Solutions</th>
         </tr>
       </thead>
       <tbody>
@@ -2147,6 +2272,73 @@ ${rows}
     }
 
     return `<div id="cea-pipelines-list">${items.join('')}</div>`;
+  }
+
+  /**
+   * Generate Shared Components section — components appearing in 2+ solutions.
+   * Returns an empty string when no shared components exist.
+   */
+  htmlSharedComponentsSection(result: BlueprintResult): string {
+    interface SharedRow { name: string; solutions: string[] }
+    const groups: Array<{ label: string; rows: SharedRow[] }> = [];
+
+    const addGroup = (label: string, items: Array<{ name: string; referencingSolutions?: string[] }>) => {
+      const rows = items
+        .filter(i => (i.referencingSolutions?.length ?? 0) > 1)
+        .map(i => ({ name: i.name, solutions: i.referencingSolutions! }));
+      if (rows.length > 0) groups.push({ label, rows });
+    };
+
+    addGroup('Flows', result.flows);
+    addGroup('Business Rules', result.businessRules);
+    addGroup('Plugins', result.plugins.map(p => ({ name: p.name, referencingSolutions: p.referencingSolutions })));
+    addGroup('Web Resources', result.webResources);
+    addGroup('Classic Workflows', result.classicWorkflows);
+    addGroup('Business Process Flows', result.businessProcessFlows.map(b => ({ name: b.name, referencingSolutions: b.referencingSolutions })));
+    addGroup('Custom APIs', result.customAPIs.map(a => ({ name: a.displayName || a.uniqueName, referencingSolutions: a.referencingSolutions })));
+    addGroup('Environment Variables', result.environmentVariables.map(e => ({ name: e.displayName || e.schemaName, referencingSolutions: e.referencingSolutions })));
+    addGroup('Connection References', result.connectionReferences.map(c => ({ name: c.displayName || c.name, referencingSolutions: c.referencingSolutions })));
+    addGroup('Canvas Apps', result.canvasApps.map(a => ({ name: a.displayName || a.name, referencingSolutions: a.referencingSolutions })));
+    addGroup('Custom Pages', result.customPages.map(p => ({ name: p.displayName || p.name, referencingSolutions: p.referencingSolutions })));
+    addGroup('Model-Driven Apps', result.modelDrivenApps.map(m => ({ name: m.displayName || m.name, referencingSolutions: m.referencingSolutions })));
+    addGroup('Entities', result.entities.map(e => ({
+      name: e.entity.DisplayName?.UserLocalizedLabel?.Label || e.entity.LogicalName,
+      referencingSolutions: e.referencingSolutions,
+    })));
+
+    if (groups.length === 0) return '';
+
+    const tables = groups.map(g => {
+      const rowsHtml = g.rows.map(r =>
+        `<tr><td>${this.htmlEscape(r.name)}</td><td>${r.solutions.map(s => `<span class="badge badge-info">${this.htmlEscape(s)}</span>`).join(' ')}</td></tr>`
+      ).join('\n');
+      return `<h3 style="margin-top:16px;margin-bottom:6px">${this.htmlEscape(g.label)}</h3>
+<div class="table-container">
+  <table class="data-table sortable">
+    <thead><tr><th scope="col">Name</th><th scope="col">Shared Across</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+</div>`;
+    }).join('\n');
+
+    return `<section id="shared-components" class="content-section" aria-labelledby="heading-shared-components">
+  <h2 id="heading-shared-components">Shared Components</h2>
+  <p style="color:#666;font-size:0.9em;margin-bottom:12px">Components that appear in two or more solutions.</p>
+  ${tables}
+</section>`;
+  }
+
+  /**
+   * Render inline solution-membership badges.
+   * Returns an empty string when referencingSolutions is absent or empty.
+   * All solution names are HTML-escaped.
+   */
+  private htmlSolutionBadges(referencingSolutions: string[] | undefined): string {
+    if (!referencingSolutions || referencingSolutions.length === 0) return '';
+    const badges = referencingSolutions
+      .map(s => `<span class="badge badge-info">${this.htmlEscape(s)}</span>`)
+      .join(' ');
+    return `<span style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap"><span style="font-size:0.8em;color:#666">In solutions:</span> ${badges}</span>`;
   }
 
   /**
@@ -3991,6 +4183,542 @@ ${this.embeddedJavaScript()}
       </div>`;
 
     return html;
+  }
+
+  htmlPcfControlsTable(controls: PcfControl[]): string {
+    if (controls.length === 0) {
+      return `<section id="pcf-controls" class="content-section" aria-labelledby="heading-pcf-controls">
+  <h2 id="heading-pcf-controls" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('pcf-controls')} PCF Controls</h2>
+  <div class="empty-state">No PCF controls found</div>
+</section>`;
+    }
+
+    const rows = controls.map(c => {
+      const managedBadge = c.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(c.displayName)}</td>
+  <td>${this.htmlEscape(c.name)}</td>
+  <td>${c.version ? this.htmlEscape(c.version) : '—'}</td>
+  <td>${c.compatibleDataTypes ? this.htmlEscape(c.compatibleDataTypes) : '—'}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="pcf-controls" class="content-section" aria-labelledby="heading-pcf-controls">
+  <h2 id="heading-pcf-controls" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('pcf-controls')} PCF Controls (${controls.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="pcf-controls-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('pcf-controls-table', 0)">Display Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('pcf-controls-table', 1)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('pcf-controls-table', 2)">Version <span class="sort-indicator"></span></th>
+          <th scope="col">Compatible Data Types</th>
+          <th scope="col" onclick="sortTable('pcf-controls-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlServiceEndpointsTable(endpoints: ServiceEndpoint[]): string {
+    if (endpoints.length === 0) {
+      return `<section id="service-endpoints" class="content-section" aria-labelledby="heading-service-endpoints">
+  <h2 id="heading-service-endpoints" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('service-endpoints')} Service Endpoints</h2>
+  <div class="empty-state">No service endpoints found</div>
+</section>`;
+    }
+
+    const rows = endpoints.map(e => {
+      const managedBadge = e.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(e.name)}</td>
+  <td>${this.htmlEscape(e.contract)}</td>
+  <td>${e.url ? `<code>${this.htmlEscape(e.url)}</code>` : '—'}</td>
+  <td>${e.registeredStepCount}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="service-endpoints" class="content-section" aria-labelledby="heading-service-endpoints">
+  <h2 id="heading-service-endpoints" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('service-endpoints')} Service Endpoints (${endpoints.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="service-endpoints-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('service-endpoints-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('service-endpoints-table', 1)">Contract <span class="sort-indicator"></span></th>
+          <th scope="col">URL</th>
+          <th scope="col" onclick="sortTable('service-endpoints-table', 3)">Steps <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('service-endpoints-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlDuplicateDetectionRulesTable(rules: DuplicateDetectionRule[]): string {
+    if (rules.length === 0) {
+      return `<section id="duplicate-detection-rules" class="content-section" aria-labelledby="heading-duplicate-detection-rules">
+  <h2 id="heading-duplicate-detection-rules" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('duplicate-detection-rules')} Duplicate Detection Rules</h2>
+  <div class="empty-state">No duplicate detection rules found</div>
+</section>`;
+    }
+
+    const rows = rules.map(r => {
+      const statusBadge = r.status === 'Active'
+        ? '<span class="badge badge-success">Active</span>'
+        : '<span class="badge badge-warning">Inactive</span>';
+      const managedBadge = r.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(r.name)}</td>
+  <td>${this.htmlEscape(r.baseEntityName)}</td>
+  <td>${this.htmlEscape(r.matchingEntityName)}</td>
+  <td>${statusBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="duplicate-detection-rules" class="content-section" aria-labelledby="heading-duplicate-detection-rules">
+  <h2 id="heading-duplicate-detection-rules" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('duplicate-detection-rules')} Duplicate Detection Rules (${rules.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="duplicate-detection-rules-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 1)">Base Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 2)">Matching Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 3)">Status <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('duplicate-detection-rules-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlSiteMapsTable(siteMaps: SiteMap[]): string {
+    if (siteMaps.length === 0) {
+      return `<section id="site-maps" class="content-section" aria-labelledby="heading-site-maps">
+  <h2 id="heading-site-maps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('site-maps')} Site Maps</h2>
+  <div class="empty-state">No site maps found</div>
+</section>`;
+    }
+
+    const rows = siteMaps.map(s => {
+      const appAwareBadge = s.isAppAware
+        ? '<span class="badge badge-brand">App-Aware</span>'
+        : '<span class="badge">Legacy</span>';
+      const managedBadge = s.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(s.name)}</td>
+  <td><code>${this.htmlEscape(s.uniqueName)}</code></td>
+  <td>${appAwareBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="site-maps" class="content-section" aria-labelledby="heading-site-maps">
+  <h2 id="heading-site-maps" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('site-maps')} Site Maps (${siteMaps.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="site-maps-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('site-maps-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('site-maps-table', 1)">Unique Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('site-maps-table', 2)">App-Aware <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('site-maps-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlSlaDefinitionsTable(slaDefinitions: SlaDefinition[]): string {
+    if (slaDefinitions.length === 0) {
+      return `<section id="sla-definitions" class="content-section" aria-labelledby="heading-sla-definitions">
+  <h2 id="heading-sla-definitions" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('sla-definitions')} SLA Definitions</h2>
+  <div class="empty-state">No SLA definitions found</div>
+</section>`;
+    }
+
+    const rows = slaDefinitions.map(s => {
+      const typeBadge = s.slaType === 'Enhanced'
+        ? '<span class="badge badge-brand">Enhanced</span>'
+        : '<span class="badge">Standard</span>';
+      const statusBadgeMap: Record<string, string> = {
+        'Active': '<span class="badge badge-success">Active</span>',
+        'Draft': '<span class="badge badge-info">Draft</span>',
+        'Cancelled': '<span class="badge badge-danger">Cancelled</span>',
+        'Expired': '<span class="badge badge-warning">Expired</span>',
+      };
+      const statusBadge = statusBadgeMap[s.status] ?? `<span class="badge">${this.htmlEscape(s.status)}</span>`;
+      const managedBadge = s.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(s.name)}</td>
+  <td>${typeBadge}</td>
+  <td>${statusBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="sla-definitions" class="content-section" aria-labelledby="heading-sla-definitions">
+  <h2 id="heading-sla-definitions" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('sla-definitions')} SLA Definitions (${slaDefinitions.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="sla-definitions-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('sla-definitions-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('sla-definitions-table', 1)">Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('sla-definitions-table', 2)">Status <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('sla-definitions-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlReportsTable(reports: Report[]): string {
+    if (reports.length === 0) {
+      return `<section id="reports" class="content-section" aria-labelledby="heading-reports">
+  <h2 id="heading-reports" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('reports')} Reports</h2>
+  <div class="empty-state">No reports found</div>
+</section>`;
+    }
+
+    const rows = reports.map(r => {
+      const customBadge = r.isCustomReport
+        ? '<span class="badge badge-info">Custom Report</span>'
+        : '<span class="badge">Out-of-box</span>';
+      const managedBadge = r.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(r.name)}</td>
+  <td>${this.htmlEscape(r.reportType)}</td>
+  <td>${customBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="reports" class="content-section" aria-labelledby="heading-reports">
+  <h2 id="heading-reports" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('reports')} Reports (${reports.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="reports-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('reports-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('reports-table', 1)">Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('reports-table', 2)">Custom <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('reports-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlChartsTable(charts: Chart[]): string {
+    if (charts.length === 0) {
+      return `<section id="charts" class="content-section" aria-labelledby="heading-charts">
+  <h2 id="heading-charts" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('charts')} Charts</h2>
+  <div class="empty-state">No charts found</div>
+</section>`;
+    }
+
+    const rows = charts.map(c => {
+      const defaultBadge = c.isDefault ? '<span class="badge badge-brand">Default</span>' : '';
+      const managedBadge = c.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(c.name)}</td>
+  <td>${this.htmlEscape(c.primaryEntityTypeCode)}</td>
+  <td>${defaultBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="charts" class="content-section" aria-labelledby="heading-charts">
+  <h2 id="heading-charts" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('charts')} Charts (${charts.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="charts-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('charts-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('charts-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('charts-table', 2)">Default <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('charts-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlViewsTable(views: View[]): string {
+    if (views.length === 0) {
+      return `<section id="views" class="content-section" aria-labelledby="heading-views">
+  <h2 id="heading-views" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('views')} Views</h2>
+  <div class="empty-state">No views found</div>
+</section>`;
+    }
+
+    const rows = views.map(v => {
+      const defaultBadge = v.isDefault ? '<span class="badge badge-brand">Default</span>' : '';
+      const managedBadge = v.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(v.name)}</td>
+  <td>${this.htmlEscape(v.returnedTypeCode)}</td>
+  <td>${this.htmlEscape(v.queryTypeName)}</td>
+  <td>${defaultBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="views" class="content-section" aria-labelledby="heading-views">
+  <h2 id="heading-views" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('views')} Views (${views.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="views-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('views-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('views-table', 1)">Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('views-table', 2)">View Type <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('views-table', 3)">Default <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('views-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlDialogsTable(dialogs: Dialog[]): string {
+    if (dialogs.length === 0) {
+      return `<section id="dialogs" class="content-section" aria-labelledby="heading-dialogs">
+  <h2 id="heading-dialogs" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('dialogs')} Dialogs (Deprecated)</h2>
+  <div class="empty-state">No deprecated dialog workflows found</div>
+</section>`;
+    }
+
+    const rows = dialogs.map(d => {
+      const statusBadgeMap: Record<string, string> = {
+        'Active': '<span class="badge badge-success">Active</span>',
+        'Draft': '<span class="badge badge-info">Draft</span>',
+        'Suspended': '<span class="badge badge-warning">Suspended</span>',
+      };
+      const statusBadge = statusBadgeMap[d.status] ?? `<span class="badge">${this.htmlEscape(d.status)}</span>`;
+      const managedBadge = d.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(d.name)}</td>
+  <td>${d.primaryEntityName ? this.htmlEscape(d.primaryEntityName) : '—'}</td>
+  <td>${statusBadge}</td>
+  <td><span class="badge badge-warning">Deprecated</span></td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="dialogs" class="content-section" aria-labelledby="heading-dialogs">
+  <h2 id="heading-dialogs" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('dialogs')} Dialogs — Deprecated (${dialogs.length})</h2>
+  <div class="alert alert-warning">${this.alertIcon('warning')} <strong>Deprecated Feature</strong> — Dialog workflows are deprecated. Migrate to Model-Driven App forms or Power Automate flows.</div>
+  <div class="table-container">
+    <table class="data-table sortable" id="dialogs-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('dialogs-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('dialogs-table', 1)">Primary Entity <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('dialogs-table', 2)">Status <span class="sort-indicator"></span></th>
+          <th scope="col">Deprecation</th>
+          <th scope="col" onclick="sortTable('dialogs-table', 4)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlAiModelsTable(aiModels: AiModel[]): string {
+    if (aiModels.length === 0) {
+      return `<section id="ai-models" class="content-section" aria-labelledby="heading-ai-models">
+  <h2 id="heading-ai-models" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('ai-models')} AI Models</h2>
+  <div class="empty-state">No AI Builder models found</div>
+</section>`;
+    }
+
+    const rows = aiModels.map(a => {
+      const statusBadgeMap: Record<string, string> = {
+        'Active': '<span class="badge badge-success">Active</span>',
+        'Inactive': '<span class="badge badge-warning">Inactive</span>',
+        'Unknown': '<span class="badge">Unknown</span>',
+      };
+      const statusBadge = statusBadgeMap[a.status] ?? `<span class="badge">${this.htmlEscape(a.status)}</span>`;
+      const templateDisplay = a.templateId
+        ? (a.templateId.length > 20 ? `<code title="${this.htmlEscape(a.templateId)}">${this.htmlEscape(a.templateId.substring(0, 20))}…</code>` : `<code>${this.htmlEscape(a.templateId)}</code>`)
+        : '—';
+      const managedBadge = a.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(a.name)}</td>
+  <td>${templateDisplay}</td>
+  <td>${statusBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="ai-models" class="content-section" aria-labelledby="heading-ai-models">
+  <h2 id="heading-ai-models" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('ai-models')} AI Models (${aiModels.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="ai-models-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('ai-models-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('ai-models-table', 1)">Template ID <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('ai-models-table', 2)">Status <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('ai-models-table', 3)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlVirtualTableDataSourcesTable(dataSources: VirtualTableDataSource[]): string {
+    if (dataSources.length === 0) {
+      return `<section id="virtual-table-data-sources" class="content-section" aria-labelledby="heading-virtual-table-data-sources">
+  <h2 id="heading-virtual-table-data-sources" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('virtual-table-data-sources')} Virtual Table Data Sources</h2>
+  <div class="empty-state">No virtual table data sources found</div>
+</section>`;
+    }
+
+    const rows = dataSources.map(d => {
+      const connectionBadge = d.dataSourceTypeId
+        ? '<span class="badge badge-success">Configured</span>'
+        : '<span class="badge">Not Configured</span>';
+      const managedBadge = d.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      return `<tr>
+  <td>${this.htmlEscape(d.name)}</td>
+  <td>${connectionBadge}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="virtual-table-data-sources" class="content-section" aria-labelledby="heading-virtual-table-data-sources">
+  <h2 id="heading-virtual-table-data-sources" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('virtual-table-data-sources')} Virtual Table Data Sources (${dataSources.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="virtual-table-data-sources-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('virtual-table-data-sources-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('virtual-table-data-sources-table', 1)">Connection <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('virtual-table-data-sources-table', 2)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
+  }
+
+  htmlCopilotAgentsTable(agents: CopilotAgent[]): string {
+    if (agents.length === 0) {
+      return `<section id="copilot-agents" class="content-section" aria-labelledby="heading-copilot-agents">
+  <h2 id="heading-copilot-agents" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('copilot-agents')} Copilot Agents</h2>
+  <div class="empty-state">No Copilot Studio agents found</div>
+</section>`;
+    }
+
+    const rows = agents.map(a => {
+      const managedBadge = a.isManaged
+        ? '<span class="badge badge-warning">Managed</span>'
+        : '<span class="badge badge-success">Unmanaged</span>';
+      const activeBadge = a.isActive
+        ? '<span class="badge badge-success">Active</span>'
+        : '<span class="badge badge-danger">Inactive</span>';
+      const kindLabel = a.kind === 'CopilotAgent' ? 'Copilot Agent' : a.kind === 'ClassicBot' ? 'Classic Bot' : 'Agent';
+      return `<tr>
+  <td>${this.htmlEscape(a.name)}</td>
+  <td>${this.htmlEscape(a.schemaName)}</td>
+  <td>${this.htmlEscape(kindLabel)}</td>
+  <td>${activeBadge}</td>
+  <td>${a.componentCount}</td>
+  <td>${managedBadge}</td>
+</tr>`;
+    }).join('\n');
+
+    return `<section id="copilot-agents" class="content-section" aria-labelledby="heading-copilot-agents">
+  <h2 id="heading-copilot-agents" class="section-title" style="display:flex;align-items:center;gap:10px;">${this.navIcon('copilot-agents')} Copilot Agents (${agents.length})</h2>
+  <div class="table-container">
+    <table class="data-table sortable" id="copilot-agents-table">
+      <thead>
+        <tr>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 0)">Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 1)">Schema Name <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 2)">Kind <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 3)">Status <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 4)">Components <span class="sort-indicator"></span></th>
+          <th scope="col" onclick="sortTable('copilot-agents-table', 5)">Managed <span class="sort-indicator"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </div>
+</section>`;
   }
 
 }

@@ -22,6 +22,8 @@ export interface BusinessProcessFlow {
   modifiedBy: string;
   modifiedOn: string;
   createdOn: string;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**

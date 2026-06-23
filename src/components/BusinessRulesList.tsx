@@ -3,6 +3,7 @@ import {
   Text,
   Badge,
   makeStyles,
+  mergeClasses,
   tokens,
   Card,
   Title3,
@@ -15,6 +16,7 @@ import { filterDescription } from '../utils/descriptionFilter';
 import { EmptyState } from './EmptyState';
 import { useCardRowStyles } from '../hooks/useCardRowStyles';
 import { useListFilter, type FilterSpec } from '../hooks/useListFilter';
+import { formatActionSentence } from '../core/utils/businessRuleFormatting';
 
 const RULE_STATE_VALUES = ['Active', 'Draft'];
 const RULE_SCOPE_VALUES = ['Entity', 'AllForms'];
@@ -57,6 +59,20 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     flexWrap: 'wrap',
     marginTop: tokens.spacingVerticalM,
+  },
+  rowMeta: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  actionItemShowField:   { borderLeftColor: tokens.colorPaletteGreenForeground1 },
+  actionItemHideField:   { borderLeftColor: tokens.colorPaletteRedForeground1 },
+  actionItemSetValue:    { borderLeftColor: tokens.colorBrandForeground1 },
+  actionItemSetRequired: { borderLeftColor: tokens.colorPaletteYellowForeground1 },
+  actionItemLock:        { borderLeftColor: tokens.colorPaletteDarkOrangeForeground1 },
+  actionItemShowError:   { borderLeftColor: tokens.colorPaletteRedForeground1 },
+  parseErrorText: {
+    color: tokens.colorPaletteRedForeground1,
+    marginTop: tokens.spacingVerticalXS,
   },
 });
 
@@ -134,17 +150,17 @@ export function BusinessRulesList({
     return 'informative';
   };
 
-  const getActionBorderColor = (actionType: string): string => {
-    const colors: Record<string, string> = {
-      'ShowField': tokens.colorPaletteGreenForeground1,
-      'HideField': tokens.colorPaletteRedForeground1,
-      'SetValue': tokens.colorBrandForeground1,
-      'SetRequired': tokens.colorPaletteYellowForeground1,
-      'LockField': tokens.colorPaletteDarkOrangeForeground1,
-      'UnlockField': tokens.colorPaletteGreenForeground1,
-      'ShowError': tokens.colorPaletteRedForeground1,
+  const getActionItemClass = (actionType: string): string | undefined => {
+    const classMap: Record<string, string> = {
+      ShowField:   styles.actionItemShowField,
+      HideField:   styles.actionItemHideField,
+      UnlockField: styles.actionItemShowField,
+      SetValue:    styles.actionItemSetValue,
+      SetRequired: styles.actionItemSetRequired,
+      LockField:   styles.actionItemLock,
+      ShowError:   styles.actionItemShowError,
     };
-    return colors[actionType] ?? tokens.colorNeutralStroke1;
+    return classMap[actionType];
   };
 
   const renderRuleDetails = (rule: BusinessRule): JSX.Element => {
@@ -202,24 +218,38 @@ export function BusinessRulesList({
         </div>
 
         {/* Condition Groups */}
-        {rule.definition.conditionGroups.map((group, groupIdx) => (
+        {rule.definition.conditionGroups.map((group, groupIdx) => {
+          // Count how many groups BEFORE this one had conditions — determines IF vs ELSE IF.
+          // A group preceded only by ALWAYS groups is the first true IF, not an ELSE IF.
+          const priorConditionalCount = rule.definition.conditionGroups
+            .slice(0, groupIdx)
+            .filter(g => g.conditions.length > 0).length;
+          return (
           <div key={groupIdx}>
             {/* Conditions Section */}
-            {group.conditions.length > 0 && (
+            {group.conditions.length === 0 && groupIdx === 0 ? (
               <div className={shared.section}>
                 <div className={styles.sectionHeader}>
-                  <Text weight="semibold">{groupIdx === 0 ? 'IF' : 'ELSE IF'}</Text>
+                  <Text weight="semibold">ALWAYS</Text>
+                </div>
+              </div>
+            ) : group.conditions.length > 0 ? (
+              <div className={shared.section}>
+                <div className={styles.sectionHeader}>
+                  <Text weight="semibold">{priorConditionalCount === 0 ? 'IF' : 'ELSE IF'}</Text>
                 </div>
                 {group.conditions.map((condition, idx) => (
                   <div key={idx} className={styles.conditionItem}>
                     <Text>
                       {idx > 0 && <strong>{condition.logicOperator} </strong>}
-                      <span className={shared.codeText}>{condition.field}</span> {condition.operator} <strong>'{condition.value}'</strong>
+                      <span className={shared.codeText}>{condition.fieldLabel ?? condition.field}</span>{' '}
+                      {condition.operator}{' '}
+                      <strong>'{condition.valueLabel ? `${condition.valueLabel} (${condition.value})` : condition.value}'</strong>
                     </Text>
                   </div>
                 ))}
               </div>
-            )}
+            ) : null}
 
             {/* THEN Actions Section */}
             {group.actions.length > 0 && (
@@ -230,21 +260,16 @@ export function BusinessRulesList({
                 {group.actions.map((action, idx) => (
                   <div
                     key={idx}
-                    className={styles.actionItem}
-                    style={{ borderLeftColor: getActionBorderColor(action.type) }}
+                    className={mergeClasses(styles.actionItem, getActionItemClass(action.type))}
                   >
-                    <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
-                    <Text>
-                      <span className={shared.codeText}>{action.field}</span>
-                      {action.value && <> = <strong>{action.value}</strong></>}
-                      {action.message && <>: <em>{action.message}</em></>}
-                    </Text>
+                    <Text>{formatActionSentence(action)}</Text>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {/* ELSE Actions Section */}
         {rule.definition.elseActions.length > 0 && (
@@ -255,15 +280,9 @@ export function BusinessRulesList({
             {rule.definition.elseActions.map((action, idx) => (
               <div
                 key={idx}
-                className={styles.actionItem}
-                style={{ borderLeftColor: getActionBorderColor(action.type) }}
+                className={mergeClasses(styles.actionItem, getActionItemClass(action.type))}
               >
-                <Badge appearance="filled" shape="rounded" size="small">{action.type}</Badge>
-                <Text>
-                  <span className={shared.codeText}>{action.field}</span>
-                  {action.value && <> = <strong>{action.value}</strong></>}
-                  {action.message && <>: <em>{action.message}</em></>}
-                </Text>
+                <Text>{formatActionSentence(action)}</Text>
               </div>
             ))}
           </div>
@@ -272,7 +291,7 @@ export function BusinessRulesList({
         {rule.definition.parseError && (
           <div className={shared.section}>
             <Badge appearance="filled" shape="rounded" color="important">Parse Error</Badge>
-            <Text style={{ color: tokens.colorPaletteRedForeground1, marginTop: tokens.spacingVerticalXS }}>
+            <Text className={styles.parseErrorText}>
               {rule.definition.parseError}
             </Text>
           </div>
@@ -382,7 +401,7 @@ export function BusinessRulesList({
                 {rule.scopeName}
               </Badge>
               <Badge {...stateBadgeProps}>{rule.state}</Badge>
-              <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+              <Text className={styles.rowMeta}>
                 {conditionCount} cond{conditionCount !== 1 ? 's' : ''}, {actionCount} action{actionCount !== 1 ? 's' : ''}
               </Text>
             </div>

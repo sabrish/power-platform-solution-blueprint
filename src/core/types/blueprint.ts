@@ -8,6 +8,18 @@ import type { FetchLogEntry } from '../utils/FetchLogger.js';
 import type { CanvasApp } from './canvasApp.js';
 import type { CustomPage } from './customPage.js';
 import type { ModelDrivenApp } from './modelDrivenApp.js';
+import type { PcfControl } from './pcfControl.js';
+import type { ServiceEndpoint } from './serviceEndpoint.js';
+import type { CopilotAgent } from './copilotAgent.js';
+import type { DuplicateDetectionRule } from './duplicateDetectionRule.js';
+import type { SiteMap } from './siteMap.js';
+import type { SlaDefinition } from './slaDefinition.js';
+import type { Report } from './report.js';
+import type { Chart } from './chart.js';
+import type { View } from './view.js';
+import type { Dialog } from './dialog.js';
+import type { AiModel } from './aiModel.js';
+import type { VirtualTableDataSource } from './virtualTableDataSource.js';
 
 /**
  * Progress phases during blueprint generation
@@ -237,6 +249,8 @@ export interface Flow {
   createdOn: string;
   definition: FlowDefinition;
   hasExternalCalls: boolean;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**
@@ -291,6 +305,8 @@ export interface BusinessRule {
   owner: string;
   modifiedOn: string;
   createdOn: string;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**
@@ -309,8 +325,12 @@ export interface BusinessRuleDefinition {
  */
 export interface Condition {
   field: string;
+  /** Display name of the field, populated post-discovery via attribute metadata. Falls back to `field` if absent. */
+  fieldLabel?: string;
   operator: string;
   value: string;
+  /** Human-readable label for the option-set value (e.g. "Cash"), populated when the field has an OptionSet. */
+  valueLabel?: string;
   logicOperator: 'AND' | 'OR';
 }
 
@@ -320,6 +340,8 @@ export interface Condition {
 export interface Action {
   type: 'ShowField' | 'HideField' | 'SetValue' | 'SetRequired' | 'SetOptional' | 'LockField' | 'UnlockField' | 'ShowError';
   field: string;
+  /** Display name of the field, populated post-discovery via attribute metadata. Falls back to `field` if absent. */
+  fieldLabel?: string;
   value?: string;
   message?: string;
 }
@@ -376,6 +398,8 @@ export interface WebResource {
   createdOn: string;
   hasExternalCalls: boolean;
   isDeprecated: boolean;
+  /** Solution unique names that include this component (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**
@@ -447,6 +471,8 @@ export interface EntityBlueprint {
   executionPipelines?: Map<string, ExecutionPipeline>;
   performanceRisks?: PerformanceRisk[];
   fieldSecurity?: EntityFieldSecurity;
+  /** Solution unique names that include this entity (populated post-discovery for solution-scoped runs) */
+  referencingSolutions?: string[];
 }
 
 /**
@@ -474,6 +500,18 @@ export interface BlueprintSummary {
   totalCanvasApps: number;
   totalCustomPages: number;
   totalModelDrivenApps: number;
+  totalPcfControls: number;
+  totalServiceEndpoints: number;
+  totalCopilotAgents: number;
+  totalDuplicateDetectionRules: number;
+  totalSiteMaps: number;
+  totalSlaDefinitions: number;
+  totalReports: number;
+  totalCharts: number;
+  totalViews: number;
+  totalDialogs: number;
+  totalAiModels: number;
+  totalVirtualTableDataSources: number;
 }
 
 /**
@@ -704,6 +742,12 @@ export interface StepWarning {
   partial: boolean;
   /** Number of items that could not be fetched */
   failedCount?: number;
+  /**
+   * Severity level — defaults to 'error'.
+   * Use 'info' for advisory notices (e.g. deprecated component found) that are
+   * not failures: they are shown in a separate neutral panel, not as errors.
+   */
+  severity?: 'error' | 'warning' | 'info';
 }
 
 /**
@@ -731,6 +775,18 @@ export interface BlueprintResult {
   canvasApps: CanvasApp[];
   customPages: CustomPage[];
   modelDrivenApps: ModelDrivenApp[];
+  pcfControls: PcfControl[];
+  serviceEndpoints: ServiceEndpoint[];
+  copilotAgents: CopilotAgent[];
+  duplicateDetectionRules: DuplicateDetectionRule[];
+  siteMaps: SiteMap[];
+  slaDefinitions: SlaDefinition[];
+  reports: Report[];
+  charts: Chart[];
+  views: View[];
+  dialogs: Dialog[];
+  aiModels: AiModel[];
+  virtualTableDataSources: VirtualTableDataSource[];
   webResources: WebResource[];
   webResourcesByType: Map<string, WebResource[]>;
   erd?: ERDDefinition;

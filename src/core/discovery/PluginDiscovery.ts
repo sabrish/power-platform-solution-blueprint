@@ -84,6 +84,12 @@ export class PluginDiscovery implements IDiscoverer<PluginStep> {
           entitySet: 'sdkmessageprocessingsteps',
           logger: this.logger,
           onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
+          getRequestUrl: (batch) => {
+            const select = 'sdkmessageprocessingstepid,name,stage,mode,rank,filteringattributes,description,asyncautodelete,configuration,statecode,_impersonatinguserid_value';
+            const expand = 'sdkmessageid($select=name),plugintypeid($select=typename,name,assemblyname,plugintypeid),sdkmessagefilterid($select=primaryobjecttypecode)';
+            const filter = buildOrFilter(normalizeBatch(batch), 'sdkmessageprocessingstepid', { guids: true });
+            return `${this.client.getEnvironmentUrl()}/api/data/v9.2/sdkmessageprocessingsteps?$select=${select}&$filter=${encodeURIComponent(filter)}&$expand=${encodeURIComponent(expand)}&$orderby=stage%20asc,rank%20asc`;
+          },
         }
       );
 
@@ -171,6 +177,14 @@ export class PluginDiscovery implements IDiscoverer<PluginStep> {
             total
           ),
           getBatchLabel: (batch) => batch.map(id => stepIdToName.get(id.toLowerCase()) ?? id).join(', '),
+          getRequestUrl: (batch) => {
+            const select = 'sdkmessageprocessingstepimageid,_sdkmessageprocessingstepid_value,imagetype,name,attributes,messagepropertyname';
+            const imageFilters = batch.map(id => {
+              const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
+              return `_sdkmessageprocessingstepid_value eq '${guidWithBraces}'`;
+            }).join(' or ');
+            return `${this.client.getEnvironmentUrl()}/api/data/v9.2/sdkmessageprocessingstepimages?$select=${select}&$filter=${encodeURIComponent(imageFilters)}`;
+          },
         }
       );
 

@@ -177,6 +177,7 @@ export class SecurityRoleDiscovery implements IDiscoverer<SecurityRole> {
         step: 'Security Roles',
         entitySet: 'roles',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
       }
     );
@@ -232,6 +233,7 @@ export class SecurityRoleDiscovery implements IDiscoverer<SecurityRole> {
         step: 'Security Roles',
         entitySet: 'roleprivilegescollection',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(Math.floor(done / 2), total),
         getBatchLabel: (batch) => batch.map(id => roleIdToName.get(id.toLowerCase()) ?? id).join(', '),
       }
@@ -267,6 +269,7 @@ export class SecurityRoleDiscovery implements IDiscoverer<SecurityRole> {
         step: 'Security Roles',
         entitySet: 'privileges',
         logger: this.logger,
+        environmentUrl: this.client.getEnvironmentUrl(),
         onProgress: (done, total) => this.onProgress?.(
           Math.floor(roles.length / 2) + Math.floor(done / total * (roles.length / 2)),
           roles.length

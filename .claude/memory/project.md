@@ -18,7 +18,8 @@
 
 ## Current Version
 
-**v1.1.2** (pending git release 2026-03-17) — patch: cross-entity chain map redesign (trigger operation column, message code support), debug logging cleanup
+**v1.3.0** (pending release 2026-06-23) — minor: 12 new component types, reverse solution lookup (#40), cascade configuration in exports (#42), business rule parser improvements (#37)
+**v1.1.2** (released 2026-03-17) — patch: cross-entity chain map redesign (trigger operation column, message code support), debug logging cleanup
 **v1.1.1** (released 2026-03-17) — patch: business rules IF/THEN/ELSE, conditionCount fix, DRY/SOLID refactoring, debug logger, Custom APIs click fix, env vars eye icon fix, CDS Default Solution filter fix, HTML cross-entity structure fix
 **v1.1.0** (released 2026-03-12) — minor: pipeline-first Cross-Entity Automation view, external API call detection, HTML/Markdown export parity, and AUDIT compliance fixes
 **v1.0.1** (released 2026-03-11) — patch: discovery pagination fix + OData injection guards
@@ -93,21 +94,52 @@ pnpm typecheck  # Type check
 
 ## In Progress / Known Limitations
 
-### Release v1.1.2 — Documentation Finalized (2026-03-17)
+### Business Rule Parser: JavaScript condition patterns (2026-06-22)
 
-**Status:** Documentation and version files complete; awaiting project owner for git operations.
+**Status:** ✅ RESOLVED in commit d7ec24a
 
-**Completed this session:**
-- CHANGELOG.md: `## [1.1.2] - 2026-03-17` entry created from latest commits (cross-entity chain map redesign, debug logging cleanup)
-- README.md: version badge updated to `1.1.2`
-- Verified all four files match: `package.json`, `npm-shrinkwrap.json`, `CHANGELOG.md`, `README.md` all show v1.1.2
+**What was fixed:**
+Extended `parseSingleCond` to handle all observed Dataverse-compiled JS condition patterns:
+- Pattern G: empty-string check → "is not blank" / "is blank"
+- Pattern H: triple blank check → collapsed to single "is blank"
+- Pattern J: string contains/does-not-contain via indexOf helper
+- Patterns A/B/D/E: double-paren variables `((vN))`
+- Added `stripOuterParens` helper and "contains data" triple pre-check
+- Removed all debug logging statements
 
-**Pending — project owner must run:**
-1. `pnpm typecheck && pnpm build` — build verification
-2. Stage and commit: `git add CHANGELOG.md README.md`
-3. `git commit -m "chore: release v1.1.2"`
-4. `gh pr create ...` — create PR to main
-5. After PR merge: `git tag v1.1.2 -m "Release v1.1.2"` then push tag
+### HTML/Markdown Export: Cascade Configuration (2026-06-22)
+
+**Status:** ✅ RESOLVED in commits earlier in session
+
+**What was fixed:**
+- 1:N and N:1 relationships now show cascade configuration (Delete, Merge, Assign, Share, Reparent, Unshare)
+- HTML: accordion/details-summary per row with full cascade table in expanded view
+- Markdown: cascade configuration sub-tables added to relationship tables
+- M:N relationships correctly show no cascade
+
+### Reverse Solution Lookup: referencingSolutions field (2026-06-22)
+
+**Status:** IN PROGRESS — feature implementation active on feat/new-component-types
+
+**Current work:**
+- `referencingSolutions?: string[]` field added to component types (Flow, BusinessRule, WebResource, EntityBlueprint, PluginStep, ClassicWorkflow, BPF, CustomAPI, EnvironmentVariable, ConnectionReference, CanvasApp)
+- Post-processing pass in BlueprintGenerator mapping `componentToSolutions` to solution unique names
+- JSON export: automatic serialisation
+- HTML export: solution badges in component expanded views; "Shared Components" summary section in progress
+- Markdown export: "Solutions" column + "Shared Components" section in progress
+
+**Issues tracked:**
+- Issue #37 — Business Rule Parser patterns (RESOLVED)
+- Issue #42 — HTML/Markdown cascade configuration (RESOLVED)
+- Issue #40 — Reverse solution lookup (IN PROGRESS)
+
+### Released in v1.1.2 (2026-03-17)
+
+Patch release. Key fixes:
+- Cross-entity chain map redesign (trigger operation column, message code support)
+- Debug logging cleanup
+
+Documentation finalized; code merged to main and tagged.
 
 ### Released in v1.1.0 (2026-03-12)
 

@@ -25,6 +25,8 @@ import type {
   GeneratorOptions,
   BlueprintResult,
   EntityBlueprint,
+  BusinessRule,
+  AttributeMetadata,
   ProgressInfo,
   StepWarning,
 } from '../types/blueprint.js';
@@ -152,6 +154,8 @@ export class BlueprintGenerator {
         securityRoles, fieldSecurityProfiles, fieldSecurityByEntity,
         attributeMaskingRules, columnSecurityProfiles,
         canvasApps, customPages, modelDrivenApps,
+        pcfControls, serviceEndpoints, copilotAgents,
+        duplicateDetectionRules, siteMaps, slaDefinitions, reports, charts, views, dialogs, aiModels, virtualTableDataSources,
         webResources, webResourcesByType,
         formsByEntity,
       } = acc;
@@ -170,6 +174,14 @@ export class BlueprintGenerator {
           blueprint.fieldSecurity = fieldSecurity;
         }
       }
+
+      // Fetch option set labels for entity attributes used in business rule conditions.
+      // Done as a separate pass via the typed PicklistAttributeMetadata path because
+      // OptionSet cannot be expanded within the Attributes nested expand.
+      const picklistOptions = await this.fetchPicklistOptionLabels(entityBlueprints, businessRules);
+
+      // Enrich business rule field names with display names from already-fetched entity schema
+      this.applyBusinessRuleFieldLabels(entityBlueprints, businessRules, picklistOptions);
 
       // STEP 9: Generate ERD and Advanced Analysis
       this.reportProgress({
@@ -236,6 +248,18 @@ export class BlueprintGenerator {
           totalCanvasApps: 0,
           totalCustomPages: 0,
           totalModelDrivenApps: 0,
+          totalPcfControls: 0,
+          totalServiceEndpoints: 0,
+          totalCopilotAgents: 0,
+          totalDuplicateDetectionRules: 0,
+          totalSiteMaps: 0,
+          totalSlaDefinitions: 0,
+          totalReports: 0,
+          totalCharts: 0,
+          totalViews: 0,
+          totalDialogs: 0,
+          totalAiModels: 0,
+          totalVirtualTableDataSources: 0,
         },
         plugins,
         pluginsByEntity,
@@ -255,6 +279,18 @@ export class BlueprintGenerator {
         canvasApps,
         customPages,
         modelDrivenApps,
+        pcfControls,
+        serviceEndpoints,
+        copilotAgents,
+        duplicateDetectionRules,
+        siteMaps,
+        slaDefinitions,
+        reports,
+        charts,
+        views,
+        dialogs,
+        aiModels,
+        virtualTableDataSources,
         webResources,
         webResourcesByType,
       };
@@ -308,6 +344,18 @@ export class BlueprintGenerator {
         totalCanvasApps: canvasApps.length,
         totalCustomPages: customPages.length,
         totalModelDrivenApps: modelDrivenApps.length,
+        totalPcfControls: pcfControls.length,
+        totalServiceEndpoints: serviceEndpoints.length,
+        totalCopilotAgents: copilotAgents.length,
+        totalDuplicateDetectionRules: duplicateDetectionRules.length,
+        totalSiteMaps: siteMaps.length,
+        totalSlaDefinitions: slaDefinitions.length,
+        totalReports: reports.length,
+        totalCharts: charts.length,
+        totalViews: views.length,
+        totalDialogs: dialogs.length,
+        totalAiModels: aiModels.length,
+        totalVirtualTableDataSources: virtualTableDataSources.length,
       };
 
       // Complete
@@ -351,6 +399,18 @@ export class BlueprintGenerator {
         canvasApps,
         customPages,
         modelDrivenApps,
+        pcfControls,
+        serviceEndpoints,
+        copilotAgents,
+        duplicateDetectionRules,
+        siteMaps,
+        slaDefinitions,
+        reports,
+        charts,
+        views,
+        dialogs,
+        aiModels,
+        virtualTableDataSources,
         webResources,
         webResourcesByType,
         erd,
@@ -364,6 +424,48 @@ export class BlueprintGenerator {
         stepWarnings: this.stepWarnings.length > 0 ? this.stepWarnings : undefined,
         fetchLog: this.logger.getEntries(),
       };
+
+      // Annotate referencingSolutions on all components (solution-scoped runs only)
+      if (this.scope.type === 'solution' && this.solutions.length > 0 && inventory.componentToSolutions.size > 0) {
+        const solutionIdToName = new Map(
+          this.solutions.map(s => [normalizeGuid(s.solutionid), s.uniquename])
+        );
+        const resolveSolutions = (id: string): string[] =>
+          (inventory.componentToSolutions.get(normalizeGuid(id)) ?? [])
+            .map(sid => solutionIdToName.get(normalizeGuid(sid)) ?? sid)
+            .filter((name): name is string => name.length > 0);
+
+        result.flows.forEach(f => { f.referencingSolutions = resolveSolutions(f.id); });
+        result.businessRules.forEach(br => { br.referencingSolutions = resolveSolutions(br.id); });
+        result.plugins.forEach(p => { p.referencingSolutions = resolveSolutions(p.id); });
+        result.webResources.forEach(wr => { wr.referencingSolutions = resolveSolutions(wr.id); });
+        result.classicWorkflows.forEach(wf => { wf.referencingSolutions = resolveSolutions(wf.id); });
+        result.businessProcessFlows.forEach(bpf => { bpf.referencingSolutions = resolveSolutions(bpf.id); });
+        result.customAPIs.forEach(api => { api.referencingSolutions = resolveSolutions(api.id); });
+        result.environmentVariables.forEach(ev => { ev.referencingSolutions = resolveSolutions(ev.id); });
+        result.connectionReferences.forEach(cr => { cr.referencingSolutions = resolveSolutions(cr.id); });
+        result.canvasApps.forEach(app => { app.referencingSolutions = resolveSolutions(app.id); });
+        result.customPages.forEach(cp => { cp.referencingSolutions = resolveSolutions(cp.id); });
+        result.modelDrivenApps.forEach(mda => { mda.referencingSolutions = resolveSolutions(mda.id); });
+        result.pcfControls.forEach(c => { c.referencingSolutions = resolveSolutions(c.id); });
+        result.serviceEndpoints.forEach(se => { se.referencingSolutions = resolveSolutions(se.id); });
+        result.copilotAgents.forEach(a => { a.referencingSolutions = resolveSolutions(a.id); });
+        result.aiModels.forEach(m => { m.referencingSolutions = resolveSolutions(m.id); });
+        result.charts.forEach(c => { c.referencingSolutions = resolveSolutions(c.id); });
+        result.views.forEach(v => { v.referencingSolutions = resolveSolutions(v.id); });
+        result.siteMaps.forEach(sm => { sm.referencingSolutions = resolveSolutions(sm.id); });
+        result.slaDefinitions.forEach(sl => { sl.referencingSolutions = resolveSolutions(sl.id); });
+        result.dialogs.forEach(d => { d.referencingSolutions = resolveSolutions(d.id); });
+        result.reports.forEach(r => { r.referencingSolutions = resolveSolutions(r.id); });
+        result.virtualTableDataSources.forEach(vt => { vt.referencingSolutions = resolveSolutions(vt.id); });
+        result.duplicateDetectionRules.forEach(dr => { dr.referencingSolutions = resolveSolutions(dr.id); });
+        // EntityBlueprint primary key is entity.MetadataId
+        result.entities.forEach(e => {
+          if (e.entity.MetadataId) {
+            e.referencingSolutions = resolveSolutions(e.entity.MetadataId);
+          }
+        });
+      }
 
       // Store for export
       this.latestResult = result;
@@ -460,6 +562,7 @@ export class BlueprintGenerator {
         step: 'Entity Schema',
         entitySet: 'EntityDefinitions',
         filterSummary: displayName,
+        rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/EntityDefinitions?$filter=LogicalName eq '${entity.LogicalName}'`,
         batchIndex: current - 1,
         batchTotal: total,
         batchSize: 1,
@@ -589,6 +692,106 @@ export class BlueprintGenerator {
   private reportProgress(progress: ProgressInfo): void {
     if (this.options.onProgress) {
       this.options.onProgress(progress);
+    }
+  }
+
+  /**
+   * Enrich business rule conditions and actions with field display names and
+   * option-set value labels sourced from the already-fetched entity schema
+   * (AttributeMetadata on each EntityBlueprint).
+   * Zero additional API calls — reuses data collected in processEntities().
+   */
+  /**
+   * Fetch picklist option labels for all entities that have business rules.
+   * Uses the PicklistAttributeMetadata type-cast path which supports $expand=OptionSet
+   * at the root level (unlike the Attributes nested-expand which does not).
+   */
+  private async fetchPicklistOptionLabels(
+    entityBlueprints: EntityBlueprint[],
+    businessRules: BusinessRule[]
+  ): Promise<Map<string, Map<string, Map<number, string>>>> {
+    // entity logicalName → fieldLogicalName → optionValue → label
+    const result = new Map<string, Map<string, Map<number, string>>>();
+
+    const entityNamesWithRules = new Set(businessRules.map(r => r.entity));
+    const bpsWithRules = entityBlueprints.filter(bp => entityNamesWithRules.has(bp.entity.LogicalName));
+    if (bpsWithRules.length === 0) return result;
+
+    interface PicklistAttrRaw {
+      LogicalName: string;
+      OptionSet?: {
+        Options: Array<{ Value: number; Label: { UserLocalizedLabel?: { Label: string } } }>;
+      };
+    }
+
+    const tasks = bpsWithRules.map(bp => async () => {
+      try {
+        const resp = await this.client.queryMetadata<PicklistAttrRaw>(
+          `EntityDefinitions(LogicalName='${bp.entity.LogicalName}')/Attributes/Microsoft.Dynamics.CRM.PicklistAttributeMetadata`,
+          { select: ['LogicalName'], expand: 'OptionSet' }
+        );
+        const entityMap = new Map<string, Map<number, string>>();
+        for (const attr of resp.value ?? []) {
+          if (!attr.OptionSet?.Options?.length) continue;
+          const valMap = new Map<number, string>();
+          for (const opt of attr.OptionSet.Options) {
+            const label = opt.Label?.UserLocalizedLabel?.Label;
+            if (label !== undefined) valMap.set(opt.Value, label);
+          }
+          if (valMap.size > 0) entityMap.set(attr.LogicalName, valMap);
+        }
+        if (entityMap.size > 0) result.set(bp.entity.LogicalName, entityMap);
+      } catch {
+        // Non-critical — business rules for this entity will show raw numeric values
+      }
+    });
+
+    await withConcurrencyLimit(5, tasks);
+    return result;
+  }
+
+  private applyBusinessRuleFieldLabels(
+    entityBlueprints: EntityBlueprint[],
+    businessRules: BusinessRule[],
+    picklistOptions: Map<string, Map<string, Map<number, string>>>
+  ): void {
+    // Build entity → (fieldLogicalName → displayLabel) from already-fetched attribute metadata.
+    // Option set value labels come from picklistOptions (fetched via fetchPicklistOptionLabels).
+    const labelMap = new Map<string, Map<string, string>>();
+
+    for (const bp of entityBlueprints) {
+      const attrs: AttributeMetadata[] = bp.entity.Attributes ?? [];
+      if (attrs.length === 0) continue;
+      const fieldMap = new Map<string, string>();
+      for (const attr of attrs) {
+        const label = attr.DisplayName?.UserLocalizedLabel?.Label;
+        if (label) fieldMap.set(attr.LogicalName, label);
+      }
+      labelMap.set(bp.entity.LogicalName, fieldMap);
+    }
+
+    // Apply labels to all conditions and actions — no API calls, zero cost
+    for (const rule of businessRules) {
+      const fieldMap = labelMap.get(rule.entity);
+      if (!fieldMap) continue;
+      const entityOptions = picklistOptions.get(rule.entity);
+
+      for (const group of rule.definition.conditionGroups) {
+        for (const cond of group.conditions) {
+          cond.fieldLabel = fieldMap.get(cond.field);
+          const valLabels = entityOptions?.get(cond.field);
+          if (valLabels) {
+            const numVal = parseInt(cond.value, 10);
+            if (!isNaN(numVal)) cond.valueLabel = valLabels.get(numVal);
+          }
+        }
+        for (const action of group.actions) {
+          action.fieldLabel = fieldMap.get(action.field);
+        }
+      }
+      for (const action of rule.definition.elseActions) {
+        action.fieldLabel = fieldMap.get(action.field);
+      }
     }
   }
 

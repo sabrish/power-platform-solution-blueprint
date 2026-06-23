@@ -60,6 +60,7 @@ export class WebResourceDiscovery implements IDiscoverer<WebResource> {
           step: 'Web Resource Discovery',
           entitySet: 'webresourceset (metadata)',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
           onProgress: (done) => this.onProgress?.(done, resourceIds.length),
         }
       );
@@ -86,6 +87,7 @@ export class WebResourceDiscovery implements IDiscoverer<WebResource> {
             step: 'Web Resource Discovery',
             entitySet: 'webresourceset (content)',
             logger: this.logger,
+            environmentUrl: this.client.getEnvironmentUrl(),
             getBatchLabel: (batch) => batch.map(id => idToName.get(id.toLowerCase()) ?? id).join(', '),
           }
         );

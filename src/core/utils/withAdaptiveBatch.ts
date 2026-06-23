@@ -40,6 +40,16 @@ export interface AdaptiveBatchOptions<TId> {
    * If omitted, defaults to "items X–Y of Z".
    */
   getBatchLabel?: (batch: TId[]) => string;
+  /**
+   * Produce the full OData request URL for the batch — shown as rawUrl in the fetch log.
+   * If omitted, falls back to a base URL built from environmentUrl + entitySet when available.
+   */
+  getRequestUrl?: (batch: TId[]) => string;
+  /**
+   * Dataverse environment URL (e.g. "https://org.crm.dynamics.com").
+   * Used to construct a fallback rawUrl when getRequestUrl is not provided.
+   */
+  environmentUrl?: string;
 }
 
 export interface AdaptiveBatchResult<TResult, TId> {
@@ -66,7 +76,19 @@ export async function withAdaptiveBatch<TId, TResult>(
     onBatchSizeReduced,
     onItemFailed,
     getBatchLabel,
+    getRequestUrl,
+    environmentUrl,
   } = options;
+
+  const resolveUrl = (batch: TId[]): string | undefined => {
+    if (getRequestUrl) return getRequestUrl(batch);
+    // Only build fallback URL when entitySet is a plain OData entity set name (no spaces or parentheses).
+    // Display labels like "webresourceset (metadata)" would produce invalid URLs in the fetch log.
+    if (environmentUrl && entitySet && /^[a-zA-Z0-9_]+$/.test(entitySet)) {
+      return `${environmentUrl}/api/data/v9.2/${entitySet}`;
+    }
+    return undefined;
+  };
 
   // When no getBatchLabel is supplied, filterSummary is intentionally empty —
   // the Batch column in the fetch log already shows position (batchIndex/batchTotal).
@@ -104,6 +126,7 @@ export async function withAdaptiveBatch<TId, TResult>(
         step,
         entitySet,
         filterSummary: batchLabelFor(batch),
+        rawUrl: resolveUrl(batch),
         batchIndex,
         batchTotal: 0,
         batchSize: batch.length,
@@ -128,6 +151,7 @@ export async function withAdaptiveBatch<TId, TResult>(
           step,
           entitySet,
           filterSummary: lbl ? `${lbl} — FAILED` : 'FAILED',
+          rawUrl: resolveUrl(batch),
           batchIndex,
           batchTotal: 0,
           batchSize: batch.length,
@@ -151,6 +175,7 @@ export async function withAdaptiveBatch<TId, TResult>(
           step,
           entitySet,
           filterSummary: lbl2 ? `${lbl2} → batch ${currentBatchSize}→${newSize}` : `batch ${currentBatchSize}→${newSize}`,
+          rawUrl: resolveUrl(batch),
           batchIndex,
           batchTotal: 0,
           batchSize: batch.length,

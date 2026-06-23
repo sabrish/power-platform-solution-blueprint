@@ -63,6 +63,17 @@ export class SolutionComponentDiscovery {
         customConnectorIds: [],
         securityRoleIds: [],
         fieldSecurityProfileIds: [],
+        pcfControlIds: [],
+        serviceEndpointIds: [],
+        copilotAgentIds: [],
+        viewIds: [],
+        reportIds: [],
+        duplicateDetectionRuleIds: [],
+        chartIds: [],
+        siteMapIds: [],
+        slaDefinitionIds: [],
+        virtualTableDataSourceIds: [],
+        aiModelIds: [],
       };
 
       // Tracking maps for solution membership
@@ -116,6 +127,7 @@ export class SolutionComponentDiscovery {
         step: 'Solution Component Discovery',
         entitySet: 'solutioncomponents',
         filterSummary: `${solutionIds.length} solution(s)`,
+        rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/solutioncomponents`,
         batchIndex: 1,
         batchTotal: 1,
         batchSize: solutionIds.length,
@@ -240,6 +252,58 @@ export class SolutionComponentDiscovery {
               inventory.pluginPackageIds.push(objectId);
             }
             break;
+          case ComponentType.CustomControl:
+            if (!inventory.pcfControlIds.includes(objectId)) {
+              inventory.pcfControlIds.push(objectId);
+            }
+            break;
+          case ComponentType.ServiceEndpoint:
+            if (!inventory.serviceEndpointIds.includes(objectId)) {
+              inventory.serviceEndpointIds.push(objectId);
+            }
+            break;
+          case ComponentType.View:
+            if (!inventory.viewIds.includes(objectId)) {
+              inventory.viewIds.push(objectId);
+            }
+            break;
+          case ComponentType.Report:
+            if (!inventory.reportIds.includes(objectId)) {
+              inventory.reportIds.push(objectId);
+            }
+            break;
+          case ComponentType.DuplicateDetectionRule:
+            if (!inventory.duplicateDetectionRuleIds.includes(objectId)) {
+              inventory.duplicateDetectionRuleIds.push(objectId);
+            }
+            break;
+          case ComponentType.Chart:
+            if (!inventory.chartIds.includes(objectId)) {
+              inventory.chartIds.push(objectId);
+            }
+            break;
+          case ComponentType.SiteMap:
+            if (!inventory.siteMapIds.includes(objectId)) {
+              inventory.siteMapIds.push(objectId);
+            }
+            break;
+          case ComponentType.SlaDefinition:
+            if (!inventory.slaDefinitionIds.includes(objectId)) {
+              inventory.slaDefinitionIds.push(objectId);
+            }
+            break;
+          case ComponentType.VirtualTableDataSource:
+            if (!inventory.virtualTableDataSourceIds.includes(objectId)) {
+              inventory.virtualTableDataSourceIds.push(objectId);
+            }
+            break;
+          case ComponentType.AiProjectType:
+          case ComponentType.AiProject:
+          case ComponentType.AiConfiguration:
+            if (!inventory.aiModelIds.includes(objectId)) {
+              inventory.aiModelIds.push(objectId);
+            }
+            break;
         }
       }
 
@@ -264,6 +328,7 @@ export class SolutionComponentDiscovery {
           step: 'Solution Component Discovery — Custom APIs (objectid intersection)',
           entitySet: 'customapis',
           filterSummary: 'objectid intersection',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/customapis`,
           batchIndex: 1,
           batchTotal: 1,
           batchSize: 0,
@@ -285,6 +350,7 @@ export class SolutionComponentDiscovery {
           step: 'Solution Component Discovery — Custom APIs (objectid intersection)',
           entitySet: 'customapis',
           filterSummary: 'objectid intersection',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/customapis`,
           batchIndex: 1,
           batchTotal: 1,
           batchSize: 0,
@@ -306,6 +372,7 @@ export class SolutionComponentDiscovery {
           step: 'Solution Component Discovery — Connection References (objectid intersection)',
           entitySet: 'connectionreferences',
           filterSummary: 'objectid intersection',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/connectionreferences`,
           batchIndex: 1,
           batchTotal: 1,
           batchSize: 0,
@@ -327,6 +394,7 @@ export class SolutionComponentDiscovery {
           step: 'Solution Component Discovery — Connection References (objectid intersection)',
           entitySet: 'connectionreferences',
           filterSummary: 'objectid intersection',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/connectionreferences`,
           batchIndex: 1,
           batchTotal: 1,
           batchSize: 0,
@@ -349,6 +417,7 @@ export class SolutionComponentDiscovery {
           step: 'Solution Component Discovery — Custom Connectors (objectid intersection)',
           entitySet: 'connectors',
           filterSummary: 'objectid intersection',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/connectors`,
           batchIndex: 1,
           batchTotal: 1,
           batchSize: 0,
@@ -370,12 +439,59 @@ export class SolutionComponentDiscovery {
           step: 'Solution Component Discovery — Custom Connectors (objectid intersection)',
           entitySet: 'connectors',
           filterSummary: 'objectid intersection',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/connectors`,
           batchIndex: 1,
           batchTotal: 1,
           batchSize: 0,
           status: 'failed',
           attempts: 1,
           durationMs: Date.now() - t0Connectors,
+          resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      // Copilot Studio Agents: bot component type code is not reliably documented.
+      // Use Strategy B (objectid intersection): query all bots, keep those whose botid
+      // appears in the solutioncomponents objectid set.
+      const t0Bots = Date.now();
+      try {
+        const allBots = await this.client.queryAll<{ botid: string }>(
+          'bots', { select: ['botid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0Bots),
+          step: 'Solution Component Discovery — Copilot Agents (objectid intersection)',
+          entitySet: 'bots',
+          filterSummary: 'objectid intersection',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/bots`,
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0Bots,
+          resultCount: allBots.value.length,
+        });
+        for (const bot of allBots.value) {
+          const id = normalizeGuid(bot.botid);
+          if (scObjectIds.has(id) && !inventory.copilotAgentIds.includes(id)) {
+            inventory.copilotAgentIds.push(id);
+          }
+        }
+      } catch (error) {
+        this.logger?.log({
+          timestamp: new Date(t0Bots),
+          step: 'Solution Component Discovery — Copilot Agents (objectid intersection)',
+          entitySet: 'bots',
+          filterSummary: 'objectid intersection',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/bots`,
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0Bots,
           resultCount: 0,
           errorMessage: error instanceof Error ? error.message : String(error),
         });
@@ -422,6 +538,7 @@ export class SolutionComponentDiscovery {
       step: 'Solution Component Discovery — Specific Solutions (alongside Default)',
       entitySet: 'solutioncomponents',
       filterSummary: `${solutionIds.length} specific solution(s) alongside Default Solution`,
+      rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/solutioncomponents`,
       batchIndex: 1,
       batchTotal: 1,
       batchSize: solutionIds.length,
@@ -472,6 +589,17 @@ export class SolutionComponentDiscovery {
       customConnectorIds: [],
       securityRoleIds: [],
       fieldSecurityProfileIds: [],
+      pcfControlIds: [],
+      serviceEndpointIds: [],
+      copilotAgentIds: [],
+      viewIds: [],
+      reportIds: [],
+      duplicateDetectionRuleIds: [],
+      chartIds: [],
+      siteMapIds: [],
+      slaDefinitionIds: [],
+      virtualTableDataSourceIds: [],
+      aiModelIds: [],
     };
 
     try {
@@ -483,6 +611,7 @@ export class SolutionComponentDiscovery {
         step: string
       ): Promise<QueryResult<T>> => {
         const t0 = Date.now();
+        const rawUrl = `${this.client.getEnvironmentUrl()}/api/data/v9.2/${entitySet}`;
         try {
           const r = await this.client.queryAll<T>(entitySet, queryOptions);
           this.logger?.log({
@@ -490,6 +619,7 @@ export class SolutionComponentDiscovery {
             step,
             entitySet,
             filterSummary: '',
+            rawUrl,
             batchIndex: 1,
             batchTotal: 1,
             batchSize: 0,
@@ -505,6 +635,7 @@ export class SolutionComponentDiscovery {
             step,
             entitySet,
             filterSummary: '',
+            rawUrl,
             batchIndex: 1,
             batchTotal: 1,
             batchSize: 0,
@@ -601,6 +732,190 @@ export class SolutionComponentDiscovery {
       );
       inventory.fieldSecurityProfileIds = fieldSecurityProfilesResult.value.map(f => normalizeGuid(f.fieldsecurityprofileid));
 
+      // PCF Controls - all custom controls
+      const pcfControlsResult = await logQuery<{ customcontrolid: string }>(
+        'customcontrols',
+        { select: ['customcontrolid'] },
+        'Default Solution — PCF Controls'
+      );
+      inventory.pcfControlIds = pcfControlsResult.value.map(c => normalizeGuid(c.customcontrolid));
+
+      // Service Endpoints - all service endpoints
+      const serviceEndpointsResult = await logQuery<{ serviceendpointid: string }>(
+        'serviceendpoints',
+        { select: ['serviceendpointid'] },
+        'Default Solution — Service Endpoints'
+      );
+      inventory.serviceEndpointIds = serviceEndpointsResult.value.map(s => normalizeGuid(s.serviceendpointid));
+
+      // Copilot Studio Agents - all bots (wrapped in try/catch — some environments may not have the bots table)
+      const t0Bots = Date.now();
+      try {
+        const botsResult = await this.client.queryAll<{ botid: string }>(
+          'bots', { select: ['botid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0Bots),
+          step: 'Default Solution — Copilot Agents',
+          entitySet: 'bots',
+          filterSummary: '',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/bots`,
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0Bots,
+          resultCount: botsResult.value.length,
+        });
+        inventory.copilotAgentIds = botsResult.value.map(b => normalizeGuid(b.botid));
+      } catch (error) {
+        this.logger?.log({
+          timestamp: new Date(t0Bots),
+          step: 'Default Solution — Copilot Agents',
+          entitySet: 'bots',
+          filterSummary: '',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/bots`,
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0Bots,
+          resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with empty copilotAgentIds — bots table may not exist in all environments
+      }
+
+      // Views (saved queries)
+      const viewsResult = await logQuery<{ savedqueryid: string }>(
+        'savedqueries',
+        { select: ['savedqueryid'] },
+        'Default Solution — Views'
+      );
+      inventory.viewIds = viewsResult.value.map(v => normalizeGuid(v.savedqueryid));
+
+      // Reports
+      const reportsResult = await logQuery<{ reportid: string }>(
+        'reports',
+        { select: ['reportid'] },
+        'Default Solution — Reports'
+      );
+      inventory.reportIds = reportsResult.value.map(r => normalizeGuid(r.reportid));
+
+      // Duplicate Detection Rules
+      const duplicateRulesResult = await logQuery<{ duplicateruleid: string }>(
+        'duplicaterules',
+        { select: ['duplicateruleid'] },
+        'Default Solution — Duplicate Detection Rules'
+      );
+      inventory.duplicateDetectionRuleIds = duplicateRulesResult.value.map(d => normalizeGuid(d.duplicateruleid));
+
+      // Charts (saved query visualizations)
+      const chartsResult = await logQuery<{ savedqueryvisualizationid: string }>(
+        'savedqueryvisualizations',
+        { select: ['savedqueryvisualizationid'] },
+        'Default Solution — Charts'
+      );
+      inventory.chartIds = chartsResult.value.map(c => normalizeGuid(c.savedqueryvisualizationid));
+
+      // Site Maps
+      const siteMapsResult = await logQuery<{ sitemapid: string }>(
+        'sitemaps',
+        { select: ['sitemapid'] },
+        'Default Solution — Site Maps'
+      );
+      inventory.siteMapIds = siteMapsResult.value.map(s => normalizeGuid(s.sitemapid));
+
+      // SLA Definitions
+      const slasResult = await logQuery<{ slaid: string }>(
+        'slas',
+        { select: ['slaid'] },
+        'Default Solution — SLA Definitions'
+      );
+      inventory.slaDefinitionIds = slasResult.value.map(s => normalizeGuid(s.slaid));
+
+      // Virtual Table Data Sources (wrapped in try/catch — may not exist in all environments)
+      const t0VtDataSources = Date.now();
+      try {
+        const vtDataSourcesResult = await this.client.queryAll<{ entitydatasourceid: string }>(
+          'entitydatasources', { select: ['entitydatasourceid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0VtDataSources),
+          step: 'Default Solution — Virtual Table Data Sources',
+          entitySet: 'entitydatasources',
+          filterSummary: '',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/entitydatasources`,
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0VtDataSources,
+          resultCount: vtDataSourcesResult.value.length,
+        });
+        inventory.virtualTableDataSourceIds = vtDataSourcesResult.value.map(v => normalizeGuid(v.entitydatasourceid));
+      } catch (error) {
+        this.logger?.log({
+          timestamp: new Date(t0VtDataSources),
+          step: 'Default Solution — Virtual Table Data Sources',
+          entitySet: 'entitydatasources',
+          filterSummary: '',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/entitydatasources`,
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0VtDataSources,
+          resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with empty virtualTableDataSourceIds — table may not exist
+      }
+
+      // AI Models (wrapped in try/catch — msdyn_aimodels may not exist in all environments)
+      const t0AiModels = Date.now();
+      try {
+        const aiModelsResult = await this.client.queryAll<{ msdyn_aimodelid: string }>(
+          'msdyn_aimodels', { select: ['msdyn_aimodelid'] }
+        );
+        this.logger?.log({
+          timestamp: new Date(t0AiModels),
+          step: 'Default Solution — AI Models',
+          entitySet: 'msdyn_aimodels',
+          filterSummary: '',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/msdyn_aimodels`,
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'success',
+          attempts: 1,
+          durationMs: Date.now() - t0AiModels,
+          resultCount: aiModelsResult.value.length,
+        });
+        inventory.aiModelIds = aiModelsResult.value.map(a => normalizeGuid(a.msdyn_aimodelid));
+      } catch (error) {
+        this.logger?.log({
+          timestamp: new Date(t0AiModels),
+          step: 'Default Solution — AI Models',
+          entitySet: 'msdyn_aimodels',
+          filterSummary: '',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/msdyn_aimodels`,
+          batchIndex: 1,
+          batchTotal: 1,
+          batchSize: 0,
+          status: 'failed',
+          attempts: 1,
+          durationMs: Date.now() - t0AiModels,
+          resultCount: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with empty aiModelIds — msdyn_aimodels may not exist in all environments
+      }
+
       // Canvas apps and Custom Pages both use component type 300 in solutioncomponents
       // and live in the canvasapps entity. Splitting is done post-retrieval by apptype.
       const canvasAppsResult = await logQuery<{ canvasappid: string }>(
@@ -631,6 +946,7 @@ export class SolutionComponentDiscovery {
           step: 'Default Solution — Global Choices',
           entitySet: 'GlobalOptionSetDefinitions',
           filterSummary: '',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/GlobalOptionSetDefinitions`,
           batchIndex: 1,
           batchTotal: 1,
           batchSize: 0,
@@ -647,6 +963,7 @@ export class SolutionComponentDiscovery {
           step: 'Default Solution — Global Choices',
           entitySet: 'GlobalOptionSetDefinitions',
           filterSummary: '',
+          rawUrl: `${this.client.getEnvironmentUrl()}/api/data/v9.2/GlobalOptionSetDefinitions`,
           batchIndex: 1,
           batchTotal: 1,
           batchSize: 0,
@@ -695,6 +1012,7 @@ export class SolutionComponentDiscovery {
           businessRuleIds: [],
           classicWorkflowIds: [],
           businessProcessFlowIds: [],
+          dialogIds: [],
           componentToSolutions: componentToSolutions || new Map(),
           solutionComponentMap: solutionComponentMap || new Map(),
         };
@@ -705,6 +1023,7 @@ export class SolutionComponentDiscovery {
         businessRuleIds: [],
         classicWorkflowIds: [],
         businessProcessFlowIds: [],
+        dialogIds: [],
       };
 
       // BATCH QUERIES to avoid HTTP 414 (URL too long) errors
@@ -726,6 +1045,7 @@ export class SolutionComponentDiscovery {
           step: 'Workflow Classification',
           entitySet: 'workflows',
           logger: this.logger,
+          environmentUrl: this.client.getEnvironmentUrl(),
         }
       );
 
@@ -746,6 +1066,9 @@ export class SolutionComponentDiscovery {
             break;
           case WorkflowCategory.BusinessProcessFlow:
             inventory.businessProcessFlowIds.push(workflowId);
+            break;
+          case WorkflowCategory.Dialog:
+            inventory.dialogIds.push(workflowId);
             break;
         }
       }

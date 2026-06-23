@@ -32,6 +32,19 @@ import { ModelDrivenAppsSection } from './ModelDrivenAppsSection.js';
 import { SecuritySection } from './SecuritySection.js';
 import { ExternalDependenciesSection } from './ExternalDependenciesSection.js';
 import { CrossEntitySection } from './CrossEntitySection.js';
+import { PcfControlsSection } from './PcfControlsSection.js';
+import { ServiceEndpointsSection } from './ServiceEndpointsSection.js';
+import { CopilotAgentsSection } from './CopilotAgentsSection.js';
+import { DuplicateDetectionRulesSection } from './DuplicateDetectionRulesSection.js';
+import { SiteMapsSection } from './SiteMapsSection.js';
+import { SlaDefinitionsSection } from './SlaDefinitionsSection.js';
+import { ReportsSection } from './ReportsSection.js';
+import { ChartsSection } from './ChartsSection.js';
+import { ViewsSection } from './ViewsSection.js';
+import { DialogsSection } from './DialogsSection.js';
+import { AiModelsSection } from './AiModelsSection.js';
+import { VirtualTableDataSourcesSection } from './VirtualTableDataSourcesSection.js';
+import { SharedComponentsSection } from './SharedComponentsSection.js';
 import type { IHtmlTemplateSection } from '../IHtmlTemplateSection.js';
 
 export const HTML_TEMPLATE_SECTIONS: readonly IHtmlTemplateSection[] = [
@@ -53,7 +66,20 @@ export const HTML_TEMPLATE_SECTIONS: readonly IHtmlTemplateSection[] = [
   new CanvasAppsSection(),
   new CustomPagesSection(),
   new ModelDrivenAppsSection(),
+  new PcfControlsSection(),
+  new ServiceEndpointsSection(),
+  new CopilotAgentsSection(),
+  new ViewsSection(),
+  new ChartsSection(),
+  new ReportsSection(),
+  new SiteMapsSection(),
+  new SlaDefinitionsSection(),
+  new DuplicateDetectionRulesSection(),
+  new DialogsSection(),
+  new AiModelsSection(),
+  new VirtualTableDataSourcesSection(),
   new SecuritySection(),
   new ExternalDependenciesSection(),
   new CrossEntitySection(),
+  new SharedComponentsSection(),
 ];

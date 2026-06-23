@@ -5,6 +5,37 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-06-23
+
+### Added
+- **Business Rule Parser — comprehensive Dataverse-compiled JS pattern coverage** (#37)
+  - Pattern G: empty-string check (`(vN) (!==?|===?) ""`) → "is not blank" / "is blank" conditions
+  - Pattern H: triple blank check (`((vN)) == undefined && ((vN)) == null && ((vN)) === ""`) collapsed to single "is blank" condition
+  - Pattern J: string contains/does-not-contain operations via indexOf-based helper detection
+  - Extended patterns A/B/D/E to handle double-paren variables `((vN))` used in complex expressions
+  - New `stripOuterParens` helper normalises expression wrapping before pattern matching
+  - Added "contains data" triple pre-check in `parseCondition` to collapse 3-part expressions to a single parsed condition
+- **Cascade Configuration in relationship tables** — HTML and Markdown exports (#42)
+  - 1:N and N:1 relationship sections now show cascade configuration in collapsible accordion/sub-tables
+  - Cascade values displayed: Delete, Merge, Assign, Share, Reparent, Unshare
+  - M:N relationships (no cascade — correct)
+  - HTML export: `<details>/<summary>` accordion per 1:N/N:1 row; expanded view shows full cascade configuration table with badges and descriptions
+  - Markdown export: cascade configuration columns added to 1:N and N:1 relationship tables
+- **Reverse Solution Lookup — `referencingSolutions` field** (#40)
+  - New `referencingSolutions?: string[]` field added to all top-level component types: Flow, BusinessRule, WebResource, EntityBlueprint, PluginStep, ClassicWorkflow, BPF, CustomAPI, EnvironmentVariable, ConnectionReference, CanvasApp, CustomPage, ModelDrivenApp
+  - Post-processing pass in BlueprintGenerator maps existing `componentToSolutions` inventory to solution unique names and annotates each component (solution-scoped runs only)
+  - JSON export: field serialised inline on each component object for programmatic cross-solution analysis
+  - HTML export: solution badges in component table rows and business rule expanded views; dedicated "Shared Components" section rendered when any component appears in 2+ solutions
+  - Markdown export: "Solutions" column added to Plugins, Flows, Business Rules, and Web Resources summary tables; new `summary/shared-components.md` file generated for solution-scoped runs
+
+### Changed
+- **Business Rule Parser debug logging removed** — all debug log statements removed from parsing path; conditional `ppsb-debug` localStorage flag available for development diagnostics
+
+### Fixed
+- **HTML export cascade badges** — cascadeBadgeClass CSS class names properly handled (not escaped, as they are code constants)
+
+---
+
 ## [1.1.2] - 2026-03-17
 
 ### Changed
