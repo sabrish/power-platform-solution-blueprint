@@ -812,3 +812,19 @@ import (prevents dead-code removal) and documents how to add logging elsewhere.
 - ❌ Wrong: `this.logger?.log('Processing batch', { batchSize: ids.length });` — missing environment URL
 - ✅ Right: `this.logger?.log('Processing batch', { rawUrl: this.environmentUrl, batchSize: ids.length });`
 - ✅ Also acceptable: Calls through `withAdaptiveBatch` automatically include the URL and need no modification
+
+---
+
+## [2026-06-23] — ALWAYS run /pre-commit before any git commit — pnpm build is NOT a substitute
+
+**Affects:** All agents (Developer, Orchestrator)
+**Severity:** Blocker
+**Rule:** The `/pre-commit` skill is a mandatory gate before every `git commit`. Running only `pnpm typecheck && pnpm build` is NOT a substitute for `/pre-commit`. The `/pre-commit` gate invokes the reviewer agent (which performs code quality and XSS checks) and the security-auditor. These layers catch issues that the build command alone cannot detect. Do NOT commit until `/pre-commit` reports CLEAR TO COMMIT.
+**Context:** On 2026-06-23, the developer agent committed TWO changes (fix(br-parser): add debugLog and feat(html-export): cascade configuration) after running only `pnpm typecheck && pnpm build`, skipping `/pre-commit` entirely. The pre-commit review (run separately later) caught a MEDIUM XSS-pattern finding (missing htmlEscape on cascadeBadgeClass return value) that had to be fixed in a third commit. This is a repeat violation of the same class of mistake — attempting to bypass the review gate by assuming the build is sufficient verification.
+**ENFORCEMENT:** Before any `git commit`, invoke `/pre-commit [files]`. Do not commit until it returns CLEAR TO COMMIT. The build commands (`pnpm typecheck && pnpm build`) must ALSO still run (as mandated by CLAUDE.md Hard Rules line 98), but they serve a different purpose and do not replace the pre-commit gate.
+**Example:**
+- ❌ Wrong: `pnpm typecheck && pnpm build` passes → `git add ... && git commit` (skipping /pre-commit)
+- ✅ Right: `pnpm typecheck && pnpm build` passes → `/pre-commit [files]` returns CLEAR TO COMMIT → `git add ... && git commit`
+
+**Repeat violations:**
+- 2026-06-23 — Developer ran `pnpm typecheck && pnpm build`, then immediately committed TWO changes without running `/pre-commit`. XSS finding slipped through and had to be fixed in a third commit.
