@@ -82,7 +82,11 @@ export async function withAdaptiveBatch<TId, TResult>(
 
   const resolveUrl = (batch: TId[]): string | undefined => {
     if (getRequestUrl) return getRequestUrl(batch);
-    if (environmentUrl && entitySet) return `${environmentUrl}/api/data/v9.2/${entitySet}`;
+    // Only build fallback URL when entitySet is a plain OData entity set name (no spaces or parentheses).
+    // Display labels like "webresourceset (metadata)" would produce invalid URLs in the fetch log.
+    if (environmentUrl && entitySet && /^[a-zA-Z0-9_]+$/.test(entitySet)) {
+      return `${environmentUrl}/api/data/v9.2/${entitySet}`;
+    }
     return undefined;
   };
 

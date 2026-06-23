@@ -14,4 +14,5 @@ export interface SiteMap {
   isManaged: boolean;
   createdOn: string;
   modifiedOn: string;
+  referencingSolutions?: string[];
 }

@@ -16,4 +16,5 @@ export interface DuplicateDetectionRule {
   isManaged: boolean;
   createdOn: string;
   modifiedOn: string;
+  referencingSolutions?: string[];
 }

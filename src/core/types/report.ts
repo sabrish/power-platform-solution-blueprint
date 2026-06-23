@@ -18,4 +18,5 @@ export interface Report {
   isManaged: boolean;
   createdOn: string;
   modifiedOn: string;
+  referencingSolutions?: string[];
 }

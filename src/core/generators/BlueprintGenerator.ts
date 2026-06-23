@@ -447,6 +447,18 @@ export class BlueprintGenerator {
         result.canvasApps.forEach(app => { app.referencingSolutions = resolveSolutions(app.id); });
         result.customPages.forEach(cp => { cp.referencingSolutions = resolveSolutions(cp.id); });
         result.modelDrivenApps.forEach(mda => { mda.referencingSolutions = resolveSolutions(mda.id); });
+        result.pcfControls.forEach(c => { c.referencingSolutions = resolveSolutions(c.id); });
+        result.serviceEndpoints.forEach(se => { se.referencingSolutions = resolveSolutions(se.id); });
+        result.copilotAgents.forEach(a => { a.referencingSolutions = resolveSolutions(a.id); });
+        result.aiModels.forEach(m => { m.referencingSolutions = resolveSolutions(m.id); });
+        result.charts.forEach(c => { c.referencingSolutions = resolveSolutions(c.id); });
+        result.views.forEach(v => { v.referencingSolutions = resolveSolutions(v.id); });
+        result.siteMaps.forEach(sm => { sm.referencingSolutions = resolveSolutions(sm.id); });
+        result.slaDefinitions.forEach(sl => { sl.referencingSolutions = resolveSolutions(sl.id); });
+        result.dialogs.forEach(d => { d.referencingSolutions = resolveSolutions(d.id); });
+        result.reports.forEach(r => { r.referencingSolutions = resolveSolutions(r.id); });
+        result.virtualTableDataSources.forEach(vt => { vt.referencingSolutions = resolveSolutions(vt.id); });
+        result.duplicateDetectionRules.forEach(dr => { dr.referencingSolutions = resolveSolutions(dr.id); });
         // EntityBlueprint primary key is entity.MetadataId
         result.entities.forEach(e => {
           if (e.entity.MetadataId) {

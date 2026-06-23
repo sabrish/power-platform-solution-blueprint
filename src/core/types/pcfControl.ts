@@ -16,4 +16,5 @@ export interface PcfControl {
   isManaged: boolean;
   createdOn: string;
   modifiedOn: string;
+  referencingSolutions?: string[];
 }

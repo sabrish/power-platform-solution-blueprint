@@ -89,10 +89,10 @@ export class JsonReporter implements IReporter<string> {
       charts: result.charts,
       views: result.views,
       dialogs: result.dialogs,
-      // modelCreationContext may contain sensitive AI Builder metadata — strip from JSON export
-      aiModels: result.aiModels.map(a => ({ ...a, modelCreationContext: undefined })),
-      // connectionDefinition is always null in VirtualTableDataSource — explicitly strip the key for safety
-      virtualTableDataSources: result.virtualTableDataSources.map(v => ({ ...v, connectionDefinition: undefined })),
+      // modelCreationContext may contain sensitive AI Builder metadata — strip from JSON export via destructuring
+      aiModels: result.aiModels.map(({ modelCreationContext: _mc, ...a }) => a),
+      // connectionDefinition may contain external data source credentials — strip via destructuring
+      virtualTableDataSources: result.virtualTableDataSources.map(({ connectionDefinition: _cd, ...v }) => v),
       webResources: result.webResources,
       webResourcesByType: this.mapToObject(result.webResourcesByType),
       erd: result.erd,

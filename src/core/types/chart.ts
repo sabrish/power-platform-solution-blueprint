@@ -16,4 +16,5 @@ export interface Chart {
   isManaged: boolean;
   createdOn: string;
   modifiedOn: string;
+  referencingSolutions?: string[];
 }

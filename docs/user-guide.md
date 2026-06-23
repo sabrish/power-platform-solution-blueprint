@@ -525,7 +525,7 @@ Deep dive into exported documentation structure.
 └── SharedComponents.md          # (New) Components appearing in 2+ solutions
 ```
 
-**New in v1.1.2**: Entity relationship tables now include cascade configuration columns (Delete, Merge, Assign, Share, Reparent, Unshare) for 1:N and N:1 relationships. Component summary tables include a "Solutions" column showing which solutions contain each component. New "SharedComponents.md" section lists all components appearing in multiple solutions.
+**New in v1.3.0**: Entity relationship tables now include cascade configuration columns (Delete, Merge, Assign, Share, Reparent, Unshare) for 1:N and N:1 relationships. Component summary tables include a "Solutions" column showing which solutions contain each component. New "SharedComponents.md" section lists all components appearing in multiple solutions.
 
 ### JSON Structure
 
@@ -567,18 +567,11 @@ Deep dive into exported documentation structure.
   "webResources": [...],
   "securityRoles": [...],
   "externalEndpoints": [...],
-  "crossEntityLinks": [...],
-  "sharedComponents": [
-    {
-      "type": "Flow",
-      "name": "OrderNotificationFlow",
-      "solutions": ["SalesAutomation", "ServicePortal"]
-    }
-  ]
+  "crossEntityLinks": [...]
 }
 ```
 
-**New in v1.1.2**: All component types now include a `referencingSolutions` field listing the solution unique names that contain that component. There is no separate root-level array — the field is inline on each component object. To find shared components, filter any component array for items where `referencingSolutions.length > 1`.
+**New in v1.3.0**: All component types now include a `referencingSolutions` field listing the solution unique names that contain that component. There is no separate root-level array — the field is inline on each component object. To find shared components, filter any component array for items where `referencingSolutions.length > 1`.
 
 ### HTML Structure
 

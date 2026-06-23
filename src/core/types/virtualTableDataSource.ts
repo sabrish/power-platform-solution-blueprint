@@ -18,4 +18,5 @@ export interface VirtualTableDataSource {
   isManaged: boolean;
   createdOn: string;
   modifiedOn: string;
+  referencingSolutions?: string[];
 }

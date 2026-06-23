@@ -19,4 +19,5 @@ export interface SlaDefinition {
   isManaged: boolean;
   createdOn: string;
   modifiedOn: string;
+  referencingSolutions?: string[];
 }

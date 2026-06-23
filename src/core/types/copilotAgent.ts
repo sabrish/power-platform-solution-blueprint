@@ -25,4 +25,5 @@ export interface CopilotAgent {
   componentCount: number;
   modifiedOn: string;
   createdOn: string;
+  referencingSolutions?: string[];
 }

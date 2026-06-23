@@ -18,4 +18,5 @@ export interface AiModel {
   isManaged: boolean;
   createdOn: string;
   modifiedOn: string;
+  referencingSolutions?: string[];
 }

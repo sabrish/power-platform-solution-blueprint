@@ -33,4 +33,5 @@ export interface ServiceEndpoint {
   modifiedOn: string;
   /** Number of SDK message processing steps registered against this endpoint */
   registeredStepCount: number;
+  referencingSolutions?: string[];
 }
