@@ -578,7 +578,7 @@ Deep dive into exported documentation structure.
 }
 ```
 
-**New in v1.1.2**: All component types now include `referencingSolutions` field listing which solutions contain that component. The root level includes a `sharedComponents` array listing components appearing in 2+ solutions.
+**New in v1.1.2**: All component types now include a `referencingSolutions` field listing the solution unique names that contain that component. There is no separate root-level array — the field is inline on each component object. To find shared components, filter any component array for items where `referencingSolutions.length > 1`.
 
 ### HTML Structure
 

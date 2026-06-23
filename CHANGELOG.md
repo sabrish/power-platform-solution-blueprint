@@ -21,12 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - M:N relationships (no cascade — correct)
   - HTML export: `<details>/<summary>` accordion per 1:N/N:1 row; expanded view shows full cascade configuration table with badges and descriptions
   - Markdown export: cascade configuration columns added to 1:N and N:1 relationship tables
-- **Reverse Solution Lookup — `referencingSolutions` field** (#40) (IN PROGRESS)
-  - New `referencingSolutions?: string[]` field added to Flow, BusinessRule, WebResource, EntityBlueprint, PluginStep, plus ClassicWorkflow, BPF, CustomAPI, EnvironmentVariable, ConnectionReference, CanvasApp
-  - Post-processing pass in BlueprintGenerator maps existing `componentToSolutions` inventory to solution unique names and annotates each component
-  - JSON export: field serialised as-is for programmatic cross-solution analysis
-  - HTML export: solution badges displayed in component expanded views; new "Shared Components" summary section lists components appearing in 2+ solutions
-  - Markdown export: "Solutions" column added to component summary tables; new "Shared Components" section (implementation in progress)
+- **Reverse Solution Lookup — `referencingSolutions` field** (#40)
+  - New `referencingSolutions?: string[]` field added to all top-level component types: Flow, BusinessRule, WebResource, EntityBlueprint, PluginStep, ClassicWorkflow, BPF, CustomAPI, EnvironmentVariable, ConnectionReference, CanvasApp, CustomPage, ModelDrivenApp
+  - Post-processing pass in BlueprintGenerator maps existing `componentToSolutions` inventory to solution unique names and annotates each component (solution-scoped runs only)
+  - JSON export: field serialised inline on each component object for programmatic cross-solution analysis
+  - HTML export: solution badges in component table rows and business rule expanded views; dedicated "Shared Components" section rendered when any component appears in 2+ solutions
+  - Markdown export: "Solutions" column added to Plugins, Flows, Business Rules, and Web Resources summary tables; new `summary/shared-components.md` file generated for solution-scoped runs
 
 ### Changed
 - **Business Rule Parser debug logging removed** — all debug log statements removed from parsing path; conditional `ppsb-debug` localStorage flag available for development diagnostics
