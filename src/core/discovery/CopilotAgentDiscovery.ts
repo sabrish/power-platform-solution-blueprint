@@ -1,8 +1,10 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { CopilotAgent, AgentKind } from '../types/copilotAgent.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
 import { normalizeGuid } from '../utils/guid.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface RawBot {
   botid: string;
@@ -28,7 +30,7 @@ interface BotComponentCountRecord {
  * solutioncomponents is not reliably documented. SolutionComponentDiscovery
  * pre-populates copilotAgentIds via objectid intersection against the `bots` entity set.
  */
-export class CopilotAgentDiscovery {
+export class CopilotAgentDiscovery implements IDiscoverer<CopilotAgent> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -43,6 +45,10 @@ export class CopilotAgentDiscovery {
     this.logger = logger;
   }
 
+  async discoverByIds(ids: string[]): Promise<CopilotAgent[]> {
+    return this.getAgentsByIds(ids);
+  }
+
   async getAgentsByIds(ids: string[]): Promise<CopilotAgent[]> {
     if (ids.length === 0) return [];
 
@@ -50,9 +56,7 @@ export class CopilotAgentDiscovery {
     const { results: rawBots } = await withAdaptiveBatch<string, RawBot>(
       ids,
       async (batch) => {
-        const filter = batch
-          .map(id => `botid eq ${id.replace(/[{}]/g, '')}`)
-          .join(' or ');
+        const filter = buildOrFilter(batch, 'botid', { guids: true });
         const result = await this.client.query<RawBot>('bots', {
           select: ['botid', 'name', 'schemaname', 'description', 'statecode', 'statuscode', 'ismanaged', 'modifiedon', 'createdon', 'template'],
           filter,
@@ -75,9 +79,7 @@ export class CopilotAgentDiscovery {
       const { results: componentRecords } = await withAdaptiveBatch<string, BotComponentCountRecord>(
         rawBots.map(b => normalizeGuid(b.botid)),
         async (batch) => {
-          const filter = batch
-            .map(id => `_botid_value eq ${id.replace(/[{}]/g, '')}`)
-            .join(' or ');
+          const filter = buildOrFilter(batch, '_botid_value', { guids: true });
           const result = await this.client.query<BotComponentCountRecord>('botcomponents', {
             select: ['_botid_value'],
             filter,

@@ -1,7 +1,9 @@
 import type { IDataverseClient } from '../dataverse/IDataverseClient.js';
 import type { CustomConnector } from '../types/customConnector.js';
 import type { FetchLogger } from '../utils/FetchLogger.js';
+import type { IDiscoverer } from './IDiscoverer.js';
 import { withAdaptiveBatch } from '../utils/withAdaptiveBatch.js';
+import { buildOrFilter } from '../utils/odata.js';
 
 interface RawConnector {
   connectorid: string;
@@ -16,7 +18,7 @@ interface RawConnector {
 /**
  * Discovery service for Custom Connectors
  */
-export class CustomConnectorDiscovery {
+export class CustomConnectorDiscovery implements IDiscoverer<CustomConnector> {
   private readonly client: IDataverseClient;
   private onProgress?: (current: number, total: number) => void;
   private logger?: FetchLogger;
@@ -34,6 +36,10 @@ export class CustomConnectorDiscovery {
   /**
    * Get custom connectors by their IDs
    */
+  async discoverByIds(ids: string[]): Promise<CustomConnector[]> {
+    return this.getConnectorsByIds(ids);
+  }
+
   async getConnectorsByIds(connectorIds: string[]): Promise<CustomConnector[]> {
     if (connectorIds.length === 0) {
       return [];
@@ -42,9 +48,7 @@ export class CustomConnectorDiscovery {
     const { results: allResults } = await withAdaptiveBatch<string, RawConnector>(
       connectorIds,
       async (batch) => {
-        const filter = batch
-          .map(id => `connectorid eq ${id.replace(/[{}]/g, '')}`)
-          .join(' or ');
+        const filter = buildOrFilter(batch, 'connectorid', { guids: true });
         const result = await this.client.query<RawConnector>('connectors', {
           select: ['connectorid', 'name', 'displayname', 'description', 'ismanaged', 'modifiedon', 'createdon'],
           filter,

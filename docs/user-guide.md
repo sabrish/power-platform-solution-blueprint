@@ -1,6 +1,6 @@
 # PPSB User Guide
 
-Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.2
+Complete guide for using Power Platform Solution Blueprint (PPSB) v1.3.0
 
 ## Table of Contents
 
@@ -532,7 +532,7 @@ Deep dive into exported documentation structure.
 ```json
 {
   "metadata": {
-    "version": "1.1.2",
+    "version": "1.3.0",
     "timestamp": "2026-02-08T10:30:00Z",
     "environment": "contoso-prod",
     "scope": {
