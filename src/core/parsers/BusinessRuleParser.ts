@@ -1,5 +1,4 @@
 import type { BusinessRuleDefinition, Condition, Action } from '../types/blueprint.js';
-import { debugLog } from '../utils/debugLogger.js';
 
 /**
  * Parser for Business Rule definitions.
@@ -178,24 +177,47 @@ export class BusinessRuleParser {
 
     // ── Step 3: Skip null guard and parse all condition groups ────────────────
 
+    // Strip one layer of balanced outer parentheses from an expression.
+    // e.g. "((v4) > (0))" → "(v4) > (0)"; "(v4) > (0)" → unchanged (inner ) closes before end).
+    const stripOuterParens = (s: string): string => {
+      if (s.length < 2 || s[0] !== '(') return s;
+      let depth = 0;
+      for (let i = 0; i < s.length; i++) {
+        if (s[i] === '(') depth++;
+        else if (s[i] === ')') {
+          depth--;
+          if (depth === 0) return i === s.length - 1 ? s.slice(1, -1).trim() : s;
+        }
+      }
+      return s;
+    };
+
     // Helper: parse a single (non-compound) condition sub-expression.
     // Returns a Condition or null if the expression is unrecognised.
     const parseSingleCond = (expr: string): Condition | null => {
-      const t = expr.trim();
+      // Strip one layer of balanced outer parens so ((vN) OP val) matches the same as (vN) OP val.
+      const t = stripOuterParens(expr.trim());
 
       // Pattern A: integer / option-set comparison — (vN) OP (number)
-      // Handles ===, !==, ==, != so both "equals" and "not equals" work.
-      const matchInt = t.match(/^\s*\((v\d+)\)\s*(===|!==|==|!=)\s*\((\d+)\)\s*$/);
+      // Handles ===, !==, ==, !=, >, <, >=, <= for numeric and enum comparisons.
+      // Uses \(+ and \)+ to tolerate ((vN)) double-paren wrapping.
+      const matchInt = t.match(/^\s*\(+(v\d+)\)+\s*(===|!==|==|!=|>=|<=|>|<)\s*\((-?\d+(?:\.\d+)?)\)\s*$/);
       if (matchInt) {
         const field = resolveField(matchInt[1]);
         if (field !== matchInt[1]) {
-          return { field, operator: matchInt[2].startsWith('!') ? 'not equals' : 'equals', value: matchInt[3], logicOperator: 'AND' };
+          const op = matchInt[2];
+          const operator = op === '>' ? 'greater than' : op === '<' ? 'less than'
+            : op === '>=' ? 'greater than or equals' : op === '<=' ? 'less than or equals'
+            : op.startsWith('!') ? 'not equals' : 'equals';
+          return { field, operator, value: matchInt[3], logicOperator: 'AND' };
         }
         return null;
       }
 
-      // Pattern B: boolean — (vN) ==/=== (true|false)
-      const matchBool = t.match(/^\s*\((v\d+)\)\s*={2,3}\s*\((true|false)\)/);
+      // Pattern B: boolean — (vN) ==/=== (true|false) or Dataverse's complex boolean equality
+      // ((vN)==(true)||((vN)==true&&(true)=='1')||...) always starts with ((vN)==(true|false).
+      // No $ anchor — matches prefix so the complex tail is ignored.
+      const matchBool = t.match(/^\s*\(+(v\d+)\)+\s*={1,3}\s*\((true|false)\)/);
       if (matchBool) {
         const field = resolveField(matchBool[1]);
         if (field !== matchBool[1]) {
@@ -204,8 +226,32 @@ export class BusinessRuleParser {
         return null;
       }
 
+      // Pattern G: empty-string check — ((vN)) !== "" or ((vN)) === ""
+      // Must come before Pattern D so it captures the blank-string case first.
+      const matchEmpty = t.match(/^\s*\(+(v\d+)\)+\s*(!==?|===?)\s*""\s*$/);
+      if (matchEmpty) {
+        const field = resolveField(matchEmpty[1]);
+        if (field !== matchEmpty[1]) {
+          return { field, operator: matchEmpty[2].startsWith('!') ? 'is not blank' : 'is blank', value: '', logicOperator: 'AND' };
+        }
+        return null;
+      }
+
+      // Pattern H: "is blank" triple check wrapped in parens — after stripOuterParens this is:
+      // ((vN)) == undefined || ((vN)) == null || ((vN)) === ""
+      // Detect by the opening ((vN)) == undefined combined with presence of null and "" legs.
+      const matchIsBlank = t.match(/^\s*\(\((v\d+)\)\)\s*==\s*undefined/);
+      if (matchIsBlank && /==\s*null/.test(t) && /===?\s*""/.test(t)) {
+        const field = resolveField(matchIsBlank[1]);
+        if (field !== matchIsBlank[1]) {
+          return { field, operator: 'is blank', value: '', logicOperator: 'AND' };
+        }
+        return null;
+      }
+
       // Pattern D: null / undefined check — (vN) !=/!== null|undefined
-      const matchNull = t.match(/^\s*\((v\d+)\)\s*(!==?|===?)\s*(null|undefined)\s*$/);
+      // Uses \(+ and \)+ to tolerate ((vN)) double-paren wrapping.
+      const matchNull = t.match(/^\s*\(+(v\d+)\)+\s*(!==?|===?)\s*(null|undefined)\s*$/);
       if (matchNull) {
         const field = resolveField(matchNull[1]);
         if (field !== matchNull[1]) {
@@ -215,11 +261,25 @@ export class BusinessRuleParser {
       }
 
       // Pattern E: string literal — (vN) OP ('value') or (vN) OP ("value")
-      const matchStr = t.match(/^\s*\((v\d+)\)\s*(===|!==|==|!=)\s*\(['"]([^'"]*)['"]\)\s*$/);
+      // Uses \(+ and \)+ to tolerate double-paren wrapping.
+      const matchStr = t.match(/^\s*\(+(v\d+)\)+\s*(===|!==|==|!=)\s*\(['"]([^'"]*)['"]\)\s*$/);
       if (matchStr) {
         const field = resolveField(matchStr[1]);
         if (field !== matchStr[1]) {
           return { field, operator: matchStr[2].startsWith('!') ? 'not equals' : 'equals', value: matchStr[3], logicOperator: 'AND' };
+        }
+        return null;
+      }
+
+      // Pattern J: string contains/does not contain — vH((vN),('literal'),function(){indexOf...})
+      // Distinct from Pattern C (lookup) by having a string literal as the second argument.
+      const matchStrContains = t.match(/^v\d+\s*\(\s*\((v\d+)\)\s*,\s*\(['"]([^'"]*)['"]\)/);
+      if (matchStrContains) {
+        const field = resolveField(matchStrContains[1]);
+        if (field !== matchStrContains[1]) {
+          const notContain = /indexOf[^-]*===\s*-1/.test(t) || /indexOf[^-]*==\s*-1/.test(t);
+          const operator = notContain ? 'does not contain' : 'contains';
+          return { field, operator, value: matchStrContains[2], logicOperator: 'AND' };
         }
         return null;
       }
@@ -275,9 +335,18 @@ export class BusinessRuleParser {
     // Helper: parse a (potentially compound) condition expression.
     const parseCondition = (condExpr: string): Condition[] => {
       const conds: Condition[] = [];
+      const expr = condExpr.trim();
+
+      // Pre-check: "contains data" triple — ((vN)) != undefined && ((vN)) != null && ((vN)) !== ""
+      // Collapsed to a single condition before splitting so we don't emit three redundant ones.
+      const tcMatch = expr.match(/^\s*\(\((v\d+)\)\)\s*!=\s*undefined\s*&&\s*\(\(([^)]+)\)\)\s*!=\s*null\s*&&\s*\(\(([^)]+)\)\)\s*!==?\s*""\s*$/);
+      if (tcMatch && tcMatch[2] === tcMatch[1] && tcMatch[3] === tcMatch[1]) {
+        const field = resolveField(tcMatch[1]);
+        if (field !== tcMatch[1]) return [{ field, operator: 'contains data', value: '', logicOperator: 'AND' }];
+      }
 
       // Pattern F: compound — split on top-level && / || and parse each part
-      const parts = splitAtTopLevelOps(condExpr.trim());
+      const parts = splitAtTopLevelOps(expr);
       if (parts.length > 1) {
         for (let i = 0; i < parts.length; i++) {
           const sub = parseSingleCond(parts[i].expr);
@@ -290,7 +359,7 @@ export class BusinessRuleParser {
       }
 
       // Single condition
-      const single = parseSingleCond(condExpr);
+      const single = parseSingleCond(expr);
       if (single) conds.push(single);
       return conds;
     };
@@ -347,9 +416,6 @@ export class BusinessRuleParser {
       if (conditions.length > 0 || actions.length > 0) {
         // When condExpr was non-empty but no pattern matched, emit a placeholder
         // so the rule displays "IF (condition)" rather than the misleading "ALWAYS".
-        if (conditions.length === 0 && condExpr.trim()) {
-          debugLog('br-parser', 'Unrecognized condExpr — add a pattern to parseSingleCond()', { condExpr: condExpr.trim().slice(0, 300) });
-        }
         const finalConditions = conditions.length === 0 && condExpr.trim()
           ? [{ field: '(condition)', operator: 'defined in rule — pattern not yet recognized', value: '', logicOperator: 'AND' as const }]
           : conditions;
@@ -399,9 +465,6 @@ export class BusinessRuleParser {
             const elseConditions = parseCondition(elseCondExpr);
             const elseCondActions = this.parseActionsFromBlock(elseBody, resolveField);
             if (elseConditions.length > 0 || elseCondActions.length > 0) {
-              if (elseConditions.length === 0 && elseCondExpr.trim()) {
-                debugLog('br-parser', 'Unrecognized else-if condExpr — add a pattern to parseSingleCond()', { condExpr: elseCondExpr.trim().slice(0, 300) });
-              }
               const finalElseConditions = elseConditions.length === 0 && elseCondExpr.trim()
                 ? [{ field: '(condition)', operator: 'defined in rule — pattern not yet recognized', value: '', logicOperator: 'AND' as const }]
                 : elseConditions;
