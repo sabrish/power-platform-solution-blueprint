@@ -1,4 +1,5 @@
 import type { BusinessRuleDefinition, Condition, Action } from '../types/blueprint.js';
+import { debugLog } from '../utils/debugLogger.js';
 
 /**
  * Parser for Business Rule definitions.
@@ -346,6 +347,9 @@ export class BusinessRuleParser {
       if (conditions.length > 0 || actions.length > 0) {
         // When condExpr was non-empty but no pattern matched, emit a placeholder
         // so the rule displays "IF (condition)" rather than the misleading "ALWAYS".
+        if (conditions.length === 0 && condExpr.trim()) {
+          debugLog('br-parser', 'Unrecognized condExpr — add a pattern to parseSingleCond()', { condExpr: condExpr.trim().slice(0, 300) });
+        }
         const finalConditions = conditions.length === 0 && condExpr.trim()
           ? [{ field: '(condition)', operator: 'defined in rule — pattern not yet recognized', value: '', logicOperator: 'AND' as const }]
           : conditions;
@@ -395,6 +399,9 @@ export class BusinessRuleParser {
             const elseConditions = parseCondition(elseCondExpr);
             const elseCondActions = this.parseActionsFromBlock(elseBody, resolveField);
             if (elseConditions.length > 0 || elseCondActions.length > 0) {
+              if (elseConditions.length === 0 && elseCondExpr.trim()) {
+                debugLog('br-parser', 'Unrecognized else-if condExpr — add a pattern to parseSingleCond()', { condExpr: elseCondExpr.trim().slice(0, 300) });
+              }
               const finalElseConditions = elseConditions.length === 0 && elseCondExpr.trim()
                 ? [{ field: '(condition)', operator: 'defined in rule — pattern not yet recognized', value: '', logicOperator: 'AND' as const }]
                 : elseConditions;
