@@ -1042,7 +1042,7 @@ ${rows}
           <span style="font-weight:600;font-family:monospace;font-size:0.85em;flex:2;min-width:0;word-break:break-all">${this.htmlEscape(schemaName)}</span>
           <span style="flex:1;min-width:0;color:#555">${this.htmlEscape(relatedEntity)}</span>
           <span style="flex:1;min-width:0;color:#555;font-family:monospace;font-size:0.85em">${this.htmlEscape(attribute)}</span>
-          ${cascade?.Delete ? `<span class="badge ${this.cascadeBadgeClass(cascade.Delete)}" style="font-size:0.75em">Del: ${this.htmlEscape(cascade.Delete)}</span>` : ''}
+          ${cascade?.Delete ? `<span class="badge ${this.htmlEscape(this.cascadeBadgeClass(cascade.Delete))}" style="font-size:0.75em">Del: ${this.htmlEscape(cascade.Delete)}</span>` : ''}
         </summary>
         <div style="padding:8px 12px 12px 12px;">
           ${cascade ? this.renderCascadeTable(cascade) : '<p style="color:#888;font-size:0.85em">No cascade configuration available</p>'}
@@ -1097,7 +1097,7 @@ ${rows}
         const explanation = explanations[a.label]?.[val] ?? val;
         return `<tr>
           <td style="font-weight:600;width:80px">${a.label}</td>
-          <td><span class="badge ${this.cascadeBadgeClass(val)}" style="font-size:0.75em">${this.htmlEscape(val)}</span></td>
+          <td><span class="badge ${this.htmlEscape(this.cascadeBadgeClass(val))}" style="font-size:0.75em">${this.htmlEscape(val)}</span></td>
           <td style="color:#555;font-size:0.85em">${this.htmlEscape(explanation)}</td>
         </tr>`;
       }).join('');
