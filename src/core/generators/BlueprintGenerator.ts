@@ -426,7 +426,7 @@ export class BlueprintGenerator {
       };
 
       // Annotate referencingSolutions on all components (solution-scoped runs only)
-      if (this.solutions.length > 0 && inventory.componentToSolutions.size > 0) {
+      if (this.scope.type === 'solution' && this.solutions.length > 0 && inventory.componentToSolutions.size > 0) {
         const solutionIdToName = new Map(
           this.solutions.map(s => [normalizeGuid(s.solutionid), s.uniquename])
         );

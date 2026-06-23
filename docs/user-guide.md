@@ -1,6 +1,6 @@
 # PPSB User Guide
 
-Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.1
+Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.2
 
 ## Table of Contents
 
@@ -369,7 +369,10 @@ Click any entity to see:
 **Schema Tab**:
 - All fields in sortable table
 - Field types, requirements
-- Lookups and relationships
+- Lookups and relationships with cascade configuration:
+  - M:N relationships: flat table (no cascade applicable)
+  - 1:N and N:1 relationships: expandable rows showing full cascade configuration (Delete, Merge, Assign, Share, Reparent, Unshare) when expanded
+  - Cascade badge and description for each operation
 - Keys and alternate keys
 
 **Automation Tab**:
@@ -499,7 +502,7 @@ Deep dive into exported documentation structure.
 ├── ERD.md                       # Entity Relationship Diagram
 ├── Entities/
 │   ├── _Index.md                # Entity list
-│   ├── Account.md               # One file per entity
+│   ├── Account.md               # One file per entity (includes Solutions column in relationships)
 │   ├── Contact.md
 │   └── CustomEntity.md
 ├── Plugins.md                   # All plugins
@@ -518,15 +521,18 @@ Deep dive into exported documentation structure.
 │   ├── AttributeMasking.md      # Attribute masking rules
 │   └── ColumnSecurity.md        # Column security profiles
 ├── ExternalDependencies.md      # External API analysis
-└── CrossEntityAutomation.md     # Cross-entity automation chain map and risk summary
+├── CrossEntityAutomation.md     # Cross-entity automation chain map and risk summary
+└── SharedComponents.md          # (New) Components appearing in 2+ solutions
 ```
+
+**New in v1.1.2**: Entity relationship tables now include cascade configuration columns (Delete, Merge, Assign, Share, Reparent, Unshare) for 1:N and N:1 relationships. Component summary tables include a "Solutions" column showing which solutions contain each component. New "SharedComponents.md" section lists all components appearing in multiple solutions.
 
 ### JSON Structure
 
 ```json
 {
   "metadata": {
-    "version": "0.5.0",
+    "version": "1.1.2",
     "timestamp": "2026-02-08T10:30:00Z",
     "environment": "contoso-prod",
     "scope": {
@@ -552,7 +558,8 @@ Deep dive into exported documentation structure.
       "plugins": [...],
       "flows": [...],
       "businessRules": [...],
-      "complexity": "High"
+      "complexity": "High",
+      "referencingSolutions": ["SalesAutomation", "ServicePortal"]
     }
   ],
   "plugins": [...],
@@ -560,9 +567,18 @@ Deep dive into exported documentation structure.
   "webResources": [...],
   "securityRoles": [...],
   "externalEndpoints": [...],
-  "crossEntityLinks": [...]
+  "crossEntityLinks": [...],
+  "sharedComponents": [
+    {
+      "type": "Flow",
+      "name": "OrderNotificationFlow",
+      "solutions": ["SalesAutomation", "ServicePortal"]
+    }
+  ]
 }
 ```
+
+**New in v1.1.2**: All component types now include `referencingSolutions` field listing which solutions contain that component. The root level includes a `sharedComponents` array listing components appearing in 2+ solutions.
 
 ### HTML Structure
 
@@ -571,6 +587,9 @@ Single-file HTML with:
 - **Sections**: Collapsible accordions
 - **Tables**: Sortable columns
 - **Diagrams**: Execution pipeline diagrams rendered via Mermaid (CDN, pinned to 10.9.1)
+- **Relationships**: 1:N and N:1 relationships displayed in accordion rows with expanded cascade configuration table (Delete, Merge, Assign, Share, Reparent, Unshare operations with badges and descriptions)
+- **Component metadata**: Solution badges in component expanded views showing which solutions contain each component
+- **Shared Components Section**: New summary section listing all components appearing in 2+ solutions
 - **Search**: Browser Ctrl+F works
 - **Print**: CSS optimized for PDF export
 

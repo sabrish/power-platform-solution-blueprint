@@ -126,9 +126,12 @@ The `src/core/` directory is pure TypeScript with zero UI dependencies.
 **Blueprint Types** (`types/blueprint.ts`):
 - `BlueprintResult`: Root type containing all discovered data
 - `EntityBlueprint`: Complete entity documentation (schema + automation)
-- `Plugin`, `Flow`, `BusinessRule`: Component types
+- `Plugin`, `Flow`, `BusinessRule`: Component types (all now include optional `referencingSolutions?: string[]`)
 - `ERDDefinition`: ERD diagram with metadata
 - `CrossEntityLink`, `ExternalEndpoint`: Analysis results
+
+**Component Cross-Solution Membership**:
+All top-level components now track which solutions they appear in via the optional `referencingSolutions: string[]` field (array of solution unique names). This enables JSON consumers to identify shared components (appearing in 2+ solutions) and HTML/Markdown exports to display solution badges and generate "Shared Components" summaries.
 
 **Design Principles**:
 - Discriminated unions for type safety (e.g., `ExecutionMode: 'Sync' | 'Async'`)
@@ -239,6 +242,9 @@ Analyzers take discovered data and produce insights:
 - Creates index and entity detail pages
 - Formats tables using helper functions
 - Embeds Mermaid diagrams
+- Relationship sections: cascade configuration columns (Delete, Assign, Reparent, Share, Unshare, Merge) added to 1:N and N:1 relationship tables
+- Component summary tables: new "Solutions" column showing which solutions contain each component (via `referencingSolutions` field)
+- New "Shared Components" section: lists components appearing in 2+ solutions
 
 **HtmlReporter**:
 - Single-page HTML with embedded CSS/JS
@@ -249,6 +255,9 @@ Analyzers take discovered data and produce insights:
 - localStorage/sessionStorage shim to prevent Edge Tracking Prevention storage warnings
 - XSS defence: all tooltip values passed through an `_esc()` HTML-escape helper
 - ERD graph data embedded in `<script type="application/json">` to avoid JS-parsing issues with special characters
+- Relationship sections: M:N flat table; 1:N/N:1 accordion rows with cascade configuration table (Delete, Merge, Assign, Share, Reparent, Unshare) displayed in expanded views
+- Component expanded views: solution badges showing which solutions contain the component (via `referencingSolutions` field)
+- New "Shared Components" summary section: lists components appearing in 2+ solutions
 
 **JsonReporter**:
 - Serializes BlueprintResult to JSON

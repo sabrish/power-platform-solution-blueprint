@@ -95,14 +95,42 @@ pnpm typecheck  # Type check
 
 ### Business Rule Parser: JavaScript condition patterns (2026-06-22)
 
-**Status:** Ongoing — debug logging phase
+**Status:** ✅ RESOLVED in commit d7ec24a
+
+**What was fixed:**
+Extended `parseSingleCond` to handle all observed Dataverse-compiled JS condition patterns:
+- Pattern G: empty-string check → "is not blank" / "is blank"
+- Pattern H: triple blank check → collapsed to single "is blank"
+- Pattern J: string contains/does-not-contain via indexOf helper
+- Patterns A/B/D/E: double-paren variables `((vN))`
+- Added `stripOuterParens` helper and "contains data" triple pre-check
+- Removed all debug logging statements
+
+### HTML/Markdown Export: Cascade Configuration (2026-06-22)
+
+**Status:** ✅ RESOLVED in commits earlier in session
+
+**What was fixed:**
+- 1:N and N:1 relationships now show cascade configuration (Delete, Merge, Assign, Share, Reparent, Unshare)
+- HTML: accordion/details-summary per row with full cascade table in expanded view
+- Markdown: cascade configuration sub-tables added to relationship tables
+- M:N relationships correctly show no cascade
+
+### Reverse Solution Lookup: referencingSolutions field (2026-06-22)
+
+**Status:** IN PROGRESS — feature implementation active on feat/new-component-types
 
 **Current work:**
-Some business rules still show "(condition) defined in rule — pattern not yet recognized" for conditions the parser doesn't handle yet. Tomorrow's plan: add a debug log statement in `BusinessRuleParser.ts` `parseClientDataXml` that captures the raw `condExpr` value when it falls through to the placeholder, so we can see the actual JS expression and add the right pattern.
+- `referencingSolutions?: string[]` field added to component types (Flow, BusinessRule, WebResource, EntityBlueprint, PluginStep, ClassicWorkflow, BPF, CustomAPI, EnvironmentVariable, ConnectionReference, CanvasApp)
+- Post-processing pass in BlueprintGenerator mapping `componentToSolutions` to solution unique names
+- JSON export: automatic serialisation
+- HTML export: solution badges in component expanded views; "Shared Components" summary section in progress
+- Markdown export: "Solutions" column + "Shared Components" section in progress
 
-**Issues pending:**
-- Issue #40 — to be addressed tomorrow (see GitHub issue #40)
-- Issue #42 — to be addressed tomorrow (see GitHub issue #42)
+**Issues tracked:**
+- Issue #37 — Business Rule Parser patterns (RESOLVED)
+- Issue #42 — HTML/Markdown cascade configuration (RESOLVED)
+- Issue #40 — Reverse solution lookup (IN PROGRESS)
 
 ### Released in v1.1.2 (2026-03-17)
 
