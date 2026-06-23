@@ -794,6 +794,12 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       // Detail sections per rule
       for (const rule of rules) {
         sections.push(MarkdownFormatter.formatHeading(rule.name, 3));
+
+        if (rule.definition.parseError) {
+          sections.push(`> ⚠️ **Parse error:** ${rule.definition.parseError}`);
+          sections.push('');
+        }
+
         if (rule.definition.conditionLogic) {
           sections.push(`**Condition Logic:** \`${rule.definition.conditionLogic}\``);
           sections.push('');
@@ -1775,6 +1781,19 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
+
+      const n1CascadeRels = meta.ManyToOneRelationships.filter(rel => rel.CascadeConfiguration);
+      if (n1CascadeRels.length > 0) {
+        sections.push('**Cascade Configuration**');
+        sections.push('');
+        const cHeaders = ['Schema Name', 'Delete', 'Assign', 'Reparent', 'Share', 'Unshare', 'Merge'];
+        const cRows = n1CascadeRels.map(rel => {
+          const c = rel.CascadeConfiguration!;
+          return [rel.SchemaName, c.Delete ?? '—', c.Assign ?? '—', c.Reparent ?? '—', c.Share ?? '—', c.Unshare ?? '—', c.Merge ?? '—'];
+        });
+        sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
+        sections.push('');
+      }
     }
 
     if (meta.OneToManyRelationships && meta.OneToManyRelationships.length > 0) {
@@ -1791,6 +1810,19 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
 
       sections.push(MarkdownFormatter.formatTable(headers, rows));
       sections.push('');
+
+      const onemCascadeRels = meta.OneToManyRelationships.filter(rel => rel.CascadeConfiguration);
+      if (onemCascadeRels.length > 0) {
+        sections.push('**Cascade Configuration**');
+        sections.push('');
+        const cHeaders = ['Schema Name', 'Delete', 'Assign', 'Reparent', 'Share', 'Unshare', 'Merge'];
+        const cRows = onemCascadeRels.map(rel => {
+          const c = rel.CascadeConfiguration!;
+          return [rel.SchemaName, c.Delete ?? '—', c.Assign ?? '—', c.Reparent ?? '—', c.Share ?? '—', c.Unshare ?? '—', c.Merge ?? '—'];
+        });
+        sections.push(MarkdownFormatter.formatTable(cHeaders, cRows));
+        sections.push('');
+      }
     }
 
     if (meta.ManyToManyRelationships && meta.ManyToManyRelationships.length > 0) {
