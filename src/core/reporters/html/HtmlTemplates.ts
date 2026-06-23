@@ -1132,6 +1132,7 @@ ${rows}
       if (plugin.preImage) images.push(plugin.preImage.imageType);
       if (plugin.postImage) images.push(plugin.postImage.imageType);
       const imagesText = images.length > 0 ? images.join(', ') : 'None';
+      const solutionBadges = this.htmlSolutionBadges(plugin.referencingSolutions);
 
       return `<tr>
   <td>${this.htmlEscape(plugin.name)}</td>
@@ -1142,6 +1143,7 @@ ${rows}
   <td>${this.htmlEscape(plugin.modeName || 'N/A')}</td>
   <td>${String(plugin.rank || 0)}</td>
   <td>${this.htmlEscape(imagesText)}</td>
+  <td>${solutionBadges}</td>
 </tr>`;
     }).join('\n');
 
@@ -1159,6 +1161,7 @@ ${rows}
           <th scope="col" onclick="sortTable('plugins-table', 5)">Mode <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('plugins-table', 6)">Rank <span class="sort-indicator"></span></th>
           <th scope="col">Images</th>
+          <th scope="col">Solutions</th>
         </tr>
       </thead>
       <tbody>
@@ -1183,6 +1186,7 @@ ${rows}
     const rows = flows.map(flow => {
       const entityDisplay = flow.entityDisplayName || flow.entity || 'N/A';
       const hasExternal = flow.hasExternalCalls;
+      const solutionBadges = this.htmlSolutionBadges(flow.referencingSolutions);
 
       return `<tr>
   <td>${this.htmlEscape(flow.name)}</td>
@@ -1192,6 +1196,7 @@ ${rows}
   <td>${this.htmlEscape(flow.definition.scopeType)}</td>
   <td>${flow.definition.actionsCount}</td>
   <td>${hasExternal ? '<span class="badge badge-warning">Yes</span>' : '<span class="badge badge-info">No</span>'}</td>
+  <td>${solutionBadges}</td>
 </tr>`;
     }).join('\n');
 
@@ -1208,6 +1213,7 @@ ${rows}
           <th scope="col" onclick="sortTable('flows-table', 4)">Scope <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('flows-table', 5)">Actions <span class="sort-indicator"></span></th>
           <th scope="col">External Calls</th>
+          <th scope="col">Solutions</th>
         </tr>
       </thead>
       <tbody>
@@ -1234,6 +1240,7 @@ ${rows}
       const conditionGroups = rule.definition.conditionGroups ?? [];
       const elseActions = rule.definition.elseActions ?? [];
       const id = `br-${i}`;
+      const solutionBadges = this.htmlSolutionBadges(rule.referencingSolutions);
 
       // Build condition/action tables for each group
       const groupSections = conditionGroups.map((group, groupIdx) => {
@@ -1304,6 +1311,7 @@ ${rows}
     </div>
   </div>
   <div class="accordion-content" id="${id}" style="display:none;padding:12px 16px;">
+    ${solutionBadges ? `<div style="margin-bottom:8px">${solutionBadges}</div>` : ''}
     ${rule.definition.parseError ? `<div class="alert alert-warning" style="margin-bottom:8px">Parse error: ${this.htmlEscape(rule.definition.parseError)}</div>` : ''}
     <div style="display:flex;flex-direction:column;gap:16px;">
       ${groupSections}
@@ -1340,6 +1348,7 @@ ${rows}
     const rows = workflows.map(workflow => {
       const entityDisplay = workflow.entityDisplayName || workflow.entity;
       const complexity = workflow.migrationRecommendation?.complexity || 'Unknown';
+      const solutionBadges = this.htmlSolutionBadges(workflow.referencingSolutions);
 
       return `<tr>
   <td>${this.htmlEscape(workflow.name)}</td>
@@ -1347,6 +1356,7 @@ ${rows}
   <td><span class="badge badge-${workflow.state === 'Active' ? 'success' : workflow.state === 'Draft' ? 'warning' : 'error'}">${this.htmlEscape(workflow.state)}</span></td>
   <td>${this.htmlEscape(workflow.modeName)}</td>
   <td><span class="badge badge-${complexity === 'Critical' ? 'error' : complexity === 'High' ? 'warning' : 'info'}">${this.htmlEscape(complexity)}</span></td>
+  <td>${solutionBadges}</td>
 </tr>`;
     }).join('\n');
 
@@ -1380,6 +1390,7 @@ ${rows}
           <th scope="col" onclick="sortTable('classic-workflows-table', 2)">State <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('classic-workflows-table', 3)">Mode <span class="sort-indicator"></span></th>
           <th scope="col" onclick="sortTable('classic-workflows-table', 4)">Complexity <span class="sort-indicator"></span></th>
+          <th scope="col">Solutions</th>
         </tr>
       </thead>
       <tbody>
@@ -1464,6 +1475,7 @@ ${rows}
       const sizeKB = (wr.contentSize / 1024).toFixed(2);
       const hasExternal = wr.hasExternalCalls;
       const deprecated = wr.isDeprecated;
+      const solutionBadges = this.htmlSolutionBadges(wr.referencingSolutions);
 
       return `<tr>
   <td>${this.htmlEscape(wr.name)}</td>
@@ -1472,6 +1484,7 @@ ${rows}
   <td>${sizeKB} KB</td>
   <td>${hasExternal ? '<span class="badge badge-warning">Yes</span>' : 'No'}</td>
   <td>${deprecated ? '<span class="badge badge-error">Yes</span>' : 'No'}</td>
+  <td>${solutionBadges}</td>
 </tr>`;
     }).join('\n');
 
@@ -1487,6 +1500,7 @@ ${rows}
           <th scope="col" onclick="sortTable('web-resources-table', 3)">Size <span class="sort-indicator"></span></th>
           <th scope="col">External Calls</th>
           <th scope="col">Deprecated</th>
+          <th scope="col">Solutions</th>
         </tr>
       </thead>
       <tbody>
@@ -2258,6 +2272,73 @@ ${rows}
     }
 
     return `<div id="cea-pipelines-list">${items.join('')}</div>`;
+  }
+
+  /**
+   * Generate Shared Components section — components appearing in 2+ solutions.
+   * Returns an empty string when no shared components exist.
+   */
+  htmlSharedComponentsSection(result: BlueprintResult): string {
+    interface SharedRow { name: string; solutions: string[] }
+    const groups: Array<{ label: string; rows: SharedRow[] }> = [];
+
+    const addGroup = (label: string, items: Array<{ name: string; referencingSolutions?: string[] }>) => {
+      const rows = items
+        .filter(i => (i.referencingSolutions?.length ?? 0) > 1)
+        .map(i => ({ name: i.name, solutions: i.referencingSolutions! }));
+      if (rows.length > 0) groups.push({ label, rows });
+    };
+
+    addGroup('Flows', result.flows);
+    addGroup('Business Rules', result.businessRules);
+    addGroup('Plugins', result.plugins.map(p => ({ name: p.name, referencingSolutions: p.referencingSolutions })));
+    addGroup('Web Resources', result.webResources);
+    addGroup('Classic Workflows', result.classicWorkflows);
+    addGroup('Business Process Flows', result.businessProcessFlows.map(b => ({ name: b.name, referencingSolutions: b.referencingSolutions })));
+    addGroup('Custom APIs', result.customAPIs.map(a => ({ name: a.displayName || a.uniqueName, referencingSolutions: a.referencingSolutions })));
+    addGroup('Environment Variables', result.environmentVariables.map(e => ({ name: e.displayName || e.schemaName, referencingSolutions: e.referencingSolutions })));
+    addGroup('Connection References', result.connectionReferences.map(c => ({ name: c.displayName || c.name, referencingSolutions: c.referencingSolutions })));
+    addGroup('Canvas Apps', result.canvasApps.map(a => ({ name: a.displayName || a.name, referencingSolutions: a.referencingSolutions })));
+    addGroup('Custom Pages', result.customPages.map(p => ({ name: p.displayName || p.name, referencingSolutions: p.referencingSolutions })));
+    addGroup('Model-Driven Apps', result.modelDrivenApps.map(m => ({ name: m.displayName || m.name, referencingSolutions: m.referencingSolutions })));
+    addGroup('Entities', result.entities.map(e => ({
+      name: e.entity.DisplayName?.UserLocalizedLabel?.Label || e.entity.LogicalName,
+      referencingSolutions: e.referencingSolutions,
+    })));
+
+    if (groups.length === 0) return '';
+
+    const tables = groups.map(g => {
+      const rowsHtml = g.rows.map(r =>
+        `<tr><td>${this.htmlEscape(r.name)}</td><td>${r.solutions.map(s => `<span class="badge badge-info">${this.htmlEscape(s)}</span>`).join(' ')}</td></tr>`
+      ).join('\n');
+      return `<h3 style="margin-top:16px;margin-bottom:6px">${this.htmlEscape(g.label)}</h3>
+<div class="table-container">
+  <table class="data-table sortable">
+    <thead><tr><th scope="col">Name</th><th scope="col">Shared Across</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+</div>`;
+    }).join('\n');
+
+    return `<section id="shared-components" class="content-section" aria-labelledby="heading-shared-components">
+  <h2 id="heading-shared-components">Shared Components</h2>
+  <p style="color:#666;font-size:0.9em;margin-bottom:12px">Components that appear in two or more solutions.</p>
+  ${tables}
+</section>`;
+  }
+
+  /**
+   * Render inline solution-membership badges.
+   * Returns an empty string when referencingSolutions is absent or empty.
+   * All solution names are HTML-escaped.
+   */
+  private htmlSolutionBadges(referencingSolutions: string[] | undefined): string {
+    if (!referencingSolutions || referencingSolutions.length === 0) return '';
+    const badges = referencingSolutions
+      .map(s => `<span class="badge badge-info">${this.htmlEscape(s)}</span>`)
+      .join(' ');
+    return `<span style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap"><span style="font-size:0.8em;color:#666">In solutions:</span> ${badges}</span>`;
   }
 
   /**

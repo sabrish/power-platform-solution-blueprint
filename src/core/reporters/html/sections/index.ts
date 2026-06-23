@@ -44,6 +44,7 @@ import { ViewsSection } from './ViewsSection.js';
 import { DialogsSection } from './DialogsSection.js';
 import { AiModelsSection } from './AiModelsSection.js';
 import { VirtualTableDataSourcesSection } from './VirtualTableDataSourcesSection.js';
+import { SharedComponentsSection } from './SharedComponentsSection.js';
 import type { IHtmlTemplateSection } from '../IHtmlTemplateSection.js';
 
 export const HTML_TEMPLATE_SECTIONS: readonly IHtmlTemplateSection[] = [
@@ -80,4 +81,5 @@ export const HTML_TEMPLATE_SECTIONS: readonly IHtmlTemplateSection[] = [
   new SecuritySection(),
   new ExternalDependenciesSection(),
   new CrossEntitySection(),
+  new SharedComponentsSection(),
 ];
