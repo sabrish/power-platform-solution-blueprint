@@ -425,6 +425,36 @@ export class BlueprintGenerator {
         fetchLog: this.logger.getEntries(),
       };
 
+      // Annotate referencingSolutions on all components (solution-scoped runs only)
+      if (this.solutions.length > 0 && inventory.componentToSolutions.size > 0) {
+        const solutionIdToName = new Map(
+          this.solutions.map(s => [normalizeGuid(s.solutionid), s.uniquename])
+        );
+        const resolveSolutions = (id: string): string[] =>
+          (inventory.componentToSolutions.get(normalizeGuid(id)) ?? [])
+            .map(sid => solutionIdToName.get(normalizeGuid(sid)) ?? sid)
+            .filter((name): name is string => name.length > 0);
+
+        result.flows.forEach(f => { f.referencingSolutions = resolveSolutions(f.id); });
+        result.businessRules.forEach(br => { br.referencingSolutions = resolveSolutions(br.id); });
+        result.plugins.forEach(p => { p.referencingSolutions = resolveSolutions(p.id); });
+        result.webResources.forEach(wr => { wr.referencingSolutions = resolveSolutions(wr.id); });
+        result.classicWorkflows.forEach(wf => { wf.referencingSolutions = resolveSolutions(wf.id); });
+        result.businessProcessFlows.forEach(bpf => { bpf.referencingSolutions = resolveSolutions(bpf.id); });
+        result.customAPIs.forEach(api => { api.referencingSolutions = resolveSolutions(api.id); });
+        result.environmentVariables.forEach(ev => { ev.referencingSolutions = resolveSolutions(ev.id); });
+        result.connectionReferences.forEach(cr => { cr.referencingSolutions = resolveSolutions(cr.id); });
+        result.canvasApps.forEach(app => { app.referencingSolutions = resolveSolutions(app.id); });
+        result.customPages.forEach(cp => { cp.referencingSolutions = resolveSolutions(cp.id); });
+        result.modelDrivenApps.forEach(mda => { mda.referencingSolutions = resolveSolutions(mda.id); });
+        // EntityBlueprint primary key is entity.MetadataId
+        result.entities.forEach(e => {
+          if (e.entity.MetadataId) {
+            e.referencingSolutions = resolveSolutions(e.entity.MetadataId);
+          }
+        });
+      }
+
       // Store for export
       this.latestResult = result;
 
