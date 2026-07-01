@@ -1059,7 +1059,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       // Detail section for each API
       for (const api of apis) {
         sections.push(MarkdownFormatter.formatHeading(`${api.uniqueName}`, 3));
-        if (api.description) sections.push(`> ${api.description}`);
+        if (api.description) sections.push(MarkdownFormatter.formatBlockquote(api.description));
         sections.push('');
         if (api.requestParameters.length > 0) {
           sections.push('**Request Parameters**');
@@ -1292,7 +1292,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       for (const bpf of bpfs) {
         sections.push(MarkdownFormatter.formatHeading(bpf.name, 3));
         if (bpf.description) {
-          sections.push(`> ${bpf.description}`);
+          sections.push(MarkdownFormatter.formatBlockquote(bpf.description));
           sections.push('');
         }
         if (bpf.definition.stages.length > 0) {
