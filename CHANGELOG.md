@@ -5,7 +5,7 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.4.0] — 2026-07-01
 
 ### Added
 - **AI-friendly Markdown export — YAML frontmatter and flat headings** — all 46 generated Markdown files now include YAML frontmatter blocks with metadata (`blueprint_type`, logical name, display name, counts, version); entity overview sections include Dataverse description as blockquote for self-contained AI agent reading; cross-entity trace sections replace `<details>`/`<summary>` HTML collapsed blocks with flat `###` headings so content is visible to AI agents and rendered expanded in ADO Wiki
