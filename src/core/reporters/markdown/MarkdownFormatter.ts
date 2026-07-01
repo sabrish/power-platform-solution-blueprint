@@ -234,7 +234,7 @@ export class MarkdownFormatter {
       if (Array.isArray(value)) {
         if (value.length === 0) continue;
         const escapeItem = (item: string): string => {
-          if (/[:#,\n\r]/.test(item)) {
+          if (/[:#,\n\r[\]{}]/.test(item)) {
             return `"${item
               .replace(/\\/g, '\\\\')
               .replace(/"/g, '\\"')
