@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Senior code reviewer for PPSB. Invoke after implementation is complete, before any commit or merge. Reviews for TypeScript correctness, React patterns, Fluent UI v9 compliance, Dataverse API safety, security vulnerabilities, and adherence to established project patterns. Read-only — never modifies files directly.
-model: claude-haiku-4-5-20251001
+model: claude-sonnet-5
 tools: Read, Glob, Grep, WebFetch
 ---
 

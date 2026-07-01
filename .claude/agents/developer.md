@@ -1,7 +1,7 @@
 ---
 name: developer
 description: Senior Tech Lead developer for PPSB. Invoke for all implementation work — new features, bug fixes, refactoring, component creation, Dataverse API integration, TypeScript type work, and build/tooling changes. Works from architectural decisions already made. Does not make architectural decisions — escalates to architect if needed.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
 ---
 

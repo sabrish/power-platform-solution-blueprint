@@ -80,10 +80,10 @@ Report: **"Memory loaded: [files read]"**
 
 | Agent | Model | Role |
 |-------|-------|------|
-| `orchestrator` | Sonnet 4.6 | Routes all tasks; start every session here |
-| `architect` | Opus 4.6 | Architecture decisions and data model design; only ONE active at a time |
-| `developer` | Sonnet 4.6 | All implementation — features, bugs, components, Dataverse integration |
-| `reviewer` | Haiku 4.5 | Read-only code review for TypeScript, React, Fluent UI v9, and security |
+| `orchestrator` | Sonnet 5 | Routes all tasks; start every session here |
+| `architect` | Opus 4.8 | Architecture decisions and data model design; only ONE active at a time |
+| `developer` | Sonnet 5 | All implementation — features, bugs, components, Dataverse integration |
+| `reviewer` | Sonnet 5 | Read-only code review for TypeScript, React, Fluent UI v9, and security |
 | `document-updater` | Haiku 4.5 | CHANGELOG, docs/, README, and memory file maintenance |
 | `skills-learner` | Haiku 4.5 | Captures corrections and feedback into memory files |
 | `security-auditor` | Haiku 4.5 | Read-only security scan before any commit, push, or release |
@@ -94,7 +94,7 @@ Report: **"Memory loaded: [files read]"**
 - **NEVER** use `executeDataverseRequest()` or `window.toolboxAPI.dataverse.*` — they do not exist → see PATTERN-005
 - **ALWAYS** use static imports for reporters — dynamic imports break under `pptb-webview://` → see PATTERN-007
 - **ALWAYS** commit one logical change per commit, Conventional Commits format, with trailer:
-  `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>` → see PATTERN-011
+  `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` → see PATTERN-011
 - **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient
 - **ALWAYS** run `/pre-commit` before any git commit. Run `/push-branch` instead of `git push` directly — it runs the full pre-PR gate and only pushes if clean.
 - **ALWAYS** check `src/core/utils/` and `src/hooks/` before writing any new utility logic — see patterns-general.md D1–D6
