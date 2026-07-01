@@ -203,6 +203,18 @@ export class MarkdownFormatter {
   }
 
   /**
+   * Format a multi-line blockquote, ensuring every line gets a `> ` prefix.
+   * @param text - Raw text (may contain embedded newlines from Dataverse free-text fields)
+   * @returns Markdown blockquote string safe to push directly into a sections array
+   */
+  static formatBlockquote(text: string): string {
+    return text
+      .split(/\r?\n/)
+      .map(line => `> ${line}`)
+      .join('\n');
+  }
+
+  /**
    * Generate a YAML frontmatter block for AI-agent-friendly markdown files.
    * @param fields - snake_case key/value pairs. null/undefined/empty-string/empty-array
    *   values are skipped. Arrays are rendered inline on one line. Strings are quoted
@@ -234,7 +246,8 @@ export class MarkdownFormatter {
       if (Array.isArray(value)) {
         if (value.length === 0) continue;
         const escapeItem = (item: string): string => {
-          if (/[:#,\n\r[\]{}]/.test(item)) {
+          const itemIsLiteral = /^(true|false|yes|no|on|off|null|~|-?\d+(\.\d+)?)$/i.test(item);
+          if (/[:#,\n\r[\]{}]/.test(item) || itemIsLiteral) {
             return `"${item
               .replace(/\\/g, '\\\\')
               .replace(/"/g, '\\"')
@@ -254,7 +267,8 @@ export class MarkdownFormatter {
 
       const str = String(value);
       if (str.trim() === '') continue;
-      const needsQuotes = /[:#\n\r]/.test(str);
+      const isYamlLiteral = /^(true|false|yes|no|on|off|null|~|-?\d+(\.\d+)?)$/i.test(str);
+      const needsQuotes = /[:#\n\r]/.test(str) || isYamlLiteral;
       if (needsQuotes) {
         const escaped = str
           .replace(/\\/g, '\\\\')
