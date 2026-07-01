@@ -233,7 +233,17 @@ export class MarkdownFormatter {
 
       if (Array.isArray(value)) {
         if (value.length === 0) continue;
-        lines.push(`${key}: [${value.join(', ')}]`);
+        const escapeItem = (item: string): string => {
+          if (/[:#,\n\r]/.test(item)) {
+            return `"${item
+              .replace(/\\/g, '\\\\')
+              .replace(/"/g, '\\"')
+              .replace(/\n/g, '\\n')
+              .replace(/\r/g, '\\r')}"`;
+          }
+          return item;
+        };
+        lines.push(`${key}: [${value.map(escapeItem).join(', ')}]`);
         continue;
       }
 
@@ -244,8 +254,17 @@ export class MarkdownFormatter {
 
       const str = String(value);
       if (str.trim() === '') continue;
-      const needsQuotes = /[:#]/.test(str);
-      lines.push(`${key}: ${needsQuotes ? `"${str.replace(/"/g, '\\"')}"` : str}`);
+      const needsQuotes = /[:#\n\r]/.test(str);
+      if (needsQuotes) {
+        const escaped = str
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"')
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\r');
+        lines.push(`${key}: "${escaped}"`);
+      } else {
+        lines.push(`${key}: ${str}`);
+      }
     }
 
     lines.push('---');
