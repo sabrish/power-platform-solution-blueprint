@@ -1799,6 +1799,13 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     sections.push(MarkdownFormatter.formatHeading(`${displayName} - Overview`, 1));
     sections.push('');
 
+    // Entity description
+    const entityDescription = meta.Description?.UserLocalizedLabel?.Label;
+    if (entityDescription && entityDescription.trim()) {
+      sections.push(`> ${entityDescription}`);
+      sections.push('');
+    }
+
     // Quick stats card
     sections.push(MarkdownFormatter.formatHeading('Quick Stats', 2));
     sections.push('');
