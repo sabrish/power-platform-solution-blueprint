@@ -42,6 +42,7 @@ import type { View } from '../types/view.js';
 import type { Dialog } from '../types/dialog.js';
 import type { AiModel } from '../types/aiModel.js';
 import type { VirtualTableDataSource } from '../types/virtualTableDataSource.js';
+import { version } from '../../../package.json';
 import { MarkdownFormatter } from './markdown/MarkdownFormatter.js';
 import {
   groupPluginsByAssembly,
@@ -56,6 +57,8 @@ import { calculateComplexityScore } from '../utils/complexity.js';
 import type { IReporter } from './IReporter.js';
 
 export class MarkdownReporter implements IReporter<MarkdownExport> {
+  private readonly toolVersion = version;
+
   /**
    * Generate complete markdown export from blueprint result
    */
@@ -213,6 +216,22 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateReadme(result: BlueprintResult): string {
     const sections: string[] = [];
+
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'blueprint_readme',
+      environment_url: result.metadata.environment,
+      generated_at: result.metadata.generatedAt.toISOString(),
+      tool_version: this.toolVersion,
+      scope_type: result.metadata.scope.type,
+      solution_names: result.metadata.solutionNames ?? [],
+      total_entities: result.summary.totalEntities,
+      total_plugins: result.summary.totalPlugins,
+      total_flows: result.summary.totalFlows,
+      total_business_rules: result.summary.totalBusinessRules,
+      total_classic_workflows: result.summary.totalClassicWorkflows,
+      total_web_resources: result.summary.totalWebResources,
+      total_security_roles: result.summary.totalSecurityRoles,
+    }));
 
     // Title and metadata
     sections.push(MarkdownFormatter.formatHeading('Power Platform Solution Blueprint', 1));
@@ -559,6 +578,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateMetrics(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({ blueprint_type: 'summary_metrics' }));
     sections.push(MarkdownFormatter.formatHeading('Blueprint Metrics & Statistics', 1));
     sections.push('');
 
@@ -647,6 +667,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllPlugins(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'plugin',
+      item_count: result.plugins.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Plugins', 1));
     sections.push('');
     sections.push(`**Total Plugins:** ${result.summary.totalPlugins}`);
@@ -720,6 +745,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllFlows(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'flow',
+      item_count: result.flows.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Cloud Flows', 1));
     sections.push('');
     sections.push(`**Total Flows:** ${result.summary.totalFlows}`);
@@ -763,6 +793,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllBusinessRules(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'business_rule',
+      item_count: result.businessRules.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Business Rules', 1));
     sections.push('');
     sections.push(`**Total Business Rules:** ${result.summary.totalBusinessRules}`);
@@ -867,6 +902,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllClassicWorkflows(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'classic_workflow',
+      item_count: result.classicWorkflows.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Classic Workflows', 1));
     sections.push('');
     sections.push('⚠️ **Classic workflows are legacy technology. Microsoft recommends creating new automation with Power Automate and migrating existing workflows.** [Learn more](https://learn.microsoft.com/en-us/power-automate/replace-workflows-with-flows)');
@@ -916,6 +956,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllWebResources(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'web_resource',
+      item_count: result.webResources.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Web Resources', 1));
     sections.push('');
     sections.push(`**Total Web Resources:** ${result.summary.totalWebResources}`);
@@ -974,6 +1019,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllCustomAPIs(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'custom_api',
+      item_count: result.customAPIs.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Custom APIs', 1));
     sections.push('');
     sections.push(`**Total Custom APIs:** ${result.summary.totalCustomAPIs}`);
@@ -1047,6 +1097,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllEnvironmentVariables(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'environment_variable',
+      item_count: result.environmentVariables.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Environment Variables', 1));
     sections.push('');
     sections.push(`**Total Environment Variables:** ${result.summary.totalEnvironmentVariables}`);
@@ -1089,6 +1144,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllConnectionReferences(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'connection_reference',
+      item_count: result.connectionReferences.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Connection References', 1));
     sections.push('');
     sections.push(`**Total Connection References:** ${result.summary.totalConnectionReferences}`);
@@ -1119,6 +1179,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllGlobalChoices(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'global_choice',
+      item_count: result.globalChoices.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Global Choices', 1));
     sections.push('');
     sections.push(`**Total Global Choices:** ${result.summary.totalGlobalChoices}`);
@@ -1151,6 +1216,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllCustomConnectors(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'custom_connector',
+      item_count: result.customConnectors.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Custom Connectors', 1));
     sections.push('');
     sections.push(`**Total Custom Connectors:** ${result.summary.totalCustomConnectors}`);
@@ -1182,6 +1252,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllBusinessProcessFlows(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'business_process_flow',
+      item_count: result.businessProcessFlows.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Business Process Flows', 1));
     sections.push('');
     sections.push(`**Total Business Process Flows:** ${result.summary.totalBusinessProcessFlows}`);
@@ -1242,6 +1317,10 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateExternalIntegrations(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'summary_external_integrations',
+      endpoint_count: result.externalEndpoints?.length ?? 0,
+    }));
     sections.push(MarkdownFormatter.formatHeading('External Integrations', 1));
     sections.push('');
 
@@ -1289,6 +1368,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     const sections: string[] = [];
     const analysis = result.crossEntityAnalysis;
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'summary_cross_entity_automation',
+      entry_point_count: analysis?.totalEntryPoints ?? 0,
+      target_entity_count: analysis?.entityViews.size ?? 0,
+    }));
     sections.push(MarkdownFormatter.formatHeading('Cross-Entity Automation', 1));
     sections.push('');
 
@@ -1534,6 +1618,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     const sections: string[] = [];
     const displayName = blueprint.entity.DisplayName?.UserLocalizedLabel?.Label || blueprint.entity.LogicalName;
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'entity_cross_entity_trace',
+      logical_name: blueprint.entity.LogicalName,
+      display_name: displayName,
+    }));
     sections.push(MarkdownFormatter.formatHeading(`Cross-Entity Trace — ${displayName}`, 1));
     sections.push('');
     sections.push(`**Entity:** \`${blueprint.entity.LogicalName}\``);
@@ -1632,6 +1721,10 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateSolutionDistribution(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'summary_solution_distribution',
+      solution_count: result.solutionDistribution?.length ?? 0,
+    }));
     sections.push(MarkdownFormatter.formatHeading('Solution Distribution', 1));
     sections.push('');
 
@@ -1686,7 +1779,23 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     const sections: string[] = [];
     const meta = entity.entity;
     const displayName = meta.DisplayName?.UserLocalizedLabel?.Label || meta.LogicalName;
+    const complexityScore = calculateComplexityScore(entity, result);
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'entity_overview',
+      logical_name: meta.LogicalName,
+      display_name: displayName,
+      schema_name: meta.SchemaName,
+      publisher_prefix: this.extractPublisherPrefix(meta.SchemaName),
+      is_custom: !!meta.IsCustomEntity,
+      is_managed: !!meta.IsManaged,
+      complexity: complexityScore.level,
+      field_count: meta.Attributes?.length ?? 0,
+      plugin_count: entity.plugins.length,
+      flow_count: entity.flows.length,
+      business_rule_count: entity.businessRules.length,
+      solution_names: entity.referencingSolutions ?? [],
+    }));
     sections.push(MarkdownFormatter.formatHeading(`${displayName} - Overview`, 1));
     sections.push('');
 
@@ -1743,6 +1852,12 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     const meta = entity.entity;
     const displayName = meta.DisplayName?.UserLocalizedLabel?.Label || meta.LogicalName;
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'entity_schema',
+      logical_name: meta.LogicalName,
+      display_name: displayName,
+      attribute_count: meta.Attributes?.length ?? 0,
+    }));
     sections.push(MarkdownFormatter.formatHeading(`${displayName} - Schema`, 1));
     sections.push('');
 
@@ -1948,7 +2063,17 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     const sections: string[] = [];
     const meta = entity.entity;
     const displayName = meta.DisplayName?.UserLocalizedLabel?.Label || meta.LogicalName;
+    const classicWorkflows = result.classicWorkflowsByEntity.get(meta.LogicalName) || [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'entity_automation',
+      logical_name: meta.LogicalName,
+      display_name: displayName,
+      plugin_count: entity.plugins.length,
+      flow_count: entity.flows.length,
+      business_rule_count: entity.businessRules.length,
+      classic_workflow_count: classicWorkflows.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading(`${displayName} - Automation`, 1));
     sections.push('');
 
@@ -2036,7 +2161,6 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     }
 
     // Classic workflows
-    const classicWorkflows = result.classicWorkflowsByEntity.get(meta.LogicalName) || [];
     if (classicWorkflows.length > 0) {
       sections.push(MarkdownFormatter.formatHeading('Classic Workflows (Deprecated)', 2));
       sections.push('');
@@ -2067,6 +2191,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     const meta = entity.entity;
     const displayName = meta.DisplayName?.UserLocalizedLabel?.Label || meta.LogicalName;
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'entity_execution_pipeline',
+      logical_name: meta.LogicalName,
+      display_name: displayName,
+    }));
     sections.push(MarkdownFormatter.formatHeading(`${displayName} - Execution Pipeline`, 1));
     sections.push('');
     sections.push('This page shows the execution order of server-side automation on this entity.');
@@ -2301,6 +2430,12 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     const meta = entity.entity;
     const displayName = meta.DisplayName?.UserLocalizedLabel?.Label || meta.LogicalName;
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'entity_business_process_flows',
+      logical_name: meta.LogicalName,
+      display_name: displayName,
+      bpf_count: bpfs.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading(`${displayName} - Business Process Flows`, 1));
     sections.push('');
 
@@ -2345,6 +2480,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateComplexityScores(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({ blueprint_type: 'analysis_complexity' }));
     sections.push(MarkdownFormatter.formatHeading('Entity Complexity Scores', 1));
     sections.push('');
 
@@ -2406,6 +2542,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generatePerformanceRisks(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({ blueprint_type: 'analysis_performance' }));
     sections.push(MarkdownFormatter.formatHeading('Performance Risks', 1));
     sections.push('');
 
@@ -2466,6 +2603,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateMigrationRecommendations(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({ blueprint_type: 'analysis_migration' }));
     sections.push(MarkdownFormatter.formatHeading('Migration Recommendations', 1));
     sections.push('');
 
@@ -2665,6 +2803,15 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   }
 
   /**
+   * Extract publisher prefix from schema name (e.g. "new_Account" -> "new").
+   * Used to populate the `publisher_prefix` frontmatter field on entity files.
+   */
+  private extractPublisherPrefix(schemaName: string): string {
+    const match = schemaName.match(/^([a-z]+)_/i);
+    return match ? match[1] : '';
+  }
+
+  /**
    * Format complexity badge
    */
   private formatComplexityBadge(complexity: 'Low' | 'Medium' | 'High'): string {
@@ -2748,6 +2895,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateSecurityOverview(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'security_overview',
+      security_role_count: result.securityRoles?.length ?? 0,
+      field_security_profile_count: result.fieldSecurityProfiles?.length ?? 0,
+    }));
     sections.push(MarkdownFormatter.formatHeading('Security Overview', 1));
     sections.push('');
     sections.push('This document provides an overview of security roles and field security profiles in the solution.');
@@ -2840,6 +2992,10 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateSecurityRoleDetail(role: import('../discovery/SecurityRoleDiscovery.js').SecurityRoleDetail): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'security_role',
+      role_name: role.name,
+    }));
     sections.push(MarkdownFormatter.formatHeading(`Security Role: ${role.name}`, 1));
     sections.push('');
 
@@ -2924,6 +3080,10 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateFieldSecurityProfiles(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'security_field_security_profiles',
+      profile_count: result.fieldSecurityProfiles?.length ?? 0,
+    }));
     sections.push(MarkdownFormatter.formatHeading('Field Security Profiles', 1));
     sections.push('');
     sections.push('Field security profiles control who can read, create, or update specific secured fields.');
@@ -2959,6 +3119,10 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAttributeMaskingRules(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'security_attribute_masking',
+      rule_count: result.attributeMaskingRules?.length ?? 0,
+    }));
     sections.push(MarkdownFormatter.formatHeading('Attribute Masking Rules', 1));
     sections.push('');
     sections.push('Attribute masking rules control how sensitive data is masked when displayed to users without appropriate permissions.');
@@ -3000,6 +3164,10 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateColumnSecurityProfiles(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'security_column_security',
+      profile_count: result.columnSecurityProfiles?.length ?? 0,
+    }));
     sections.push(MarkdownFormatter.formatHeading('Column Security Profiles', 1));
     sections.push('');
     sections.push('Column security profiles define which users can access specific secured columns across entities.');
@@ -3047,6 +3215,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllCanvasApps(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'canvas_app',
+      item_count: result.canvasApps.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Canvas Apps', 1));
     sections.push('');
     sections.push(`**Total Canvas Apps:** ${result.summary.totalCanvasApps}`);
@@ -3077,6 +3250,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllCustomPages(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'custom_page',
+      item_count: result.customPages.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Custom Pages', 1));
     sections.push('');
     sections.push(`**Total Custom Pages:** ${result.summary.totalCustomPages}`);
@@ -3107,6 +3285,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllModelDrivenApps(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'model_driven_app',
+      item_count: result.modelDrivenApps.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Model-Driven Apps', 1));
     sections.push('');
     sections.push(`**Total Model-Driven Apps:** ${result.summary.totalModelDrivenApps}`);
@@ -3138,6 +3321,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllPcfControls(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'pcf_control',
+      item_count: result.pcfControls.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All PCF Controls', 1));
     sections.push('');
     sections.push(`**Total PCF Controls:** ${result.summary.totalPcfControls}`);
@@ -3170,6 +3358,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllServiceEndpoints(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'service_endpoint',
+      item_count: result.serviceEndpoints.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Service Endpoints', 1));
     sections.push('');
     sections.push(`**Total Service Endpoints:** ${result.summary.totalServiceEndpoints}`);
@@ -3201,6 +3394,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateAllCopilotAgents(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'copilot_agent',
+      item_count: result.copilotAgents.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Copilot Agents', 1));
     sections.push('');
     sections.push(`**Total Copilot Agents:** ${result.summary.totalCopilotAgents}`);
@@ -3233,6 +3431,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllViews(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'view',
+      item_count: result.views.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Views', 1));
     sections.push('');
     sections.push(`**Total Views:** ${result.summary.totalViews}`);
@@ -3260,6 +3463,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllCharts(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'chart',
+      item_count: result.charts.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Charts', 1));
     sections.push('');
     sections.push(`**Total Charts:** ${result.summary.totalCharts}`);
@@ -3286,6 +3494,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllReports(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'report',
+      item_count: result.reports.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Reports', 1));
     sections.push('');
     sections.push(`**Total Reports:** ${result.summary.totalReports}`);
@@ -3312,6 +3525,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllSiteMaps(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'site_map',
+      item_count: result.siteMaps.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Site Maps', 1));
     sections.push('');
     sections.push(`**Total Site Maps:** ${result.summary.totalSiteMaps}`);
@@ -3338,6 +3556,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllSlaDefinitions(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'sla_definition',
+      item_count: result.slaDefinitions.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All SLA Definitions', 1));
     sections.push('');
     sections.push(`**Total SLA Definitions:** ${result.summary.totalSlaDefinitions}`);
@@ -3367,6 +3590,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllDuplicateDetectionRules(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'duplicate_detection_rule',
+      item_count: result.duplicateDetectionRules.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Duplicate Detection Rules', 1));
     sections.push('');
     sections.push(`**Total Duplicate Detection Rules:** ${result.summary.totalDuplicateDetectionRules}`);
@@ -3394,6 +3622,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllDialogs(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'dialog',
+      item_count: result.dialogs.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Dialogs (Deprecated)', 1));
     sections.push('');
     sections.push(`**Total Dialogs:** ${result.summary.totalDialogs}`);
@@ -3424,6 +3657,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllAiModels(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'ai_model',
+      item_count: result.aiModels.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All AI Models', 1));
     sections.push('');
     sections.push(`**Total AI Models:** ${result.summary.totalAiModels}`);
@@ -3453,6 +3691,11 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
    */
   private generateAllVirtualTableDataSources(result: BlueprintResult): string {
     const sections: string[] = [];
+    sections.push(MarkdownFormatter.formatFrontmatter({
+      blueprint_type: 'component_summary',
+      component_type: 'virtual_table_data_source',
+      item_count: result.virtualTableDataSources.length,
+    }));
     sections.push(MarkdownFormatter.formatHeading('All Virtual Table Data Sources', 1));
     sections.push('');
     sections.push(`**Total Virtual Table Data Sources:** ${result.summary.totalVirtualTableDataSources}`);
@@ -3480,6 +3723,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private generateSharedComponentsSummary(result: BlueprintResult): string {
     const sections: string[] = [];
 
+    sections.push(MarkdownFormatter.formatFrontmatter({ blueprint_type: 'summary_shared_components' }));
     sections.push(MarkdownFormatter.formatHeading('Shared Components', 1));
     sections.push('');
     sections.push('Components that appear in two or more solutions.');
