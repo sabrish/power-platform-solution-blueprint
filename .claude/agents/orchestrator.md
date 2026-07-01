@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: ALWAYS start here. The orchestrator coordinates all work on the Power Platform Solution Blueprint (PPSB) project. Invoke this agent first for any new task, feature, bug, refactor, or question. It reads project memory, decides which specialist agent to delegate to, and ensures only one architect instance is active. Do not invoke other agents directly — let the orchestrator decide.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: Read, Write, Edit, Glob, Grep, Task, WebFetch, WebSearch
 ---
 
