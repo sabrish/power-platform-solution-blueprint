@@ -5,6 +5,21 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **AI-friendly Markdown export — YAML frontmatter and flat headings** — all 46 generated Markdown files now include YAML frontmatter blocks with metadata (`blueprint_type`, logical name, display name, counts, version); entity overview sections include Dataverse description as blockquote for self-contained AI agent reading; cross-entity trace sections replace `<details>`/`<summary>` HTML collapsed blocks with flat `###` headings so content is visible to AI agents and rendered expanded in ADO Wiki
+
+### Changed
+- **Markdown export headings in cross-entity trace** — replaced `<details>`/`<summary>` HTML collapsed sections with flat `###` headings (H3) for improved readability in AI agents and Azure DevOps Wiki rendering
+
+### Technical
+- **MarkdownFormatter new static helpers** — `formatFrontmatter(fields)` generates YAML with proper escaping (string quoting for colons/hashes/newlines, YAML 1.1 literal detection, array flow sequences with per-item escaping); `formatBlockquote(text)` handles multi-line blockquotes with proper indentation
+- **`extractPublisherPrefix` refactoring** — moved 4th duplicate into `src/core/utils/entityName.ts` as named export; `MarkdownReporter.ts` imports it; pre-existing duplicates in `ERDGenerator.ts` and `SolutionDistributionAnalyzer.ts` tracked for follow-up consolidation
+- **Version import consolidation** — both `MarkdownReporter.ts` and `JsonReporter.ts` now import `version` from `package.json` (matching pattern)
+
+---
+
 ## [1.3.0] - 2026-06-23
 
 ### Added
