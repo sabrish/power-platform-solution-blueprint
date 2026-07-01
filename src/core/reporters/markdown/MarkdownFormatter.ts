@@ -244,19 +244,24 @@ export class MarkdownFormatter {
       if (value === null || value === undefined) continue;
 
       if (Array.isArray(value)) {
-        if (value.length === 0) continue;
-        const escapeItem = (item: string): string => {
-          const itemIsLiteral = /^(true|false|yes|no|on|off|null|~|-?\d+(\.\d+)?)$/i.test(item);
-          if (/[:#,\n\r[\]{}]/.test(item) || itemIsLiteral) {
-            return `"${item
+        const escapeItem = (item: unknown): string | null => {
+          if (item === null || item === undefined) return null;
+          if (typeof item === 'boolean' || typeof item === 'number') return String(item);
+          const str = typeof item === 'string' ? item : String(item);
+          if (str.trim() === '') return null;
+          const itemIsLiteral = /^(true|false|yes|no|on|off|null|~|-?\d+(\.\d+)?)$/i.test(str);
+          if (/[:#,\n\r[\]{}]/.test(str) || itemIsLiteral) {
+            return `"${str
               .replace(/\\/g, '\\\\')
               .replace(/"/g, '\\"')
               .replace(/\n/g, '\\n')
               .replace(/\r/g, '\\r')}"`;
           }
-          return item;
+          return str;
         };
-        lines.push(`${key}: [${value.map(escapeItem).join(', ')}]`);
+        const items = value.map(escapeItem).filter((s): s is string => s !== null);
+        if (items.length === 0) continue;
+        lines.push(`${key}: [${items.join(', ')}]`);
         continue;
       }
 
