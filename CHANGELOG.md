@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] — 2026-07-01
 
 ### Added
-- **AI-friendly Markdown export — YAML frontmatter and flat headings** — all 46 generated Markdown files now include YAML frontmatter blocks with metadata (`blueprint_type`, logical name, display name, counts, version); entity overview sections include Dataverse description as blockquote for self-contained AI agent reading; cross-entity trace sections replace `<details>`/`<summary>` HTML collapsed blocks with flat `###` headings so content is visible to AI agents and rendered expanded in ADO Wiki
+- **AI-friendly Markdown export — YAML frontmatter and flat headings** — all generated Markdown files now include YAML frontmatter blocks with metadata (`blueprint_type`, logical name, display name, counts, version); entity overview sections include Dataverse description as blockquote for self-contained AI agent reading; cross-entity trace sections replace `<details>`/`<summary>` HTML collapsed blocks with flat `###` headings so content is visible to AI agents and rendered expanded in ADO Wiki
 
 ### Changed
 - **Markdown export headings in cross-entity trace** — replaced `<details>`/`<summary>` HTML collapsed sections with flat `###` headings (H3) for improved readability in AI agents and Azure DevOps Wiki rendering
