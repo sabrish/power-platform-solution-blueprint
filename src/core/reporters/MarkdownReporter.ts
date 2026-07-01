@@ -54,6 +54,7 @@ import {
   groupCustomAPIsByBinding,
 } from '../utils/grouping.js';
 import { calculateComplexityScore } from '../utils/complexity.js';
+import { extractPublisherPrefix } from '../utils/entityName.js';
 import type { IReporter } from './IReporter.js';
 
 export class MarkdownReporter implements IReporter<MarkdownExport> {
@@ -1784,7 +1785,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       logical_name: meta.LogicalName,
       display_name: displayName,
       schema_name: meta.SchemaName,
-      publisher_prefix: this.extractPublisherPrefix(meta.SchemaName),
+      publisher_prefix: extractPublisherPrefix(meta.SchemaName),
       is_custom: !!meta.IsCustomEntity,
       is_managed: !!meta.IsManaged,
       complexity: complexityScore.level,
@@ -2810,15 +2811,6 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
   private getEntityBpfs(entityLogicalName: string, result: BlueprintResult): BusinessProcessFlow[] {
     const bpfs = result.businessProcessFlowsByEntity.get(entityLogicalName) || [];
     return bpfs;
-  }
-
-  /**
-   * Extract publisher prefix from schema name (e.g. "new_Account" -> "new").
-   * Used to populate the `publisher_prefix` frontmatter field on entity files.
-   */
-  private extractPublisherPrefix(schemaName: string): string {
-    const match = schemaName.match(/^([a-z]+)_/i);
-    return match ? match[1] : '';
   }
 
   /**
