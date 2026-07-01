@@ -1801,12 +1801,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     // Entity description
     const entityDescription = meta.Description?.UserLocalizedLabel?.Label;
     if (entityDescription && entityDescription.trim()) {
-      sections.push(
-        entityDescription
-          .split(/\r?\n/)
-          .map(l => `> ${l}`)
-          .join('\n')
-      );
+      sections.push(MarkdownFormatter.formatBlockquote(entityDescription));
       sections.push('');
     }
 
