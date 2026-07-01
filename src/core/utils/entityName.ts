@@ -9,3 +9,12 @@ export function resolveEntityName(value: string | null | undefined): string | nu
   if (!trimmed || trimmed.toLowerCase() === 'none') return null;
   return trimmed;
 }
+
+/**
+ * Extracts the publisher prefix from a schema name (e.g. "new_Account" -> "new").
+ * Returns an empty string when no prefix pattern is found.
+ */
+export function extractPublisherPrefix(schemaName: string): string {
+  const match = schemaName.match(/^([a-z]+)_/i);
+  return match ? match[1] : '';
+}

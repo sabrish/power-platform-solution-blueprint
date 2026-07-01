@@ -203,6 +203,94 @@ export class MarkdownFormatter {
   }
 
   /**
+   * Format a multi-line blockquote, ensuring every line gets a `> ` prefix.
+   * @param text - Raw text (may contain embedded newlines from Dataverse free-text fields)
+   * @returns Markdown blockquote string safe to push directly into a sections array
+   */
+  static formatBlockquote(text: string): string {
+    return text
+      .split(/\r?\n/)
+      .map(line => `> ${line}`)
+      .join('\n');
+  }
+
+  /**
+   * Generate a YAML frontmatter block for AI-agent-friendly markdown files.
+   * @param fields - snake_case key/value pairs. null/undefined/empty-string/empty-array
+   *   values are skipped. Arrays are rendered inline on one line. Strings are quoted
+   *   only when they contain `:` or `#`. Booleans and numbers are unquoted.
+   * @returns Frontmatter block (`--- ... ---`) followed by a single trailing newline,
+   *   so a blank line separates it from the next pushed section when joined with `\n`.
+   *
+   * @example
+   * ```typescript
+   * MarkdownFormatter.formatFrontmatter({
+   *   blueprint_type: 'entity_overview',
+   *   field_count: 12,
+   *   solution_names: ['Contoso Core', 'Contoso Sales'],
+   * });
+   * // ---
+   * // blueprint_type: entity_overview
+   * // field_count: 12
+   * // solution_names: [Contoso Core, Contoso Sales]
+   * // ---
+   * //
+   * ```
+   */
+  static formatFrontmatter(fields: Record<string, unknown>): string {
+    const lines: string[] = ['---'];
+
+    for (const [key, value] of Object.entries(fields)) {
+      if (value === null || value === undefined) continue;
+
+      if (Array.isArray(value)) {
+        const escapeItem = (item: unknown): string | null => {
+          if (item === null || item === undefined) return null;
+          if (typeof item === 'boolean' || typeof item === 'number') return String(item);
+          const str = typeof item === 'string' ? item : String(item);
+          if (str.trim() === '') return null;
+          const itemIsLiteral = /^(true|false|yes|no|on|off|null|~|-?\d+(\.\d+)?)$/i.test(str);
+          if (/[:#,\n\r[\]{}]/.test(str) || itemIsLiteral) {
+            return `"${str
+              .replace(/\\/g, '\\\\')
+              .replace(/"/g, '\\"')
+              .replace(/\n/g, '\\n')
+              .replace(/\r/g, '\\r')}"`;
+          }
+          return str;
+        };
+        const items = value.map(escapeItem).filter((s): s is string => s !== null);
+        if (items.length === 0) continue;
+        lines.push(`${key}: [${items.join(', ')}]`);
+        continue;
+      }
+
+      if (typeof value === 'boolean' || typeof value === 'number') {
+        lines.push(`${key}: ${value}`);
+        continue;
+      }
+
+      const str = String(value);
+      if (str.trim() === '') continue;
+      const isYamlLiteral = /^(true|false|yes|no|on|off|null|~|-?\d+(\.\d+)?)$/i.test(str);
+      const needsQuotes = /[:#\n\r]/.test(str) || isYamlLiteral;
+      if (needsQuotes) {
+        const escaped = str
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"')
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\r');
+        lines.push(`${key}: "${escaped}"`);
+      } else {
+        lines.push(`${key}: ${str}`);
+      }
+    }
+
+    lines.push('---');
+    return lines.join('\n') + '\n';
+  }
+
+  /**
    * Generate ASCII file tree representation
    * @param node - Root file node
    * @returns Formatted file tree string

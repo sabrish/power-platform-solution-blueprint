@@ -178,7 +178,7 @@ export function ExportDialog({ isOpen, result, onClose }: ExportDialogProps) {
                     />
                   </div>
                   <div className={styles.formatDescription}>
-                    Complete file structure - ideal for Azure DevOps Wiki
+                    Complete file structure - ideal for Azure DevOps Wiki and AI agents
                   </div>
                   <div className={styles.formatPreview}>
                     ~{estimatedFiles} files, {formatBytes(estimates.markdown)}

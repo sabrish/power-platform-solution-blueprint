@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-03-17
+**Last updated:** 2026-07-01
 
 ---
 
@@ -18,7 +18,17 @@
 
 ## Current Version
 
-**v1.3.0** (pending release 2026-06-23) — minor: 12 new component types, reverse solution lookup (#40), cascade configuration in exports (#42), business rule parser improvements (#37)
+**v1.3.0** (released 2026-06-23) — minor: 12 new component types, reverse solution lookup (#40), cascade configuration in exports (#42), business rule parser improvements (#37)
+
+**v1.4.0** (pending merge — `feat/ai-friendly-markdown-export` PR open)
+- YAML frontmatter on all generated Markdown files (blueprint_type, metadata, version)
+- Entity overview description blockquote
+- Flat headings in cross-entity trace (replaces `<details>`/`<summary>`)
+- `MarkdownFormatter.formatFrontmatter()` and `formatBlockquote()` helpers
+- `extractPublisherPrefix` refactored into `src/core/utils/entityName.ts`
+- YAML escaping fixes (newlines, arrays, backslashes, YAML literals, non-string array items)
+- Version import pattern unified across MarkdownReporter and JsonReporter
+
 **v1.1.2** (released 2026-03-17) — patch: cross-entity chain map redesign (trigger operation column, message code support), debug logging cleanup
 **v1.1.1** (released 2026-03-17) — patch: business rules IF/THEN/ELSE, conditionCount fix, DRY/SOLID refactoring, debug logger, Custom APIs click fix, env vars eye icon fix, CDS Default Solution filter fix, HTML cross-entity structure fix
 **v1.1.0** (released 2026-03-12) — minor: pipeline-first Cross-Entity Automation view, external API call detection, HTML/Markdown export parity, and AUDIT compliance fixes
