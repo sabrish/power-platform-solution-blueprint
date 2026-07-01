@@ -1643,8 +1643,7 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
     const lines: string[] = [];
     const { entryPoint, activations, risks } = trace;
 
-    lines.push(`<details>`);
-    lines.push(`<summary><strong>${entryPoint.automationName}</strong> (${entryPoint.automationType} — ${entryPoint.operation} from ${entryPoint.sourceEntityDisplayName})</summary>`);
+    lines.push(`### ${entryPoint.automationName} _(${entryPoint.automationType} — ${entryPoint.operation} from ${entryPoint.sourceEntityDisplayName})_`);
     lines.push('');
     lines.push(`**Source:** ${entryPoint.sourceEntityDisplayName} (\`${entryPoint.sourceEntity}\`)`);
     lines.push(`**Trigger Operation:** ${entryPoint.triggerOperation === 'CreateOrUpdate' ? 'Create or Update' : entryPoint.triggerOperation}`);
@@ -1696,7 +1695,6 @@ export class MarkdownReporter implements IReporter<MarkdownExport> {
       lines.push('');
     }
 
-    lines.push('</details>');
     lines.push('');
 
     return lines.join('\n');
