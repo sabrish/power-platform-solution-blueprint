@@ -94,7 +94,7 @@ Report: **"Memory loaded: [files read]"**
 - **NEVER** use `executeDataverseRequest()` or `window.toolboxAPI.dataverse.*` — they do not exist → see PATTERN-005
 - **ALWAYS** use static imports for reporters — dynamic imports break under `pptb-webview://` → see PATTERN-007
 - **ALWAYS** commit one logical change per commit, Conventional Commits format, with trailer:
-  `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` → see PATTERN-011
+  `Co-Authored-By: Claude <noreply@anthropic.com>` → see PATTERN-011
 - **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient
 - **ALWAYS** run `/pre-commit` before any git commit. Run `/push-branch` instead of `git push` directly — it runs the full pre-PR gate and only pushes if clean.
 - **ALWAYS** check `src/core/utils/` and `src/hooks/` before writing any new utility logic — see patterns-general.md D1–D6
