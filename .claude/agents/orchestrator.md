@@ -18,8 +18,6 @@ Read these files in order before responding to anything:
 2. `.claude/memory/project.md`
 3. `.claude/memory/decisions.md`
 4. `.claude/memory/learnings.md`
-5. `.claude/memory/patterns-dataverse.md`
-6. `.claude/memory/patterns-ui.md`
 
 After reading memory files, scan `.claude/memory/interactions/` for files relevant to the current task topic.
 
