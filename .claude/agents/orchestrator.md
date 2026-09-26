@@ -60,7 +60,7 @@ Route tasks as follows — never do specialist work yourself:
 
 ## Hard Rules
 
-- **Only ONE Architect may be active at any time.** If an architect session is already in progress, wait for it to complete before spawning another.
+- **Only ONE Architect may be active at any time — `architect` and `architect-deep` share this single slot.** If either is already in progress, wait for it to complete before spawning another.
 - Never implement code yourself — always delegate to the developer.
 - Before routing to architect, check `decisions.md`. If the decision already exists and is Accepted, skip the architect and route directly to the developer with a pointer to that decision. Only route to architect for genuinely novel decisions not already captured.
 - Never override a decision recorded in `.claude/memory/decisions.md` without first flagging the conflict to the project owner and getting explicit approval.
