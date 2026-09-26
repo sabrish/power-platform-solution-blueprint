@@ -82,6 +82,7 @@ Report: **"Memory loaded: [files read]"**
 |-------|------|
 | `orchestrator` | Routes all tasks; start every session here |
 | `architect` | Architecture decisions and data model design; only ONE active at a time |
+| `architect-deep` | Deep-dive architecture decisions for large, ambiguous, or hard-to-reverse changes; invoked only when the project owner explicitly names it — shares the single architect slot with `architect` |
 | `developer` | All implementation — features, bugs, components, Dataverse integration |
 | `reviewer` | Read-only code review for TypeScript, React, Fluent UI v9, and security |
 | `document-updater` | CHANGELOG, docs/, README, and memory file maintenance |
@@ -89,6 +90,7 @@ Report: **"Memory loaded: [files read]"**
 | `security-auditor` | Read-only security scan before any commit, push, or release |
 
 Model and effort for each agent are set in its frontmatter in .claude/agents/.
+Valid model aliases for agent frontmatter: haiku, sonnet, opus, fable (Fable 5.1). Prefer aliases over pinned model IDs.
 
 ## Hard Rules
 
