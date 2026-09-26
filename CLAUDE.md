@@ -91,6 +91,7 @@ Report: **"Memory loaded: [files read]"**
 
 Model and effort for each agent are set in its frontmatter in .claude/agents/.
 Valid model aliases for agent frontmatter: haiku, sonnet, opus, fable (Fable 5.1). Prefer aliases over pinned model IDs.
+`.claude/settings.json`'s `fallbackModel` applies fleet-wide, not just to `architect-deep` — if any agent's primary model is unavailable, that agent falls back to `opus`. This is expected and not scoped per-agent.
 
 ## Hard Rules
 
