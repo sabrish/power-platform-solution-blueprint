@@ -78,15 +78,17 @@ Report: **"Memory loaded: [files read]"**
 
 ## Agents
 
-| Agent | Model | Role |
-|-------|-------|------|
-| `orchestrator` | Sonnet 5 | Routes all tasks; start every session here |
-| `architect` | Opus 4.8 | Architecture decisions and data model design; only ONE active at a time |
-| `developer` | Sonnet 5 | All implementation — features, bugs, components, Dataverse integration |
-| `reviewer` | Sonnet 5 | Read-only code review for TypeScript, React, Fluent UI v9, and security |
-| `document-updater` | Haiku 4.5 | CHANGELOG, docs/, README, and memory file maintenance |
-| `skills-learner` | Haiku 4.5 | Captures corrections and feedback into memory files |
-| `security-auditor` | Haiku 4.5 | Read-only security scan before any commit, push, or release |
+| Agent | Role |
+|-------|------|
+| `orchestrator` | Routes all tasks; start every session here |
+| `architect` | Architecture decisions and data model design; only ONE active at a time |
+| `developer` | All implementation — features, bugs, components, Dataverse integration |
+| `reviewer` | Read-only code review for TypeScript, React, Fluent UI v9, and security |
+| `document-updater` | CHANGELOG, docs/, README, and memory file maintenance |
+| `skills-learner` | Captures corrections and feedback into memory files |
+| `security-auditor` | Read-only security scan before any commit, push, or release |
+
+Model and effort for each agent are set in its frontmatter in .claude/agents/.
 
 ## Hard Rules
 
