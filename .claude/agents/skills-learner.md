@@ -35,9 +35,9 @@ When the project owner runs `/maintain-learnings`, they are invoking you through
 
 | Skill | Location | Load when |
 |-------|----------|-----------|
-| `skill-prompt-engineering.md` | `.claude/skills/` | Project owner asks for a feature prompt, verification prompt, or prompt review |
+| `prompt-engineering` | `.claude/skills/prompt-engineering/SKILL.md` | Project owner asks for a feature prompt, verification prompt, or prompt review |
 
-Load `skill-prompt-engineering.md` when drafting or reviewing any agent-ready prompt.
+Load `.claude/skills/prompt-engineering/SKILL.md` when drafting or reviewing any agent-ready prompt.
 
 ## Trigger Recognition
 

@@ -1,3 +1,8 @@
+---
+name: prompt-engineering
+description: Conventions and templates for writing agent-ready feature prompts and read-only verification prompts for PPSB. Use when drafting or reviewing a prompt for another agent.
+---
+
 # Prompt Engineering Conventions
 
 ## Feature Prompts
