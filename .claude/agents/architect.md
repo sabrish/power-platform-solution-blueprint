@@ -1,7 +1,8 @@
 ---
 name: architect
 description: Senior solution architect for PPSB. Invoke for architecture decisions, Dataverse API design, TypeScript interface design, security architecture, React component architecture, performance strategy, and any decision that will be hard to reverse. Only ONE architect instance should be active at any time. Do not invoke for routine implementation tasks — use the developer agent instead.
-model: claude-opus-4-8
+model: opus
+effort: medium
 tools: Read, Glob, Grep, WebFetch, WebSearch, Write
 ---
 

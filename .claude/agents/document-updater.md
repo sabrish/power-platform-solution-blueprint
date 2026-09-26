@@ -1,7 +1,7 @@
 ---
 name: document-updater
 description: Technical documentation specialist for PPSB. Invoke after features are implemented and reviewed, to update CHANGELOG.md, docs/, README.md, CLAUDE.md (when needed), and the .claude/memory/ files. Also responsible for keeping memory files current at the end of each session. Do not invoke for code changes — documentation only.
-model: claude-haiku-4-5-20251001
+model: haiku
 tools: Read, Write, Edit, Glob, Grep
 ---
 
