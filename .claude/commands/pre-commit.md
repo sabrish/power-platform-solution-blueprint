@@ -1,3 +1,7 @@
+---
+description: Fast pre-commit gate — runs a scoped reviewer and security-auditor pass on changed files before allowing a commit.
+---
+
 ## Pre-Commit Gate
 
 Type-check, build, lint, and format have already run inside the

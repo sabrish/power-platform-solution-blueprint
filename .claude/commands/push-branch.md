@@ -1,3 +1,7 @@
+---
+description: Full pre-push gate — runs the test suite, production build, and a full-branch-diff security audit and review before pushing.
+---
+
 ## Push Branch
 
 Run this sequence in order. Stop and report if any step fails.

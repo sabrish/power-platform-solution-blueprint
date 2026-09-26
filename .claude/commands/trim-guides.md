@@ -1,3 +1,7 @@
+---
+description: Cross-references DATAVERSE_OPTIMIZATION_GUIDE.md and UI_PATTERNS.md against the domain pattern files and proposes replacing duplicated sections with PATTERN-XXX references.
+---
+
 /agent document-updater
 
 Cross-reference and trim task.
