@@ -111,6 +111,22 @@ describe('FlowDefinitionParser - Dataverse action target extraction', () => {
       expect(action).toMatchObject({ operation: 'Update', targetEntity: 'accounts', confidence: 'Medium' });
     });
 
+    it('reads a target containing digits from the path', () => {
+      const action = parseOne({
+        Step_one: openApiAction('UpdateRecord', {}, { path: '/cr000_widgets(11111111-1111-1111-1111-111111111111)' }),
+      });
+
+      expect(action).toMatchObject({ targetEntity: 'cr000_widgets', confidence: 'Medium' });
+    });
+
+    it('reads a target ending in a digit from the path', () => {
+      const action = parseOne({
+        Step_one: openApiAction('DeleteRecord', {}, { path: '/new_table2(11111111-1111-1111-1111-111111111111)' }),
+      });
+
+      expect(action).toMatchObject({ operation: 'Delete', targetEntity: 'new_table2', confidence: 'Medium' });
+    });
+
     it('flags a dynamic path as [dynamic] with low confidence', () => {
       const action = parseOne({
         Step_one: openApiAction('UpdateRecord', {}, { path: "@{concat('/', variables('name'), '(1)')}" }),

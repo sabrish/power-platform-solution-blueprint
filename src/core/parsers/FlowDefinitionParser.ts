@@ -507,7 +507,7 @@ export class FlowDefinitionParser {
         targetEntity = '[dynamic]';
         confidence = 'Low';
       } else {
-        const pathMatch = rawPath.match(/\/([a-z_]+)\(/i);
+        const pathMatch = rawPath.match(/\/([a-z0-9_]+)\(/i);
         if (pathMatch) {
           targetEntity = pathMatch[1];
           confidence = 'Medium';
