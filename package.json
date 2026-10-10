@@ -53,6 +53,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint:unused": "knip",
+    "validate": "pptb-validate",
     "finalize-package": "echo 'Package ready for publishing. dist/ contains built files.'"
   },
   "dependencies": {
