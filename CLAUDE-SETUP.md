@@ -276,9 +276,9 @@ Never shortcut it. Each step must pass before the next one starts.
    - **3a, Developer:** runs `npm version X.Y.Z --no-git-tag-version`, which updates
      `package.json` only.
    - **3b, Document-updater:** finalises `CHANGELOG.md` (moves `[Unreleased]` to
-     `## [X.Y.Z] — YYYY-MM-DD`), updates the `README.md` shields.io badge and inline version
+     `## [X.Y.Z] — YYYY-MM-DD`), updates the `**Version:** X.Y.Z` line in `README.md` and inline version
      references, and updates the `docs/user-guide.md` subtitle. It then verifies that
-     `package.json`, the latest `CHANGELOG.md` header, the `README.md` badge, and the
+     `package.json`, the latest `CHANGELOG.md` header, the `README.md` version line, and the
      `docs/user-guide.md` subtitle all show X.Y.Z. A mismatch halts the release.
 4. **Build verification** — Step 4, Developer: `pnpm typecheck` (zero errors), then
    `pnpm build` (must succeed).

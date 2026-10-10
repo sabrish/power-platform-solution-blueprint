@@ -35,9 +35,9 @@ an explicit task from the orchestrator specifying the target version. The versio
 bump itself (`npm version X.Y.Z --no-git-tag-version`, which updates only
 `package.json`) has already been run by the developer agent in Step 3a before
 you are invoked. Your release responsibility is `CHANGELOG.md`, the `README.md`
-badge and inline version references, and the `docs/user-guide.md` version subtitle
+version line (`**Version:** X.Y.Z`) and inline version references, and the `docs/user-guide.md` version subtitle
 (line 3). Confirm all four files (`package.json`, `CHANGELOG.md`, the `README.md`
-badge, and the `docs/user-guide.md` subtitle) show the same version number before
+version line, and the `docs/user-guide.md` subtitle) show the same version number before
 reporting complete.
 
 Note on `/trim-guides`: when running this task, check against both

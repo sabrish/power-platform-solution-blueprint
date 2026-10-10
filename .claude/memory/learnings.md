@@ -179,10 +179,11 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 **Rule:** Version numbers appear in four places that must all match before a release is tagged:
 1. `package.json` — the `"version"` field
 2. `CHANGELOG.md` — the latest versioned entry header (e.g. `## [1.1.0] — 2026-03-12`)
-3. `README.md` — the shields.io version badge at the top and any inline version references
+3. `README.md` — the `**Version:** X.Y.Z` version line near the top and any inline version references
 4. `docs/user-guide.md` — the version string in the subtitle on line 3 (e.g. `Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.0`)
 
 The Document Updater must update all four in the same release step. Mismatched versions across any of these files is a release blocker and must be resolved before the orchestrator prints the git tag command.
+**Note (2026-10-10):** The README shields.io badges were replaced with a plain-text `**Version:** X.Y.Z · **Status:** Stable` line because PPTB's README CSP blocks `img.shields.io`. Item 3 now refers to that version line.
 **Context:** (1–3) Added 2026-02-26 after noticing the README badge was missing from the release workflow. (4) Added 2026-03-13 as a fifth location (`JsonReporter.ts` with hardcoded `toolVersion` field), but this was resolved in the `feat/ai-friendly-markdown-export` branch on 2026-07-01. Both `MarkdownReporter.ts` and `JsonReporter.ts` now import `version` from `package.json`, eliminating the need to manually update a hardcoded field. The hardcoded field entry is therefore **REMOVED** and the four-file rule remains.
 **Example:**
 - Wrong: Bumping `package.json` to `1.2.0` and updating `CHANGELOG.md` and `README.md` but leaving `docs/user-guide.md` subtitle on `v1.1.0`
