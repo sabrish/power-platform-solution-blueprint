@@ -313,7 +313,7 @@ Also verify against official Microsoft documentation:
 
 ## PATTERN-015 — Full window.dataverseAPI Method Reference
 
-**Source:** CLAUDE.md (pre-refactor), @pptb/types v1.0.19+
+**Source:** CLAUDE.md (pre-refactor), @pptb/types v1.2.6+
 **Applies to:** All agents
 **See also:** PATTERN-005 for the core usage pattern
 
