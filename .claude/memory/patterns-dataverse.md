@@ -14,19 +14,23 @@
 Never query Dataverse in a loop. Always batch with OR filters, then group in memory.
 
 ### Standard Batch Pattern
+`PptbDataverseClient` / `IDataverseClient` expose `query`, `queryAll` and `queryMetadata` (there is no `client.queryData`; `queryData` exists only on `window.dataverseAPI`, wrapped by the client). Build OR filters with `buildOrFilter` (`src/core/utils/odata.ts`, `{ guids: true }` omits quotes) and batch with `withAdaptiveBatch` (`src/core/utils/withAdaptiveBatch.ts`), which also handles batch-size reduction and `FetchLogger` entries (see PATTERN-017).
 ```typescript
-const batchSize = 20; // Standard (use 10 for privilege queries)
-const allResults: SomeType[] = [];
-
-for (let i = 0; i < ids.length; i += batchSize) {
-  const batch = ids.slice(i, i + batchSize);
-  const filter = batch.map(id => {
-    const cleanId = normalizeGuid(id);  // use normalizeGuid() — see patterns-general.md D1
-    return `fieldid eq ${cleanId}`;
-  }).join(' or ');
-  const result = await client.queryData(`table?$select=f1,f2&$filter=${filter}`);
-  allResults.push(...result.value);
-}
+// withAdaptiveBatch<TId, TResult> returns { results, failedIds, finalBatchSize }.
+// Do not push into an outer array inside fetchFn: results are already collected.
+const { results, failedIds } = await withAdaptiveBatch<string, SomeType>(
+  ids,
+  async (batch) => {   // initialBatchSize defaults to 20
+    const filter = buildOrFilter(batch.map(normalizeGuid), 'fieldid', { guids: true });
+    const response = await this.client.query<SomeType>('table', {
+      select: ['f1', 'f2'],
+      filter,
+    });
+    return response.value;
+  },
+  { step: 'descriptive-step-name', entitySet: 'table', logger: this.logger },
+);
+// failedIds: IDs that failed at minimum batch size. Report them; do not drop them silently.
 ```
 
 ### Group-in-Memory Pattern (one-to-many)
@@ -52,21 +56,21 @@ for (const parent of parents) {
 ```typescript
 // NEVER — N+1 queries
 for (const id of ids) {
-  const result = await client.queryData(`table?$filter=id eq ${id}`);
+  const result = await client.query('table', { filter: `id eq ${id}` });
 }
 
 // NEVER — querying inside map/filter
 const enriched = await Promise.all(
   items.map(async item => ({
     ...item,
-    details: await client.queryData(`details?$filter=itemid eq ${item.id}`)
+    details: await client.query('details', { filter: `itemid eq ${item.id}` })
   }))
 );
 ```
 
 ### Batch Size Guidelines
-- **Standard:** `batchSize = 20` for most queries
-- **Conservative:** `batchSize = 10` for security role privilege queries (long field paths)
+- **Standard:** `initialBatchSize = 20` for most queries
+- **Conservative:** `initialBatchSize = 10` for security role privilege queries (long field paths)
 - **Rationale:** GUIDs are 36 chars; 20 GUIDs ≈ 1.5KB in URL; prevents HTTP 414/400
 
 ---
@@ -79,16 +83,16 @@ const enriched = await Promise.all(
 
 ```typescript
 // Rule 1: OData filters — raw GUID, no quotes, no braces (for primary key / regular ID fields)
-const cleanGuid = guidValue.replace(/[{}]/g, '');
-const filter = `id eq ${cleanGuid}`;           // correct
-// const filter = `id eq '${guidValue}'`;      // WRONG — quotes
-// const filter = `id eq {${guidValue}}`;      // WRONG — braces
+const cleanGuid = normalizeGuid(guidValue);    // src/core/utils/guid.ts — never strip braces inline
+const idFilter = `id eq ${cleanGuid}`;         // correct
+// const idFilter = `id eq '${guidValue}'`;    // WRONG — quotes
+// const idFilter = `id eq {${guidValue}}`;    // WRONG — braces
 
 // EXCEPTION: _solutionid_value lookup field on solutioncomponents requires
 // braces AND single quotes. Raw GUID format returns 0 results silently.
 // This is a Dataverse-specific quirk for this particular field.
 const guidWithBraces = id.startsWith('{') ? id : `{${id}}`;
-const filter = `_solutionid_value eq '${guidWithBraces}'`;   // CORRECT for this field only
+const solutionFilter = `_solutionid_value eq '${guidWithBraces}'`;   // CORRECT for this field only
 
 // Rule 2 & 3: Always normalize GUIDs for comparison and storage
 // Use normalizeGuid() from src/core/utils/guid.ts — see patterns-general.md D1
@@ -219,6 +223,7 @@ Every commit MUST:
 1. Use Conventional Commits format: `<type>[optional scope]: <description>`
 2. End with `Co-Authored-By: Claude <noreply@anthropic.com>`
 3. Be a separate commit per logical change — never batch unrelated changes
+4. Reference the GitHub issue number (e.g. `(#123)` or `Refs #123`) when the work is on a tracked issue
 
 **Types:** feat, fix, docs, style, refactor, perf, test, chore, build, ci, revert
 
@@ -324,11 +329,12 @@ Also verify against official Microsoft documentation:
 ```typescript
 window.dataverseAPI.queryData(odataQuery: string, connectionTarget?: 'primary' | 'secondary')
 window.dataverseAPI.fetchXmlQuery(fetchXml: string, connectionTarget?: 'primary' | 'secondary')
+window.dataverseAPI.retrieveMultiple(fetchXml: string, connectionTarget?: 'primary' | 'secondary')  // alias for fetchXmlQuery (backward compatibility)
 ```
 
 ### CRUD
 ```typescript
-window.dataverseAPI.create(entityName, record, connectionTarget?)
+window.dataverseAPI.create(entityLogicalName, record, connectionTarget?)
 window.dataverseAPI.retrieve(entityLogicalName, id, columns?, connectionTarget?)
 window.dataverseAPI.update(entityLogicalName, id, record, connectionTarget?)
 window.dataverseAPI.delete(entityLogicalName, id, connectionTarget?)
@@ -338,9 +344,9 @@ window.dataverseAPI.updateMultiple(entityLogicalName, records, connectionTarget?
 
 ### Metadata
 ```typescript
-window.dataverseAPI.getEntityMetadata(entityLogicalName, searchByLogicalName?, selectColumns?, connectionTarget?)
-window.dataverseAPI.getAllEntitiesMetadata(selectColumns?, connectionTarget?)
-window.dataverseAPI.getSolutions(selectColumns?, connectionTarget?)
+window.dataverseAPI.getEntityMetadata(entityLogicalName, searchByLogicalName /* required boolean */, entityProperties?, connectionTarget?)
+window.dataverseAPI.getAllEntitiesMetadata(entityProperties?, connectionTarget?)
+window.dataverseAPI.getSolutions(selectColumns: string[] /* required */, connectionTarget?)
 window.dataverseAPI.publishCustomizations(tableLogicalName?, connectionTarget?)
 ```
 
@@ -364,12 +370,25 @@ window.dataverseAPI.buildLabel(text, languageCode?)  // Creates properly formatt
 Every discovery class that calls `withAdaptiveBatch` must accept a `FetchLogger` in its constructor and pass it to every `withAdaptiveBatch` call. `BlueprintGenerator` initialises the logger at the top of `generate()` and must pass `this.logger` to every qualifying discovery class constructor.
 
 ### Required constructor signature
+The `logger` parameter is optional (so classes still work without logging); `BlueprintGenerator` always passes it. Classes depend on the `IDataverseClient` interface, not the concrete class.
 ```typescript
-constructor(
-  private client: PptbDataverseClient,
-  private onProgress: ProgressCallback,
-  private logger: FetchLogger,
-) {}
+// Abbreviated: import statements omitted (IDataverseClient and FetchLogger;
+// FetchLogger lives in src/core/utils/FetchLogger.ts)
+export class ExampleDiscovery {
+  private readonly client: IDataverseClient;
+  private readonly onProgress?: (current: number, total: number) => void;
+  private readonly logger?: FetchLogger;
+
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger,
+  ) {
+    this.client = client;
+    this.onProgress = onProgress;
+    this.logger = logger;
+  }
+}
 ```
 
 ### Required withAdaptiveBatch call shape
@@ -496,8 +515,9 @@ to appear stuck at 50% or jump from 0% to 100%.
 ## LAYER ARCHITECTURE (canonical)
 
 ```
-src/components/       ← UI only; calls hooks; never imports from src/core/ directly
-      │ hooks only
+src/components/       ← UI only; calls hooks; never constructs Discovery/client classes;
+      │                  may import types and pure utilities from src/core/
+      │ hooks (+ core types and src/core/utils/* pure functions)
       ▼
 src/hooks/            ← orchestrates core services; owns loading/error state
       │ core services only
@@ -513,7 +533,8 @@ window.dataverseAPI   ← all access via PptbDataverseClient only
 
 ## CROSS-LAYER IMPORT RULES
 
-- src/components/ may import from src/hooks/ and src/core/types/ only
+- src/components/ may import from src/hooks/, core types (e.g. `import type { ... } from '../core'`) and pure utilities from src/core/utils/ (e.g. `businessRuleFormatting`, `pluginStageLabels`, `systemFilters`, `FetchLogger`, `debugLogger`)
+- src/components/ must NOT construct Discovery classes, `PptbDataverseClient`, or `BlueprintGenerator` (D-ARCH-005 holds); data access goes through hooks
 - src/hooks/ may import from src/core/ freely
 - src/core/ may NOT import from src/utils/ — shared utilities live in src/core/utils/
 - src/core/ may NOT import React or any UI library
@@ -535,7 +556,8 @@ Source: src/core/generators/processors/generatorSteps.ts
 
 BlueprintGenerator produces BlueprintResult — it has no export concern.
 All export format generation goes through ExportFacade.
-Hooks call ExportFacade.export(format, result) — never call reporter methods directly.
+Hooks call the ExportFacade methods exportAsJson(result), exportAsMarkdown(result),
+exportAsHtml(result) and exportAsZip(result, formats) — never call reporter methods directly.
 Source: src/core/exporters/ExportFacade.ts
 
 ---

@@ -20,9 +20,7 @@ Trusted Publishing uses **OpenID Connect (OIDC)** to authenticate GitHub Actions
 
 ### Step 1: Configure npm Package for Trusted Publishing
 
-**⚠️ IMPORTANT: Do this AFTER the first successful publish**
-
-npm requires the package to exist before you can configure trusted publishing.
+**Historical:** The package has existed on npm since 2026-02, so the first-publish prerequisite no longer applies. This section is kept as the reference for the trusted publisher configuration.
 
 1. **Go to your package settings:**
    - Navigate to: https://www.npmjs.com/package/@sabrish/power-platform-solution-blueprint/settings
@@ -36,95 +34,81 @@ npm requires the package to exist before you can configure trusted publishing.
      - **Repository owner**: `sabrish`
      - **Repository name**: `power-platform-solution-blueprint`
      - **Workflow file**: `publish-npm.yml`
-     - **Environment** (optional): `npm`
+     - **Environment**: `npm` (must match the `environment: name: npm` of the publish job)
 
 4. **Save the configuration**
 
 ---
 
-## 🚀 First Publish (One-time Setup)
+## 🚀 First Publish (Historical)
 
-Since Trusted Publishing requires the package to exist, you need to do the **first publish** using a token:
-
-### Option 1: Manual First Publish (Recommended)
-
-```bash
-# Local machine with npm login
-npm publish --access public --otp=YOUR_2FA_CODE
-```
-
-### Option 2: GitHub Actions with Token (One-time)
-
-1. Create a temporary npm token with 2FA bypass
-2. Add to GitHub Secrets as `NPM_TOKEN`
-3. Temporarily uncomment the `env:` block in the workflow:
-   ```yaml
-   env:
-     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-   ```
-4. Run the workflow to publish the desired version (for example, your next release)
-5. After success, remove the token and revert the workflow
+**Historical — do not follow for this package.** The package's first publish predates the trusted publisher configuration, and trusted publishing through the workflow is the standard publish path. The workflow does not use an npm token, and there is no `env:` block that would supply one.
 
 ---
 
-## 🔄 After First Publish
+## 🔄 Workflow Configuration
 
-Once the package exists on npm:
+The workflow (`.github/workflows/publish-npm.yml`) has two jobs: `build` (install, test, build, upload `dist` as an artifact) and `publish` (needs `build`; downloads `dist` and publishes). `id-token: write` is set on the `publish` job only, not at workflow level:
 
-1. **Configure Trusted Publisher** (follow Step 1 above)
-2. **Verify workflow has correct OIDC configuration.** The workflow has two jobs: `build` (tests, build, uploads `dist`) and `publish` (needs `build`; downloads `dist` and publishes). `id-token: write` is set on the `publish` job only, not at workflow level:
-   ```yaml
-   permissions:
-     contents: read  # Workflow-level default; no id-token here
+```yaml
+permissions:
+  contents: read  # Workflow-level default; no id-token here
 
-   jobs:
-     build:
-       # pnpm install --frozen-lockfile, pnpm test, pnpm build, upload dist artifact
+jobs:
+  build:
+    # pnpm install --frozen-lockfile, pnpm test, pnpm build, upload dist artifact
 
-     publish:
-       needs: build
-       if: github.event_name == 'release' || github.ref == 'refs/heads/main'
-       environment:
-         name: npm
-       permissions:
-         contents: read
-         id-token: write  # ✅ Required for OIDC — scoped to this job only
-       steps:
-         - name: Setup Node.js
-           uses: actions/setup-node@v4
-           with:
-             node-version: '22'
-             registry-url: 'https://registry.npmjs.org'  # ✅ REQUIRED for OIDC
+  publish:
+    needs: build
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
+    environment:
+      name: npm
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC; scoped to this job only
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-         - name: Update npm to latest  # OIDC publishing needs npm >= 11.5.1
-           run: npm install -g npm@latest
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
 
-         - name: Publish to npm (Trusted Publishing via OIDC)
-           run: npm publish --access public
-   ```
+      - name: Update npm to latest  # OIDC publishing needs npm >= 11.5.1
+        run: npm install -g npm@latest
 
-   **Important:** The `registry-url` parameter is REQUIRED for OIDC authentication. When setup-node sees:
-   - ✅ `registry-url` is set
-   - ✅ `id-token: write` permission exists on the `publish` job
-   - ✅ NO `NODE_AUTH_TOKEN` environment variable
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
 
-   It automatically configures npm to use OIDC for authentication.
+      - name: Publish to npm (Trusted Publishing via OIDC)
+        run: npm publish --access public
+```
 
-3. **Ensure NO token environment variables** in the publish step ✅ (Already done)
+**Requirements for OIDC publishing:**
+- `registry-url` is set on `actions/setup-node`.
+- `id-token: write` is set on the `publish` job.
+- No `NODE_AUTH_TOKEN` or other npm token is set in the workflow. The workflow has no `env:` block.
 
 ---
 
 ## 📦 Publishing Flow (After Setup)
 
-### Automatic Publish (via Release):
-```bash
-gh release create v0.5.2 --title "v0.5.2" --notes "Release notes"
-```
-
-### Manual Publish (via Workflow):
+### Manual Publish (via Workflow, recommended):
 1. Go to Actions → Publish to npm
-2. Click "Run workflow"
-3. OIDC handles npm authentication automatically (no npm token required), but GitHub environment protection rules for the `npm` environment may still require manual approval before the job runs.
+2. Click "Run workflow" and select the `main` branch. The workflow has no version input
+3. OIDC handles npm authentication automatically (no npm token required). The `npm` environment requires reviewer approval before the publish job runs
+
+### GitHub Release publish (UNTESTED):
+Creating a GitHub Release from an existing tag (for example `vX.Y.Z`) would trigger the workflow through a tag ref. This path is untested for this package. The `npm` environment deploys from protected branches only, so the run may be blocked. Use Manual Publish above.
+
+Creating a GitHub Release after a manual publish triggers the workflow again. That run waits for approval in the `npm` environment (or is blocked by its deployment policy). npm refuses to republish an existing version, so do not approve it.
 
 ---
 
@@ -150,18 +134,23 @@ After publishing with Trusted Publishing:
 
 ### Error: "This operation requires authentication"
 - **Cause**: Trusted Publisher not configured on npm
-- **Fix**: Configure it in package settings first
-
-### Error: "Package does not exist"
-- **Cause**: First publish not completed
-- **Fix**: Do the first publish manually or with a token
+- **Fix**: Configure it in package settings
 
 ### Error: "Workflow not authorized"
-- **Cause**: Wrong workflow file name or repo details
+- **Cause**: Wrong workflow file name, repo details, or environment name
 - **Fix**: Verify configuration matches exactly:
   - Owner: `sabrish`
   - Repo: `power-platform-solution-blueprint`
   - Workflow: `publish-npm.yml`
+  - Environment: `npm`
+
+### Error: "You cannot publish over the previously published versions: X.Y.Z"
+- **Cause**: The version in `package.json` is already on npm
+- **Fix**: Reject the pending `npm` environment approval. A new release needs a new version number
+
+### Run blocked by the environment's deployment policy (protected branches only)
+- **Cause**: The `npm` environment's deployment policy allows protected branches only. A run triggered by a GitHub Release uses a tag ref, which the policy does not allow, so the run is blocked. The GitHub Release path is UNTESTED for this package.
+- **Fix**: Run the workflow manually from `main` (see Manual Publish above). This is the recommended path.
 
 ---
 
@@ -175,11 +164,11 @@ After publishing with Trusted Publishing:
 
 ## 🎯 Current Status
 
-- ✅ Workflow configured with OIDC permissions
-- ✅ Token dependency removed from workflow
-- ⏳ **Waiting**: First publish + npm trusted publisher configuration
-- ⏳ **Then**: Token-free publishing via OIDC
+- ✅ Trusted publishing works for this package
+- ✅ v1.5.0 was published from `main` via workflow_dispatch, with provenance
+- ✅ Workflow uses OIDC (`id-token: write` on the publish job only); no npm token is used
+- ✅ Publish runs in the `npm` GitHub Environment
 
 ---
 
-**Next Action**: Complete first publish, then configure trusted publisher on npm.
+**Next Action**: None for setup. Future releases follow `.github/PUBLISHING.md`.

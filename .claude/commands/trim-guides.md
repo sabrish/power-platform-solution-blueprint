@@ -2,11 +2,11 @@
 description: Cross-references DATAVERSE_OPTIMIZATION_GUIDE.md and UI_PATTERNS.md against the domain pattern files and proposes replacing duplicated sections with PATTERN-XXX references.
 ---
 
-/agent document-updater
+Run this as the document-updater agent: delegate to the document-updater agent.
 
 Cross-reference and trim task.
 
-Compare these two files against both domain pattern files:
+Compare each guide against its own domain pattern file:
 - DATAVERSE_OPTIMIZATION_GUIDE.md → compare against .claude/memory/patterns-dataverse.md
 - UI_PATTERNS.md → compare against .claude/memory/patterns-ui.md
 

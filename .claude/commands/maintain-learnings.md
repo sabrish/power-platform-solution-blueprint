@@ -2,7 +2,7 @@
 description: Maintenance pass that reviews learnings.md and promotes stable, unviolated entries to the appropriate domain pattern file.
 ---
 
-/agent skills-learner
+Run this as the skills-learner agent: delegate to the skills-learner agent.
 
 Maintenance pass on .claude/memory/learnings.md.
 
@@ -18,6 +18,8 @@ Work through this sequence for each candidate:
      .claude/memory/patterns-dataverse.md
    - React, Fluent UI v9, makeStyles, UI behaviour →
      .claude/memory/patterns-ui.md
+   - Shared utilities, hooks, DRY/SOLID, data-access structure →
+     .claude/memory/patterns-general.md
 3. Propose the formatted PATTERN-XXX entry (matching the style of existing patterns in
    the target file — include Source, Applies to, description, code example, Do NOT section)
 4. Wait for my explicit approval ("yes", "approved", "looks good") before writing anything

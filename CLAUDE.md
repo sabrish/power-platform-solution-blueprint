@@ -1,4 +1,3 @@
----
 ## Default Behaviour — No Agent Specified
 
 When no agent is explicitly invoked, apply this tiered behaviour.
@@ -25,8 +24,8 @@ Examples:
 ### Tier 3: Any implementation, commit, or push
 Trigger: any request to write code, fix a bug, add a feature, refactor,
 commit, or push.
-Behaviour: treat this exactly as if the project owner had invoked
-`/agent orchestrator`. Load all memory files and apply all orchestrator
+Behaviour: treat this exactly as if the project owner had invoked the orchestrator,
+started as `claude --agent orchestrator`. Load all memory files and apply all orchestrator
 rules as defined in `.claude/agents/orchestrator.md`.
 
 Do not duplicate the orchestrator rules here — follow them from source.
@@ -91,7 +90,7 @@ Report: **"Memory loaded: [files read]"**
 
 Model and effort for each agent are set in its frontmatter in .claude/agents/.
 Valid model aliases for agent frontmatter: haiku, sonnet, opus, fable (Fable 5.1). Prefer aliases over pinned model IDs.
-`.claude/settings.json`'s `fallbackModel` applies fleet-wide, not just to `architect-deep` — if any agent's primary model is unavailable, that agent falls back to `opus`. This is expected and not scoped per-agent.
+`.claude/settings.json` defines `"fallbackModel": ["opus"]`. Claude Code documents `fallbackModel` as an ordered backup chain. This project defines one entry, `opus`. See the Claude Code docs for scope.
 
 ## Hard Rules
 
@@ -100,7 +99,7 @@ Valid model aliases for agent frontmatter: haiku, sonnet, opus, fable (Fable 5.1
 - **ALWAYS** use static imports for reporters — dynamic imports break under `pptb-webview://` → see PATTERN-007
 - **ALWAYS** commit one logical change per commit, Conventional Commits format, with trailer:
   `Co-Authored-By: Claude <noreply@anthropic.com>` → see PATTERN-011
-- **ALWAYS** run `pnpm typecheck && pnpm build` after any code change before committing — typecheck alone is not sufficient
+- **ALWAYS** run `pnpm typecheck && pnpm build` and `pnpm test` after any code change before committing — typecheck alone is not sufficient
 - **ALWAYS** run `/pre-commit` before any git commit. Run `/push-branch` instead of `git push` directly — it runs the full pre-PR gate and only pushes if clean.
 - **ALWAYS** check `src/core/utils/` and `src/hooks/` before writing any new utility logic — see patterns-general.md D1–D6
 
@@ -112,9 +111,10 @@ Codified 2026-03-09. Full specs with code examples: `.claude/memory/patterns-ui.
 
 | Command | When to use |
 |---------|-------------|
-| `/pre-commit [files]` | Before every `git commit` — scoped reviewer and security-auditor on changed files only. Developer runs `pnpm typecheck && pnpm build` (and `pnpm test`) before this |
-| `/push-branch` | Instead of `git push` — full gate: `pnpm test`, `pnpm build`, security-auditor and reviewer on the full branch diff (`git diff main...HEAD`), then pushes |
-| `pnpm test` | Runs the vitest suite (`vitest run`); co-located `*.test.ts` files under `src/` |
+| `/pre-commit [files]` | Before every `git commit` — scoped reviewer and security-auditor on the named files only; verdict CLEAR TO COMMIT or BLOCKED. Does not run typecheck, build or tests: the developer runs `pnpm typecheck && pnpm build && pnpm test` before this |
+| `/push-branch` | Instead of `git push` — full gate: `pnpm test`, `pnpm build`, then security-auditor and reviewer on the full branch diff (`git diff main...HEAD`); only pushes if clean |
+| `pnpm test` | Unit tests (`vitest run`); co-located `src/**/*.test.ts`, node environment |
+| `pnpm validate` | PPTB manifest validation (`pptb-validate`). Run after any manifest change |
 
 ## Key Reference Files
 
@@ -124,6 +124,8 @@ Codified 2026-03-09. Full specs with code examples: `.claude/memory/patterns-ui.
 | `SUPPORTED_COMPONENTS.md` | User-facing component coverage status — Supported, Partial, and Planned |
 | `DATAVERSE_OPTIMIZATION_GUIDE.md` | Batching patterns, GUID rules, HTTP 414 prevention |
 | `UI_PATTERNS.md` | Fluent UI v9 patterns (card-row lists, tokens, makeStyles) |
+| `COMPONENT_ICONS_REFERENCE.md` | Power Apps solution explorer icons per component type — source of truth for `componentIcons.ts` |
 | `CONTRIBUTING.md` | Commit conventions and PR workflow |
 | `.claude/memory/patterns-general.md` | DRY/SOLID patterns — load for all code tasks |
 | `docs/` | Architecture, user guide, roadmap, API security reference |
+| `docs/VERIFICATION.md` | PPTB Verified-status maintenance guide |

@@ -1,6 +1,7 @@
 # PPSB Project State
 
 **Last updated:** 2026-10-10
+**Current version:** 1.5.0 (`package.json`)
 
 ---
 
@@ -18,39 +19,34 @@
 
 ## Current Version
 
-**v1.5.0** (prepared 2026-10-10; pending PR merge and tag. `package.json` is bumped to 1.5.0 by the developer; tag `v1.5.0` is created on `main` after merge, by the project owner. Changes on `chore/general-improvements`, see CHANGELOG.md `[1.5.0]`)
-- Fixed: same-entity flows and classic workflows no longer reported as cross-entity (entity set names resolved to logical names via `createEntityNameResolver`); operation detection prefers `operationId`; path entity regex accepts digits; README images and HTML render in PPTB (#46)
-- Removed: Preview badges from Cross-Entity Automation (app and HTML export); `npm-shrinkwrap.json` (see decisions.md)
-- Added: PPTB tool icon; vitest with `pnpm test`; `pnpm validate` (PPTB manifest validator)
-- Changed: `@pptb/types` ^1.2.6; publish workflow runs tests before publish
+**v1.5.0** (released 2026-10-10)
+- Published to npm on 2026-10-10 via `workflow_dispatch`, with provenance. The npm environment requires reviewer approval before publish.
+- Tag `v1.5.0` on `main`, created after the PR merge. No GitHub Release was created.
+- Full notes: CHANGELOG.md `[1.5.0]`.
 
-**v1.4.0** (released 2026-07-01, tagged `v1.4.0`; `package.json` is at 1.4.0)
-- YAML frontmatter on all generated Markdown files (blueprint_type, metadata, version)
-- Entity overview description blockquote
-- Flat headings in cross-entity trace (replaces `<details>`/`<summary>`)
-- `MarkdownFormatter.formatFrontmatter()` and `formatBlockquote()` helpers
-- `extractPublisherPrefix` refactored into `src/core/utils/entityName.ts`
-- YAML escaping fixes (newlines, arrays, backslashes, YAML literals, non-string array items)
-- Version import pattern unified across MarkdownReporter and JsonReporter
-
-**v1.3.0** (released 2026-06-23) — minor: 12 new component types, reverse solution lookup (#40), cascade configuration in exports (#42), business rule parser improvements (#37)
-
-**v1.1.2** (released 2026-03-17) — patch: cross-entity chain map redesign (trigger operation column, message code support), debug logging cleanup
-**v1.1.1** (released 2026-03-17) — patch: business rules IF/THEN/ELSE, conditionCount fix, DRY/SOLID refactoring, debug logger, Custom APIs click fix, env vars eye icon fix, CDS Default Solution filter fix, HTML cross-entity structure fix
-**v1.1.0** (released 2026-03-12) — minor: pipeline-first Cross-Entity Automation view, external API call detection, HTML/Markdown export parity, and AUDIT compliance fixes
-**v1.0.1** (released 2026-03-11) — patch: discovery pagination fix + OData injection guards
-**v1.0.0** (released 2026-03-11)
-**v0.9.0** (released 2026-03-07)
+**Recent releases** (details in CHANGELOG.md):
+- **v1.4.0** (2026-07-01): YAML frontmatter on Markdown exports, entity description blockquotes, flat cross-entity headings
+- **v1.3.0** (2026-06-23): 12 new component types, Reverse Solution Lookup (`referencingSolutions`, #40), cascade configuration in exports (#42), business rule parser patterns (#37)
+- **v1.1.2** (2026-03-17), **v1.1.1** (2026-03-17), **v1.1.0** (2026-03-12), **v1.0.1** and **v1.0.0** (2026-03-11), **v0.9.0** (2026-03-07), and earlier: CHANGELOG.md
 
 ---
 
-## What is Working (as of v1.1.1)
+## What's Working
 
-**Stable baseline (v1.0+):** Full Dataverse component discovery — entities, plugins, flows, business rules, classic workflows, BPFs, web resources, custom APIs, environment variables, connection references, global choices, security roles, field security profiles, attribute masking, column security profiles, forms, canvas apps, custom pages, model-driven apps. Scope selector (publisher + solution multi-select), entity list with flag filter bar (AND logic), Component Browser card-row accordion (PATTERN-001), universal search/filter on all tabs, Results Dashboard, interactive Cytoscape.js ERD with pan/zoom and PNG/SVG export, JSON/Markdown/HTML/ZIP export.
+**Stable baseline (v1.0+):** Full Dataverse discovery of entities, plugins, flows, business rules, classic workflows, BPFs, web resources, custom APIs, environment variables, connection references, global choices, security roles, field security profiles, attribute masking, column security profiles, forms, canvas apps, custom pages and model-driven apps. Scope selector (publisher and solution multi-select), entity list flag filter (AND logic), Component Browser card-row accordion (PATTERN-001), universal search on all tabs, Results Dashboard, interactive Cytoscape.js ERD with pan/zoom and PNG/SVG export, JSON, Markdown, HTML and ZIP export.
 
-**v1.1.0:** Pipeline-first Cross-Entity Automation view (automation nodes top-level, entities as children with ← inbound badge), external API call detection on flow steps, HTML/Markdown export parity for external calls and Manual trigger pipelines, full AUDIT-001–013 compliance sweep across all components.
+**Stable since v1.1.0:** Pipeline-first Cross-Entity Automation view; external API call detection on flow steps; HTML/Markdown export parity; AUDIT-001–013 compliance; business rule IF/THEN/ELSE structure (`conditionGroups`, `elseActions`); Reverse Solution Lookup (`referencingSolutions`, v1.3.0); cascade configuration in relationship tables (v1.3.0); YAML frontmatter on Markdown output (v1.4.0).
 
-**Business rule parser (v1.1.0):** Full IF/THEN/ELSE structure (`conditionGroups: ConditionGroup[]`, `elseActions: Action[]`); handles all condition/action types including `controls.forEach` delegate and date-derived variables.
+**Carry-forward from v1.0.0:** Reviewer fixes across list components: `useCallback` on toggles, explicit `JSX.Element` return types, `mergeClasses` for class composition, Checkbox for the "Has Default" filter, `FlowDiscovery` OData guard.
+
+---
+
+## Known Limitations
+
+- **Canvas Apps:** Basic metadata discovery; component-level screen analysis is not available from the API
+- **Custom Pages:** Metadata only
+- **Power Pages:** Only if deployed to Dataverse
+- **Customer Insights - Journeys:** Not included
 
 ---
 
@@ -63,37 +59,9 @@ Data Access:    window.dataverseAPI (PPTB Desktop official API)
 Data:           Microsoft Dataverse (Cloud)
 ```
 
-**Structure (flat — NOT monorepo since v0.5.1):**
-```
-src/
-  core/
-    dataverse/        PptbDataverseClient.ts
-    discovery/        12+ component discovery services (all implement IDiscoverer<T>)
-    analyzers/        PerformanceAnalyzer, WorkflowMigrationAnalyzer, CrossEntityMapper, ExternalDependencyAggregator
-    generators/       ERDGenerator.ts, BlueprintGenerator.ts
-      processors/     16 component processors extracted from BlueprintGenerator
-    reporters/        MarkdownReporter, JsonReporter, HtmlReporter, ZipPackager
-    exporters/        Export-format helpers
-    parsers/          FlowDefinitionParser, JavaScriptParser, BusinessRuleParser
-    types/            Shared TypeScript interfaces and types
-    utils/            Shared utility functions (guid, metadata, entityName, grouping, complexity, odata)
-  components/         React components
-    CrossEntityAutomation/  Sub-components extracted from CrossEntityAutomationView
-    ERDView/          Sub-components and utilities (constants, stylesheet, export, traversal)
-  hooks/              Custom React hooks (useListFilter, useCardRowStyles, useExpandable)
-  types/              TypeScript type definitions
-  App.tsx
-  main.tsx
-```
+**Structure (flat, not a monorepo since v0.5.1):** `src/core/` holds discovery (12+ services implementing `IDiscoverer<T>`), analyzers, generators and processors, reporters, exporters, parsers, types and utils. `src/components/` holds React components (`CrossEntityAutomation/`, `ERDView/` sub-folders). `src/hooks/` holds shared hooks. Unit tests are co-located as `*.test.ts` under `src/`.
 
-**Key dependencies:**
-- React 18 + Vite 5 + TypeScript (strict mode)
-- Fluent UI v9 (`@fluentui/react-components`, `@fluentui/react-icons`)
-- `@pptb/types` ^1.2.6 (official PPTB Desktop type definitions)
-- Cytoscape.js (interactive ERD graph)
-- Mermaid (execution pipeline diagrams in HTML/Markdown exports; CDN, pinned to 10.9.1)
-- JSZip (ZIP packaging)
-- pnpm (package manager)
+**Key dependencies:** React 18, Vite 5, TypeScript (strict), Fluent UI v9, `@pptb/types` ^1.2.6, Cytoscape.js (ERD), Mermaid (pipeline diagrams in exports, CDN pinned to 10.9.1), JSZip, pnpm.
 
 ---
 
@@ -104,155 +72,73 @@ pnpm install    # Install dependencies
 pnpm build      # Build (outputs to dist/)
 pnpm dev        # Dev server (browser testing only)
 pnpm typecheck  # Type check
-pnpm test       # Unit tests (vitest run; co-located src/**/*.test.ts, node environment)
+pnpm test       # Unit tests (vitest run, node environment)
 pnpm validate   # PPTB manifest validation (pptb-validate)
 ```
 
-**Lint/format:** ESLint and Prettier are NOT installed, although `developer.md` requires them. See Known Follow-ups.
+Lint and format tooling is not installed. See Known Follow-ups.
+
+**Release workflow:**
+- Release sequence: `/release` (1 reviewer, 2 security audit, 3a version bump, 3b documentation, then 4 typecheck, test, build, validate and dependency audit; the audit is production-only, zero critical and zero high). Version must match in `package.json`, CHANGELOG.md, the README version line and the `docs/user-guide.md` version subtitle, matched by its text (learnings.md, 2026-02-26)
+- Release tags are created on `main` after merge, never on a branch (learnings.md, 2026-03-07)
 
 ---
 
-## In Progress / Known Limitations
+## In Progress
 
-### Business Rule Parser: JavaScript condition patterns (2026-06-22)
-
-**Status:** ✅ RESOLVED in commit d7ec24a
-
-**What was fixed:**
-Extended `parseSingleCond` to handle all observed Dataverse-compiled JS condition patterns:
-- Pattern G: empty-string check → "is not blank" / "is blank"
-- Pattern H: triple blank check → collapsed to single "is blank"
-- Pattern J: string contains/does-not-contain via indexOf helper
-- Patterns A/B/D/E: double-paren variables `((vN))`
-- Added `stripOuterParens` helper and "contains data" triple pre-check
-- Removed all debug logging statements
-
-### HTML/Markdown Export: Cascade Configuration (2026-06-22)
-
-**Status:** ✅ RESOLVED in commits earlier in session
-
-**What was fixed:**
-- 1:N and N:1 relationships now show cascade configuration (Delete, Merge, Assign, Share, Reparent, Unshare)
-- HTML: accordion/details-summary per row with full cascade table in expanded view
-- Markdown: cascade configuration sub-tables added to relationship tables
-- M:N relationships correctly show no cascade
-
-### Reverse Solution Lookup: referencingSolutions field (2026-06-22)
-
-**Status:** IN PROGRESS — feature implementation active on feat/new-component-types
-
-**Current work:**
-- `referencingSolutions?: string[]` field added to component types (Flow, BusinessRule, WebResource, EntityBlueprint, PluginStep, ClassicWorkflow, BPF, CustomAPI, EnvironmentVariable, ConnectionReference, CanvasApp)
-- Post-processing pass in BlueprintGenerator mapping `componentToSolutions` to solution unique names
-- JSON export: automatic serialisation
-- HTML export: solution badges in component expanded views; "Shared Components" summary section in progress
-- Markdown export: "Solutions" column + "Shared Components" section in progress
-
-**Issues tracked:**
-- Issue #37 — Business Rule Parser patterns (RESOLVED)
-- Issue #42 — HTML/Markdown cascade configuration (RESOLVED)
-- Issue #40 — Reverse solution lookup (IN PROGRESS)
-
-### Released in v1.1.2 (2026-03-17)
-
-Patch release. Key fixes:
-- Cross-entity chain map redesign (trigger operation column, message code support)
-- Debug logging cleanup
-
-Documentation finalized; code merged to main and tagged.
-
-### Released in v1.1.0 (2026-03-12)
-
-Minor release. Key features shipped:
-- Cross-Entity Automation Trace redesigned as pipeline-first view: automation nodes (flows, classic workflows, BPFs) are top-level accordion items; entities appear as children with ← inbound badges on flows that target them
-- External API call detection added to flow step analysis: HTTP trigger actions and premium/external connector calls surfaced per step
-- Entities that own flows with external API calls are included in the default Cross-Entity Automation view automatically
-- HTML and Markdown export parity restored: external call annotations and Manual trigger pipelines now render in both export formats
-- Token sweep across all list components: raw pixel values and hex colours replaced with `tokens.*` equivalents
-- `useCallback` wrapping applied to all toggle/filter handlers across all list components
-- `EmptyState` component adopted across all component lists (bare `<Text>` empty states removed)
-- Full AUDIT-001 through AUDIT-013 compliance verified and fixed across all list components
-
-### Released in v1.0.1 (2026-03-11)
-
-Patch release from the `fix/bug-in-component-discovery` branch. Key fixes:
-- `queryAll()` now uses `@odata.nextLink` cursor pagination; `$skip` removed (error 0x80060888 on customapis and other entity types)
-- Custom API, Connection Reference, and Custom Connector objectid-intersection queries isolated per PATTERN-012; each failure is contained
-- `PublisherDiscovery` derives publishers via `$expand` on solutions — fixes missing publishers in managed-only environments
-- OData injection guards added to `BusinessRuleDiscovery`, `SchemaDiscovery`, and `FieldSecurityProfileDiscovery`
-- Workflow GUIDs normalised before batching in `getBusinessRulesByIds`
-- `FieldSecurityProfileDiscovery` refactored to structured `QueryOptions`
-
-### Released in v1.0.0 (2026-03-11)
-
-All work from the `feat/cross-entity-automation` branch has been released. The branch was merged to `main` as part of the v1.0.0 release.
-
-**Key features shipped in v1.0.0:**
-- Cross-Entity Automation Trace — full pipeline accordion UI with field-match analysis and risk detection
-- Canvas Apps, Custom Pages, and Model-Driven Apps discovery tabs
-- Full WCAG 2.1 accessibility pass
-- `componentIcons.ts` single source of truth for all icons
-- `useListFilter` hook for shared filter/search logic
-- Solutions section in HTML export; additional XSS fixes
-- Complete card-row pattern compliance across all component lists (`TruncatedText` deleted)
-- BPF stages rendered as accordion in HTML export; excluded from JSON/ZIP
-- Classic Workflow deduplication and activation-record-only filtering
-- System Admin role detection fix
-- Carry-forward reviewer fixes across all component lists:
-  - ConnectionReferencesList: mutedText moved to makeStyles, Connection ID conditional lifted out of Text, redundant display:grid removed, toggleExpand in useCallback
-  - PluginsList: toggleExpand/toggleStageFilter/toggleStateFilter wrapped in useCallback, size="medium" on filteringAttributes Badge, explicit React.ReactElement return type on renderPluginDetails
-  - FlowDiscovery: OData injection guard added to getFlowsForEntity
-  - EnvironmentVariablesList: Checkbox replaces ToggleButton for "Has Default" binary filter, mergeClasses replaces string concatenation, toggleExpand in useCallback, listContainer marginTop moved to makeStyles, Default filter logic fixed (!!v.defaultValue && !v.currentValue), Default badge changed to appearance="tint" color="subtle" for light-theme visibility, explicit JSX.Element return types added
-
-### Known Limitations
-
-- **Canvas Apps:** Basic metadata discovery supported; component-level screen analysis not available from API
-- **Custom Pages:** Metadata only
-- **Power Pages:** Only if deployed to Dataverse
-- **Customer Insights - Journeys:** Not included
+Nothing in progress on this branch. The branch `chore/process-and-docs-cleanup` holds documentation and process cleanup only.
 
 ---
 
-## Next Steps (from roadmap.md)
+## Known Issues / Blockers
 
-### Near-term
-- Baseline Comparison: Load previous blueprint JSON, detect added/removed/modified components
-- CLI tool: `ppsb generate [options]` with service principal auth
-- CI/CD integration: GitHub Actions and Azure DevOps tasks
+**PPTB Desktop issues (open):**
+- Debug Install Package fails with `spawn EINVAL` on Windows
+- Icon CORS error when loading a local tool
 
-### Medium-term
-- Impact analysis ("what if" scenarios for entities/fields/plugins)
-- Unused component detection
-- Business process mining (flow execution history)
-- Custom analysis rules (compliance/quality, JSON/YAML config)
+---
 
-### Extended Platform Support
-- Canvas Apps enhanced analysis (component-level screen analysis; requires .msapp extraction)
-- Power Pages full portal component analysis (forms, lists, Liquid templates)
-- Customer Insights and Marketing journeys
-- Additional Dataverse component types (virtual/elastic tables, AI models, PCF controls)
-- Model-driven app enhanced documentation (deep module, form, view, and dashboard analysis beyond metadata)
+## Next Steps
+
+1. **Near-term:** Baseline Comparison (load a previous blueprint JSON and detect added, removed and modified components); CLI tool `ppsb generate [options]` with service principal auth; CI/CD integration (GitHub Actions and Azure DevOps tasks)
+2. **Medium-term:** Impact analysis ("what if" scenarios for entities, fields and plugins); unused component detection; business process mining from flow execution history; custom analysis rules (JSON/YAML config)
+3. **Extended platform support:** Canvas Apps component-level analysis (requires `.msapp` extraction); Power Pages portal analysis (forms, lists, Liquid templates); Customer Insights and Marketing journeys; virtual/elastic tables, AI models and PCF controls; deeper model-driven app analysis (forms, views, dashboards)
 
 ---
 
 ## Known Follow-ups (open, not scheduled)
 
-- **Parser:** flow parser invents entity names from action names (e.g. `Get_Account_Details` yields `details`)
-- **Classic workflows:** resolver paths are untested; add classic-workflow entity resolution tests
-- **CI/test gaps:** test suite is small and co-located; CI coverage and test gating need review
-- **Test coupling:** test confidence assertions are coupled to implementation detail
-- **Lint/format:** ESLint and Prettier are not installed; `developer.md` requires them
-- **Line endings:** git emits LF/CRLF warnings; `.gitattributes` needs review
-- **README wording:** self-contained HTML vs CDN wording; pnpm "8+" vs "9"; "All rights reserved" vs MIT license; Quick Start vs Installation headings; stale "30+ new types" claim; other wording issues
-- **Publish workflow:** Publish workflow hardening is tracked outside this repository.
-- **SRI hashes:** must be regenerated whenever the pinned Mermaid or Cytoscape versions are bumped. Command: download the exact pinned URL, then `openssl dgst -sha384 -binary <file> | openssl base64 -A`
-- **Pending cleanup (docs and config):**
-  - `CLAUDE.md`: stray leading `---`; `/agent` mention; `fallbackModel` wording differs from docs
-  - `learnings.md`: heading says "five files" (should be four); duplicate `Globe20Regular` entries; stale `SecurityOverview` reference
-  - Orchestrator and CLAUDE-SETUP nits
-  - `PUBLISHING.md`: line ~25 points to `orchestrator.md`; missing test step
-  - `release.md`: step 5 wording says "all four steps"; step 4 should include `pnpm test`
-  - User-guide subtitle: match by text, not line number
+**Deferred code follow-ups:**
+- `ZipPackager.ts` (~line 134): repo URL points to the `anthropics` org instead of `sabrish`
+- `CrossEntityAnalyzer.ts` (~line 686): `wf.entity.toLowerCase()` is unguarded
+- Classic-workflow resolver paths are untested; add classic-workflow entity resolution tests
+- Flow parser invents entity names from action names (e.g. `Get_Account_Details` yields `details`)
+
+**Tooling and process:**
+- Lint and format: ESLint and Prettier are not installed, though `developer.md` requires them
+- Line endings: git emits LF/CRLF warnings; add a `.gitattributes`
+- `dev-watch` script and sourcemap configuration: review
+- `package.json` `engines` and `packageManager`: review
+- Orchestrator tool list: review
+- Reviewer and security-auditor read-only git access: review
+- Deferred: faster gate (parallel reviewer/auditor, diff-scoped review, tiered gates) — drafts saved outside the repo; needs a short design pass
+- Consider deterministic check scripts: secret patterns, `htmlEscape` coverage, inline styles, and typecheck, build and test in one command
+- Publish workflow hardening is tracked outside this repository
+
+**Tests:** The test suite is small and co-located. CI coverage and test gating need review. Test confidence assertions are coupled to implementation detail.
+
+**SRI hashes:** Regenerate whenever the pinned Mermaid or Cytoscape version changes. Download the exact pinned URL, then run `openssl dgst -sha384 -binary <file> | openssl base64 -A`.
+
+**README wording:** Quick Start vs Installation headings; other wording issues. `src/core/reporters/html/README.md` still says the HTML export is self-contained.
+
+**Pending cleanup (docs and config):**
+- `CLAUDE.md`: about 130 lines against the under-80-line target
+- Orchestrator and CLAUDE-SETUP nits
+- `docs/user-guide.md`: the two "New in v1.3.0" paragraphs need checking against current output
+
+**Waived at the 1.5.0 push (review findings, inline styles):**
+- Inline styles in `src/components/CrossEntityAutomation/DetectionCoverageBanner.tsx` and `src/components/ResultsDashboard.tsx`
+- Inline `color:#666` in the Cross-Entity coverage notice in `src/core/reporters/html/HtmlTemplates.ts`
 
 ---
 
@@ -260,11 +146,11 @@ All work from the `feat/cross-entity-automation` branch has been released. The b
 
 | File | Purpose |
 |------|---------|
-| `CLAUDE.md` | Primary development guide — read first |
-| `COMPONENT_TYPES_REFERENCE.md` | Complete Dataverse component type codes — always check before implementing discovery |
+| `CLAUDE.md` | Primary development guide, read first |
+| `COMPONENT_TYPES_REFERENCE.md` | Dataverse component type codes; check before discovery work |
 | `DATAVERSE_OPTIMIZATION_GUIDE.md` | Performance patterns and GUID handling rules |
-| `UI_PATTERNS.md` | UI design decisions (card-row pattern now canonically documented in `.claude/memory/patterns-ui.md` PATTERN-001) |
-| `docs/architecture.md` | Technical architecture — updated 2026-03-02; flat structure, correct API layer, card-row pattern, static-import constraint |
+| `UI_PATTERNS.md` | UI design decisions (card-row pattern is canonical in `patterns-ui.md` PATTERN-001) |
+| `docs/architecture.md` | Technical architecture |
 | `docs/roadmap.md` | Future development plans |
 | `docs/API_SECURITY.md` | API call reference and security considerations |
 | `docs/user-guide.md` | End-user documentation |

@@ -14,7 +14,7 @@ Generate comprehensive technical documentation for Dataverse and Power Platform 
 
 **PPSB** is an automated documentation tool that generates complete architectural blueprints for Power Platform solutions. It discovers, analyzes, and documents your entire Dataverse environment—from entity schemas to automation pipelines—saving architects and developers hundreds of hours of manual documentation work.
 
-The tool generates **comprehensive blueprints** including Entity Relationship Diagrams (ERD), complete entity documentation with automation execution pipelines, cross-entity automation mapping, external dependency analysis, and solution distribution breakdowns. All exports are production-ready: Markdown files ready for Azure DevOps Wiki, JSON for programmatic analysis, and self-contained HTML for stakeholder sharing.
+The tool generates **comprehensive blueprints** including Entity Relationship Diagrams (ERD), complete entity documentation with automation execution pipelines, cross-entity automation mapping, external dependency analysis, and solution distribution breakdowns. Exports include Markdown files ready for Azure DevOps Wiki, JSON for programmatic analysis, and single-file HTML for stakeholder sharing.
 
 PPSB benefits **solution architects** (system documentation), **developers** (onboarding and reference), **governance teams** (compliance and dependency tracking), and **consultants** (assessment and migration planning). Primary use cases include technical documentation generation, governance and compliance auditing, performance analysis, and migration planning.
 
@@ -66,13 +66,14 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 
 ## 🚀 Quick Start
 
-1. **Install**: Add PPSB to your PPTB Desktop tools directory
-2. **Launch**: Open PPSB from PPTB Desktop with an active Dataverse connection
-3. **Select Scope**: Choose publisher(s), solution(s), or all entities
-4. **Generate**: Click "Generate Blueprint" and wait for discovery and analysis
-5. **Review**: Explore the interactive results with ERD, entity details, and automation analysis
-6. **Export**: Download as Markdown, JSON, HTML, or ZIP bundle
-7. **Use**: Upload Markdown to Azure DevOps Wiki or share HTML with stakeholders
+1. **Install**: Install PPSB from the PPTB Marketplace in PPTB Desktop
+2. **Connect**: Make sure PPTB Desktop has an active Dataverse connection
+3. **Open**: Open PPSB from the Tools section in PPTB Desktop
+4. **Select Scope**: Choose publisher(s), solution(s), or all entities
+5. **Generate**: Click "Generate Blueprint" and wait for discovery and analysis
+6. **Review**: Explore the interactive results with ERD, entity details, and automation analysis
+7. **Export**: Download as Markdown, JSON, HTML, or ZIP bundle
+8. **Use**: Upload Markdown to Azure DevOps Wiki or share HTML with stakeholders
 
 📖 **[Detailed User Guide](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/user-guide.md)** |
 🏗️ **[Architecture Documentation](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/architecture.md)**
@@ -117,7 +118,7 @@ Choose your export format - Markdown, JSON, HTML, or ZIP bundle.
 ![Export Options](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-6-Export%20Options.png)
 
 ### HTML Export
-Self-contained, interactive HTML documentation ready to share with stakeholders.
+Single-file, interactive HTML documentation ready to share with stakeholders. The ERD and execution pipeline diagrams load pinned, SRI-verified Cytoscape.js and Mermaid scripts from the jsDelivr CDN, so viewing them needs internet access.
 
 ![HTML Export Example 1](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-7-Export%20html.png)
 
@@ -198,7 +199,7 @@ If contributing, agents will automatically load this context.
 
 ### For PPTB Desktop Users
 
-1. Available in the PPTB Marketplace
+Install PPSB from the PPTB Marketplace. It runs inside PPTB Desktop and requires an active Dataverse connection.
 
 ### For Development
 
@@ -210,18 +211,20 @@ cd power-platform-solution-blueprint
 # Install dependencies
 pnpm install
 
-# Run development server
-pnpm dev
-
 # Build for production
 pnpm build
 
 # Type check
 pnpm typecheck
+
+# Run unit tests
+pnpm test
 ```
 
+`pnpm dev` starts Vite in a browser. The PPTB APIs are not available there, so Dataverse features do not work. To test real behaviour, see [Testing in PPTB Desktop](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/CONTRIBUTING.md#testing-in-pptb-desktop).
+
 **Development Requirements:**
-- Node.js 18+ and pnpm 8+
+- Node.js 18+ (CI runs Node 22) and pnpm 9+ (CI runs pnpm 10; `pnpm-lock.yaml` is lockfile version 9)
 - PPTB Desktop for testing (connects to Dataverse)
 - Windows, macOS, or Linux
 
@@ -302,7 +305,7 @@ PPSB is under active development with exciting features planned:
 - Canvas Apps (basic metadata discovery now supported; enhanced screen analysis planned)
 - Power Pages (forms, lists, Liquid templates)
 - Customer Insights & Marketing (journeys, segments, email templates)
-- Additional component types (30+ new types)
+- Additional component types (five Planned types are listed in [SUPPORTED_COMPONENTS.md](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/SUPPORTED_COMPONENTS.md))
 
 **Enterprise Features**
 - Performance benchmarking
@@ -318,7 +321,7 @@ PPSB is under active development with exciting features planned:
 
 [MIT License](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/LICENSE)
 
-Copyright © 2026 SAB. All rights reserved.
+Copyright © 2026 SAB.
 
 ---
 
