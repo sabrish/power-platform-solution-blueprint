@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **PPTB tool icon** — `public/icon/ppsb.svg` (copied to `dist/icon/`) is set as the `icon` field in `package.json`.
+- **Unit test suite (vitest)** — `pnpm test` runs `vitest run`. Tests are co-located as `*.test.ts` under `src/`.
+- **Manifest validation** — `pnpm validate` runs `pptb-validate` against the PPTB manifest.
+
+### Changed
+- **`@pptb/types` upgraded to `^1.2.6`** (was `v1.0.19+`).
+- **Publish workflow runs tests** before publishing to npm.
+
+### Fixed
+- **Same-entity flows and classic workflows no longer reported as cross-entity** — entity set names in definitions (for example `accounts`) are resolved to logical names (for example `account`) before the cross-entity comparison.
+- **Operation detection prefers `operationId`** over the action name when identifying the Dataverse operation.
+- **Path entity regex accepts digits** in entity logical names.
+- **README images and links render in PPTB** (#46) — raw HTML removed from the README, absolute URLs used for images and documentation links, links to missing `docs/examples` removed, and the PPSB icon added to the header.
+
 ### Removed
+- **Preview badges from Cross-Entity Automation** — removed from the app and from the HTML export.
 - **`npm-shrinkwrap.json` and its generation process** — the file is no longer committed or published. The PPTB intake ignores it (pptb-web #109, desktop-app #652 / #644), PPTB Desktop installs tools via tar extraction and never reads it, and npm 12 cannot generate it. The development lockfile remains `pnpm-lock.yaml`.
 
 ### Technical
