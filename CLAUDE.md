@@ -1,4 +1,3 @@
----
 ## Default Behaviour — No Agent Specified
 
 When no agent is explicitly invoked, apply this tiered behaviour.
@@ -25,8 +24,8 @@ Examples:
 ### Tier 3: Any implementation, commit, or push
 Trigger: any request to write code, fix a bug, add a feature, refactor,
 commit, or push.
-Behaviour: treat this exactly as if the project owner had invoked
-`/agent orchestrator`. Load all memory files and apply all orchestrator
+Behaviour: treat this exactly as if the project owner had invoked the orchestrator,
+started as `claude --agent orchestrator`. Load all memory files and apply all orchestrator
 rules as defined in `.claude/agents/orchestrator.md`.
 
 Do not duplicate the orchestrator rules here — follow them from source.
