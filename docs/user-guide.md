@@ -440,16 +440,16 @@ Choose one or more formats:
 **Tip**: Essential for automated workflows
 
 #### HTML
-**Best for**: Stakeholder sharing, presentations, offline viewing
+**Best for**: Stakeholder sharing, presentations
 
 **What you get**:
-- Single self-contained .html file
+- Single .html file (the document itself needs no separate assets)
 - Interactive navigation sidebar
 - Searchable (Ctrl+F)
 - Accordion sections
 - Interactive ERD (Cytoscape.js, pinned CDN version 3.33.1)
 - Execution pipeline diagrams (Mermaid, pinned CDN version 10.9.1)
-- Requires internet access to load Cytoscape.js and Mermaid from CDN (jsdelivr.net)
+- The ERD and execution pipeline diagrams need internet access: the file loads the pinned, SRI-verified Cytoscape.js and Mermaid scripts from the jsDelivr CDN (cdn.jsdelivr.net). Navigation, search, and accordion sections work without it.
 
 **How to use**:
 - Email to stakeholders
@@ -529,45 +529,36 @@ Deep dive into exported documentation structure.
 
 ### JSON Structure
 
+The JSON file is wrapped in an export envelope. The `blueprint` object holds the `BlueprintResult` data. The sample below is abridged and illustrative: values are invented and most arrays are truncated. Field names match `src/core/reporters/JsonReporter.ts` and `BlueprintMetadata` in `src/core/types/blueprint.ts`.
+
 ```json
 {
-  "metadata": {
-    "version": "1.3.0",
-    "timestamp": "2026-02-08T10:30:00Z",
-    "environment": "contoso-prod",
-    "scope": {
-      "type": "solution",
-      "solutionIds": ["guid1", "guid2"],
-      "includeSystemEntities": false
-    }
-  },
-  "summary": {
-    "totalEntities": 42,
-    "totalPlugins": 156,
-    "totalFlows": 89,
-    "externalEndpointCount": 12
-  },
-  "erd": {
-    "mermaidDiagram": "erDiagram...",
-    "legend": [...],
-    "entityQuickLinks": [...]
-  },
-  "entities": [
-    {
-      "entity": { /* EntityMetadata */ },
-      "plugins": [...],
-      "flows": [...],
-      "businessRules": [...],
-      "complexity": "High",
-      "referencingSolutions": ["SalesAutomation", "ServicePortal"]
-    }
-  ],
-  "plugins": [...],
-  "flows": [...],
-  "webResources": [...],
-  "securityRoles": [...],
-  "externalEndpoints": [...],
-  "crossEntityLinks": [...]
+  "exportVersion": "1.0",
+  "exportedAt": "2026-02-08T10:30:00.000Z",
+  "toolVersion": "1.5.0",
+  "blueprint": {
+    "metadata": {
+      "generatedAt": "2026-02-08T10:30:00.000Z",
+      "environment": "https://example-org.crm.dynamics.com",
+      "solutionNames": ["Example Solution"],
+      "scope": {
+        "type": "solution",
+        "description": "Example scope description"
+      },
+      "entityCount": 42
+    },
+    "entities": [ /* EntityBlueprint objects */ ],
+    "summary": { /* aggregate counts */ },
+    "plugins": [ /* ... */ ],
+    "pluginsByEntity": { "account": [ /* ... */ ] },
+    "flows": [ /* ... */ ],
+    "flowsByEntity": { "account": [ /* ... */ ] },
+    "businessRules": [ /* ... */ ],
+    "classicWorkflows": [ /* ... */ ],
+    "businessProcessFlows": [ /* ... */ ],
+    "customAPIs": [ /* ... */ ],
+    "environmentVariables": [ /* ... */ ]
+  }
 }
 ```
 
