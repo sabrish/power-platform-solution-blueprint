@@ -46,6 +46,7 @@ jobs:
 
   publish:
     needs: build
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: npm
