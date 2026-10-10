@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Documentation
+### Changed
 - **Release flow** — the release tag is created on `main` after the PR merges, never on a feature branch.
 - **Testing in PPTB Desktop** — guide added for exercising the tool inside Desktop.
 - **Verification maintenance** — guide added for keeping verification steps current.

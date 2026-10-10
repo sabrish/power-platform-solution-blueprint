@@ -16,17 +16,21 @@ Never query Dataverse in a loop. Always batch with OR filters, then group in mem
 ### Standard Batch Pattern
 `PptbDataverseClient` / `IDataverseClient` expose `query`, `queryAll` and `queryMetadata` (there is no `client.queryData`; `queryData` exists only on `window.dataverseAPI`, wrapped by the client). Build OR filters with `buildOrFilter` (`src/core/utils/odata.ts`, `{ guids: true }` omits quotes) and batch with `withAdaptiveBatch` (`src/core/utils/withAdaptiveBatch.ts`), which also handles batch-size reduction and `FetchLogger` entries (see PATTERN-017).
 ```typescript
-const allResults: SomeType[] = [];
-
-await withAdaptiveBatch(ids, async (batch) => {   // default initial batch size is 20
-  const filter = buildOrFilter(batch.map(normalizeGuid), 'fieldid', { guids: true });
-  const result = await client.query<SomeType>('table', {
-    select: ['f1', 'f2'],
-    filter,
-  });
-  allResults.push(...result.value);
-  return result.value;
-}, { step: 'descriptive-step-name', entitySet: 'table', logger: this.logger });
+// withAdaptiveBatch<TId, TResult> returns { results, failedIds, finalBatchSize }.
+// Do not push into an outer array inside fetchFn: results are already collected.
+const { results, failedIds } = await withAdaptiveBatch<string, SomeType>(
+  ids,
+  async (batch) => {   // initialBatchSize defaults to 20
+    const filter = buildOrFilter(batch.map(normalizeGuid), 'fieldid', { guids: true });
+    const response = await this.client.query<SomeType>('table', {
+      select: ['f1', 'f2'],
+      filter,
+    });
+    return response.value;
+  },
+  { step: 'descriptive-step-name', entitySet: 'table', logger: this.logger },
+);
+// failedIds: IDs that failed at minimum batch size. Report them; do not drop them silently.
 ```
 
 ### Group-in-Memory Pattern (one-to-many)
@@ -368,14 +372,22 @@ Every discovery class that calls `withAdaptiveBatch` must accept a `FetchLogger`
 ### Required constructor signature
 The `logger` parameter is optional (so classes still work without logging); `BlueprintGenerator` always passes it. Classes depend on the `IDataverseClient` interface, not the concrete class.
 ```typescript
-constructor(
-  client: IDataverseClient,
-  onProgress?: (current: number, total: number) => void,
-  logger?: FetchLogger,
-) {
-  this.client = client;
-  this.onProgress = onProgress;
-  this.logger = logger;
+// Abbreviated: import statements omitted (IDataverseClient and FetchLogger;
+// FetchLogger lives in src/core/utils/FetchLogger.ts)
+export class ExampleDiscovery {
+  private readonly client: IDataverseClient;
+  private readonly onProgress?: (current: number, total: number) => void;
+  private readonly logger?: FetchLogger;
+
+  constructor(
+    client: IDataverseClient,
+    onProgress?: (current: number, total: number) => void,
+    logger?: FetchLogger,
+  ) {
+    this.client = client;
+    this.onProgress = onProgress;
+    this.logger = logger;
+  }
 }
 ```
 

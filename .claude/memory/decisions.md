@@ -291,7 +291,7 @@ Settled: 2026-03-14
 **Rationale:** The stray line stopped the tiered Default Behaviour rules from taking effect.
 **Trade-offs:** None recorded by the owner.
 **Constraints:**
-- Verify the leading `---` is absent after the edit. When `document-updater` read `CLAUDE.md` on 2026-10-10, line 1 still read `---`.
+- History: the stray leading `---` was removed from `CLAUDE.md` on 2026-10-10 (commit `dce8798`).
 - Do not add a leading delimiter above the Default Behaviour section.
 
 ---
