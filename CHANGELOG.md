@@ -5,7 +5,9 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.0] — 2026-10-10
+
+Fixes same-entity cross-entity false positives and PPTB rendering of the README, adds SRI hashes and publish-workflow hardening, removes `npm-shrinkwrap.json`, and adds the tool icon, vitest suite and manifest validation.
 
 ### Added
 - **PPTB tool icon** — `public/icon/ppsb.svg` (copied to `dist/icon/`) is set as the `icon` field in `package.json`.
@@ -15,12 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **`@pptb/types` upgraded to `^1.2.6`** (was `v1.0.19+`).
 - **Publish workflow runs tests** before publishing to npm.
+- **Publish workflow split into build and publish jobs** — `dist/` is handed to the publish job as a workflow artifact.
+- **Orchestrator and gate documentation aligned with actual `/pre-commit` and `/push-branch` behaviour** — each commit is gated individually by `/pre-commit`; `/push-branch` runs the full pre-PR gate before pushing.
 
 ### Fixed
 - **Same-entity flows and classic workflows no longer reported as cross-entity** — entity set names in definitions (for example `accounts`) are resolved to logical names (for example `account`) before the cross-entity comparison.
 - **Operation detection prefers `operationId`** over the action name when identifying the Dataverse operation.
 - **Path entity regex accepts digits** in entity logical names.
 - **README images and links render in PPTB** (#46) — raw HTML removed from the README, absolute URLs used for images and documentation links, links to missing `docs/examples` removed, and the PPSB icon added to the header.
+- **README badges replaced by a text version line** (Refs #46) — PPTB's README viewer blocks `img.shields.io` images, so the version and status badges are now the plain-text line `**Version:** 1.5.0 · **Status:** Stable`.
+
+### Security
+- **SRI hashes on pinned CDN scripts** — the Mermaid 10.9.1 and Cytoscape 3.33.1 `<script>` tags in the HTML export carry `integrity` (sha384) and `crossorigin` attributes.
+- **Publish workflow permissions hardened** — `id-token: write` is scoped to a dedicated publish job (the build/test job is read-only); publishing is restricted to releases or `main`; the unused `workflow_dispatch` `version` input is removed.
+- **HTML export escapes global choice option values** before writing them to the exported HTML.
 
 ### Removed
 - **Preview badges from Cross-Entity Automation** — removed from the app and from the HTML export.
