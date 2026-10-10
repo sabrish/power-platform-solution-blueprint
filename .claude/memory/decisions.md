@@ -283,3 +283,15 @@ Settled: 2026-03-14
 **Constraints:** Do not add a `features` block unless `multiConnection` and `connections` are both declared and actually supported. Do not change `main` to `dist/index.html` or an absolute path. Run `pnpm validate` after any manifest change.
 
 ---
+
+## [2026-10-10] — CLAUDE.md Default Behaviour tiers activated (stray leading `---` removed)
+
+**Status:** Accepted (owner decision A, 2026-10-10)
+**Decision:** Remove the stray `---` line at the top of `CLAUDE.md`, so the "Default Behaviour — No Agent Specified" tier section takes effect.
+**Rationale:** The stray line stopped the tiered Default Behaviour rules from taking effect.
+**Trade-offs:** None recorded by the owner.
+**Constraints:**
+- Verify the leading `---` is absent after the edit. When `document-updater` read `CLAUDE.md` on 2026-10-10, line 1 still read `---`.
+- Do not add a leading delimiter above the Default Behaviour section.
+
+---
