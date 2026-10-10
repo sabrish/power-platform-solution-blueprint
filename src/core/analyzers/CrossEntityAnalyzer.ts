@@ -14,7 +14,11 @@ import type {
   PipelineStep,
 } from '../types/crossEntityTrace.js';
 import { ClassicWorkflowXamlParser } from '../parsers/ClassicWorkflowXamlParser.js';
-import { resolveEntityName } from '../utils/entityName.js';
+import {
+  createEntityNameResolver,
+  resolveEntityName,
+  type EntityNameResolver,
+} from '../utils/entityName.js';
 
 /**
  * Performs 4-layer cross-entity automation analysis:
@@ -49,6 +53,11 @@ export class CrossEntityAnalyzer {
       blueprintMap.set(bp.entity.LogicalName.toLowerCase(), bp);
     }
 
+    // Flow connector actions may carry an entity set name (e.g. "accounts") where the
+    // analysis works with logical names. The resolver is read-only: raw action values
+    // are never modified, so JSON export keeps the original data.
+    const resolver = createEntityNameResolver(blueprints.map(bp => bp.entity));
+
     // Build cwByEntity map
     const cwByEntity = new Map<string, ClassicWorkflow[]>();
     for (const wf of classicWorkflows) {
@@ -64,7 +73,8 @@ export class CrossEntityAnalyzer {
       blueprints,
       classicWorkflows,
       entityDisplayMap,
-      allFlows
+      allFlows,
+      resolver
     );
 
     const entityViews = new Map<string, CrossEntityEntityView>();
@@ -84,7 +94,7 @@ export class CrossEntityAnalyzer {
       for (const ep of entryPoints) {
         // Layer 3: Build activation map (only possible for in-scope entities)
         const activations: AutomationActivation[] = targetBp
-          ? this.buildActivationMap(targetBp, ep, entityDisplayMap, cwByEntity)
+          ? this.buildActivationMap(targetBp, ep, entityDisplayMap, cwByEntity, resolver)
           : [];
 
         const traceRisks = this.detectTraceRisks(ep, activations, targetEntity);
@@ -172,7 +182,7 @@ export class CrossEntityAnalyzer {
           const conditionFields = this.extractFieldsFromTriggerCondition(flow.definition.triggerConditions);
           const firesForAllUpdates = message === 'Update' && conditionFields.length === 0;
           const downstream = this.detectDownstreamBranch(
-            flow.definition.dataverseActions ?? [], entityKey, entityDisplayMap
+            flow.definition.dataverseActions ?? [], entityKey, entityDisplayMap, resolver
           );
           steps.push({
             automationType: 'Flow',
@@ -228,11 +238,11 @@ export class CrossEntityAnalyzer {
             const xamlSteps = ClassicWorkflowXamlParser.parse(wf.xaml);
             // Find first step that writes to a DIFFERENT entity
             const crossStep = xamlSteps.find(
-              xs => xs.targetEntity.toLowerCase() !== entityKey
+              xs => !resolver.isSameEntity(entityKey, xs.targetEntity)
                 && ['Create', 'Update', 'Delete'].includes(xs.operation)
             );
             if (crossStep) {
-              const targetKey = crossStep.targetEntity.toLowerCase();
+              const targetKey = resolver.resolve(crossStep.targetEntity);
               const targetDisplayName = entityDisplayMap.get(targetKey) || crossStep.targetEntity;
               classicWfDownstream = {
                 targetEntity: targetKey,
@@ -309,7 +319,7 @@ export class CrossEntityAnalyzer {
 
       const conditionFields = this.extractFieldsFromTriggerCondition(flow.definition.triggerConditions);
       const downstream = this.detectDownstreamBranch(
-        flow.definition.dataverseActions ?? [], entityKey, entityDisplayMap
+        flow.definition.dataverseActions ?? [], entityKey, entityDisplayMap, resolver
       );
       const step: PipelineStep = {
         automationType: 'Flow',
@@ -490,11 +500,15 @@ export class CrossEntityAnalyzer {
     blueprints: EntityBlueprint[],
     classicWorkflows: ClassicWorkflow[],
     entityDisplayMap: Map<string, string>,
-    allFlows: Flow[] = []
+    allFlows: Flow[],
+    resolver: EntityNameResolver
   ): Map<string, CrossEntityEntryPoint[]> {
     const result = new Map<string, CrossEntityEntryPoint[]>();
 
-    const addEntryPoint = (targetEntity: string, ep: CrossEntityEntryPoint): void => {
+    // Callers pass the raw (lower-cased) action target; it is keyed by the in-scope
+    // logical name when the target is an entity set name.
+    const addEntryPoint = (rawTarget: string, ep: CrossEntityEntryPoint): void => {
+      const targetEntity = resolver.resolve(rawTarget);
       if (!result.has(targetEntity)) result.set(targetEntity, []);
       const existing = result.get(targetEntity)!;
       const isDuplicate = existing.some(
@@ -539,7 +553,7 @@ export class CrossEntityAnalyzer {
           if (action.isUnbound) continue; // handled separately in collectUnboundChainLinks
           const actionTarget = action.targetEntity.toLowerCase();
           if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
-          if (actionTarget === sourceEntity) continue; // skip self-referential writes
+          if (resolver.isSameEntity(sourceEntity, actionTarget)) continue; // skip self-referential writes
           if (!['Create', 'Update', 'Delete', 'Action'].includes(action.operation)) continue;
 
           addEntryPoint(actionTarget, {
@@ -571,7 +585,8 @@ export class CrossEntityAnalyzer {
             flow.definition.childFlowIds,
             allFlowsById,
             new Set([flow.id.toLowerCase()]),
-            addEntryPoint
+            addEntryPoint,
+            resolver
           );
         }
       }
@@ -626,7 +641,7 @@ export class CrossEntityAnalyzer {
         if (action.isUnbound) continue; // handled separately in collectUnboundChainLinks
         const actionTarget = action.targetEntity.toLowerCase();
         if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
-        if (actionTarget === sourceEntity) continue; // skip self-referential writes
+        if (resolver.isSameEntity(sourceEntity, actionTarget)) continue; // skip self-referential writes
         if (!['Create', 'Update', 'Delete', 'Action'].includes(action.operation)) continue;
 
         addEntryPoint(actionTarget, {
@@ -658,7 +673,8 @@ export class CrossEntityAnalyzer {
           flow.definition.childFlowIds,
           allFlowsById,
           new Set([flow.id.toLowerCase()]),
-          addEntryPoint
+          addEntryPoint,
+          resolver
         );
       }
     }
@@ -681,7 +697,7 @@ export class CrossEntityAnalyzer {
       const xamlSteps = ClassicWorkflowXamlParser.parse(wf.xaml);
       for (const step of xamlSteps) {
         const actionTarget = step.targetEntity.toLowerCase();
-        if (actionTarget === sourceEntity) continue; // skip self-referential writes
+        if (resolver.isSameEntity(sourceEntity, actionTarget)) continue; // skip self-referential writes
 
         addEntryPoint(actionTarget, {
           automationType: 'ClassicWorkflow',
@@ -716,7 +732,8 @@ export class CrossEntityAnalyzer {
     childFlowIds: string[],
     allFlowsById: Map<string, { flow: Flow; sourceEntity: string }>,
     visited: Set<string>,
-    addEntryPoint: (targetEntity: string, ep: CrossEntityEntryPoint) => void
+    addEntryPoint: (targetEntity: string, ep: CrossEntityEntryPoint) => void,
+    resolver: EntityNameResolver
   ): void {
     for (const childId of childFlowIds) {
       if (visited.has(childId)) continue; // Prevent cycles
@@ -731,7 +748,7 @@ export class CrossEntityAnalyzer {
         if (action.isUnbound) continue; // unbound actions have no entity target
         const actionTarget = action.targetEntity.toLowerCase();
         if (actionTarget === '[dynamic]' || actionTarget.startsWith('[dynamic')) continue;
-        if (actionTarget === sourceEntity) continue; // skip self-referential writes
+        if (resolver.isSameEntity(sourceEntity, actionTarget)) continue; // skip self-referential writes
         if (!['Create', 'Update', 'Delete', 'Action'].includes(action.operation)) continue;
 
         addEntryPoint(actionTarget, {
@@ -764,7 +781,8 @@ export class CrossEntityAnalyzer {
           childFlow.definition.childFlowIds,
           allFlowsById,
           visited,
-          addEntryPoint
+          addEntryPoint,
+          resolver
         );
       }
     }
@@ -779,7 +797,8 @@ export class CrossEntityAnalyzer {
     targetBp: EntityBlueprint,
     ep: CrossEntityEntryPoint,
     entityDisplayMap: Map<string, string>,
-    cwByEntity: Map<string, ClassicWorkflow[]>
+    cwByEntity: Map<string, ClassicWorkflow[]>,
+    resolver: EntityNameResolver
   ): AutomationActivation[] {
     const activations: AutomationActivation[] = [];
 
@@ -860,7 +879,8 @@ export class CrossEntityAnalyzer {
       const downstream = this.detectDownstreamBranch(
         flow.definition.dataverseActions ?? [],
         targetBp.entity.LogicalName.toLowerCase(),
-        entityDisplayMap
+        entityDisplayMap,
+        resolver
       );
 
       activations.push({
@@ -957,12 +977,13 @@ export class CrossEntityAnalyzer {
   private detectDownstreamBranch(
     actions: import('../types/blueprint.js').DataverseAction[],
     sourceEntity: string,
-    entityDisplayMap: Map<string, string>
+    entityDisplayMap: Map<string, string>,
+    resolver: EntityNameResolver
   ): CrossEntityBranch | undefined {
     for (const action of actions) {
       if (action.isUnbound || action.targetEntity === '') continue; // unbound: no entity target
-      const target = action.targetEntity.toLowerCase();
-      if (target === sourceEntity) continue;
+      const target = resolver.resolve(action.targetEntity);
+      if (resolver.isSameEntity(sourceEntity, action.targetEntity)) continue;
       if (target === '[dynamic]' || target.startsWith('[dynamic')) continue;
       if (!['Create', 'Update', 'Delete', 'Action'].includes(action.operation)) continue;
 

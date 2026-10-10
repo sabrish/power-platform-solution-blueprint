@@ -29,7 +29,7 @@ interface EntityNameSource {
  * Compares entity references that may be logical names or entity set names.
  * Build one per analysis run with {@link createEntityNameResolver}.
  */
-interface EntityNameResolver {
+export interface EntityNameResolver {
   /**
    * Lower-cases and trims a name. When it matches an in-scope logical name or
    * entity set name, returns the in-scope logical name. Unknown names are
