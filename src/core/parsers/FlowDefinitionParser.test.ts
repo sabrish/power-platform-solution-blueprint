@@ -231,6 +231,51 @@ describe('FlowDefinitionParser - Dataverse action target extraction', () => {
     });
   });
 
+  describe('operation detection precedence', () => {
+    it('prefers the operationId over words in the action name', () => {
+      const action = parseOne({
+        Create_backup_before_removal: openApiAction('DeleteRecord', { entityName: 'accounts' }),
+      });
+
+      expect(action.operation).toBe('Delete');
+    });
+
+    it('detects a bound action even when the action name starts with a CRUD word', () => {
+      const action = parseOne({
+        Get_account_score: openApiAction('PerformBoundAction', {
+          entityName: 'accounts',
+          actionName: 'new_Score',
+        }),
+      });
+
+      expect(action).toMatchObject({ operation: 'Action', targetEntity: 'accounts', customActionApiName: 'new_Score' });
+    });
+
+    it('detects an unbound action even when the action name contains a CRUD word', () => {
+      const action = parseOne({
+        Get_access_token: openApiAction('PerformUnboundAction', { actionName: 'new_Token' }),
+      });
+
+      expect(action).toMatchObject({ operation: 'Action', isUnbound: true, customActionApiName: 'new_Token' });
+    });
+
+    it('treats a List operationId as List regardless of the action name', () => {
+      const action = parseOne({
+        Update_stale_records: openApiAction('ListRecords', { entityName: 'accounts' }),
+      });
+
+      expect(action.operation).toBe('List');
+    });
+
+    it('falls back to the action name when the operationId is not recognised', () => {
+      const action = parseOne({
+        Update_related_rows: openApiAction('SomethingElse', { entityName: 'accounts' }),
+      });
+
+      expect(action.operation).toBe('Update');
+    });
+  });
+
   describe('nesting', () => {
     it('finds actions inside conditions, else branches, switch cases and scopes', () => {
       const create = (entity: string): Record<string, unknown> =>

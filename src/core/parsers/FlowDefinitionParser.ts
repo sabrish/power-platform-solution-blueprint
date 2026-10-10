@@ -450,35 +450,15 @@ export class FlowDefinitionParser {
       }
     }
 
-    let operation: DataverseAction['operation'] | null = null;
     let targetEntity: string | null = null;
-    let confidence: DataverseAction['confidence'] = 'Low';
 
-    // Detect operation type
-    if (operationId.includes('createrecord') || actionNameLower.includes('create')) {
-      operation = 'Create';
-      confidence = 'High';
-    } else if (operationId.includes('updaterecord') || actionNameLower.includes('update')) {
-      operation = 'Update';
-      confidence = 'High';
-    } else if (operationId.includes('deleterecord') || actionNameLower.includes('delete')) {
-      operation = 'Delete';
-      confidence = 'High';
-    } else if (operationId.includes('getrecord') || operationId.includes('getitem') || actionNameLower.includes('get')) {
-      operation = 'Get';
-      confidence = 'Medium';
-    } else if (operationId.includes('listrecords') || operationId.includes('listitems') || actionNameLower.includes('list')) {
-      operation = 'List';
-      confidence = 'Medium';
-    } else if (operationId.includes('performboundaction')) {
-      // Bound custom action/API targeting a specific entity — cross-entity relationship
-      operation = 'Action';
-      confidence = 'High';
-    } else if (operationId.includes('performunboundaction')) {
-      // Unbound custom actions — no entity target; flagged with isUnbound for chain map display
-      operation = 'Action';
-      confidence = 'Low';
-    }
+    // The operationId is authoritative; the action name is user-editable free text and is
+    // only consulted when the operationId is not one we recognise.
+    const detected =
+      this.detectOperationFromOperationId(operationId) ??
+      this.detectOperationFromActionName(actionNameLower);
+    const operation: DataverseAction['operation'] | null = detected?.operation ?? null;
+    let confidence: DataverseAction['confidence'] = detected?.confidence ?? 'Low';
 
     if (!operation) {
       return null;
@@ -582,6 +562,42 @@ export class FlowDefinitionParser {
       ...(fields.length > 0 ? { fields } : {}),
       ...(customActionApiName ? { customActionApiName } : {}),
     };
+  }
+
+  /**
+   * Detect the Dataverse operation from a lower-cased connector operationId.
+   */
+  private static detectOperationFromOperationId(
+    operationId: string
+  ): { operation: DataverseAction['operation']; confidence: DataverseAction['confidence'] } | null {
+    if (operationId.includes('createrecord')) return { operation: 'Create', confidence: 'High' };
+    if (operationId.includes('updaterecord')) return { operation: 'Update', confidence: 'High' };
+    if (operationId.includes('deleterecord')) return { operation: 'Delete', confidence: 'High' };
+    if (operationId.includes('getrecord') || operationId.includes('getitem')) {
+      return { operation: 'Get', confidence: 'Medium' };
+    }
+    if (operationId.includes('listrecords') || operationId.includes('listitems')) {
+      return { operation: 'List', confidence: 'Medium' };
+    }
+    // Bound custom action/API targeting a specific entity — cross-entity relationship
+    if (operationId.includes('performboundaction')) return { operation: 'Action', confidence: 'High' };
+    // Unbound custom actions — no entity target; flagged with isUnbound for chain map display
+    if (operationId.includes('performunboundaction')) return { operation: 'Action', confidence: 'Low' };
+    return null;
+  }
+
+  /**
+   * Fallback: guess the Dataverse operation from a lower-cased action name.
+   */
+  private static detectOperationFromActionName(
+    actionNameLower: string
+  ): { operation: DataverseAction['operation']; confidence: DataverseAction['confidence'] } | null {
+    if (actionNameLower.includes('create')) return { operation: 'Create', confidence: 'High' };
+    if (actionNameLower.includes('update')) return { operation: 'Update', confidence: 'High' };
+    if (actionNameLower.includes('delete')) return { operation: 'Delete', confidence: 'High' };
+    if (actionNameLower.includes('get')) return { operation: 'Get', confidence: 'Medium' };
+    if (actionNameLower.includes('list')) return { operation: 'List', confidence: 'Medium' };
+    return null;
   }
 
   /**
