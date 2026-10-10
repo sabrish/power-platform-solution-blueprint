@@ -5,6 +5,16 @@ All notable changes to Power Platform Solution Blueprint will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+- **`npm-shrinkwrap.json` and its generation process** — the file is no longer committed or published. The PPTB intake ignores it (pptb-web #109, desktop-app #652 / #644), PPTB Desktop installs tools via tar extraction and never reads it, and npm 12 cannot generate it. The development lockfile remains `pnpm-lock.yaml`.
+
+### Technical
+- **Release flow** — no longer regenerates a shrinkwrap; `npm version` now updates only `package.json`.
+
+---
+
 ## [1.4.0] — 2026-07-01
 
 ### Added
