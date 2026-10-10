@@ -56,7 +56,10 @@ Invoke the **document-updater** agent with these exact tasks:
    entry `## [X.Y.Z] — YYYY-MM-DD` with today's date
 2. Update `README.md`: update the shields.io version badge at the top and any
    inline version references to the target version
-3. Verify all **four** files match — `package.json` version field,
+3. Update `docs/user-guide.md`: change the version subtitle on line 3
+   (`Complete guide for using Power Platform Solution Blueprint (PPSB) vX.Y.Z`)
+   to the target version
+4. Verify all **four** files match — `package.json` version field,
    `CHANGELOG.md` latest entry header, the `README.md` badge, and the
    `docs/user-guide.md` subtitle must ALL show the same version number. This
    is a release blocker if they do not match.
@@ -64,7 +67,7 @@ Invoke the **document-updater** agent with these exact tasks:
 Do not proceed to Step 4 until the document-updater confirms all four files
 are consistent.
 
-**Progress:** Step 3b complete ✅ — CHANGELOG.md and README.md updated. All four files consistent on vX.Y.Z. / ❌ Step 3b failed — version mismatch: [detail]. Release halted.
+**Progress:** Step 3b complete ✅ — CHANGELOG.md, README.md and docs/user-guide.md updated. All four files consistent on vX.Y.Z. / ❌ Step 3b failed — version mismatch: [detail]. Release halted.
 
 ---
 
