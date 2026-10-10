@@ -9,7 +9,7 @@ Do not push if anything fails.
 
 ### Step 1: Full test suite
 
-Run: `pnpm test --run`
+Run: `pnpm test`
 
 If any tests fail: stop. Report which tests failed. Do not continue.
 
@@ -30,7 +30,7 @@ Pass the full list of changed files to @security-auditor.
 Catches anything present anywhere in the branch history that will
 become public on push.
 
-If any HIGH severity finding: stop. Do not push.
+If any CRITICAL or HIGH severity finding: stop. Do not push.
 Advise the project owner to rebase/squash to remove the sensitive
 data from history before pushing.
 MEDIUM or LOW: report and ask whether to proceed.

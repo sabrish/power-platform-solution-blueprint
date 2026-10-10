@@ -9,15 +9,16 @@ tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
 ---
 ⚠️ READ THIS BEFORE DOING ANYTHING ELSE
 
-After each atomic unit of work, before committing, run all of these
-in order:
+After each atomic unit of work, before committing, run these in order:
 
-1. `pnpm tsc --noEmit`
+1. `pnpm typecheck` (runs `tsc --noEmit`)
 2. `pnpm build`
-3. `pnpm eslint [changed files] --max-warnings 0`
-4. `pnpm prettier --check [changed files]`
+3. `pnpm test` (runs `vitest run`)
+4. Lint and format apply ONLY if ESLint and Prettier are installed. They are NOT installed today (neither appears in `package.json`), so skip this step. If they are added later, run `pnpm eslint [changed files] --max-warnings 0` and `pnpm prettier --check [changed files]`.
 
-If any fail: fix immediately. Run all four again. Then commit.
+Steps 1-3 are mandatory. `pnpm typecheck` alone is never sufficient: run `pnpm typecheck && pnpm build && pnpm test` as a unit.
+
+If any fail: fix immediately. Run the required steps again. Then gate and commit (see Rules below).
 Do not accumulate failures across units.
 Do not commit with any of these failing.
 
@@ -25,10 +26,10 @@ If you cannot fix after reasonable attempts: report the failure
 explicitly — never silently skip any step.
 
 STOP before committing each unit and confirm:
-- [ ] Type-check — passed
+- [ ] Typecheck — passed
 - [ ] Build — passed
-- [ ] Lint — passed
-- [ ] Format — passed
+- [ ] Tests — passed
+- [ ] Lint / format — passed, or not applicable (not installed)
 
 ---
 
@@ -50,7 +51,10 @@ One commit = one logical change. Examples:
 - Never leave all work uncommitted until the end of a task
 - Plan your commits before you start implementing — list them in your
   opening report to the orchestrator
-- After each atomic unit: run `pnpm tsc --noEmit` and `pnpm build`, then commit
+- After each atomic unit: run `pnpm typecheck && pnpm build && pnpm test`, then commit
+- **Every commit is gated individually.** Before each `git commit`, run `/pre-commit <that commit's own files>` and wait for CLEAR TO COMMIT for that commit. Run `git commit` only after CLEAR TO COMMIT.
+- A verdict for one commit never covers another. Re-run `/pre-commit` with the new files for each subsequent commit.
+- If the verdict is BLOCKED: do not commit. Stop and report the findings to the orchestrator.
 - If a build fails mid-task: fix it before committing that unit, do not
   accumulate broken commits
 - Use conventional commit messages under 72 characters:
@@ -182,7 +186,7 @@ power-platform-solution-blueprint/
     type integer code and name to `COMPONENT_TYPES_REFERENCE.md` and flag this to
     the orchestrator so the document-updater can update `docs/architecture.md`
     accordingly.
-5. Run type-check — `pnpm tsc --noEmit` must pass before declaring done
+5. Run `pnpm typecheck && pnpm build && pnpm test` — all must pass before declaring done
 5b. Self-check against AUDIT-001–013 before declaring done:
     - No `colorPalette*Background*` on raw elements; no hex colours; no raw pixels
     - Every `<Badge>` has `shape` prop; every nameColumn has `wordBreak`; every card-row has hover transition
@@ -203,25 +207,27 @@ Stop and route back to the **orchestrator** (who will escalate to **architect**)
 pnpm dev          # Start development server
 pnpm build        # Production build
 pnpm typecheck    # TypeScript check (run before declaring implementation done)
+pnpm test         # Unit tests (vitest run)
 pnpm preview      # Preview production build
 ```
 
 ## Completion Report
 
 STOP. Before sending this report, confirm you have run:
-- [ ] `pnpm tsc --noEmit` — and it passed
+- [ ] `pnpm typecheck` — and it passed
 - [ ] `pnpm build` — and it passed
+- [ ] `pnpm test` — and it passed
 
-If you have not run both: run them now before continuing.
+If you have not run all three: run them now before continuing.
 
-Only after all four pass, report to the orchestrator:
+Only after all required checks pass, report to the orchestrator:
 
 ```
 Unit [N] complete.
 Type-check ✅/❌
 Build ✅/❌
-Lint ✅/❌
-Format ✅/❌
+Tests ✅/❌
+Lint / format ✅/❌/⏭️ (not installed)
 Committed ✅/❌
 ```
 
