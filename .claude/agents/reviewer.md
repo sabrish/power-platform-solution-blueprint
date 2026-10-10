@@ -1,7 +1,8 @@
 ---
 name: reviewer
 description: Senior code reviewer for PPSB. Invoke after implementation is complete, before any commit or merge. Reviews for TypeScript correctness, React patterns, Fluent UI v9 compliance, Dataverse API safety, security vulnerabilities, and adherence to established project patterns. Read-only — never modifies files directly.
-model: claude-sonnet-5
+model: sonnet
+effort: high
 tools: Read, Glob, Grep, WebFetch
 ---
 
@@ -124,7 +125,7 @@ Codified 2026-03-09. Full specs and examples: `.claude/memory/patterns-ui.md` �
 - [ ] No commented-out code blocks
 - [ ] No dead code (unused variables, functions, imports)
 - [ ] Import ordering: external packages → `src/core` → `src/components` → types
-- [ ] `npm-shrinkwrap.json` updated if `package.json` dependencies changed (see `NPM_SHRINKWRAP_GENERATION.md`)
+- [ ] `pnpm-lock.yaml` updated if `package.json` dependencies changed (CI uses `--frozen-lockfile`)
 
 ---
 

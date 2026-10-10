@@ -1,7 +1,11 @@
+---
+description: Fast pre-commit gate — runs a scoped reviewer and security-auditor pass on changed files before allowing a commit.
+---
+
 ## Pre-Commit Gate
 
-Type-check, build, lint, and format have already run inside the
-developer agent after each unit. This gate handles code review and security.
+The developer runs `pnpm typecheck && pnpm build && pnpm test` before invoking
+this gate. Lint and format are not installed. This gate handles code review and security.
 
 ## Step 1: Determine changed file scope once
 
@@ -46,7 +50,7 @@ The auditor sweeps the determined scope files. The auditor looks for:
 - Personally identifiable data
 - Anything that should be in .env or config, not source
 
-If any HIGH severity finding: BLOCKED — do not commit.
+If any CRITICAL or HIGH severity finding: BLOCKED — do not commit.
 MEDIUM or LOW: report and ask project owner whether to proceed.
 
 ## Verdict

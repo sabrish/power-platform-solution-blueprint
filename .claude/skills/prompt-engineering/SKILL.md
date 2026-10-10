@@ -1,3 +1,8 @@
+---
+name: prompt-engineering
+description: Conventions and templates for writing agent-ready feature prompts and read-only verification prompts for PPSB. Use when drafting or reviewing a prompt for another agent.
+---
+
 # Prompt Engineering Conventions
 
 ## Feature Prompts
@@ -24,7 +29,10 @@ fully self-contained — the receiving agent needs zero prior conversation conte
   "Must fail gracefully without breaking core blueprint generation."
 - Where bundle discipline applies, state it explicitly:
   "In-app viewer: fully bundled, no CDN. HTML export: CDN only.
-   Heavy deps (e.g. elkjs) must be second-level dynamic imports, lazy-loaded."
+   Heavy deps (e.g. elkjs) must be statically imported like every other module."
+- Do not recommend dynamic `import()` or lazy-loaded chunks. PPTB Desktop serves the
+  app under `pptb-webview://`, where dynamic-import chunks break; static imports are
+  required (PATTERN-007, decisions.md 2026-02-11).
 
 ### Feature prompt template
 

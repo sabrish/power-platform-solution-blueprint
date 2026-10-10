@@ -8,24 +8,29 @@ This repository publishes to npm using **OIDC Trusted Publishing** — no long-l
 
 ## How Publishing Works
 
-The `publish-npm.yml` workflow handles all publishing. It authenticates with npm via OIDC (short-lived token, no secrets to manage) and generates signed provenance attestations automatically.
+The `publish-npm.yml` workflow has two jobs:
+
+1. **`build`** — runs on every trigger. Installs dependencies with `pnpm install --frozen-lockfile`, runs `pnpm test`, then `pnpm build`, and uploads `dist/` as an artifact. If tests fail, the build job fails and nothing is published.
+2. **`publish`** — `needs: build`. Runs only when the event is a GitHub Release or the run's ref is `main`; otherwise it is skipped. It downloads the `dist` artifact and runs `npm publish --access public`. Authentication uses OIDC (short-lived token, no secrets to manage), and provenance attestations are generated automatically. Only this job has `id-token: write`.
+
+The version published is the one in `package.json`. The workflow takes no version input.
 
 **Triggers:**
 - Automatically on GitHub Release publication (`release: published`)
-- Manually via Actions → "Publish to npm" → "Run workflow"
+- Manually via Actions → "Publish to npm" → "Run workflow" (no inputs; publish runs only if the run is on `main`)
 
-The workflow runs on the `npm` GitHub Environment. If that environment has required-reviewer protection configured, you will receive an approval notification before the job runs.
+The `publish` job runs on the `npm` GitHub Environment. If that environment has required-reviewer protection configured, you will receive an approval notification before the job runs.
 
 ---
 
 ## Release Process
 
-Follow the release workflow defined in `.claude/agents/orchestrator.md`. In summary:
+Follow the release workflow defined in `.claude/commands/release.md`. In summary:
 
-1. Reviewer, Security Auditor, Document Updater, Developer all run in sequence (see orchestrator)
+1. Reviewer, Security Auditor, Document Updater, Developer all run in sequence (see `.claude/commands/release.md`)
 2. Orchestrator prints the exact git commands to run manually:
    ```bash
-   git add package.json CHANGELOG.md README.md npm-shrinkwrap.json
+   git add package.json CHANGELOG.md README.md docs/user-guide.md
    git commit -m "chore: release v[version]"
    git tag v[version] -m "Release v[version]"
    git push origin main
@@ -39,7 +44,7 @@ Follow the release workflow defined in `.claude/agents/orchestrator.md`. In summ
 
 1. Go to **Actions** → **Publish to npm**
 2. Click **"Run workflow"**
-3. Optionally enter a version string (leave blank to use `package.json` version)
+3. Confirm the branch selected is `main` (the publish job is skipped for other branches). There is no version input; the version is read from `package.json`
 4. Click **"Run workflow"**
 5. Approve the deployment in the `npm` environment if required-reviewer protection is active
 
@@ -83,7 +88,9 @@ Visit the package page and look for the **Provenance** badge.
 | "This operation requires authentication" | Trusted Publisher not configured on npm | Configure it in npm package settings — see `NPM_TRUSTED_PUBLISHING.md` |
 | "Package does not exist" | First publish not completed | Do the first publish locally: `npm publish --access public` |
 | "Workflow not authorized" | Wrong workflow/repo details in npm trusted publisher config | Verify: owner `sabrish`, repo `power-platform-solution-blueprint`, workflow `publish-npm.yml`, environment `npm` |
-| Build fails | TypeScript errors or pnpm lockfile out of date | Fix errors locally; run `pnpm install` if lockfile is stale |
+| Tests fail | `pnpm test` in the `build` job failed, so the `publish` job never ran | Run `pnpm test` locally, fix the failing tests, then re-run the workflow or publish via a new release |
+| Build fails | `pnpm build` in the `build` job failed (after tests passed), or the lockfile is out of date under `--frozen-lockfile` | Fix TypeScript/bundle errors locally; run `pnpm install` and commit `pnpm-lock.yaml` if the lockfile is stale |
+| `publish` job skipped | Manual run was not on `main`, and the event was not a release | Re-run from `main`, or publish via a GitHub Release |
 
 ---
 

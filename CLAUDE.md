@@ -48,7 +48,7 @@ classic workflows, BPFs, web resources, custom APIs, security roles, and more �
 as Markdown, JSON, HTML, or ZIP. It is a flat-structure, single-package React/TypeScript app
 served under the `pptb-webview://` protocol from `dist/index.html`.
 
-**Stack:** TypeScript 5.x (strict) · React 18 · Vite 5 · Fluent UI v9 · `@pptb/types` v1.0.19+ · pnpm · Cytoscape.js · Mermaid · JSZip
+**Stack:** TypeScript 5.x (strict) · React 18 · Vite 5 · Fluent UI v9 · `@pptb/types` v1.2.6+ · pnpm · Cytoscape.js · Mermaid · JSZip
 
 **APIs:** `window.dataverseAPI` for all Dataverse calls · `await window.toolboxAPI.getToolContext()`
 for tool context · NEVER use `window.toolboxAPI.dataverse.*` or `executeDataverseRequest()` — both do not exist.
@@ -78,15 +78,20 @@ Report: **"Memory loaded: [files read]"**
 
 ## Agents
 
-| Agent | Model | Role |
-|-------|-------|------|
-| `orchestrator` | Sonnet 5 | Routes all tasks; start every session here |
-| `architect` | Opus 4.8 | Architecture decisions and data model design; only ONE active at a time |
-| `developer` | Sonnet 5 | All implementation — features, bugs, components, Dataverse integration |
-| `reviewer` | Sonnet 5 | Read-only code review for TypeScript, React, Fluent UI v9, and security |
-| `document-updater` | Haiku 4.5 | CHANGELOG, docs/, README, and memory file maintenance |
-| `skills-learner` | Haiku 4.5 | Captures corrections and feedback into memory files |
-| `security-auditor` | Haiku 4.5 | Read-only security scan before any commit, push, or release |
+| Agent | Role |
+|-------|------|
+| `orchestrator` | Routes all tasks; start every session here |
+| `architect` | Architecture decisions and data model design; only ONE active at a time |
+| `architect-deep` | Deep-dive architecture decisions for large, ambiguous, or hard-to-reverse changes; invoked only when the project owner explicitly names it — shares the single architect slot with `architect` |
+| `developer` | All implementation — features, bugs, components, Dataverse integration |
+| `reviewer` | Read-only code review for TypeScript, React, Fluent UI v9, and security |
+| `document-updater` | CHANGELOG, docs/, README, and memory file maintenance |
+| `skills-learner` | Captures corrections and feedback into memory files |
+| `security-auditor` | Read-only security scan before any commit, push, or release |
+
+Model and effort for each agent are set in its frontmatter in .claude/agents/.
+Valid model aliases for agent frontmatter: haiku, sonnet, opus, fable (Fable 5.1). Prefer aliases over pinned model IDs.
+`.claude/settings.json`'s `fallbackModel` applies fleet-wide, not just to `architect-deep` — if any agent's primary model is unavailable, that agent falls back to `opus`. This is expected and not scoped per-agent.
 
 ## Hard Rules
 
@@ -107,8 +112,9 @@ Codified 2026-03-09. Full specs with code examples: `.claude/memory/patterns-ui.
 
 | Command | When to use |
 |---------|-------------|
-| `/pre-commit [files]` | Before every `git commit` — fast checks only (TS, lint, format, related tests) |
-| `/push-branch` | Instead of `git push` — full gate (build, full tests, security sweep) then pushes |
+| `/pre-commit [files]` | Before every `git commit` — scoped reviewer and security-auditor on changed files only. Developer runs `pnpm typecheck && pnpm build` (and `pnpm test`) before this |
+| `/push-branch` | Instead of `git push` — full gate: `pnpm test`, `pnpm build`, security-auditor and reviewer on the full branch diff (`git diff main...HEAD`), then pushes |
+| `pnpm test` | Runs the vitest suite (`vitest run`); co-located `*.test.ts` files under `src/` |
 
 ## Key Reference Files
 
@@ -118,7 +124,6 @@ Codified 2026-03-09. Full specs with code examples: `.claude/memory/patterns-ui.
 | `SUPPORTED_COMPONENTS.md` | User-facing component coverage status — Supported, Partial, and Planned |
 | `DATAVERSE_OPTIMIZATION_GUIDE.md` | Batching patterns, GUID rules, HTTP 414 prevention |
 | `UI_PATTERNS.md` | Fluent UI v9 patterns (card-row lists, tokens, makeStyles) |
-| `NPM_SHRINKWRAP_GENERATION.md` | Shrinkwrap regeneration — must use `npm`, never `pnpm` |
 | `CONTRIBUTING.md` | Commit conventions and PR workflow |
 | `.claude/memory/patterns-general.md` | DRY/SOLID patterns — load for all code tasks |
 | `docs/` | Architecture, user guide, roadmap, API security reference |

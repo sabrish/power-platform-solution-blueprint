@@ -130,7 +130,9 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 
 ---
 
-## [2026-02-26] — npm-shrinkwrap.json must be generated with npm, not pnpm
+## [2026-02-26] — SUPERSEDED — npm-shrinkwrap.json must be generated with npm, not pnpm
+
+**SUPERSEDED 2026-10-10:** `npm-shrinkwrap.json` was removed from the repo and published package (see decisions.md, 2026-02-26 entry). This entry is retained for history only and no longer applies.
 
 **Affects:** Developer, Document Updater
 **Severity:** High
@@ -146,7 +148,7 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 
 **Affects:** Orchestrator, Developer, Document Updater
 **Severity:** Blocker
-**Rule:** The orchestrator owns the release sequence. When the project owner says "prepare a release" or "cut a release", invoke the `/release` skill. The sequence is: (1) Reviewer, (2) Security Auditor, (3) Document Updater — version bump in `package.json`, CHANGELOG and README badge must all match before proceeding, (4) Developer — `pnpm typecheck`, `pnpm build`, `npm shrinkwrap` in that order (shrinkwrap MUST run after version bump), (5) Orchestrator prints git commands for manual execution. The orchestrator must NEVER run `git push` itself.
+**Rule:** The orchestrator owns the release sequence. When the project owner says "prepare a release" or "cut a release", invoke the `/release` skill. The sequence is: (1) Reviewer, (2) Security Auditor, (3) Document Updater — version bump in `package.json`, CHANGELOG and README badge must all match before proceeding, (4) Developer — `pnpm typecheck`, `pnpm build` in that order (the former `npm shrinkwrap` step was removed 2026-10-10 when shrinkwrap was superseded), (5) Orchestrator prints git commands for manual execution. The orchestrator must NEVER run `git push` itself.
 **Context:** Git push to the public repo is irreversible. The project owner must retain manual control of the final push step. The orchestrator owns the release sequence coordination but hands off the actual publish action.
 **Example:**
 - Wrong: Orchestrator runs `git push origin v0.8.0` autonomously after tagging
@@ -177,10 +179,11 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 **Rule:** Version numbers appear in four places that must all match before a release is tagged:
 1. `package.json` — the `"version"` field
 2. `CHANGELOG.md` — the latest versioned entry header (e.g. `## [1.1.0] — 2026-03-12`)
-3. `README.md` — the shields.io version badge at the top and any inline version references
+3. `README.md` — the `**Version:** X.Y.Z` version line near the top and any inline version references
 4. `docs/user-guide.md` — the version string in the subtitle on line 3 (e.g. `Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.0`)
 
 The Document Updater must update all four in the same release step. Mismatched versions across any of these files is a release blocker and must be resolved before the orchestrator prints the git tag command.
+**Note (2026-10-10):** The README shields.io badges were replaced with a plain-text `**Version:** X.Y.Z · **Status:** Stable` line because PPTB's README CSP blocks `img.shields.io`. Item 3 now refers to that version line.
 **Context:** (1–3) Added 2026-02-26 after noticing the README badge was missing from the release workflow. (4) Added 2026-03-13 as a fifth location (`JsonReporter.ts` with hardcoded `toolVersion` field), but this was resolved in the `feat/ai-friendly-markdown-export` branch on 2026-07-01. Both `MarkdownReporter.ts` and `JsonReporter.ts` now import `version` from `package.json`, eliminating the need to manually update a hardcoded field. The hardcoded field entry is therefore **REMOVED** and the four-file rule remains.
 **Example:**
 - Wrong: Bumping `package.json` to `1.2.0` and updating `CHANGELOG.md` and `README.md` but leaving `docs/user-guide.md` subtitle on `v1.1.0`
@@ -252,7 +255,9 @@ The Document Updater must update all four in the same release step. Mismatched v
 
 ---
 
-## [2026-03-07] — npm version also updates npm-shrinkwrap.json — include it in the release commit
+## [2026-03-07] — SUPERSEDED — npm version also updates npm-shrinkwrap.json — include it in the release commit
+
+**SUPERSEDED 2026-10-10:** `npm-shrinkwrap.json` was removed from the repo (see decisions.md, 2026-02-26 entry). `npm version` now updates only `package.json`, and the release commit no longer includes a shrinkwrap file. This entry is retained for history only and no longer applies.
 
 **Affects:** Developer, Orchestrator, Document Updater
 **Severity:** Blocker
@@ -819,9 +824,11 @@ import (prevents dead-code removal) and documents how to add logging elsewhere.
 **Rule:** The `/pre-commit` skill is a mandatory gate before every `git commit`. Running only `pnpm typecheck && pnpm build` is NOT a substitute for `/pre-commit`. The `/pre-commit` gate invokes the reviewer agent (which performs code quality and XSS checks) and the security-auditor. These layers catch issues that the build command alone cannot detect. Do NOT commit until `/pre-commit` reports CLEAR TO COMMIT.
 **Context:** On 2026-06-23, the developer agent committed TWO changes (fix(br-parser): add debugLog and feat(html-export): cascade configuration) after running only `pnpm typecheck && pnpm build`, skipping `/pre-commit` entirely. The pre-commit review (run separately later) caught a MEDIUM XSS-pattern finding (missing htmlEscape on cascadeBadgeClass return value) that had to be fixed in a third commit. This is a repeat violation of the same class of mistake — attempting to bypass the review gate by assuming the build is sufficient verification.
 **ENFORCEMENT:** Before any `git commit`, invoke `/pre-commit [files]`. Do not commit until it returns CLEAR TO COMMIT. The build commands (`pnpm typecheck && pnpm build`) must ALSO still run (as mandated by CLAUDE.md Hard Rules line 98), but they serve a different purpose and do not replace the pre-commit gate.
+**ENFORCEMENT (orchestrator briefs):** The orchestrator's brief to developers must say "gate every commit individually" (each commit needs its own CLEAR TO COMMIT from `/pre-commit` for its own files), and the developer must stop and report if it cannot.
 **Example:**
 - ❌ Wrong: `pnpm typecheck && pnpm build` passes → `git add ... && git commit` (skipping /pre-commit)
 - ✅ Right: `pnpm typecheck && pnpm build` passes → `/pre-commit [files]` returns CLEAR TO COMMIT → `git add ... && git commit`
 
 **Repeat violations:**
 - 2026-06-23 — Developer ran `pnpm typecheck && pnpm build`, then immediately committed TWO changes without running `/pre-commit`. XSS finding slipped through and had to be fixed in a third commit.
+- 2026-10-10 — A developer run committed four docs/memory commits (release.md/PUBLISHING.md, CHANGELOG.md, decisions/project/patterns memory files, CLAUDE.md) after `/pre-commit` had passed only for the FIRST commit of the batch, reasoning that the first verdict covered the rest. Rule restated: `/pre-commit` must return CLEAR TO COMMIT for EACH commit's own files before that commit; a verdict for one commit never covers another. Mitigation applied: retroactive security audit and reviewer pass found no blockers; nothing had been pushed.

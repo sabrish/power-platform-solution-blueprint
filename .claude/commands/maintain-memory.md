@@ -1,3 +1,7 @@
+---
+description: Maintenance pass that trims project.md to under 150 lines by collapsing stable feature lists into summaries.
+---
+
 /agent document-updater
 
 Maintenance pass on .claude/memory/project.md.

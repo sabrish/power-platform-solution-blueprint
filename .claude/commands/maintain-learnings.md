@@ -1,3 +1,7 @@
+---
+description: Maintenance pass that reviews learnings.md and promotes stable, unviolated entries to the appropriate domain pattern file.
+---
+
 /agent skills-learner
 
 Maintenance pass on .claude/memory/learnings.md.

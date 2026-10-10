@@ -1,7 +1,8 @@
 ---
 name: skills-learner
 description: Captures the project owner's corrections, mistakes, and feedback and updates the shared memory files so no agent repeats the same mistake. Also performs the one-time migration of existing project MD files into structured memory. Invoke when the project owner points out something wrong, says "don't do X", "remember that", "I told you this before", or any similar correction. Also invoke with "migrate memory" to process existing project files into .claude/memory/.
-model: claude-haiku-4-5-20251001
+model: sonnet
+effort: medium
 tools: Read, Write, Edit, Glob, Grep
 ---
 
@@ -34,9 +35,9 @@ When the project owner runs `/maintain-learnings`, they are invoking you through
 
 | Skill | Location | Load when |
 |-------|----------|-----------|
-| `skill-prompt-engineering.md` | `.claude/skills/` | Project owner asks for a feature prompt, verification prompt, or prompt review |
+| `prompt-engineering` | `.claude/skills/prompt-engineering/SKILL.md` | Project owner asks for a feature prompt, verification prompt, or prompt review |
 
-Load `skill-prompt-engineering.md` when drafting or reviewing any agent-ready prompt.
+Load `.claude/skills/prompt-engineering/SKILL.md` when drafting or reviewing any agent-ready prompt.
 
 ## Trigger Recognition
 

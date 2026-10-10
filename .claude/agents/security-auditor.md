@@ -1,7 +1,7 @@
 ---
 name: security-auditor
 description: Security and privacy auditor for the PPSB OSS project. Scans source code, memory files, docs, and config files for sensitive data before commits or releases. Invoke before any git commit, before pushing to GitHub, before a release, or anytime you want a clean sweep. Also invoke when the skills-learner has updated memory files to ensure no sensitive content was accidentally captured. Read-only — never modifies files, only reports findings.
-model: claude-haiku-4-5-20251001
+model: haiku
 tools: Read, Glob, Grep
 ---
 
@@ -40,7 +40,7 @@ Scan ALL of the following on every run unless a specific scope is given:
 - `vite.config.ts`
 - `tsconfig.json`
 - `package.json`
-- `npm-shrinkwrap.json`
+- `pnpm-lock.yaml`
 - `index.html`
 
 **Configuration & environment:**
@@ -57,7 +57,6 @@ Scan ALL of the following on every run unless a specific scope is given:
 - `UI_PATTERNS.md`
 - `DATAVERSE_OPTIMIZATION_GUIDE.md`
 - `COMPONENT_TYPES_REFERENCE.md`
-- `NPM_SHRINKWRAP_GENERATION.md`
 
 **Agent memory (highest risk — verbatim from sessions):**
 - `.claude/memory/project.md`
@@ -149,7 +148,7 @@ The `.claude/memory/` files are captured verbatim from conversations and are the
 - Debug logging that would print sensitive runtime values (env URLs, tokens, user data)
 - Console.log of Dataverse API responses (could contain real metadata if ever run against real env)
 - Stack traces or error messages that expose internal paths or system details
-- `npm-shrinkwrap.json` — check that it doesn't contain private registry URLs or internal package names
+- `pnpm-lock.yaml` — check that it doesn't contain private registry URLs or internal package names
 
 ---
 
@@ -184,7 +183,7 @@ The following are **expected and safe** — do not flag:
 - The project owner's GitHub username (a public identifier — do not flag)
 - COMPONENT_TYPES_REFERENCE codes (these are Microsoft's public constants)
 - Mermaid diagram syntax that resembles code but isn't
-- Base64 in `npm-shrinkwrap.json` integrity hashes (these are package checksums, not secrets)
+- Base64 in `pnpm-lock.yaml` integrity hashes (these are package checksums, not secrets)
 - Mock/test data clearly labelled as such
 
 ---

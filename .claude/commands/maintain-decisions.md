@@ -1,3 +1,7 @@
+---
+description: Maintenance pass that collapses fully-settled, multi-version-old entries in decisions.md into one-paragraph summaries and archives full rationale to docs/architecture.md.
+---
+
 /agent document-updater
 
 Maintenance pass on .claude/memory/decisions.md.

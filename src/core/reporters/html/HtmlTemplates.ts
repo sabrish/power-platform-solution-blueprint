@@ -75,8 +75,8 @@ export class HtmlTemplates {
       }
     })();
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" integrity="sha384-WmdflGW9aGfoBdHc4rRyWzYuAjEmDwMdGdiPNacbwfGKxBW/SO6guzuQ76qjnSlr" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js" integrity="sha384-lXrzMjLDk3q9l0I/kjqjMcDgfFnHvWTDeWP3DmMqoeOq49/qa8drmlP3OBWN9dQ3" crossorigin="anonymous"></script>
   <script>
     if (typeof mermaid !== 'undefined') {
       mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
@@ -118,7 +118,7 @@ ${this.embeddedCSS()}
     <li><a href="#model-driven-apps">${this.navIcon('model-driven-apps')} Model-Driven Apps</a></li>
     <li><a href="#security">${this.navIcon('security')} Security</a></li>
     <li><a href="#external-dependencies">${this.navIcon('external-dependencies')} External Dependencies</a></li>
-    <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.7em;vertical-align:middle;">Preview</span></a></li>
+    <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation</a></li>
   </ul>
   <div class="nav-footer">
     <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">${this.navIcon('print')} Print</button>
@@ -1687,14 +1687,14 @@ ${rows}
         ? '<span class="badge badge-warning">Managed</span>'
         : '<span class="badge badge-success">Unmanaged</span>';
       const optionsHtml = gc.options.slice(0, 5).map(o =>
-        `<span class="badge badge-info">${this.htmlEscape(o.label)} (${String(o.value)})</span>`
+        `<span class="badge badge-info">${this.htmlEscape(o.label)} (${this.htmlEscape(String(o.value))})</span>`
       ).join(' ');
       const moreCount = gc.options.length > 5 ? ` <span class="badge">+${String(gc.options.length - 5)} more</span>` : '';
 
       return `<div class="accordion-item">
   <button class="accordion-header" aria-expanded="false">
     <span class="accordion-title">${this.htmlEscape(gc.displayName)}</span>
-    <span class="accordion-meta">${managedBadge} <span class="badge">${String(gc.totalOptions)} options</span></span>
+    <span class="accordion-meta">${managedBadge} <span class="badge">${this.htmlEscape(String(gc.totalOptions))} options</span></span>
     <span class="accordion-toggle">▼</span>
   </button>
   <div class="accordion-content" hidden>
@@ -2009,7 +2009,7 @@ ${rows}
    */
   htmlCrossEntitySection(analysis: CrossEntityAnalysisResult | undefined): string {
     const coverageNotice = `<div class="alert alert-info" style="margin-bottom: 16px;">
-      <strong>Detection Coverage</strong> <span class="badge badge-warning" style="font-size:0.75em;vertical-align:middle;">Preview</span>
+      <strong>Detection Coverage</strong>
       <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
         <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('flows')} <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></div>
         <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('classic-workflows')} <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></div>
@@ -2029,7 +2029,7 @@ ${rows}
 
     if (!analysis || (analysis.allEntityPipelines.size === 0 && analysis.totalEntryPoints === 0)) {
       return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
-  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.75em;">Preview</span></h2>
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   <p>No cross-entity automation entry points detected in this solution scope.</p>
 </section>`;
@@ -2107,7 +2107,7 @@ ${rows}
       </div>` : '';
 
     return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
-  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.75em;">Preview</span></h2>
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   ${statsHtml}
   ${risksHtml}

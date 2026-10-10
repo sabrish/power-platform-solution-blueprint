@@ -43,7 +43,6 @@ export function DetectionCoverageBanner(): JSX.Element {
       <div className={styles.bannerContent}>
         <div className={styles.bannerTitleRow}>
           <Text weight="semibold">Detection Coverage Notice</Text>
-          <Badge appearance="filled" shape="rounded" color="warning" size="small">Preview</Badge>
         </div>
         <Text as="p" className={styles.bannerListRow}><CloudFlow24Regular className={styles.bannerListIcon} /> <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></Text>
         <Text as="p" className={styles.bannerListRow}><ClipboardSettings24Regular className={styles.bannerListIcon} /> <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></Text>

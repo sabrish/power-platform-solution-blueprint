@@ -1,6 +1,6 @@
 # PPSB Project State
 
-**Last updated:** 2026-07-01
+**Last updated:** 2026-10-10
 
 ---
 
@@ -18,9 +18,13 @@
 
 ## Current Version
 
-**v1.3.0** (released 2026-06-23) — minor: 12 new component types, reverse solution lookup (#40), cascade configuration in exports (#42), business rule parser improvements (#37)
+**v1.5.0** (prepared 2026-10-10; pending PR merge and tag. `package.json` is bumped to 1.5.0 by the developer; tag `v1.5.0` is created on `main` after merge, by the project owner. Changes on `chore/general-improvements`, see CHANGELOG.md `[1.5.0]`)
+- Fixed: same-entity flows and classic workflows no longer reported as cross-entity (entity set names resolved to logical names via `createEntityNameResolver`); operation detection prefers `operationId`; path entity regex accepts digits; README images and HTML render in PPTB (#46)
+- Removed: Preview badges from Cross-Entity Automation (app and HTML export); `npm-shrinkwrap.json` (see decisions.md)
+- Added: PPTB tool icon; vitest with `pnpm test`; `pnpm validate` (PPTB manifest validator)
+- Changed: `@pptb/types` ^1.2.6; publish workflow runs tests before publish
 
-**v1.4.0** (pending merge — `feat/ai-friendly-markdown-export` PR open)
+**v1.4.0** (released 2026-07-01, tagged `v1.4.0`; `package.json` is at 1.4.0)
 - YAML frontmatter on all generated Markdown files (blueprint_type, metadata, version)
 - Entity overview description blockquote
 - Flat headings in cross-entity trace (replaces `<details>`/`<summary>`)
@@ -28,6 +32,8 @@
 - `extractPublisherPrefix` refactored into `src/core/utils/entityName.ts`
 - YAML escaping fixes (newlines, arrays, backslashes, YAML literals, non-string array items)
 - Version import pattern unified across MarkdownReporter and JsonReporter
+
+**v1.3.0** (released 2026-06-23) — minor: 12 new component types, reverse solution lookup (#40), cascade configuration in exports (#42), business rule parser improvements (#37)
 
 **v1.1.2** (released 2026-03-17) — patch: cross-entity chain map redesign (trigger operation column, message code support), debug logging cleanup
 **v1.1.1** (released 2026-03-17) — patch: business rules IF/THEN/ELSE, conditionCount fix, DRY/SOLID refactoring, debug logger, Custom APIs click fix, env vars eye icon fix, CDS Default Solution filter fix, HTML cross-entity structure fix
@@ -83,7 +89,7 @@ src/
 **Key dependencies:**
 - React 18 + Vite 5 + TypeScript (strict mode)
 - Fluent UI v9 (`@fluentui/react-components`, `@fluentui/react-icons`)
-- `@pptb/types` v1.0.19+ (official PPTB Desktop type definitions)
+- `@pptb/types` ^1.2.6 (official PPTB Desktop type definitions)
 - Cytoscape.js (interactive ERD graph)
 - Mermaid (execution pipeline diagrams in HTML/Markdown exports; CDN, pinned to 10.9.1)
 - JSZip (ZIP packaging)
@@ -98,7 +104,11 @@ pnpm install    # Install dependencies
 pnpm build      # Build (outputs to dist/)
 pnpm dev        # Dev server (browser testing only)
 pnpm typecheck  # Type check
+pnpm test       # Unit tests (vitest run; co-located src/**/*.test.ts, node environment)
+pnpm validate   # PPTB manifest validation (pptb-validate)
 ```
+
+**Lint/format:** ESLint and Prettier are NOT installed, although `developer.md` requires them. See Known Follow-ups.
 
 ---
 
@@ -225,6 +235,27 @@ All work from the `feat/cross-entity-automation` branch has been released. The b
 
 ---
 
+## Known Follow-ups (open, not scheduled)
+
+- **Parser:** flow parser invents entity names from action names (e.g. `Get_Account_Details` yields `details`)
+- **Classic workflows:** resolver paths are untested; add classic-workflow entity resolution tests
+- **CI/test gaps:** test suite is small and co-located; CI coverage and test gating need review
+- **Test coupling:** test confidence assertions are coupled to implementation detail
+- **Lint/format:** ESLint and Prettier are not installed; `developer.md` requires them
+- **Line endings:** git emits LF/CRLF warnings; `.gitattributes` needs review
+- **README wording:** self-contained HTML vs CDN wording; pnpm "8+" vs "9"; "All rights reserved" vs MIT license; Quick Start vs Installation headings; stale "30+ new types" claim; other wording issues
+- **Publish workflow:** Publish workflow hardening is tracked outside this repository.
+- **SRI hashes:** must be regenerated whenever the pinned Mermaid or Cytoscape versions are bumped. Command: download the exact pinned URL, then `openssl dgst -sha384 -binary <file> | openssl base64 -A`
+- **Pending cleanup (docs and config):**
+  - `CLAUDE.md`: stray leading `---`; `/agent` mention; `fallbackModel` wording differs from docs
+  - `learnings.md`: heading says "five files" (should be four); duplicate `Globe20Regular` entries; stale `SecurityOverview` reference
+  - Orchestrator and CLAUDE-SETUP nits
+  - `PUBLISHING.md`: line ~25 points to `orchestrator.md`; missing test step
+  - `release.md`: step 5 wording says "all four steps"; step 4 should include `pnpm test`
+  - User-guide subtitle: match by text, not line number
+
+---
+
 ## Reference Files
 
 | File | Purpose |
@@ -238,9 +269,3 @@ All work from the `feat/cross-entity-automation` branch has been released. The b
 | `docs/API_SECURITY.md` | API call reference and security considerations |
 | `docs/user-guide.md` | End-user documentation |
 | `CONTRIBUTING.md` | Commit conventions and development workflow |
-
----
-
-## npm-shrinkwrap.json
-
-Must be regenerated with native `npm` (not pnpm) whenever dependencies are updated. Required for PPTB Desktop compatibility. See `NPM_SHRINKWRAP_GENERATION.md` for steps.

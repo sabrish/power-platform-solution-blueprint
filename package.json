@@ -1,9 +1,10 @@
 {
   "name": "@sabrish/power-platform-solution-blueprint",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "displayName": "Power Platform Solution Blueprint Generator",
   "description": "Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.",
   "main": "index.html",
+  "icon": "icon/ppsb.svg",
   "license": "MIT",
   "author": {
     "name": "SAB",
@@ -13,12 +14,6 @@
     {
       "name": "SAB",
       "url": "https://github.com/sabrish"
-    },
-    {
-      "name": "Claude Code"
-    },
-    {
-      "name": "ChatGPT"
     }
   ],
   "repository": {
@@ -43,8 +38,7 @@
     "dist",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md",
-    "npm-shrinkwrap.json"
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public",
@@ -57,7 +51,9 @@
     "preview": "vite preview",
     "clean": "rimraf dist",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "lint:unused": "knip",
+    "validate": "pptb-validate",
     "finalize-package": "echo 'Package ready for publishing. dist/ contains built files.'"
   },
   "dependencies": {
@@ -69,13 +65,14 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@pptb/types": "^1.0.19",
+    "@pptb/types": "^1.2.6",
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",
     "knip": "^5.86.0",
     "rimraf": "^5.0.5",
     "typescript": "^5.3.3",
-    "vite": "^5.0.11"
+    "vite": "^5.0.11",
+    "vitest": "^3.2.7"
   }
 }

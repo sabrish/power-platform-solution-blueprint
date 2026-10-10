@@ -72,24 +72,40 @@ npm publish --access public --otp=YOUR_2FA_CODE
 Once the package exists on npm:
 
 1. **Configure Trusted Publisher** (follow Step 1 above)
-2. **Verify workflow has correct OIDC configuration:**
+2. **Verify workflow has correct OIDC configuration.** The workflow has two jobs: `build` (tests, build, uploads `dist`) and `publish` (needs `build`; downloads `dist` and publishes). `id-token: write` is set on the `publish` job only, not at workflow level:
    ```yaml
    permissions:
-     id-token: write  # ✅ Required for OIDC
+     contents: read  # Workflow-level default; no id-token here
 
    jobs:
+     build:
+       # pnpm install --frozen-lockfile, pnpm test, pnpm build, upload dist artifact
+
      publish:
+       needs: build
+       if: github.event_name == 'release' || github.ref == 'refs/heads/main'
+       environment:
+         name: npm
+       permissions:
+         contents: read
+         id-token: write  # ✅ Required for OIDC — scoped to this job only
        steps:
          - name: Setup Node.js
            uses: actions/setup-node@v4
            with:
-             node-version: '20'
+             node-version: '22'
              registry-url: 'https://registry.npmjs.org'  # ✅ REQUIRED for OIDC
+
+         - name: Update npm to latest  # OIDC publishing needs npm >= 11.5.1
+           run: npm install -g npm@latest
+
+         - name: Publish to npm (Trusted Publishing via OIDC)
+           run: npm publish --access public
    ```
 
    **Important:** The `registry-url` parameter is REQUIRED for OIDC authentication. When setup-node sees:
    - ✅ `registry-url` is set
-   - ✅ `id-token: write` permission exists
+   - ✅ `id-token: write` permission exists on the `publish` job
    - ✅ NO `NODE_AUTH_TOKEN` environment variable
 
    It automatically configures npm to use OIDC for authentication.

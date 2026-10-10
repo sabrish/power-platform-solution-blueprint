@@ -103,9 +103,13 @@ Card-row accordion (PATTERN-001) required for all component browser lists. DataG
 
 ---
 
-## [2026-02-26] — npm-shrinkwrap.json Must Use npm (not pnpm)
+## [2026-02-26] — SUPERSEDED — npm-shrinkwrap.json Must Use npm (not pnpm)
 
-**Status:** Accepted and implemented (since v0.6.2)
+**Status:** Superseded 2026-10-10
+
+**Superseded by:** Removal of `npm-shrinkwrap.json` from the repository and the published package (2026-10-10). The PPTB intake ignores the file (pptb-web PR #109); desktop-app PR #652 / issue #644 confirm the same. PPTB Desktop installs tools via tar extraction and never reads the shrinkwrap, and npm 12 cannot generate it. The project owner approved the removal. The development lockfile remains `pnpm-lock.yaml`, and CI uses `--frozen-lockfile`. The original decision is retained below for history.
+
+**Original status:** Accepted and implemented (since v0.6.2)
 
 **Decision:** `npm-shrinkwrap.json` must be regenerated using native `npm`, not `pnpm`.
 
@@ -242,3 +246,40 @@ Standard pattern: phase: 'idle' | 'generating' | 'done' | 'error'
 Never use separate isLoading: boolean alongside error state.
 Reference: useBlueprint.ts
 Settled: 2026-03-14
+
+---
+
+## [2026-10-10] — Adopt vitest for unit tests (vitest ^3.2.7)
+
+**Status:** Accepted
+**Decision:** Unit tests use vitest, pinned to `^3.2.7`. Test files are co-located as `*.test.ts` under `src/`. The test environment is `node`. Tests are type-checked by `tsc` but are not shipped in `dist/`. `pnpm test` runs `vitest run`.
+**Rationale:** The project uses Vite 5.x, so vitest is pinned to the 3.x line (`^3.2.7`) to match. Co-location keeps each test next to the module it covers. The node environment suits the core TypeScript code under `src/core/`.
+**Trade-offs:** Tests run in node, so React components and anything reading `window` need a different environment or mocks; none are covered yet. Classic-workflow resolver paths have no tests.
+**Constraints:** Test files are type-checked by `tsc` but are not shipped: Vite bundles only modules reachable from the entry point, and the published package ships only `dist/`, `README.md`, `LICENSE`, and `CHANGELOG.md`. Test fixtures must not contain real tenant data.
+
+---
+
+## [2026-10-10] — Entity name resolver: raw target values preserved, logical name wins on collision
+
+**Status:** Accepted
+**Decision:** `createEntityNameResolver` in `src/core/utils/entityName.ts` resolves entity set names (for example `accounts`) to logical names (for example `account`). The raw target values from flow and workflow definitions are preserved unchanged for the JSON export. When a set name and a logical name collide for different entities, the logical name wins. A one-directional pluralisation heuristic is applied only when both sides are out of scope (no metadata match on either side).
+**Rationale:** Same-entity flows and classic workflows were reported as cross-entity because the definition used the entity set name while the metadata used the logical name. Resolving at the utility layer fixes this in one place. Keeping raw values in the JSON export preserves the source data for programmatic consumers.
+**Trade-offs:** The pluralisation heuristic is a guess and can be wrong for irregular plurals. Resolution depends on the metadata available in scope, so out-of-scope entities fall back to the heuristic.
+**Constraints:**
+- Do not reimplement entity name resolution in discovery, analyzers, or reporters. Use `src/core/utils/entityName.ts` (see D1–D6 in patterns-general.md).
+- Unverified assumption: connector `entityName` values may also carry entity set names. This has not been confirmed against live connector output.
+- The test fixtures for this resolver are synthetic, not captured from a live environment. Re-verify against real flow and workflow definitions before relying on the heuristic for release decisions.
+
+---
+
+## [2026-10-10] — PPTB manifest: main is "index.html"; no features block and no minAPI
+
+**Status:** Accepted
+**Decision:**
+- `package.json` `main` stays `"index.html"`. PPTB resolves `main` relative to the `dist/` root.
+- The `features` block is not present in the manifest, and `minAPI` is not set.
+**Rationale:** The `pptb-validate` validator (1.0.2) requires `multiConnection` and `connections` whenever a `features` block exists. Omitting `features` avoids that requirement and avoids declaring capabilities the manifest would then have to justify.
+**Trade-offs:** No `features` block means no capabilities are declared in the manifest, and no `minAPI` means no minimum PPTB API version is declared.
+**Constraints:** Do not add a `features` block unless `multiConnection` and `connections` are both declared and actually supported. Do not change `main` to `dist/index.html` or an absolute path. Run `pnpm validate` after any manifest change.
+
+---
