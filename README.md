@@ -35,7 +35,7 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 - **Connection References**: Premium connector detection for licensing
 - **Global Choices**: Shared option sets with usage tracking
 - **Security**: Roles, field security profiles, attribute masking, column security
-- See [SUPPORTED_COMPONENTS.md](./SUPPORTED_COMPONENTS.md) for the full component status list — Supported, Partial, and Planned.
+- See [SUPPORTED_COMPONENTS.md](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/SUPPORTED_COMPONENTS.md) for the full component status list — Supported, Partial, and Planned.
 
 ### 📊 Analysis & Visualization
 
@@ -73,8 +73,8 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 6. **Export**: Download as Markdown, JSON, HTML, or ZIP bundle
 7. **Use**: Upload Markdown to Azure DevOps Wiki or share HTML with stakeholders
 
-📖 **[Detailed User Guide](docs/user-guide.md)** |
-🏗️ **[Architecture Documentation](docs/architecture.md)**
+📖 **[Detailed User Guide](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/user-guide.md)** |
+🏗️ **[Architecture Documentation](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/architecture.md)**
 
 ---
 
@@ -83,64 +83,64 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 ### Scope Selection
 Choose what to document - by publisher or solution with multi-select filtering.
 
-![Scope Selection](docs/screenshots/PPSB-1-What%20to%20document-selector.png)
+![Scope Selection](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-1-What%20to%20document-selector.png)
 
 ### Confirmation Screen
 Review your selection before generating the blueprint.
 
-![Generator Confirmation](docs/screenshots/PPSB-2-Generator-Confirmation.png)
+![Generator Confirmation](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-2-Generator-Confirmation.png)
 
 ### Results Dashboard
 Interactive dashboard with summary metrics, ERD visualization, and component browser.
 
-![Dashboard](docs/screenshots/PPSB-3-Dashboard.png)
+![Dashboard](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-3-Dashboard.png)
 
 ### Component Details
 Browse and explore all discovered components with expandable details and inline documentation.
 
-![Component Details](docs/screenshots/PPSB-4-Component-Details.png)
+![Component Details](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-4-Component-Details.png)
 
 ### Solution Distribution Analysis
 Analyze component distribution across solutions with dependency mapping and shared component detection.
 
-![Solution Distribution Analysis](docs/screenshots/PPSB-5-Solution%20Distrubution%20Analysis.png)
+![Solution Distribution Analysis](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-5-Solution%20Distrubution%20Analysis.png)
 
 ### External Dependencies Analysis
 Identify and assess all external API calls across flows, plugins, and web resources with risk scoring.
 
-![External Dependencies Analysis](docs/screenshots/PPSB-6-External%20Dependencies%20Analysis.png)
+![External Dependencies Analysis](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-6-External%20Dependencies%20Analysis.png)
 
 ### Export Options
 Choose your export format - Markdown, JSON, HTML, or ZIP bundle.
 
-![Export Options](docs/screenshots/PPSB-6-Export%20Options.png)
+![Export Options](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-6-Export%20Options.png)
 
 ### HTML Export
 Self-contained, interactive HTML documentation ready to share with stakeholders.
 
-![HTML Export Example 1](docs/screenshots/PPSB-7-Export%20html.png)
+![HTML Export Example 1](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-7-Export%20html.png)
 
-![HTML Export Example 2](docs/screenshots/PPSB-8-Export%20html.png)
+![HTML Export Example 2](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-8-Export%20html.png)
 
 ### Entity Relationship Diagram
 Interactive force-directed ERD with pan, zoom, node isolation, publisher filter, and PNG/SVG export.
 
-![ERD](docs/screenshots/PPSB-9-ERD.png)
+![ERD](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-9-ERD.png)
 
 ### Cross-Entity Automation
 Trace automation chains that cross entity boundaries — how plugins and flows on one entity trigger automation on related entities.
 
-![Cross-Entity Automation](docs/screenshots/PPSB-10-Cross-Entity-Automation.png)
+![Cross-Entity Automation](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-10-Cross-Entity-Automation.png)
 
 ### Global Automation Chain Map
 Full cross-entity automation chain map showing all entity pipelines and their inter-entity connections.
 
-![Global Chain Map](docs/screenshots/PPSB-11-Cross-Entity-Automation-Global-Chain-Map.png)
+![Global Chain Map](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-11-Cross-Entity-Automation-Global-Chain-Map.png)
 
 ### Fetch Diagnostics Log
 Real-time fetch diagnostics showing every Dataverse API call with timing, batch sizes, and retry information.
 
-![Fetch Log](docs/screenshots/PPSB-12-Fetch-Log.png)
+![Fetch Log](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/docs/screenshots/PPSB-12-Fetch-Log.png)
 
 ---
 
@@ -167,7 +167,7 @@ Real-time fetch diagnostics showing every Dataverse API call with timing, batch 
 - **Complexity Analysis**: Get detailed migration recommendations with step-by-step guidance
 - **Dependency Mapping**: Understand cross-entity automation before migration
 
-📖 **[More Use Cases in User Guide](docs/user-guide.md#common-use-cases)**
+📖 **[More Use Cases in User Guide](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/user-guide.md#8-common-use-cases)**
 
 ---
 
@@ -180,8 +180,8 @@ Real-time fetch diagnostics showing every Dataverse API call with timing, batch 
 - **Export**: JSZip (multi-file packages)
 - **Architecture**: Flat structure with separated core logic (`src/core/`) and React UI (`src/components/`)
 
-🏗️ **[Architecture Details](docs/architecture.md)** |
-🛣️ **[Roadmap](docs/roadmap.md)**
+🏗️ **[Architecture Details](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/architecture.md)** |
+🛣️ **[Roadmap](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/roadmap.md)**
 
 ---
 
@@ -230,11 +230,11 @@ pnpm typecheck
 
 Comprehensive documentation for all aspects of PPSB:
 
-- **[User Guide](docs/user-guide.md)** - Complete usage instructions from scope selection to export
-- **[Architecture](docs/architecture.md)** - Technical design, component structure, and extension points
-- **[API Security](docs/API_SECURITY.md)** - Complete API reference, security considerations, and data access documentation
-- **[Roadmap](docs/roadmap.md)** - Future versions (baseline comparison, CLI, CI/CD integration)
-- **[Changelog](CHANGELOG.md)** - Version history and release notes
+- **[User Guide](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/user-guide.md)** - Complete usage instructions from scope selection to export
+- **[Architecture](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/architecture.md)** - Technical design, component structure, and extension points
+- **[API Security](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/API_SECURITY.md)** - Complete API reference, security considerations, and data access documentation
+- **[Roadmap](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/roadmap.md)** - Future versions (baseline comparison, CLI, CI/CD integration)
+- **[Changelog](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/CHANGELOG.md)** - Version history and release notes
 
 ---
 
@@ -309,13 +309,13 @@ PPSB is under active development with exciting features planned:
 - Multi-tenant support
 - Advanced visualizations and AI-powered insights
 
-📖 **[Full Roadmap](docs/roadmap.md)**
+📖 **[Full Roadmap](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/roadmap.md)**
 
 ---
 
 ## 📄 License
 
-[MIT License](LICENSE)
+[MIT License](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/LICENSE)
 
 Copyright © 2026 SAB. All rights reserved.
 
@@ -325,17 +325,17 @@ Copyright © 2026 SAB. All rights reserved.
 
 - **Issues**: [GitHub Issues](https://github.com/sabrish/power-platform-solution-blueprint/issues) - Report bugs or request features
 - **Discussions**: [GitHub Discussions](https://github.com/sabrish/power-platform-solution-blueprint/discussions) - Ask questions and share ideas
-- **Documentation**: [docs/](docs/) - Comprehensive guides
+- **Documentation**: [docs/](https://github.com/sabrish/power-platform-solution-blueprint/tree/main/docs/) - Comprehensive guides
 
 ---
 
 ## 🌟 Quick Links
 
 - [Installation](#-installation)
-- [User Guide](docs/user-guide.md)
-- [Architecture](docs/architecture.md)
-- [Roadmap](docs/roadmap.md)
-- [Changelog](CHANGELOG.md)
+- [User Guide](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/user-guide.md)
+- [Architecture](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/architecture.md)
+- [Roadmap](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/docs/roadmap.md)
+- [Changelog](https://github.com/sabrish/power-platform-solution-blueprint/blob/main/CHANGELOG.md)
 
 ---
 
