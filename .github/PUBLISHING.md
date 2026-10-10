@@ -25,7 +25,7 @@ Follow the release workflow defined in `.claude/agents/orchestrator.md`. In summ
 1. Reviewer, Security Auditor, Document Updater, Developer all run in sequence (see orchestrator)
 2. Orchestrator prints the exact git commands to run manually:
    ```bash
-   git add package.json CHANGELOG.md README.md
+   git add package.json CHANGELOG.md README.md docs/user-guide.md
    git commit -m "chore: release v[version]"
    git tag v[version] -m "Release v[version]"
    git push origin main

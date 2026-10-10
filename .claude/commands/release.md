@@ -97,7 +97,7 @@ Verdict: READY TO PUBLISH ✅ / BLOCKED ❌
 Then print the git commands for manual execution only if verdict is READY TO PUBLISH:
 
 ```
-git add package.json CHANGELOG.md README.md
+git add package.json CHANGELOG.md README.md docs/user-guide.md
 git commit -m "chore: release v[VERSION]"
 git tag v[VERSION] -m "Release v[VERSION]"
 git push origin main
