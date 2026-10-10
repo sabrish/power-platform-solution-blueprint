@@ -2,6 +2,8 @@
 
 <!-- Agents: read every entry here before starting work. These are non-negotiable rules. -->
 
+> Entries marked SUPERSEDED are history only and no longer apply; they are kept to explain past decisions. Do not follow a superseded entry.
+
 ---
 
 ## [2026-02-10] — Never use executeDataverseRequest or old toolboxAPI.dataverse path
@@ -148,8 +150,8 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 
 **Affects:** Orchestrator, Developer, Document Updater
 **Severity:** Blocker
-**Rule:** The orchestrator owns the release sequence. When the project owner says "prepare a release" or "cut a release", invoke the `/release` skill. The sequence is: (1) Reviewer, (2) Security Auditor, (3) Document Updater — version bump in `package.json`, CHANGELOG and README badge must all match before proceeding, (4) Developer — `pnpm typecheck`, `pnpm build` in that order (the former `npm shrinkwrap` step was removed 2026-10-10 when shrinkwrap was superseded), (5) Orchestrator prints git commands for manual execution. The orchestrator must NEVER run `git push` itself.
-**Context:** Git push to the public repo is irreversible. The project owner must retain manual control of the final push step. The orchestrator owns the release sequence coordination but hands off the actual publish action.
+**Rule:** The orchestrator owns the release sequence. When the project owner says "prepare a release" or "cut a release", invoke the `/release` skill. The sequence is: (1) Reviewer, (2) Security Auditor, (3a) Developer — `npm version X.Y.Z --no-git-tag-version` (updates package.json only), (3b) Document Updater — CHANGELOG `[X.Y.Z]` heading, README `**Version:**` line, user-guide subtitle; the version in all four locations (see the "Version numbers in four files" entry) must match before proceeding, (4) Developer — `pnpm typecheck`, `pnpm build`, `pnpm test`, `pnpm validate`, and the pre-release dependency audit (the former `npm shrinkwrap` step was removed 2026-10-10 when shrinkwrap was superseded), (5) Orchestrator prints the release summary and git commands for manual execution: release commit on the branch, `/push-branch`, PR, merge, then tag on `main`. See `.claude/commands/release.md`. No agent may run `git push` (including pushing a release tag) on its own initiative. The only exceptions: the project owner explicitly authorises the orchestrator or developer to push the release tag in that session, or the `/push-branch` skill runs `git push` after its full gate passes.
+**Context:** Git push to the public repo is irreversible. The project owner retains control of the final push step unless they explicitly delegate it. The orchestrator owns the release sequence coordination but hands off the actual publish action. The sequence was updated 2026-10-10 to match `.claude/commands/release.md` (version bump as step 3a before documentation as step 3b; tag created on `main` after the PR merges, never on the release branch).
 **Example:**
 - Wrong: Orchestrator runs `git push origin v0.8.0` autonomously after tagging
 - Right: Orchestrator prints `git tag v0.8.0 -m "Release v0.8.0"` and `git push origin v0.8.0` and waits for the project owner to execute them manually
@@ -172,19 +174,19 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 
 ---
 
-## [2026-02-26, updated 2026-03-13, resolved 2026-07-01] — Version numbers in five files must always match at release time
+## [2026-02-26, updated 2026-03-13, resolved 2026-07-01, updated 2026-10-10] — Version numbers in four files must always match at release time
 
 **Affects:** Document Updater, Orchestrator, Reviewer
 **Severity:** Blocker
 **Rule:** Version numbers appear in four places that must all match before a release is tagged:
 1. `package.json` — the `"version"` field
-2. `CHANGELOG.md` — the latest versioned entry header (e.g. `## [1.1.0] — 2026-03-12`)
-3. `README.md` — the `**Version:** X.Y.Z` version line near the top and any inline version references
-4. `docs/user-guide.md` — the version string in the subtitle on line 3 (e.g. `Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.0`)
+2. `CHANGELOG.md` — the latest versioned entry heading (e.g. `## [1.1.0] — 2026-03-12`)
+3. `README.md` — the plain-text line `**Version:** X.Y.Z · **Status:** Stable` near the top (the README badges were removed 2026-10-10) and any inline version references
+4. `docs/user-guide.md` — the version string in the subtitle at the top of the file, found by matching its text (e.g. `Complete guide for using Power Platform Solution Blueprint (PPSB) v1.1.0`), not by line number
 
 The Document Updater must update all four in the same release step. Mismatched versions across any of these files is a release blocker and must be resolved before the orchestrator prints the git tag command.
-**Note (2026-10-10):** The README shields.io badges were replaced with a plain-text `**Version:** X.Y.Z · **Status:** Stable` line because PPTB's README CSP blocks `img.shields.io`. Item 3 now refers to that version line.
-**Context:** (1–3) Added 2026-02-26 after noticing the README badge was missing from the release workflow. (4) Added 2026-03-13 as a fifth location (`JsonReporter.ts` with hardcoded `toolVersion` field), but this was resolved in the `feat/ai-friendly-markdown-export` branch on 2026-07-01. Both `MarkdownReporter.ts` and `JsonReporter.ts` now import `version` from `package.json`, eliminating the need to manually update a hardcoded field. The hardcoded field entry is therefore **REMOVED** and the four-file rule remains.
+**Note (2026-10-10):** The README shields.io badges were replaced with a plain-text version line because PPTB's README CSP blocks `img.shields.io` (see the README CSP entry below). Item 3 refers to that version line.
+**Context:** (1–3) Added 2026-02-26 after noticing the version was missing from the release workflow. A fifth location (`JsonReporter.ts` with hardcoded `toolVersion` field) was added 2026-03-13 and resolved in the `feat/ai-friendly-markdown-export` branch on 2026-07-01. Both `MarkdownReporter.ts` and `JsonReporter.ts` now import `version` from `package.json`, eliminating the need to manually update a hardcoded field. The hardcoded field entry is therefore **REMOVED** and the four-file rule remains.
 **Example:**
 - Wrong: Bumping `package.json` to `1.2.0` and updating `CHANGELOG.md` and `README.md` but leaving `docs/user-guide.md` subtitle on `v1.1.0`
 - Right: Update all four files in the same step; verify every location reads the new version before proceeding
@@ -410,7 +412,7 @@ Promoted → PATTERN-019 in patterns-ui.md ([2026-03-14])
 **Affects:** All agents
 **Severity:** High
 **Rule:** When performing a codebase audit, ALWAYS run `pnpm lint:unused` (knip) FIRST before any LLM analysis. Knip performs definitive import-graph tracing and is the authoritative source for unused exports and dead files. LLM audit findings for dead code and unused exports are unreliable without it. The audit report must include knip output as its first section.
-**Context:** During a deep audit this session, the LLM-based Explore agent missed three dead files: `SecurityOverview.tsx` (470 lines), `ErrorState.tsx`, and `LoadingState.tsx`. It claimed "no unreachable code detected". Root cause: LLM sampling cannot exhaustively trace every export against every import in a large codebase. Knip found them immediately.
+**Context:** During a deep audit this session, the LLM-based Explore agent missed three dead files: `SecurityOverview.tsx` (470 lines, since deleted), `ErrorState.tsx`, and `LoadingState.tsx`. It claimed "no unreachable code detected". Root cause: LLM sampling cannot exhaustively trace every export against every import in a large codebase. Knip found them immediately.
 **Example:**
 - Wrong: Run LLM code audit → report "no dead code found" → ship
 - Right: Run `pnpm lint:unused` → review knip output first → then use LLM for deeper analysis of findings knip surfaces
@@ -467,7 +469,7 @@ Promoted → PATTERN-019 in patterns-ui.md ([2026-03-14])
 
 **Affects:** Developer, Reviewer
 **Severity:** Medium
-**Rule:** Map Dataverse privilege depth values to Power Platform UI terminology everywhere they are displayed: `Basic` → `User`, `Local` → `BU`, `Deep` → `P:CBU`, `Global` → `Org`. Use the legend "User = own records · BU = Business Unit · P:CBU = Parent & Child BUs · Org = Organisation-wide". Apply to both the React UI (`depthLabel` helper in SecurityOverview.tsx) and HTML export (`privDepthLabel` helper in HtmlTemplates.ts).
+**Rule:** Map Dataverse privilege depth values to Power Platform UI terminology everywhere they are displayed: `Basic` → `User`, `Local` → `BU`, `Deep` → `P:CBU`, `Global` → `Org`. Use the legend "User = own records · BU = Business Unit · P:CBU = Parent & Child BUs · Org = Organisation-wide". Apply to both the React UI (`depthLabelMap` in SecurityRolesView.tsx; SecurityOverview.tsx was deleted) and HTML export (`privDepthLabel` helper in HtmlTemplates.ts).
 
 ---
 
@@ -491,12 +493,17 @@ Using flat tables with only counts (e.g. "5 conditions") was insufficient — us
 
 ---
 
-## [2026-03-09, updated 2026-03-12] — Globe20Regular for inline external-call indicators
+## [2026-03-09, updated 2026-03-12; merged with 2026-03-11 entry] — Globe20Regular is the standard external-call row indicator
 
 **Affects:** Developer, Reviewer
 **Severity:** Medium
-**Rule:** Use `Globe20Regular` for inline "makes external calls" row indicators across all component lists. `DocumentGlobe24Regular` and `Globe20Regular` are visually distinct — no ambiguity.
+**Rule:** `Globe20Regular` is the standard inline "makes external calls" row indicator across ALL component lists (FlowsList, WebResourcesList, etc.). `DocumentGlobe24Regular` and `Globe20Regular` are visually distinct — no ambiguity. `ArrowUpRight20Regular` is NOT used for this purpose.
+**Rationale:** `DocumentGlobe24Regular` (document + globe) and `Globe20Regular` (plain globe = "the internet") are visually distinct icons. A plain globe is the correct semantic choice for an inline "makes external calls" indicator.
 **Context:** Web Resources moved to `DocumentGlobe24Regular` (MS icon: globe+document). `Globe24Regular` is now used for the External Dependencies navigation tab.
+**Summary:**
+- All component row indicators for "has external calls" → `Globe20Regular`
+- Web Resources component-category icon → `DocumentGlobe24Regular` (from componentIcons.ts)
+- External Dependencies nav tab → `Globe24Regular` (from componentIcons.ts)
 **Example:**
 - Wrong: `<ArrowUpRight20Regular />` as the icon for an inline external API call indicator
 - Right: `<Globe20Regular />` for inline external-call row indicators; `DocumentGlobe24Regular` for Web Resources tab; `Globe24Regular` for External Dependencies tab
@@ -649,21 +656,6 @@ Promoted → PATTERN-002 in patterns-dataverse.md ([2026-03-14])
 // Right — wraps properly
 <Text weight="semibold" className={styles.nameColumn}>{rel.SchemaName}</Text>
 ```
-
----
-
-## [2026-03-11, updated 2026-03-12] — Globe20Regular is the standard external-call row indicator
-
-**Affects:** Developer, Reviewer
-**Severity:** Medium
-**Rule:** `Globe20Regular` is the standard inline external-call row indicator across ALL component lists (FlowsList, WebResourcesList, etc.).
-
-**Rationale:** `DocumentGlobe24Regular` (document + globe) and `Globe20Regular` (plain globe) are visually distinct icons — no ambiguity. `Globe20Regular` (plain globe = "the internet") is the correct semantic choice for an inline "makes external calls" indicator. `ArrowUpRight20Regular` is NOT used for this purpose.
-
-**Summary:**
-- All component row indicators for "has external calls" → `Globe20Regular`
-- Web Resources component-category icon → `DocumentGlobe24Regular` (from componentIcons.ts)
-- External Dependencies nav tab → `Globe24Regular` (from componentIcons.ts)
 
 ---
 
@@ -823,8 +815,8 @@ import (prevents dead-code removal) and documents how to add logging elsewhere.
 **Severity:** Blocker
 **Rule:** The `/pre-commit` skill is a mandatory gate before every `git commit`. Running only `pnpm typecheck && pnpm build` is NOT a substitute for `/pre-commit`. The `/pre-commit` gate invokes the reviewer agent (which performs code quality and XSS checks) and the security-auditor. These layers catch issues that the build command alone cannot detect. Do NOT commit until `/pre-commit` reports CLEAR TO COMMIT.
 **Context:** On 2026-06-23, the developer agent committed TWO changes (fix(br-parser): add debugLog and feat(html-export): cascade configuration) after running only `pnpm typecheck && pnpm build`, skipping `/pre-commit` entirely. The pre-commit review (run separately later) caught a MEDIUM XSS-pattern finding (missing htmlEscape on cascadeBadgeClass return value) that had to be fixed in a third commit. This is a repeat violation of the same class of mistake — attempting to bypass the review gate by assuming the build is sufficient verification.
-**ENFORCEMENT:** Before any `git commit`, invoke `/pre-commit [files]`. Do not commit until it returns CLEAR TO COMMIT. The build commands (`pnpm typecheck && pnpm build`) must ALSO still run (as mandated by CLAUDE.md Hard Rules line 98), but they serve a different purpose and do not replace the pre-commit gate.
-**ENFORCEMENT (orchestrator briefs):** The orchestrator's brief to developers must say "gate every commit individually" (each commit needs its own CLEAR TO COMMIT from `/pre-commit` for its own files), and the developer must stop and report if it cannot.
+**ENFORCEMENT:** Before any `git commit`, invoke `/pre-commit [files]`. Do not commit until it returns CLEAR TO COMMIT. The build commands (`pnpm typecheck && pnpm build`) must ALSO still run (as mandated by the CLAUDE.md "Hard Rules" section), but they serve a different purpose and do not replace the pre-commit gate.
+**ENFORCEMENT (orchestrator briefs):** The orchestrator's brief to developers must say "gate every commit individually": each commit needs its own CLEAR TO COMMIT from `/pre-commit` for its own files, and the developer must stop and report if it cannot. A verdict for one commit never covers another.
 **Example:**
 - ❌ Wrong: `pnpm typecheck && pnpm build` passes → `git add ... && git commit` (skipping /pre-commit)
 - ✅ Right: `pnpm typecheck && pnpm build` passes → `/pre-commit [files]` returns CLEAR TO COMMIT → `git add ... && git commit`
