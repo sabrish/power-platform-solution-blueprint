@@ -79,7 +79,7 @@ pnpm validate   # PPTB manifest validation (pptb-validate)
 Lint and format tooling is not installed. See Known Follow-ups.
 
 **Release workflow:**
-- Release sequence: `/release` (reviewer, security audit, version bump, documentation at step 3b, then typecheck, test, build, validate and dependency audit at step 4; the audit is production-only, zero critical and zero high). Version must match in `package.json`, CHANGELOG.md, the README version line and the `docs/user-guide.md` version subtitle, matched by its text (learnings.md, 2026-02-26)
+- Release sequence: `/release` (1 reviewer, 2 security audit, 3a version bump, 3b documentation, then 4 typecheck, test, build, validate and dependency audit; the audit is production-only, zero critical and zero high). Version must match in `package.json`, CHANGELOG.md, the README version line and the `docs/user-guide.md` version subtitle, matched by its text (learnings.md, 2026-02-26)
 - Release tags are created on `main` after merge, never on a branch (learnings.md, 2026-03-07)
 
 ---

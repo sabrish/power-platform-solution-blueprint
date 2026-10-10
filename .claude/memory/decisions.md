@@ -52,7 +52,7 @@ Publisher scope always resolves to solution IDs at the UI layer before passing t
 ## [2026-02-11] — Batch Size = 20 (10 for privileges)
 
 **Status:** Accepted and implemented
-Standard batchSize = 20 (option name: initialBatchSize); privilege queries batchSize = 10 (option name: initialBatchSize; longer field paths). Prevents HTTP 414/400. Tables requiring batching: plugin steps, images, workflows, web resources, custom APIs, security role privileges, forms, field permissions, connection references. **Technical spec:** PATTERN-002 in patterns-dataverse.md.
+Standard batch size (option `initialBatchSize`) = 20; privilege queries `initialBatchSize` = 10 (longer field paths). Prevents HTTP 414/400. Tables requiring batching: plugin steps, images, workflows, web resources, custom APIs, security role privileges, forms, field permissions, connection references. **Technical spec:** PATTERN-002 in patterns-dataverse.md.
 
 ---
 

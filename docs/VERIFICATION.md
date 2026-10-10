@@ -70,7 +70,7 @@ Run before every release tag:
 
 - [ ] `pnpm validate` passes
 - [ ] `pnpm test` and `pnpm build` pass (the same gate used by `.github/workflows/publish-npm.yml`)
-- [ ] Pre-release security audit: reproduce the governance-script check (`.claude/commands/release.md` Step 4, item 5) on the packed tarball, installing it production-only in an empty temp directory and running `npm audit --omit=dev`. Confirm zero critical and zero high findings. Repeat against the published package after publish (`release.md` Step 5, item 5). Optionally run `pnpm audit` in the repository root for dev dependencies; it is informational and does not block the release.
+- [ ] Pre-release security audit: reproduce the governance-script check (`.claude/commands/release.md` Step 4, item 5) on the packed tarball, installing it production-only in an empty temp directory, then run `npm audit --omit=dev --json` and read `metadata.vulnerabilities`. The gate is critical == 0 and high == 0. If `metadata.vulnerabilities` is absent, the audit has FAILED: re-run it (fail closed). Repeat against the published package after publish (`release.md` Step 5, item 5). Optionally run `pnpm audit` in the repository root for dev dependencies; it is informational and does not block the release.
 - [ ] No new `cspExceptions` entry in `package.json` (a new entry removes the badge immediately; section 3)
 - [ ] `icon/ppsb.svg` is present under `dist/` after `pnpm build`
 - [ ] `README.md` screenshots and install instructions still match the release
