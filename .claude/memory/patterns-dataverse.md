@@ -237,16 +237,19 @@ Every commit MUST:
 **Source:** docs/architecture.md
 **Applies to:** Developer
 
-Blueprint generation must not abort on a single entity failure. Catch at entity level, log, continue.
+Blueprint generation must not abort on a single entity failure. Catch at entity level, record the failure in `stepWarnings`, continue. Do not use `console.error`: it is invisible to the user (learnings.md, 2026-03-09).
 
 ```typescript
 for (const entity of entities) {
   try {
     entity.plugins = await this.getPlugins(entity.id);
   } catch (error) {
-    console.error(`Failed to get plugins for ${entity.LogicalName}`, error);
     entity.plugins = [];
-    errors.push({ entity: entity.LogicalName, phase: 'plugin-discovery', error });
+    this.stepWarnings.push({
+      step: 'plugin-discovery',
+      message: `Failed to get plugins for ${entity.LogicalName}: ${String(error)}`,
+      partial: true,
+    });
   }
 }
 ```
@@ -348,11 +351,8 @@ window.dataverseAPI.buildLabel(text, languageCode?)  // Creates properly formatt
 
 ### Connection targets
 - `connectionTarget` defaults to `'primary'`
-- Use `'secondary'` for multi-connection scenarios
-- To enable multi-connection, add to `package.json`:
-  ```json
-  "features": { "multiConnection": "required" | "optional" }
-  ```
+- `'secondary'` is valid only in a multi-connection scenario, which PPSB does not support today
+- Do NOT add a `features` block to `package.json`. The manifest has no `features` block and no `minAPI` (decisions.md, 2026-10-10). The `pptb-validate` validator requires `multiConnection` and `connections` whenever `features` exists. Add a `features` block only if both are declared and actually supported, then run `pnpm validate`.
 
 ---
 
