@@ -21,8 +21,7 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 
 ## ✨ Key Features
 
-<details>
-<summary><b>📋 Discovery & Documentation</b> (click to expand)</summary>
+### 📋 Discovery & Documentation
 
 - **Entities**: Complete schema (fields, relationships, keys, alternate keys)
 - **Plugins**: Full registration details with execution order analysis
@@ -38,10 +37,7 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 - **Security**: Roles, field security profiles, attribute masking, column security
 - See [SUPPORTED_COMPONENTS.md](./SUPPORTED_COMPONENTS.md) for the full component status list — Supported, Partial, and Planned.
 
-</details>
-
-<details>
-<summary><b>📊 Analysis & Visualization</b> (click to expand)</summary>
+### 📊 Analysis & Visualization
 
 - **Entity Relationship Diagram (ERD)**: Interactive Cytoscape.js force-directed graph with pan, zoom, node isolation, publisher filter, and PNG/SVG export
 - **Execution Pipeline**: Visual representation of client → sync → async automation flow per entity
@@ -51,27 +47,19 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 - **Entity Complexity**: Scoring based on field count, automation density, and relationship complexity
 - **Performance Risks**: Identify synchronous plugins with external calls, long execution chains
 
-</details>
-
-<details>
-<summary><b>💾 Export Formats</b> (click to expand)</summary>
+### 💾 Export Formats
 
 - **Markdown**: Complete file structure ready for Azure DevOps Wiki upload
 - **JSON**: Full data export for programmatic use, baselines, and CI/CD pipelines
 - **HTML**: Single-page interactive document with navigation, search, and accordion sections
 - **ZIP**: All formats bundled together with organized directory structure
 
-</details>
-
-<details>
-<summary><b>🔍 Smart Scope Selection</b> (click to expand)</summary>
+### 🔍 Smart Scope Selection
 
 - **By Publisher**: Select one or more publishers to document all their solutions
 - **By Solution**: Choose specific solutions regardless of publisher
 - **By Entity**: Document all entities (with optional system entity inclusion)
 - **Filtering**: Multi-select with live filtering and selected item management
-
-</details>
 
 ---
 
