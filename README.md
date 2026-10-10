@@ -1,3 +1,5 @@
+![PPSB](https://raw.githubusercontent.com/sabrish/power-platform-solution-blueprint/main/public/icon/ppsb.svg)
+
 # Power Platform Solution Blueprint (PPSB)
 
 > Complete architectural blueprints for your Power Platform solutions.
