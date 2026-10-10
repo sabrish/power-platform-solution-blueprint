@@ -1687,14 +1687,14 @@ ${rows}
         ? '<span class="badge badge-warning">Managed</span>'
         : '<span class="badge badge-success">Unmanaged</span>';
       const optionsHtml = gc.options.slice(0, 5).map(o =>
-        `<span class="badge badge-info">${this.htmlEscape(o.label)} (${String(o.value)})</span>`
+        `<span class="badge badge-info">${this.htmlEscape(o.label)} (${this.htmlEscape(String(o.value))})</span>`
       ).join(' ');
       const moreCount = gc.options.length > 5 ? ` <span class="badge">+${String(gc.options.length - 5)} more</span>` : '';
 
       return `<div class="accordion-item">
   <button class="accordion-header" aria-expanded="false">
     <span class="accordion-title">${this.htmlEscape(gc.displayName)}</span>
-    <span class="accordion-meta">${managedBadge} <span class="badge">${String(gc.totalOptions)} options</span></span>
+    <span class="accordion-meta">${managedBadge} <span class="badge">${this.htmlEscape(String(gc.totalOptions))} options</span></span>
     <span class="accordion-toggle">▼</span>
   </button>
   <div class="accordion-content" hidden>
