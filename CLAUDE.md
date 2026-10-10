@@ -113,7 +113,7 @@ Codified 2026-03-09. Full specs with code examples: `.claude/memory/patterns-ui.
 | Command | When to use |
 |---------|-------------|
 | `/pre-commit [files]` | Before every `git commit` — scoped reviewer and security-auditor on changed files only. Developer runs `pnpm typecheck && pnpm build` (and `pnpm test`) before this |
-| `/push-branch` | Instead of `git push` — full gate (build, full tests, security sweep) then pushes |
+| `/push-branch` | Instead of `git push` — full gate: `pnpm test`, `pnpm build`, security-auditor and reviewer on the full branch diff (`git diff main...HEAD`), then pushes |
 | `pnpm test` | Runs the vitest suite (`vitest run`); co-located `*.test.ts` files under `src/` |
 
 ## Key Reference Files
