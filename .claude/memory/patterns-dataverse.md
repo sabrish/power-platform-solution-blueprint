@@ -69,8 +69,8 @@ const enriched = await Promise.all(
 ```
 
 ### Batch Size Guidelines
-- **Standard:** `batchSize = 20` for most queries
-- **Conservative:** `batchSize = 10` for security role privilege queries (long field paths)
+- **Standard:** `initialBatchSize = 20` for most queries
+- **Conservative:** `initialBatchSize = 10` for security role privilege queries (long field paths)
 - **Rationale:** GUIDs are 36 chars; 20 GUIDs ≈ 1.5KB in URL; prevents HTTP 414/400
 
 ---

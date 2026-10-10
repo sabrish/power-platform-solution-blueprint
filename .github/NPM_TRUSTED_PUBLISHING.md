@@ -144,7 +144,7 @@ After publishing with Trusted Publishing:
   - Workflow: `publish-npm.yml`
   - Environment: `npm`
 
-### Error: "cannot republish an existing version"
+### Error: "You cannot publish over the previously published versions: X.Y.Z"
 - **Cause**: The version in `package.json` is already on npm
 - **Fix**: Reject the pending `npm` environment approval. A new release needs a new version number
 

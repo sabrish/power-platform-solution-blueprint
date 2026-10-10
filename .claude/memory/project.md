@@ -79,7 +79,7 @@ pnpm validate   # PPTB manifest validation (pptb-validate)
 Lint and format tooling is not installed. See Known Follow-ups.
 
 **Release workflow:**
-- Release sequence: `/release` (reviewer, security audit, version bump, documentation at step 3b, then typecheck, test, build and validate at step 4). Version must match in `package.json`, CHANGELOG.md, the README version line and the `docs/user-guide.md` version subtitle, matched by its text (learnings.md, 2026-02-26)
+- Release sequence: `/release` (reviewer, security audit, version bump, documentation at step 3b, then typecheck, test, build, validate and dependency audit at step 4; the audit is production-only, zero critical and zero high). Version must match in `package.json`, CHANGELOG.md, the README version line and the `docs/user-guide.md` version subtitle, matched by its text (learnings.md, 2026-02-26)
 - Release tags are created on `main` after merge, never on a branch (learnings.md, 2026-03-07)
 
 ---
@@ -95,10 +95,6 @@ Nothing in progress on this branch. The branch `chore/process-and-docs-cleanup` 
 **PPTB Desktop issues (open):**
 - Debug Install Package fails with `spawn EINVAL` on Windows
 - Icon CORS error when loading a local tool
-
-**Deferred findings** (pre-existing; waived at the 1.5.0 push and tracked as follow-ups):
-- Inline styles in `DetectionCoverageBanner.tsx` and `ResultsDashboard.tsx`
-- Inline `color:#666` in the coverage notice in `HtmlTemplates.ts`
 
 ---
 
@@ -143,8 +139,6 @@ Nothing in progress on this branch. The branch `chore/process-and-docs-cleanup` 
 **Waived at the 1.5.0 push (review findings, inline styles):**
 - Inline styles in `src/components/CrossEntityAutomation/DetectionCoverageBanner.tsx` and `src/components/ResultsDashboard.tsx`
 - Inline `color:#666` in the Cross-Entity coverage notice in `src/core/reporters/html/HtmlTemplates.ts`
-
-**Doc drift (also on `main`):** `.claude/memory/patterns-dataverse.md` says `batchSize = 10`; the option is `initialBatchSize`.
 
 ---
 

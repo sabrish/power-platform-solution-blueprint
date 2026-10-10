@@ -105,7 +105,7 @@ Visit the package page and look for the **Provenance** badge.
 |-------|-------|-----|
 | "This operation requires authentication" | Trusted Publisher not configured on npm | Configure it in npm package settings — see `NPM_TRUSTED_PUBLISHING.md` |
 | "Workflow not authorized" | Wrong workflow, repo or environment details in the npm trusted publisher config | Verify: owner `sabrish`, repo `power-platform-solution-blueprint`, workflow `publish-npm.yml`, environment `npm` |
-| "cannot republish an existing version" | The `package.json` version is already on npm (for example, a GitHub Release re-triggered the workflow after a manual publish) | Reject the pending `npm` approval. Do not retry the same version; a new release needs a new version number |
+| "You cannot publish over the previously published versions: X.Y.Z" | The `package.json` version is already on npm (for example, a GitHub Release re-triggered the workflow after a manual publish) | Reject the pending `npm` approval. Do not retry the same version; a new release needs a new version number |
 | Publish job waiting for approval | The `npm` environment requires reviewer approval | Approve the deployment on the run page if the run is intended; reject it otherwise |
 | Publish job blocked or rejected by environment policy | The `npm` environment deployment policy allows protected branches only | Run the workflow manually from `main` (recommended). Release-triggered runs use a tag ref and are untested; if such a run is blocked, use the manual run instead |
 | Tests fail | `pnpm test` in the `build` job failed, so the `publish` job never ran | Run `pnpm test` locally, fix the failing tests, then re-run the workflow |

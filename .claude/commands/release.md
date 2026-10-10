@@ -81,9 +81,9 @@ Invoke the **developer** agent with these exact tasks, in this exact order:
    A critical or high finding in the production dependency tree removes the Verified badge immediately (see `docs/VERIFICATION.md` section 3). The check method is in `docs/VERIFICATION.md` section 4 (Governance Audit Method).
    - Build the tarball into a temp directory: `npm pack --pack-destination <temp-dir>`
    - In a second, empty temp directory: `npm init --yes`, then
-     `npm install --package-lock-only --ignore-scripts --omit=dev <path-to-tarball>`
-   - In the same directory, run `npm audit --omit=dev`.
-   - Report the count of findings per severity. Zero critical and zero high. Any critical or high finding stops the release.
+     `npm install --package-lock-only --ignore-scripts --omit=dev <absolute-path-to-tarball>`. Use the ABSOLUTE path to the tarball (the `<temp-dir>` path joined with the filename `npm pack` printed), not a relative path, because the install runs after changing directory and a relative path will not resolve.
+   - In the same directory, run `npm audit --omit=dev --json` and read `metadata.vulnerabilities`. The gate is `critical == 0` and `high == 0`. A non-zero exit code alone is not a failure if those counts are zero: `npm audit` exits non-zero on moderate findings too, and only critical and high findings block the release.
+   - Report the `moderate` and `low` counts as information only. Any critical or high finding stops the release.
    - Informational only: run `pnpm audit` in the repository root to audit the whole tree, including dev dependencies (this repo's lockfile is `pnpm-lock.yaml`). Its findings do not block the release.
    - Repeat the production-only audit after publish (Step 5, item 5) against `<pkg>@<version>`, which is the same method the governance script uses on the published package.
 
@@ -133,6 +133,6 @@ Use `-F <file>` instead of `-m` to put the CHANGELOG section for `[X.Y.Z]` in th
 
 **4. Publish to npm (recommended path).** Run the **Publish to npm** workflow manually from `main` and approve the `npm` environment deployment when reviewer approval is requested. This is the path v1.5.0 used. See `.github/PUBLISHING.md`. Publishing by creating a GitHub Release from the tag is UNTESTED: the `npm` environment deploys from protected branches only, so a release-triggered run (tag ref) may be blocked. Do not create a GitHub Release after a manual run has published: publishing a Release triggers the workflow again. That run waits for approval in the `npm` environment (or is blocked by its deployment policy). npm refuses to republish an existing version, so do not approve it.
 
-**5. Post-publish.** Confirm the version on npm (`npm view <pkg> version`). Then repeat the production-only audit from Step 4, item 5, against `<pkg>@<version>`: in a fresh empty temp directory run `npm init --yes`, `npm install --package-lock-only --ignore-scripts --omit=dev <pkg>@<version>`, then `npm audit --omit=dev`. Any critical or high finding is escalated to the project owner.
+**5. Post-publish.** Confirm the version on npm (`npm view <pkg> version`). Then repeat the production-only audit from Step 4, item 5, against `<pkg>@<version>`: in a fresh empty temp directory run `npm init --yes`, `npm install --package-lock-only --ignore-scripts --omit=dev <pkg>@<version>`, then `npm audit --omit=dev --json` and read `metadata.vulnerabilities` with the same gate as Step 4 (critical == 0 and high == 0; a non-zero exit code alone is not a failure). Any critical or high finding is escalated to the project owner.
 
 NEVER run `git push`, `git tag` or any publish action yourself. The project owner runs these commands manually, unless the project owner explicitly authorises the action for that release.
