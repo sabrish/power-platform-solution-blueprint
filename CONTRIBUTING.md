@@ -184,7 +184,7 @@ Before adding code to an existing file, ask: *does this belong here?*
 - A hook file contains **one hook**.
 - Utility functions that could be reused elsewhere live in `src/core/utils/` or `src/hooks/`, not inside the file that first needed them.
 - A discovery class discovers one component type. A parser parses one thing.
-- **Exception:** When the output format requires self-contained files (e.g. the HTML export must work with zero external dependencies), the TypeScript that generates it may contain all the pieces inline. That is intentional, not bundling.
+- **Exception:** When the output format requires a single file (e.g. the HTML export is one `.html` file), the TypeScript that generates it may contain all the pieces inline. That is intentional, not bundling. The HTML export loads Mermaid and Cytoscape from a pinned, SRI-verified jsDelivr CDN, so it is not zero-dependency (see `src/core/reporters/html/HtmlTemplates.ts`).
 
 **The test:** if you have to describe what a file does using the word "and", it probably needs to be split.
 
@@ -192,10 +192,31 @@ Before adding code to an existing file, ask: *does this belong here?*
 
 Before committing:
 
-1. Build the project: `pnpm build`
-2. Type check: `pnpm typecheck`
-3. Test in PPTB Desktop with a real Dataverse connection
-4. Verify all features work as expected
+1. Type check: `pnpm typecheck`
+2. Build the project: `pnpm build`
+3. Run the unit tests: `pnpm test` (Vitest, `vitest run`)
+4. Test in PPTB Desktop with a real Dataverse connection (see below)
+5. Verify all features work as expected
+
+### Testing in PPTB Desktop
+
+`pnpm dev` runs Vite in a browser. The PPTB APIs (`window.toolboxAPI`, `window.dataverseAPI`) are not present there, so the tool cannot connect to Dataverse. Test real behaviour in PPTB Desktop.
+
+1. Open **Settings** (gear icon) and turn on **Show Debug Menu**. Click **Save**.
+2. Run `pnpm build` in the project.
+3. Open **Debug** > **Load Local Tool**. Browse to the **project root** (the folder that contains `package.json`), not `dist/`. Click **Load Tool**.
+4. There is no hot reload. After each rebuild, close the tool tab and load the tool again.
+5. To see console output, open **Help** > **Toggle Tool DevTools**. Reopen DevTools after each reload.
+
+Notes:
+
+- A locally loaded tool has the id `local-<name>`.
+- Removing a local tool removes only its registration in Desktop. Your source files are not touched.
+- The Debug **Install Package** box runs npm (`install-tool`). On Windows with current Node and Electron versions it can fail with `spawn EINVAL`, because Desktop spawns `npm.cmd` and `pnpm.cmd` without a shell. This is a PPTB Desktop bug (reported, not independently verified). Use **Load Local Tool** or install from the PPTB Marketplace instead.
+- A console message about a CORS error on the icon is expected for locally loaded tools. Desktop loads the SVG icon as a CSS mask over `pptb-webview://`. It is harmless.
+- Before reinstalling a tool, remove the old installed or loaded copies first. Installed tools are stored under Desktop's userData directory. The exact folder name per OS is not verified here: verify locally before deleting anything.
+
+For the criteria a tool must meet to keep PPTB's **Verified** status, see [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Pull Request Process
 
