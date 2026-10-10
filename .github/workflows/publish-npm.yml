@@ -12,27 +12,20 @@ on:
 
 permissions:
   contents: read
-  id-token: write # Required for provenance/trusted publishing
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: npm
-      url: https://www.npmjs.com/package/@sabrish/power-platform-solution-blueprint
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-          # registry-url configures npm for OIDC when id-token: write is present and NODE_AUTH_TOKEN is not set
-
-      - name: Update npm to latest
-        run: npm install -g npm@latest
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -47,6 +40,45 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@sabrish/power-platform-solution-blueprint
+    permissions:
+      contents: read
+      id-token: write # Required for provenance/trusted publishing; scoped to this job only
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          # registry-url sets the npm registry; OIDC publishing needs npm >= 11.5.1 (see next step) and no NODE_AUTH_TOKEN
+
+      - name: Update npm to latest
+        run: npm install -g npm@latest
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
 
       - name: Publish to npm (Trusted Publishing via OIDC)
         run: npm publish --access public
