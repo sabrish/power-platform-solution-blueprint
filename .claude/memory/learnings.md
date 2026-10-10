@@ -824,3 +824,63 @@ import (prevents dead-code removal) and documents how to add logging elsewhere.
 **Repeat violations:**
 - 2026-06-23 — Developer ran `pnpm typecheck && pnpm build`, then immediately committed TWO changes without running `/pre-commit`. XSS finding slipped through and had to be fixed in a third commit.
 - 2026-10-10 — A developer run committed four docs/memory commits (release.md/PUBLISHING.md, CHANGELOG.md, decisions/project/patterns memory files, CLAUDE.md) after `/pre-commit` had passed only for the FIRST commit of the batch, reasoning that the first verdict covered the rest. Rule restated: `/pre-commit` must return CLEAR TO COMMIT for EACH commit's own files before that commit; a verdict for one commit never covers another. Mitigation applied: retroactive security audit and reviewer pass found no blockers; nothing had been pushed.
+
+---
+
+## [2026-10-10] — PPTB Desktop Debug "Install Package" fails on Windows with spawn EINVAL
+
+**Affects:** Developer, Orchestrator
+**Severity:** Medium
+**Rule:** For local testing in PPTB Desktop on Windows, use "Load Local Tool", not Debug "Install Package". Do not spend time debugging the package when "Install Package" fails with `spawn EINVAL`.
+**Context:** Reported (not independently verified): Debug "Install Package" fails on Windows with `spawn EINVAL` because `npm.cmd` / `pnpm.cmd` are spawned without a shell. Marketplace install uses tar and is a different path.
+**Example:**
+- Wrong: Changing `package.json` or build output to work around `spawn EINVAL`
+- Right: Use "Load Local Tool" pointing at the built `dist`
+
+---
+
+## [2026-10-10] — PPTB README viewer CSP: allowed image hosts only, no HTML, absolute URLs
+
+**Affects:** Document Updater, Developer
+**Severity:** Medium
+**Rule:** The README is rendered in a viewer whose CSP allows images only from `github.com`, `*.githubusercontent.com`, `*.supabase.co`, `*.blob.core.windows.net`, and `www.powerplatformtoolbox.com`. `shields.io` is blocked. Use a plain-text version line (`**Version:** X.Y.Z · **Status:** Stable`) instead of badges. Do not use HTML in READMEs. Use absolute URLs.
+**Context:** README shields.io badges were blocked by the viewer and were replaced with the plain-text line on 2026-10-10.
+**Example:**
+- Wrong: `![version](https://img.shields.io/...)` or an `<img>` tag in README.md
+- Right: `**Version:** X.Y.Z · **Status:** Stable`
+
+---
+
+## [2026-10-10] — Local tools: icon CORS console error is a Desktop limitation
+
+**Affects:** Developer, Reviewer
+**Severity:** Medium
+**Rule:** When a locally loaded tool shows an icon CORS error in the console, treat it as a PPTB Desktop limitation (the SVG icon is loaded as a CSS mask over `pptb-webview://`), not a package fault. Do not change the package to chase it. The manifest `icon` value is a path relative to `dist`.
+**Context:** Observed with local tool loading; the icon still works as a package field.
+**Example:**
+- Wrong: Rewriting the icon or manifest to silence the CORS error
+- Right: Leave it; keep `icon` as a path relative to `dist`
+
+---
+
+## [2026-10-10] — Publishing: manual workflow_dispatch from main; npm environment needs approval; merge first, tag on main
+
+**Affects:** Orchestrator, Developer, Document Updater
+**Severity:** High
+**Rule:** Publishing works by a manual `workflow_dispatch` run from `main`. The `npm` environment requires reviewer approval before the publish job runs. npm refuses to republish an existing version, so a failed or partial release needs a new version. Release order: merge the release commit to `main` first, then create the tag on `main` (see the 2026-03-07 tag-on-main entry).
+**Context:** Recorded from the v1.5.0 release process.
+**Example:**
+- Wrong: Tagging on the release branch before merge, or retrying a publish of the same version
+- Right: Merge, tag on `main`, run the workflow from `main`, approve the `npm` environment
+
+---
+
+## [2026-10-10] — Do not assume what a nested agent's gate covers; briefs must state the gating rule
+
+**Affects:** Orchestrator, Developer
+**Severity:** High
+**Rule:** Never infer that one verdict, or a nested agent's gate, covers other commits. Each commit needs its own CLEAR TO COMMIT from `/pre-commit` for its own files. An orchestrator brief must state the per-commit gating rule explicitly ("gate every commit individually").
+**Context:** This is the 2026-10-10 repeat violation under the 2026-06-23 `/pre-commit` rule (see that entry's repeat list). Referenced here, not restated.
+**Example:**
+- Wrong: A brief that omits the gating rule, with the developer assuming an earlier `CLEAR TO COMMIT` covers later commits
+- Right: The brief says "gate every commit individually"; each commit gets its own verdict
