@@ -4,6 +4,7 @@
   "displayName": "Power Platform Solution Blueprint Generator",
   "description": "Generate comprehensive technical documentation for Dataverse and Power Platform solutions with automated discovery, analysis, and export capabilities.",
   "main": "index.html",
+  "icon": "icon/ppsb.svg",
   "license": "MIT",
   "author": {
     "name": "SAB",
