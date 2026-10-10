@@ -48,7 +48,7 @@ classic workflows, BPFs, web resources, custom APIs, security roles, and more �
 as Markdown, JSON, HTML, or ZIP. It is a flat-structure, single-package React/TypeScript app
 served under the `pptb-webview://` protocol from `dist/index.html`.
 
-**Stack:** TypeScript 5.x (strict) · React 18 · Vite 5 · Fluent UI v9 · `@pptb/types` v1.0.19+ · pnpm · Cytoscape.js · Mermaid · JSZip
+**Stack:** TypeScript 5.x (strict) · React 18 · Vite 5 · Fluent UI v9 · `@pptb/types` v1.2.6+ · pnpm · Cytoscape.js · Mermaid · JSZip
 
 **APIs:** `window.dataverseAPI` for all Dataverse calls · `await window.toolboxAPI.getToolContext()`
 for tool context · NEVER use `window.toolboxAPI.dataverse.*` or `executeDataverseRequest()` — both do not exist.
@@ -112,8 +112,9 @@ Codified 2026-03-09. Full specs with code examples: `.claude/memory/patterns-ui.
 
 | Command | When to use |
 |---------|-------------|
-| `/pre-commit [files]` | Before every `git commit` — fast checks only (TS, lint, format, related tests) |
+| `/pre-commit [files]` | Before every `git commit` — scoped reviewer and security-auditor on changed files only. Developer runs `pnpm typecheck && pnpm build` (and `pnpm test`) before this |
 | `/push-branch` | Instead of `git push` — full gate (build, full tests, security sweep) then pushes |
+| `pnpm test` | Runs the vitest suite (`vitest run`); co-located `*.test.ts` files under `src/` |
 
 ## Key Reference Files
 
