@@ -16,7 +16,7 @@ The `publish-npm.yml` workflow has two jobs:
 The version published is the one in `package.json`. The workflow takes no version input.
 
 **Triggers:**
-- `release: published` — a GitHub Release is published
+- `release: published` — a GitHub Release is published (UNTESTED; see [Publishing via GitHub Release](#publishing-via-github-release-untested))
 - `workflow_dispatch` — Actions → "Publish to npm" → "Run workflow" (no inputs; run from `main`)
 
 **Environment:** The `npm` environment requires approval by a reviewer before the publish job runs. Its deployment policy allows protected branches only.
@@ -36,7 +36,7 @@ Follow the release sequence in `.claude/commands/release.md`. In summary:
    git tag -a vX.Y.Z -m "Release vX.Y.Z"
    git push origin vX.Y.Z
    ```
-4. Publish: run the workflow manually from `main` (below). A GitHub Release is optional once a manual run has published.
+4. Publish (recommended path): run the workflow manually from `main` (below). This is the path v1.5.0 used. Do not create a GitHub Release after a manual run has published: publishing a Release triggers the workflow again. That run waits for approval in the `npm` environment (or is blocked by its deployment policy). npm refuses to republish an existing version, so do not approve it. The Release path itself is UNTESTED (see below).
 
 ---
 
@@ -50,13 +50,15 @@ Follow the release sequence in `.claude/commands/release.md`. In summary:
 
 ---
 
-## Publishing via GitHub Release (optional)
+## Publishing via GitHub Release (UNTESTED)
 
-A GitHub Release can be created from the tag after a manual run has published the same version.
+This path has not been tested for this repository. The `npm` environment deploys from protected branches only, and a release-triggered run uses a tag ref, so the run may be blocked by environment policy. Use the manual run from `main` above instead.
+
+If this path is tried:
 
 1. Go to **Releases** → **Draft a new release** and choose the tag `vX.Y.Z`
-2. Publish the release. This triggers the workflow again.
-3. The publish job waits for approval in the `npm` environment. **Reject** that approval if the version is already on npm, because npm refuses to republish an existing version.
+2. Publish the release. This triggers the workflow.
+3. If the run is blocked, the publish job does not run. Publish with the manual run from `main`.
 
 ---
 
@@ -79,7 +81,7 @@ npm publish --access public
 
 ## Dependency Audit
 
-Release Step 4 (`.claude/commands/release.md`) requires zero critical and zero high findings before publish. The same audit is repeated after publish against `<package>@<version>`.
+Release Step 4 (`.claude/commands/release.md`) requires zero critical and zero high findings from `npm audit --omit=dev`, run in a temp directory against the packed tarball's production-only dependency tree. A critical or high finding in the production dependency tree removes the Verified badge immediately (see `docs/VERIFICATION.md` section 3). The check method is in `docs/VERIFICATION.md` section 4 (Governance Audit Method). A whole-tree `pnpm audit` in the repository root covers dev dependencies and is informational only.
 
 ---
 
@@ -105,10 +107,10 @@ Visit the package page and look for the **Provenance** badge.
 | "Workflow not authorized" | Wrong workflow, repo or environment details in the npm trusted publisher config | Verify: owner `sabrish`, repo `power-platform-solution-blueprint`, workflow `publish-npm.yml`, environment `npm` |
 | "cannot republish an existing version" | The `package.json` version is already on npm (for example, a GitHub Release re-triggered the workflow after a manual publish) | Reject the pending `npm` approval. Do not retry the same version; a new release needs a new version number |
 | Publish job waiting for approval | The `npm` environment requires reviewer approval | Approve the deployment on the run page if the run is intended; reject it otherwise |
-| Publish job blocked or rejected by environment policy | The `npm` environment deployment policy allows protected branches only | Run the workflow manually from `main`. Release-triggered runs use a tag ref; if such a run is blocked, use the manual run instead |
+| Publish job blocked or rejected by environment policy | The `npm` environment deployment policy allows protected branches only | Run the workflow manually from `main` (recommended). Release-triggered runs use a tag ref and are untested; if such a run is blocked, use the manual run instead |
 | Tests fail | `pnpm test` in the `build` job failed, so the `publish` job never ran | Run `pnpm test` locally, fix the failing tests, then re-run the workflow |
 | Build fails | `pnpm build` in the `build` job failed (after tests passed), or the lockfile is out of date under `--frozen-lockfile` | Fix TypeScript/bundle errors locally; run `pnpm install` and commit `pnpm-lock.yaml` if the lockfile is stale |
-| `publish` job skipped | Manual run was not on `main`, and the event was not a release | Re-run from `main` via workflow_dispatch, or publish via a GitHub Release |
+| `publish` job skipped | Manual run was not on `main`, and the event was not a release | Re-run from `main` via workflow_dispatch (recommended), or publish via a GitHub Release (untested) |
 
 ---
 

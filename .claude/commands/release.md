@@ -77,16 +77,15 @@ Invoke the **developer** agent with these exact tasks, in this exact order:
 2. `pnpm test` — all unit tests must pass. Stop if any test fails.
 3. `pnpm build` — must complete successfully. Stop if it fails.
 4. `pnpm validate` — PPTB manifest validation must pass. Stop if it fails.
-5. Dependency audit (governance-style). Must show **zero critical and zero high** findings.
-   PPTB's nightly governance checks remove the Verified badge on any critical or high CVE,
-   and on any new `cspExceptions` entry, so a release with either is blocked.
+5. Dependency audit (production-only; this is the release gate). Must show **zero critical and zero high** findings.
+   A critical or high finding in the production dependency tree removes the Verified badge immediately (see `docs/VERIFICATION.md` section 3). The check method is in `docs/VERIFICATION.md` section 4 (Governance Audit Method).
    - Build the tarball into a temp directory: `npm pack --pack-destination <temp-dir>`
    - In a second, empty temp directory: `npm init --yes`, then
      `npm install --package-lock-only --ignore-scripts --omit=dev <path-to-tarball>`
-   - In the same directory: `npm audit --omit=dev`
-   - Report the count of findings per severity. Any critical or high finding stops the release.
-   - The same audit is repeated after publish (see Step 5, post-publish) with
-     `npm install --package-lock-only --ignore-scripts --omit=dev <pkg>@<version>` in a fresh empty temp directory.
+   - In the same directory, run `npm audit --omit=dev`.
+   - Report the count of findings per severity. Zero critical and zero high. Any critical or high finding stops the release.
+   - Informational only: run `pnpm audit` in the repository root to audit the whole tree, including dev dependencies (this repo's lockfile is `pnpm-lock.yaml`). Its findings do not block the release.
+   - Repeat the production-only audit after publish (Step 5, item 5) against `<pkg>@<version>`, which is the same method the governance script uses on the published package.
 
 **Progress:** Step 4 complete ✅ — Typecheck, tests, build and manifest validation passed. Dependency audit: zero critical/high. / ❌ Step 4 failed — [error]. Release halted.
 
@@ -132,8 +131,8 @@ git push origin vX.Y.Z
 
 Use `-F <file>` instead of `-m` to put the CHANGELOG section for `[X.Y.Z]` in the tag body. Tags `v1.0.0` to `v1.4.0` use that form.
 
-**4. Publish to npm.** See `.github/PUBLISHING.md`. Either run the **Publish to npm** workflow manually from `main`, or create a GitHub Release from the tag. A manual run is sufficient; a GitHub Release is optional after a manual run has published.
+**4. Publish to npm (recommended path).** Run the **Publish to npm** workflow manually from `main` and approve the `npm` environment deployment when reviewer approval is requested. This is the path v1.5.0 used. See `.github/PUBLISHING.md`. Publishing by creating a GitHub Release from the tag is UNTESTED: the `npm` environment deploys from protected branches only, so a release-triggered run (tag ref) may be blocked. Do not create a GitHub Release after a manual run has published: publishing a Release triggers the workflow again. That run waits for approval in the `npm` environment (or is blocked by its deployment policy). npm refuses to republish an existing version, so do not approve it.
 
-**5. Post-publish.** Confirm the version on npm (`npm view <pkg> version`) and repeat the dependency audit from Step 4, item 5, against `<pkg>@<version>`. Any critical or high finding is escalated to the project owner.
+**5. Post-publish.** Confirm the version on npm (`npm view <pkg> version`). Then repeat the production-only audit from Step 4, item 5, against `<pkg>@<version>`: in a fresh empty temp directory run `npm init --yes`, `npm install --package-lock-only --ignore-scripts --omit=dev <pkg>@<version>`, then `npm audit --omit=dev`. Any critical or high finding is escalated to the project owner.
 
 NEVER run `git push`, `git tag` or any publish action yourself. The project owner runs these commands manually, unless the project owner explicitly authorises the action for that release.

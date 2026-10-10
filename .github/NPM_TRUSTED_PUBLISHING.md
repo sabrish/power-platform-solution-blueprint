@@ -67,6 +67,11 @@ jobs:
       contents: read
       id-token: write  # Required for OIDC; scoped to this job only
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -95,13 +100,15 @@ jobs:
 
 ## 📦 Publishing Flow (After Setup)
 
-### Automatic Publish (via GitHub Release, optional):
-Create a GitHub Release from an existing tag (for example `vX.Y.Z`). The release event triggers the workflow. A GitHub Release is optional once a manual run has published the version. If the version is already on npm, reject the pending `npm` environment approval, because npm refuses to republish an existing version.
-
-### Manual Publish (via Workflow):
+### Manual Publish (via Workflow, recommended):
 1. Go to Actions → Publish to npm
 2. Click "Run workflow" and select the `main` branch. The workflow has no version input
 3. OIDC handles npm authentication automatically (no npm token required). The `npm` environment requires reviewer approval before the publish job runs
+
+### GitHub Release publish (UNTESTED):
+Creating a GitHub Release from an existing tag (for example `vX.Y.Z`) would trigger the workflow through a tag ref. This path is untested for this package. The `npm` environment deploys from protected branches only, so the run may be blocked. Use Manual Publish above.
+
+Creating a GitHub Release after a manual publish triggers the workflow again. That run waits for approval in the `npm` environment (or is blocked by its deployment policy). npm refuses to republish an existing version, so do not approve it.
 
 ---
 
@@ -140,6 +147,10 @@ After publishing with Trusted Publishing:
 ### Error: "cannot republish an existing version"
 - **Cause**: The version in `package.json` is already on npm
 - **Fix**: Reject the pending `npm` environment approval. A new release needs a new version number
+
+### Run blocked by the environment's deployment policy (protected branches only)
+- **Cause**: The `npm` environment's deployment policy allows protected branches only. A run triggered by a GitHub Release uses a tag ref, which the policy does not allow, so the run is blocked. The GitHub Release path is UNTESTED for this package.
+- **Fix**: Run the workflow manually from `main` (see Manual Publish above). This is the recommended path.
 
 ---
 
