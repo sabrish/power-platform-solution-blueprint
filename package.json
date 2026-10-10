@@ -43,8 +43,7 @@
     "dist",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md",
-    "npm-shrinkwrap.json"
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public",

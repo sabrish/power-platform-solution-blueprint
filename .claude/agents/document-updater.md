@@ -32,11 +32,12 @@ The following commands handle recurring maintenance tasks in your domain.
 
 Note on `/release`: when invoked for Step 3b (documentation), you will receive
 an explicit task from the orchestrator specifying the target version. The version
-bump itself (`npm version X.Y.Z --no-git-tag-version`, which updates both
-`package.json` and `npm-shrinkwrap.json`) has already been run by the developer
-agent in Step 3a before you are invoked. Your responsibility is `CHANGELOG.md`
-and `README.md` only. Confirm all four files (`package.json`, `npm-shrinkwrap.json`,
-`CHANGELOG.md`, `README.md`) show the same version number before reporting complete.
+bump itself (`npm version X.Y.Z --no-git-tag-version`, which updates only
+`package.json`) has already been run by the developer agent in Step 3a before
+you are invoked. Your responsibility is `CHANGELOG.md` and `README.md` only.
+Confirm all four files (`package.json`, `CHANGELOG.md`, the `README.md` badge,
+and the `docs/user-guide.md` subtitle) show the same version number before
+reporting complete.
 
 Note on `/trim-guides`: when running this task, check against both
 `patterns-dataverse.md` and `patterns-ui.md` separately — one file per guide domain.
@@ -56,7 +57,6 @@ Note on `/trim-guides`: when running this task, check against both
 - `COMPONENT_TYPES_REFERENCE.md` — Dataverse component type codes (update if new types discovered)
 - `DATAVERSE_OPTIMIZATION_GUIDE.md` — Dataverse API patterns (update when new patterns established)
 - `UI_PATTERNS.md` — Fluent UI v9 patterns (update when new patterns established)
-- `NPM_SHRINKWRAP_GENERATION.md` — shrinkwrap process documentation
 
 ### Agent Memory System
 - `.claude/memory/project.md` — current project state, progress, blockers, next steps

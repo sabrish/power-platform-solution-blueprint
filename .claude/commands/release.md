@@ -43,11 +43,10 @@ Invoke the **developer** agent to run:
 npm version X.Y.Z --no-git-tag-version
 ```
 
-This updates **both** `package.json` and `npm-shrinkwrap.json` to the target
-version automatically. Do not proceed to Step 3b until the developer confirms
-both files are updated.
+This updates `package.json` to the target version. Do not proceed to Step 3b
+until the developer confirms the file is updated.
 
-**Progress:** Step 3a complete ✅ — package.json and npm-shrinkwrap.json updated to vX.Y.Z.
+**Progress:** Step 3a complete ✅ — package.json updated to vX.Y.Z.
 
 ### Step 3b — Document-updater agent: Documentation
 
@@ -58,9 +57,9 @@ Invoke the **document-updater** agent with these exact tasks:
 2. Update `README.md`: update the shields.io version badge at the top and any
    inline version references to the target version
 3. Verify all **four** files match — `package.json` version field,
-   `npm-shrinkwrap.json` version field, `CHANGELOG.md` latest entry header,
-   and `README.md` badge must ALL show the same version number. This is a
-   release blocker if they do not match.
+   `CHANGELOG.md` latest entry header, the `README.md` badge, and the
+   `docs/user-guide.md` subtitle must ALL show the same version number. This
+   is a release blocker if they do not match.
 
 Do not proceed to Step 4 until the document-updater confirms all four files
 are consistent.
@@ -98,7 +97,7 @@ Verdict: READY TO PUBLISH ✅ / BLOCKED ❌
 Then print the git commands for manual execution only if verdict is READY TO PUBLISH:
 
 ```
-git add package.json CHANGELOG.md README.md npm-shrinkwrap.json
+git add package.json CHANGELOG.md README.md
 git commit -m "chore: release v[VERSION]"
 git tag v[VERSION] -m "Release v[VERSION]"
 git push origin main

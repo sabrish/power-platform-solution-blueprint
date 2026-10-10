@@ -123,7 +123,6 @@ Codified 2026-03-09. Full specs with code examples: `.claude/memory/patterns-ui.
 | `SUPPORTED_COMPONENTS.md` | User-facing component coverage status — Supported, Partial, and Planned |
 | `DATAVERSE_OPTIMIZATION_GUIDE.md` | Batching patterns, GUID rules, HTTP 414 prevention |
 | `UI_PATTERNS.md` | Fluent UI v9 patterns (card-row lists, tokens, makeStyles) |
-| `NPM_SHRINKWRAP_GENERATION.md` | Shrinkwrap regeneration — must use `npm`, never `pnpm` |
 | `CONTRIBUTING.md` | Commit conventions and PR workflow |
 | `.claude/memory/patterns-general.md` | DRY/SOLID patterns — load for all code tasks |
 | `docs/` | Architecture, user guide, roadmap, API security reference |

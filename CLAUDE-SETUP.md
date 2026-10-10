@@ -224,10 +224,10 @@ The orchestrator owns this. Never shortcut it.
    release date, update `README.md` shields.io version badge. All three must show the
    same version number before proceeding.
 4. **Developer** — `pnpm typecheck` (must pass zero errors), `pnpm build` (must succeed),
-   `npm shrinkwrap` (must run AFTER step 3 version bump — captures correct version)
+   (`npm version X.Y.Z --no-git-tag-version` updates `package.json` only)
 5. **Orchestrator** — confirms all steps passed, prints git commands for manual execution:
 ```bash
-git add package.json CHANGELOG.md README.md npm-shrinkwrap.json
+git add package.json CHANGELOG.md README.md
 git commit -m "chore: release v[version]"
 
 git tag v[version] -m "Release v[version]"
@@ -268,7 +268,6 @@ most critical:
 - **Never** use `startswith()` or `orderBy` on Dataverse metadata API — fetch all, filter in memory
 - **Always** strip GUID braces before OData filters: `.replace(/[{}]/g, '')`
 - **Always** batch queries at 20 (or 10 for privilege queries) — never build OR filters with 20+ GUIDs
-- **Always** use `npm` (not `pnpm`) for `npm shrinkwrap`
 - **Never** use `DataGrid` for component browser lists — card-row pattern only
 - **Never** run `git push` autonomously — always manual
 
@@ -283,7 +282,6 @@ most critical:
 | `COMPONENT_TYPES_REFERENCE.md` | Dataverse component type integer codes |
 | `DATAVERSE_OPTIMIZATION_GUIDE.md` | Batching patterns, GUID rules, HTTP 414 prevention |
 | `UI_PATTERNS.md` | Fluent UI v9 patterns for this project |
-| `NPM_SHRINKWRAP_GENERATION.md` | Shrinkwrap regeneration steps (must use npm) |
 | `CONTRIBUTING.md` | Commit conventions and PR workflow |
 | `docs/architecture.md` | Technical architecture (note: monorepo section is outdated) |
 | `docs/roadmap.md` | Future development plans |

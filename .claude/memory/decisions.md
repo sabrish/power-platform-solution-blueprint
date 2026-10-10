@@ -103,9 +103,13 @@ Card-row accordion (PATTERN-001) required for all component browser lists. DataG
 
 ---
 
-## [2026-02-26] — npm-shrinkwrap.json Must Use npm (not pnpm)
+## [2026-02-26] — SUPERSEDED — npm-shrinkwrap.json Must Use npm (not pnpm)
 
-**Status:** Accepted and implemented (since v0.6.2)
+**Status:** Superseded 2026-10-10
+
+**Superseded by:** Removal of `npm-shrinkwrap.json` from the repository and the published package (2026-10-10). The PPTB intake ignores the file (pptb-web PR #109); desktop-app PR #652 / issue #644 confirm the same. PPTB Desktop installs tools via tar extraction and never reads the shrinkwrap, and npm 12 cannot generate it. The project owner approved the removal. The development lockfile remains `pnpm-lock.yaml`, and CI uses `--frozen-lockfile`. The original decision is retained below for history.
+
+**Original status:** Accepted and implemented (since v0.6.2)
 
 **Decision:** `npm-shrinkwrap.json` must be regenerated using native `npm`, not `pnpm`.
 

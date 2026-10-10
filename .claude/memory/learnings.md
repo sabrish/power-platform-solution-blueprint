@@ -130,7 +130,9 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 
 ---
 
-## [2026-02-26] — npm-shrinkwrap.json must be generated with npm, not pnpm
+## [2026-02-26] — SUPERSEDED — npm-shrinkwrap.json must be generated with npm, not pnpm
+
+**SUPERSEDED 2026-10-10:** `npm-shrinkwrap.json` was removed from the repo and published package (see decisions.md, 2026-02-26 entry). This entry is retained for history only and no longer applies.
 
 **Affects:** Developer, Document Updater
 **Severity:** High
@@ -146,7 +148,7 @@ Promoted → AUDIT-006 in patterns-ui.md ([2026-03-14])
 
 **Affects:** Orchestrator, Developer, Document Updater
 **Severity:** Blocker
-**Rule:** The orchestrator owns the release sequence. When the project owner says "prepare a release" or "cut a release", invoke the `/release` skill. The sequence is: (1) Reviewer, (2) Security Auditor, (3) Document Updater — version bump in `package.json`, CHANGELOG and README badge must all match before proceeding, (4) Developer — `pnpm typecheck`, `pnpm build`, `npm shrinkwrap` in that order (shrinkwrap MUST run after version bump), (5) Orchestrator prints git commands for manual execution. The orchestrator must NEVER run `git push` itself.
+**Rule:** The orchestrator owns the release sequence. When the project owner says "prepare a release" or "cut a release", invoke the `/release` skill. The sequence is: (1) Reviewer, (2) Security Auditor, (3) Document Updater — version bump in `package.json`, CHANGELOG and README badge must all match before proceeding, (4) Developer — `pnpm typecheck`, `pnpm build` in that order (the former `npm shrinkwrap` step was removed 2026-10-10 when shrinkwrap was superseded), (5) Orchestrator prints git commands for manual execution. The orchestrator must NEVER run `git push` itself.
 **Context:** Git push to the public repo is irreversible. The project owner must retain manual control of the final push step. The orchestrator owns the release sequence coordination but hands off the actual publish action.
 **Example:**
 - Wrong: Orchestrator runs `git push origin v0.8.0` autonomously after tagging
@@ -252,7 +254,9 @@ The Document Updater must update all four in the same release step. Mismatched v
 
 ---
 
-## [2026-03-07] — npm version also updates npm-shrinkwrap.json — include it in the release commit
+## [2026-03-07] — SUPERSEDED — npm version also updates npm-shrinkwrap.json — include it in the release commit
+
+**SUPERSEDED 2026-10-10:** `npm-shrinkwrap.json` was removed from the repo (see decisions.md, 2026-02-26 entry). `npm version` now updates only `package.json`, and the release commit no longer includes a shrinkwrap file. This entry is retained for history only and no longer applies.
 
 **Affects:** Developer, Orchestrator, Document Updater
 **Severity:** Blocker

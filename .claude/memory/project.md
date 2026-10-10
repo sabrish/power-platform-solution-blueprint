@@ -238,9 +238,3 @@ All work from the `feat/cross-entity-automation` branch has been released. The b
 | `docs/API_SECURITY.md` | API call reference and security considerations |
 | `docs/user-guide.md` | End-user documentation |
 | `CONTRIBUTING.md` | Commit conventions and development workflow |
-
----
-
-## npm-shrinkwrap.json
-
-Must be regenerated with native `npm` (not pnpm) whenever dependencies are updated. Required for PPTB Desktop compatibility. See `NPM_SHRINKWRAP_GENERATION.md` for steps.

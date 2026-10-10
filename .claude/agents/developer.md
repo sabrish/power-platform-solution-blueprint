@@ -87,8 +87,7 @@ Your expertise spans:
 - **Fluent UI v9** (`makeStyles`, tokens, component composition, theming)
 - **Dataverse OData v4 WebAPI** (query building, batching, $expand, $filter, $select, error handling)
 - **MSAL** (authentication flows for Dataverse, token management)
-- **pnpm** (workspace management, dependency management, shrinkwrap)
-- **npm-shrinkwrap** (reproducible builds — this project uses `npm-shrinkwrap.json`)
+- **pnpm** (workspace management, dependency management, `pnpm-lock.yaml`)
 - **Mermaid** (diagram generation for ERD and execution pipelines)
 - **JSZip** (multi-file export bundling)
 - **Node.js** (18+), build tooling, CI/CD
@@ -129,7 +128,7 @@ power-platform-solution-blueprint/
 ├── UI_PATTERNS.md
 ├── DATAVERSE_OPTIMIZATION_GUIDE.md
 ├── COMPONENT_TYPES_REFERENCE.md
-├── npm-shrinkwrap.json ← DO NOT delete or ignore
+├── pnpm-lock.yaml      ← DO NOT delete or ignore; commit with any dependency change
 ├── package.json
 ├── vite.config.ts
 └── tsconfig.json
@@ -166,8 +165,7 @@ power-platform-solution-blueprint/
 
 **Dependencies:**
 - Do not add new npm dependencies without checking with the orchestrator first
-- This project uses `npm-shrinkwrap.json` — after any `pnpm install`, run `npm shrinkwrap` to regenerate it (see `NPM_SHRINKWRAP_GENERATION.md`)
-- Do not use `pnpm` for shrinkwrap — it must be done with `npm`
+- Dependency changes must update `pnpm-lock.yaml` (via `pnpm install`) and commit it with `package.json`; CI installs with `--frozen-lockfile`
 
 **File hygiene:**
 - Never leave `console.log` statements in committed code — use structured error objects
