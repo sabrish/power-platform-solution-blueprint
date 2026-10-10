@@ -74,7 +74,6 @@ PPSB benefits **solution architects** (system documentation), **developers** (on
 7. **Use**: Upload Markdown to Azure DevOps Wiki or share HTML with stakeholders
 
 📖 **[Detailed User Guide](docs/user-guide.md)** |
-📊 **[Example Output Structure](docs/examples/example-output-structure.md)** |
 🏗️ **[Architecture Documentation](docs/architecture.md)**
 
 ---
@@ -235,10 +234,6 @@ Comprehensive documentation for all aspects of PPSB:
 - **[Architecture](docs/architecture.md)** - Technical design, component structure, and extension points
 - **[API Security](docs/API_SECURITY.md)** - Complete API reference, security considerations, and data access documentation
 - **[Roadmap](docs/roadmap.md)** - Future versions (baseline comparison, CLI, CI/CD integration)
-- **[Examples](docs/examples/)** - Sample outputs and documentation structure
-  - [Output Structure](docs/examples/example-output-structure.md)
-  - [Sample ERD](docs/examples/sample-erd.md)
-  - [Sample Entity Documentation](docs/examples/sample-entity-doc.md)
 - **[Changelog](CHANGELOG.md)** - Version history and release notes
 
 ---
@@ -330,18 +325,17 @@ Copyright © 2026 SAB. All rights reserved.
 
 - **Issues**: [GitHub Issues](https://github.com/sabrish/power-platform-solution-blueprint/issues) - Report bugs or request features
 - **Discussions**: [GitHub Discussions](https://github.com/sabrish/power-platform-solution-blueprint/discussions) - Ask questions and share ideas
-- **Documentation**: [docs/](docs/) - Comprehensive guides and examples
+- **Documentation**: [docs/](docs/) - Comprehensive guides
 
 ---
 
 ## 🌟 Quick Links
 
-- [Installation](#installation)
+- [Installation](#-installation)
 - [User Guide](docs/user-guide.md)
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Changelog](CHANGELOG.md)
-- [Examples](docs/examples/)
 
 ---
 
