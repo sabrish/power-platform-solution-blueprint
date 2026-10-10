@@ -118,7 +118,7 @@ ${this.embeddedCSS()}
     <li><a href="#model-driven-apps">${this.navIcon('model-driven-apps')} Model-Driven Apps</a></li>
     <li><a href="#security">${this.navIcon('security')} Security</a></li>
     <li><a href="#external-dependencies">${this.navIcon('external-dependencies')} External Dependencies</a></li>
-    <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.7em;vertical-align:middle;">Preview</span></a></li>
+    <li><a href="#cross-entity">${this.navIcon('cross-entity')} Cross-Entity Automation</a></li>
   </ul>
   <div class="nav-footer">
     <button class="btn-print" onclick="window.print()" aria-label="Print blueprint">${this.navIcon('print')} Print</button>
@@ -2009,7 +2009,7 @@ ${rows}
    */
   htmlCrossEntitySection(analysis: CrossEntityAnalysisResult | undefined): string {
     const coverageNotice = `<div class="alert alert-info" style="margin-bottom: 16px;">
-      <strong>Detection Coverage</strong> <span class="badge badge-warning" style="font-size:0.75em;vertical-align:middle;">Preview</span>
+      <strong>Detection Coverage</strong>
       <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
         <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('flows')} <span><strong>Power Automate flows</strong> — cross-entity writes detected from flow JSON definitions.</span></div>
         <div style="display:flex;align-items:center;gap:6px;">${this.navIcon('classic-workflows')} <span><strong>Classic Workflows</strong> — cross-entity writes detected from XAML (CreateEntity / UpdateEntity steps).</span></div>
@@ -2029,7 +2029,7 @@ ${rows}
 
     if (!analysis || (analysis.allEntityPipelines.size === 0 && analysis.totalEntryPoints === 0)) {
       return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
-  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.75em;">Preview</span></h2>
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   <p>No cross-entity automation entry points detected in this solution scope.</p>
 </section>`;
@@ -2107,7 +2107,7 @@ ${rows}
       </div>` : '';
 
     return `<section id="cross-entity" class="content-section" aria-labelledby="heading-cross-entity">
-  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation <span class="badge badge-warning" style="font-size:0.75em;">Preview</span></h2>
+  <h2 id="heading-cross-entity" style="display:flex;align-items:center;gap:10px;">${this.navIcon('cross-entity')} Cross-Entity Automation</h2>
   ${coverageNotice}
   ${statsHtml}
   ${risksHtml}
